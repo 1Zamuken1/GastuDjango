@@ -3,14 +3,11 @@ django==5.2
 python-dotenv==1.1.0
 
 # Base de datos
-psycopg2-binary==2.9.10
+psycopg[binary]==3.2.10
 dj-database-url==2.3.0
 
 # Archivos estáticos (producción)
 whitenoise==6.9.0
-
-# Imágenes
-Pillow==11.2.1
 
 # Agente Financiero
 google-generativeai==0.8.5
