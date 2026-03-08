@@ -80,7 +80,7 @@ def crear_movimiento(request, tipo):
         tipo (str): 'INGRESO' o 'EGRESO' — viene de la URL.
     """
     if request.method == 'POST':
-        form = MovimientoForm(tipo=tipo, data=request.POST)
+        form = MovimientoForm(tipo=tipo, usuario=request.user, data=request.POST)
         if form.is_valid():
             movimiento = form.save(commit=False)
             movimiento.usuario = request.user
@@ -89,7 +89,7 @@ def crear_movimiento(request, tipo):
             return redirect('movimientos:detalle_categoria_ingreso' if tipo == 'INGRESO' else 'movimientos:detalle_categoria_egreso', categoria_id=movimiento.categoria.id)
         messages.error(request, 'Por favor corrige los errores del formulario.')
     else:
-        form = MovimientoForm(tipo=tipo)
+        form = MovimientoForm(tipo=tipo, usuario=request.user)
 
     return render(request, 'movimientos/form_movimiento.html', {
         'form': form,
@@ -109,7 +109,7 @@ def editar_movimiento(request, movimiento_id):
     tipo = movimiento.tipo
 
     if request.method == 'POST':
-        form = MovimientoForm(tipo=tipo, data=request.POST, instance=movimiento)
+        form = MovimientoForm(tipo=tipo, usuario=request.user, data=request.POST, instance=movimiento)
         if form.is_valid():
             form.save()
             messages.success(request, f'{"Ingreso" if tipo == "INGRESO" else "Egreso"} actualizado exitosamente.')
@@ -117,7 +117,7 @@ def editar_movimiento(request, movimiento_id):
 
         messages.error(request, 'Por favor corrige los errores del formulario.')
     else:
-        form = MovimientoForm(tipo=tipo, instance=movimiento)
+        form = MovimientoForm(tipo=tipo, usuario=request.user, instance=movimiento)
 
     return render(request, 'movimientos/form_movimiento.html', {
         'form': form,
