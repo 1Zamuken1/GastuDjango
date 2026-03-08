@@ -1,0 +1,8 @@
+[
+  {"model": "movimientos.categoria", "pk": 1, "fields": {"nombre": "Salario", "tipo": "INGRESO", "descripcion": "Ingresos por salario mensual", "activo": true, "fecha_creacion": "2025-01-01T00:00:00Z"}},
+  {"model": "movimientos.categoria", "pk": 2, "fields": {"nombre": "Freelance", "tipo": "INGRESO", "descripcion": "Ingresos por trabajo independiente", "activo": true, "fecha_creacion": "2025-01-01T00:00:00Z"}},
+  {"model": "movimientos.categoria", "pk": 3, "fields": {"nombre": "Arriendo", "tipo": "EGRESO", "descripcion": "Pago de arriendo mensual", "activo": true, "fecha_creacion": "2025-01-01T00:00:00Z"}},
+  {"model": "movimientos.categoria", "pk": 4, "fields": {"nombre": "Alimentación", "tipo": "EGRESO", "descripcion": "Gastos en comida y mercado", "activo": true, "fecha_creacion": "2025-01-01T00:00:00Z"}},
+  {"model": "movimientos.categoria", "pk": 5, "fields": {"nombre": "Transporte", "tipo": "EGRESO", "descripcion": "Gastos de transporte y movilidad", "activo": true, "fecha_creacion": "2025-01-01T00:00:00Z"}},
+  {"model": "movimientos.categoria", "pk": 6, "fields": {"nombre": "Servicios", "tipo": "EGRESO", "descripcion": "Pago de servicios públicos", "activo": true, "fecha_creacion": "2025-01-01T00:00:00Z"}}
+]
