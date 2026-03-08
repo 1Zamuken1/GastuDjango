@@ -1,0 +1,17 @@
+{% extends "movimientos/base.html" %}
+
+{% block titulo %}Eliminar {{ tipo|lower|capfirst }}{% endblock %}
+
+{% block contenido %}
+<h1>¿Eliminar este {{ tipo|lower }}?</h1>
+<p>Monto: ${{ movimiento.monto }}</p>
+<p>Categoría: {{ movimiento.categoria.nombre }}</p>
+<p>Fecha: {{ movimiento.fecha_registro|date:"d/m/Y" }}</p>
+<p>Esta acción no puede deshacerse desde la interfaz.</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirmar eliminación</button>
+    <a href="javascript:history.back()">Cancelar</a>
+</form>
+{% endblock %}

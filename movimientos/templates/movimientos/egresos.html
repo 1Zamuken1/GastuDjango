@@ -1,0 +1,21 @@
+{% extends "movimientos/base.html" %}
+
+{% block titulo %}Mis Egresos{% endblock %}
+
+{% block contenido %}
+<h1>Mis Egresos</h1>
+<a href="{% url 'movimientos:crear_egreso' %}">+ Agregar nuevo egreso</a>
+
+{% if categorias %}
+    {% for categoria in categorias %}
+        <div>
+            <a href="{% url 'movimientos:detalle_categoria_egreso' categoria_id=categoria.id %}">
+                <h3>{{ categoria.nombre }}</h3>
+                <p>{{ categoria.movimientos.count }} registro(s)</p>
+            </a>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>Aún no has registrado egresos.</p>
+{% endif %}
+{% endblock %}

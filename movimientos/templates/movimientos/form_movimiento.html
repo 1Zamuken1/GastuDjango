@@ -1,0 +1,14 @@
+{% extends "movimientos/base.html" %}
+
+{% block titulo %}{% if movimiento %}Editar{% else %}Nuevo{% endif %} {{ tipo|lower|capfirst }}{% endblock %}
+
+{% block contenido %}
+<h1>{% if movimiento %}Editar{% else %}Nuevo{% endif %} {{ tipo|lower|capfirst }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">{% if movimiento %}Guardar cambios{% else %}Registrar{% endif %}</button>
+    <a href="javascript:history.back()">Cancelar</a>
+</form>
+{% endblock %}

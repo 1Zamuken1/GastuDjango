@@ -1,0 +1,21 @@
+{% extends "movimientos/base.html" %}
+
+{% block titulo %}Mis Ingresos{% endblock %}
+
+{% block contenido %}
+<h1>Mis Ingresos</h1>
+<a href="{% url 'movimientos:crear_ingreso' %}">+ Agregar nuevo ingreso</a>
+
+{% if categorias %}
+    {% for categoria in categorias %}
+        <div>
+            <a href="{% url 'movimientos:detalle_categoria_ingreso' categoria_id=categoria.id %}">
+                <h3>{{ categoria.nombre }}</h3>
+                <p>{{ categoria.movimientos.count }} registro(s)</p>
+            </a>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>Aún no has registrado ingresos.</p>
+{% endif %}
+{% endblock %}

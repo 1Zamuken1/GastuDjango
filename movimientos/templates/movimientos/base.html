@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}GastuApp{% endblock %}</title>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'movimientos:lista_ingresos' %}">Ingresos</a> |
+        <a href="{% url 'movimientos:lista_egresos' %}">Egresos</a>
+    </nav>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p><strong>{{ message }}</strong></p>
+        {% endfor %}
+    {% endif %}
+
+    {% block contenido %}{% endblock %}
+</body>
+</html>

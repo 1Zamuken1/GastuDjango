@@ -1,0 +1,31 @@
+{% extends "movimientos/base.html" %}
+
+{% block titulo %}{{ categoria.nombre }}{% endblock %}
+
+{% block contenido %}
+<h1>{{ categoria.nombre }}</h1>
+<p>Total acumulado: ${{ total }}</p>
+
+{% if tipo == 'INGRESO' %}
+    <a href="{% url 'movimientos:crear_ingreso' %}">+ Agregar nuevo ingreso</a>
+    <a href="{% url 'movimientos:lista_ingresos' %}">← Volver</a>
+{% else %}
+    <a href="{% url 'movimientos:crear_egreso' %}">+ Agregar nuevo egreso</a>
+    <a href="{% url 'movimientos:lista_egresos' %}">← Volver</a>
+{% endif %}
+
+{% if movimientos %}
+    {% for movimiento in movimientos %}
+        <div>
+            <p>${{ movimiento.monto }} — {{ movimiento.fecha_registro|date:"d/m/Y" }}</p>
+            {% if movimiento.descripcion %}
+                <p>{{ movimiento.descripcion }}</p>
+            {% endif %}
+            <a href="{% url 'movimientos:editar_movimiento' movimiento_id=movimiento.id %}">Editar</a> |
+            <a href="{% url 'movimientos:eliminar_movimiento' movimiento_id=movimiento.id %}">Eliminar</a>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No hay registros en esta categoría.</p>
+{% endif %}
+{% endblock %}
