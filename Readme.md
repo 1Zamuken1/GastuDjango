@@ -1,12 +1,12 @@
-# GastuApp 🟢
+# GastuApp
 Sistema de gestión financiera personal desarrollado como proyecto formativo en el SENA.
 
-> **Stack:** Django 5.2 · PostgreSQL (Supabase) · Django Templates
+**Stack:** Django 5.2 · PostgreSQL (Supabase) · Django Templates
 
 ---
 
 ## Requisitos previos
-- Python 3.10 o superior *(se recomienda 3.12 — ver nota sobre Python 3.14 abajo)*
+- Python 3.10 o superior (se recomienda 3.12 — ver nota sobre Python 3.14 abajo)
 - Git
 
 ---
@@ -38,7 +38,7 @@ pip install -r requirements.txt
 ### 4. Configurar variables de entorno
 Solicitar el archivo `.env` al líder del equipo por privado y ubicarlo en la raíz del proyecto.
 
-Las variables necesarias son (ver `.env.example`):
+Las variables necesarias están en `.env.example`:
 ```
 SECRET_KEY=
 DEBUG=
@@ -80,48 +80,40 @@ GastuDjango/
 
 ---
 
-## Módulos y responsables
+## Módulos y estado
 
-| Módulo | Descripción | Modelos principales |
+| Módulo | Modelos principales | Estado |
 |---|---|---|
-| `usuarios` | Registro, login, perfil y preferencias | `Usuario`, `Preferencias` |
-| `movimientos` | Registro de ingresos y egresos por categoría | `Movimiento`, `Categoria` |
-| `ahorros` | Metas de ahorro y seguimiento de cuotas | `AhorroMeta`, `AporteAhorro` |
-| `planificacion` | Presupuestos mensuales y proyecciones recurrentes | `Presupuesto`, `Programacion` |
-| `notificaciones` | Alertas automáticas basadas en el comportamiento financiero | `Notificacion` |
-| `dashboard` | Resumen financiero mensual acumulado | `ResumenMensual` |
-| `agente` | Asistente financiero con IA (Gemini) | `AgenteFinanciero` |
+| `usuarios` | `Usuario`, `Preferencias` | Modelos listos |
+| `movimientos` | `Movimiento`, `Categoria` | CRUD completo |
+| `ahorros` | `AhorroMeta`, `AporteAhorro` | Pendiente |
+| `planificacion` | `Presupuesto`, `Programacion` | Pendiente |
+| `notificaciones` | `Notificacion` | Pendiente |
+| `dashboard` | `ResumenMensual` | Pendiente |
+| `agente` | `AgenteFinanciero` | Pendiente |
 
 ---
 
 ## Base de datos
-El proyecto usa **PostgreSQL** alojado en **Supabase**.
 
-- Todos los cambios a los modelos se manejan con migraciones de Django.
-- Cuando hagas cambios a un modelo, ejecuta:
+El proyecto usa PostgreSQL alojado en Supabase. Todos los cambios a modelos se manejan con migraciones de Django.
 
+Cuando hagas cambios a un modelo:
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-- Commitea siempre el archivo de migración generado para que el resto del equipo pueda aplicarlo.
-- Los demás integrantes solo necesitan correr `python manage.py migrate` para sincronizar.
+Commitea siempre el archivo de migración generado. Los demás integrantes solo corren `migrate` para sincronizar.
 
 ---
 
 ## Flujo de trabajo en equipo
 
-1. Antes de empezar a trabajar: `git pull`
+1. Antes de empezar: `git pull`
 2. Si hay migraciones nuevas: `python manage.py migrate`
-3. Al terminar cambios a modelos: `python manage.py makemigrations` → commitear el archivo generado
-4. Nunca modificar migraciones ya aplicadas en producción
-
----
-
-## Nota sobre versiones de Python
-
-Este proyecto se está desarrollando con **Python 3.14**. Algunas dependencias como `Pillow` aún no tienen soporte completo para esta versión. Se recomienda usar **Python 3.12** para evitar problemas de compatibilidad.
+3. Al terminar cambios a modelos: `python manage.py makemigrations` y commitear el archivo generado
+4. Nunca modificar migraciones ya aplicadas
 
 ---
 
@@ -135,14 +127,6 @@ Este proyecto se está desarrollando con **Python 3.14**. Algunas dependencias c
 
 ---
 
-## Tecnologías principales
+## Nota sobre Python 3.14
 
-| Tecnología | Versión | Uso |
-|---|---|---|
-| Django | 5.2 | Framework principal |
-| psycopg | 3.2.10 | Conector PostgreSQL |
-| dj-database-url | 2.3.0 | Parseo de DATABASE_URL |
-| python-dotenv | 1.1.0 | Manejo de variables de entorno |
-| whitenoise | 6.9.0 | Archivos estáticos en producción |
-| google-generativeai | 0.8.5 | Agente financiero con Gemini |
-| groq | 0.23.1 | Fallback del agente financiero |
+Algunas dependencias como Pillow aún no tienen soporte completo para Python 3.14. Se recomienda Python 3.12 para evitar problemas de compatibilidad. Si se usa 3.14, Pillow debe omitirse del `requirements.txt` hasta que haya soporte oficial.
