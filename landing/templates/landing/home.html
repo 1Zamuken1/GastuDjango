@@ -1,0 +1,683 @@
+{% extends 'landing/base.html' %}
+{% block title %}GastuApp — Gestión financiera inteligente{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Hero: grid de fondo + blobs contenidos */
+  .hero-section { overflow: hidden; position: relative; }
+  .hero-grid {
+    position: absolute; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(#e2e8f0 1px, transparent 1px),
+      linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.35;
+  }
+
+  /* Underline decorativo en el título hero */
+  .hero-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .hero-underline svg {
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  /* Sección ¿Cómo funciona? */
+  #como-funciona { background-color: #f8fafc; }
+
+  /* Sección features alterna */
+  #funciones { background-color: #ffffff; }
+
+  /* Sección métricas */
+  #metricas { background-color: #f8fafc; }
+
+  /* CTA final */
+  #cta-section {
+    background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 50%, #f0fdf4 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  #cta-section::before {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════
+     S1: HERO
+══════════════════════════════════════════ -->
+<section class="hero-section flex items-center justify-center pt-28 pb-24 bg-white min-h-screen">
+  <div class="hero-grid"></div>
+
+  <!-- Blobs de fondo -->
+  <div class="absolute top-0 right-0 w-96 h-96 rounded-full -z-0 translate-x-1/3 -translate-y-1/3 pointer-events-none"
+       style="background: radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 70%);"></div>
+  <div class="absolute bottom-0 left-0 w-80 h-80 rounded-full -z-0 -translate-x-1/3 translate-y-1/3 pointer-events-none"
+       style="background: radial-gradient(circle, rgba(148,163,184,0.08) 0%, transparent 70%);"></div>
+
+  <div class="relative z-10 max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24 items-center w-full">
+
+    <!-- Copy izquierda -->
+    <div class="flex flex-col gap-7">
+
+      <div id="hero-badge" class="gsap-hidden self-start inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-4 py-2 rounded-full">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        Gestión financiera inteligente
+      </div>
+
+      <h1 id="hero-title" class="gsap-hidden font-display font-black text-slate-900 tracking-tight"
+          style="font-size: clamp(2.8rem, 5.5vw, 4.8rem); line-height: 1.08; letter-spacing: -0.02em;">
+        Tu dinero,<br>
+        <span class="hero-underline text-emerald-500">
+          bajo control
+          <svg viewBox="0 0 300 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 11 Q75 4 150 9 Q225 14 298 6" stroke="#10b981" stroke-width="3.5"
+                  stroke-linecap="round" fill="none" opacity="0.55"/>
+          </svg>
+        </span>
+      </h1>
+
+      <p id="hero-sub" class="gsap-hidden text-slate-500 leading-relaxed" style="font-size:1.05rem; max-width:420px;">
+        Registra ingresos y egresos, controla presupuestos y recibe alertas inteligentes.
+        Todo en un solo lugar, sin complicaciones.
+      </p>
+
+      <div id="hero-ctas" class="gsap-hidden flex flex-col sm:flex-row gap-3">
+        <a href="{% url 'register' %}"
+           class="btn-emerald inline-flex items-center justify-center gap-2 px-8 py-4 text-sm">
+          Empezar gratis <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+        <a href="#como-funciona"
+           class="btn-ghost inline-flex items-center justify-center gap-2 px-7 py-4 text-sm">
+          Ver cómo funciona <i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Dashboard card derecha -->
+    <div id="hero-card" class="gsap-hidden">
+      <div class="glass-card gradient-border rounded-3xl p-7">
+
+        <!-- Header balance -->
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <p class="text-xs text-slate-400 font-medium mb-1.5">Balance del mes</p>
+            <p id="snap-balance" class="font-display font-black text-slate-900 leading-none" style="font-size:1.65rem;"></p>
+          </div>
+          <div id="snap-trend"
+               class="flex items-center gap-1.5 border text-xs font-semibold px-3 py-1.5 rounded-full mt-1 transition-all duration-500">
+          </div>
+        </div>
+
+        <!-- Gráfico -->
+        <div class="mb-5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+          <div class="flex items-center justify-between mb-3">
+            <p id="snap-chart-title" class="text-xs font-semibold text-slate-600"></p>
+            <p id="snap-chart-period" class="text-xs text-slate-400"></p>
+          </div>
+          <div class="flex items-end gap-2" style="height:80px;" id="snap-chart"></div>
+          <div class="flex gap-2 mt-2" id="snap-chart-labels"></div>
+        </div>
+
+        <!-- Transacciones recientes -->
+        <div>
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Recientes</p>
+          <div id="snap-transactions" class="space-y-2"></div>
+        </div>
+
+        <!-- Dots indicadores -->
+        <div class="flex justify-center gap-2 mt-5">
+          <div class="snap-dot bg-emerald-500 transition-all duration-300" style="width:20px; height:6px; border-radius:99px;"></div>
+          <div class="snap-dot bg-slate-200 transition-all duration-300" style="width:6px; height:6px; border-radius:99px;"></div>
+          <div class="snap-dot bg-slate-200 transition-all duration-300" style="width:6px; height:6px; border-radius:99px;"></div>
+          <div class="snap-dot bg-slate-200 transition-all duration-300" style="width:6px; height:6px; border-radius:99px;"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     S2: ¿CÓMO FUNCIONA? — Pin + Steps
+══════════════════════════════════════════ -->
+<section id="como-funciona" class="relative py-28" style="background-color:#f8fafc;">
+  <div class="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+
+    <!-- Panel izquierdo sticky -->
+    <div id="pin-left" class="lg:sticky lg:top-32">
+      <p id="steps-eyebrow" class="gsap-hidden text-emerald-600 text-xs font-bold tracking-[0.2em] uppercase mb-5">
+        ¿Cómo funciona?
+      </p>
+      <h2 id="steps-title" class="gsap-hidden font-display text-4xl lg:text-5xl font-black text-slate-900 mb-6" style="line-height:1.08; letter-spacing:-0.02em;">
+        Simple de usar,<br>
+        <span class="text-emerald-500">poderoso</span><br>
+        en resultados.
+      </h2>
+      <p id="steps-sub" class="gsap-hidden text-slate-500 leading-relaxed text-base max-w-sm">
+        En cuatro pasos tienes control total de tus finanzas personales.
+        Sin complicaciones, sin curva de aprendizaje.
+      </p>
+
+      <!-- Dots de progreso -->
+      <div class="flex gap-2 mt-10">
+        <div class="step-dot bg-emerald-500" style="width:2rem;"></div>
+        <div class="step-dot bg-slate-200" style="width:0.75rem;"></div>
+        <div class="step-dot bg-slate-200" style="width:0.75rem;"></div>
+        <div class="step-dot bg-slate-200" style="width:0.75rem;"></div>
+      </div>
+    </div>
+
+    <!-- Panel derecho: pasos -->
+    <div class="space-y-5 py-2">
+
+      <div class="step-card step-1 gsap-hidden glass-card rounded-2xl p-7 cursor-default">
+        <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center mb-4">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i>
+        </div>
+        <p class="text-emerald-600 text-[10px] font-black tracking-[0.2em] uppercase mb-2">Paso 01</p>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Registra tus movimientos</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">
+          Anota cada ingreso y gasto en segundos. Campos validados, fechas y categorías predefinidas.
+        </p>
+      </div>
+
+      <div class="step-card step-2 gsap-hidden glass-card rounded-2xl p-7 cursor-default">
+        <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
+          <i data-lucide="tag" class="w-5 h-5 text-blue-600"></i>
+        </div>
+        <p class="text-blue-500 text-[10px] font-black tracking-[0.2em] uppercase mb-2">Paso 02</p>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Categoriza con etiquetas</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">
+          Clasifica tus gastos en categorías personalizadas: alimentación, transporte, entretenimiento y más.
+        </p>
+      </div>
+
+      <div class="step-card step-3 gsap-hidden glass-card rounded-2xl p-7 cursor-default">
+        <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center mb-4">
+          <i data-lucide="bar-chart-2" class="w-5 h-5 text-purple-600"></i>
+        </div>
+        <p class="text-purple-500 text-[10px] font-black tracking-[0.2em] uppercase mb-2">Paso 03</p>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Visualiza tus reportes</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">
+          Gráficos claros y métricas que muestran exactamente en qué se va tu dinero cada mes.
+        </p>
+      </div>
+
+      <div class="step-card step-4 gsap-hidden glass-card rounded-2xl p-7 cursor-default">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
+          <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
+        </div>
+        <p class="text-amber-500 text-[10px] font-black tracking-[0.2em] uppercase mb-2">Paso 04</p>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Optimiza con IA</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">
+          Recibe alertas y recomendaciones basadas en tus patrones de gasto para ahorrar más.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     S3: FUNCIONES
+══════════════════════════════════════════ -->
+<section id="funciones" class="py-28 bg-white">
+  <div class="max-w-6xl mx-auto px-6">
+
+    <div class="text-center mb-16">
+      <p id="feat-eyebrow" class="gsap-hidden text-emerald-600 font-semibold text-xs uppercase tracking-widest mb-3">
+        Funciones
+      </p>
+      <h2 id="feat-title" class="gsap-hidden font-display text-4xl md:text-5xl font-black text-slate-900" style="line-height:1.08; letter-spacing:-0.02em;">
+        Todo lo que necesitas<br>para manejar tu plata
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      <div class="feat-card gsap-hidden glass-card rounded-2xl p-7 group cursor-default">
+        <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center mb-5 group-hover:bg-emerald-500 transition-colors duration-300">
+          <i data-lucide="bar-chart-2" class="w-5 h-5 text-emerald-600 group-hover:text-white transition-colors duration-300"></i>
+        </div>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Ingresos y egresos</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Registra cada movimiento por categoría. Visualiza cuánto entra y sale mes a mes con total claridad.</p>
+      </div>
+
+      <div class="feat-card gsap-hidden glass-card rounded-2xl p-7 group cursor-default">
+        <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-5 group-hover:bg-blue-500 transition-colors duration-300">
+          <i data-lucide="target" class="w-5 h-5 text-blue-600 group-hover:text-white transition-colors duration-300"></i>
+        </div>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Metas de ahorro</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Crea objetivos financieros y rastrea tu progreso. Desde vacaciones hasta tu fondo de emergencia.</p>
+      </div>
+
+      <div class="feat-card gsap-hidden glass-card rounded-2xl p-7 group cursor-default">
+        <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-5 group-hover:bg-purple-500 transition-colors duration-300">
+          <i data-lucide="pie-chart" class="w-5 h-5 text-purple-600 group-hover:text-white transition-colors duration-300"></i>
+        </div>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Reportes visuales</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Gráficos interactivos por período, categoría y tipo de movimiento. Exporta en PDF o Excel.</p>
+      </div>
+
+      <div class="feat-card gsap-hidden glass-card rounded-2xl p-7 group cursor-default">
+        <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-5 group-hover:bg-amber-500 transition-colors duration-300">
+          <i data-lucide="bell" class="w-5 h-5 text-amber-600 group-hover:text-white transition-colors duration-300"></i>
+        </div>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Alertas inteligentes</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Recibe notificaciones cuando superas tu presupuesto o detectamos patrones inusuales de gasto.</p>
+      </div>
+
+      <div class="feat-card gsap-hidden glass-card rounded-2xl p-7 group cursor-default">
+        <div class="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center mb-5 group-hover:bg-rose-500 transition-colors duration-300">
+          <i data-lucide="calendar-range" class="w-5 h-5 text-rose-600 group-hover:text-white transition-colors duration-300"></i>
+        </div>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Gastos recurrentes</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Registra suscripciones y pagos fijos. GastuApp los proyecta automáticamente cada mes.</p>
+      </div>
+
+      <div class="feat-card gsap-hidden glass-card rounded-2xl p-7 group cursor-default">
+        <div class="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center mb-5 group-hover:bg-teal-500 transition-colors duration-300">
+          <i data-lucide="bot" class="w-5 h-5 text-teal-600 group-hover:text-white transition-colors duration-300"></i>
+        </div>
+        <h3 class="font-display text-base font-bold text-slate-900 mb-2">Agente con IA</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Pregúntale a la IA sobre tus finanzas. Recibe recomendaciones personalizadas en lenguaje natural.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     S4: MÉTRICAS con counter
+══════════════════════════════════════════ -->
+<section id="metricas" class="py-28" style="background-color:#f8fafc;">
+  <div class="max-w-6xl mx-auto px-6">
+
+    <div class="text-center mb-16">
+      <h2 id="met-title" class="gsap-hidden font-display text-4xl lg:text-5xl font-black text-slate-900" style="line-height:1.1; letter-spacing:-0.02em;">
+        Números que <span class="text-emerald-500">importan.</span>
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <div class="metric-card gsap-hidden glass-card rounded-2xl p-6 text-center">
+        <div class="font-display font-black text-emerald-500 mb-2 leading-none"
+             style="font-size: clamp(1.8rem, 3.5vw, 2.5rem);">
+          <span class="counter" data-target="10000">0</span>+
+        </div>
+        <div class="text-slate-500 text-sm mt-1">Usuarios activos</div>
+      </div>
+
+      <div class="metric-card gsap-hidden glass-card rounded-2xl p-6 text-center">
+        <div class="font-display font-black text-amber-500 mb-2 leading-none"
+             style="font-size: clamp(1.8rem, 3.5vw, 2.5rem);">
+          <span class="counter" data-target="4.8" data-decimal="true">0</span>/5
+        </div>
+        <div class="text-slate-500 text-sm mt-1">Valoración promedio</div>
+      </div>
+
+      <div class="metric-card gsap-hidden glass-card rounded-2xl p-6 text-center">
+        <div class="font-display font-black text-purple-500 mb-2 leading-none"
+             style="font-size: clamp(1.8rem, 3.5vw, 2.5rem);">
+          <span class="counter" data-target="98">0</span>%
+        </div>
+        <div class="text-slate-500 text-sm mt-1">Satisfacción de usuarios</div>
+      </div>
+
+      <div class="metric-card gsap-hidden glass-card rounded-2xl p-6 text-center">
+        <div class="font-display font-black text-blue-500 mb-2 leading-none"
+             style="font-size: clamp(1.8rem, 3.5vw, 2.5rem);">
+          <span class="counter" data-target="50">0</span>+
+        </div>
+        <div class="text-slate-500 text-sm mt-1">Categorías disponibles</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     S5: CTA FINAL
+══════════════════════════════════════════ -->
+<section id="cta-section" class="py-36">
+  <div class="max-w-3xl mx-auto px-6 text-center relative z-10">
+    <div id="cta-content" class="gsap-hidden">
+      <p class="text-emerald-600 text-xs font-bold tracking-[0.2em] uppercase mb-6">Empieza hoy</p>
+      <h2 class="font-display text-5xl lg:text-6xl xl:text-7xl font-black text-slate-900 mb-6" style="line-height:1.06; letter-spacing:-0.025em;">
+        Es gratis.<br>
+        <span class="text-emerald-500">Siempre.</span>
+      </h2>
+      <p class="text-slate-500 text-lg mb-12 leading-relaxed max-w-lg mx-auto">
+        Únete a miles de personas que ya gestionan sus finanzas con inteligencia.
+        Sin tarjeta de crédito, sin compromisos.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="{% url 'register' %}"
+           class="btn-emerald inline-flex items-center gap-2 px-8 py-4 text-base">
+          Crear cuenta gratis <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </a>
+        <a href="{% url 'login' %}"
+           class="btn-ghost inline-flex items-center gap-2 px-8 py-4 text-base">
+          Ya tengo cuenta
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// ─────────────────────────────────────
+// GSAP: HERO entrada en secuencia
+// ─────────────────────────────────────
+gsap.set('#hero-badge',  { y: 18 });
+gsap.set('#hero-title',  { y: 30 });
+gsap.set('#hero-sub',    { y: 20 });
+gsap.set('#hero-ctas',   { y: 20 });
+gsap.set('#hero-stats',  { y: 20 });
+gsap.set('#hero-card',   { y: 28 });
+
+gsap.timeline({ delay: 0.1 })
+  .to('#hero-badge',  { opacity:1, y:0, duration:0.55, ease:'power3.out' })
+  .to('#hero-title',  { opacity:1, y:0, duration:0.65, ease:'power3.out' }, '-=0.3')
+  .to('#hero-sub',    { opacity:1, y:0, duration:0.55, ease:'power3.out' }, '-=0.35')
+  .to('#hero-ctas',   { opacity:1, y:0, duration:0.5,  ease:'power3.out' }, '-=0.3')
+  .to('#hero-stats',  { opacity:1, y:0, duration:0.5,  ease:'power3.out' }, '-=0.25')
+  .to('#hero-card',   { opacity:1, y:0, duration:0.7,  ease:'power3.out' }, '-=0.5');
+
+
+// ─────────────────────────────────────
+// GSAP: ¿Cómo funciona? — sticky + steps
+// ─────────────────────────────────────
+gsap.set(['#steps-eyebrow','#steps-title','#steps-sub'], { y: 20 });
+gsap.to(['#steps-eyebrow','#steps-title','#steps-sub'], {
+  opacity:1, y:0, duration:0.6, stagger:0.12, ease:'power3.out',
+  scrollTrigger: { trigger:'#como-funciona', start:'top 80%', toggleActions:'play none none none' }
+});
+
+const stepCards = document.querySelectorAll('.step-card');
+const stepDots  = document.querySelectorAll('.step-dot');
+
+stepCards.forEach((card, i) => {
+  gsap.set(card, { y: 45 });
+  gsap.to(card, {
+    opacity:1, y:0, duration:0.6, ease:'power3.out',
+    scrollTrigger: { trigger: card, start:'top 87%', toggleActions:'play none none none' }
+  });
+  ScrollTrigger.create({
+    trigger: card,
+    start: 'top 62%',
+    end:   'bottom 38%',
+    onEnter:     () => activateDot(i),
+    onEnterBack: () => activateDot(i),
+  });
+});
+
+function activateDot(index) {
+  stepDots.forEach((d, i) => {
+    d.style.width = i === index ? '2rem' : '0.75rem';
+    d.style.backgroundColor = i === index ? '#10b981' : '#e2e8f0';
+  });
+}
+
+
+// ─────────────────────────────────────
+// GSAP: FEATURES — escalonado
+// ─────────────────────────────────────
+gsap.set(['#feat-eyebrow','#feat-title'], { y: 20 });
+gsap.to(['#feat-eyebrow','#feat-title'], {
+  opacity:1, y:0, duration:0.6, stagger:0.15, ease:'power3.out',
+  scrollTrigger: { trigger:'#funciones', start:'top 80%', toggleActions:'play none none none' }
+});
+
+gsap.set('.feat-card', { y: 40 });
+gsap.utils.toArray('.feat-card').forEach((card, i) => {
+  gsap.to(card, {
+    opacity:1, y:0, duration:0.55, delay: i * 0.09, ease:'power3.out',
+    scrollTrigger: { trigger:'#funciones', start:'top 75%', toggleActions:'play none none none' }
+  });
+});
+
+
+// ─────────────────────────────────────
+// GSAP: MÉTRICAS — counter animation
+// ─────────────────────────────────────
+gsap.set('#met-title', { y: 20 });
+gsap.to('#met-title', {
+  opacity:1, y:0, duration:0.6, ease:'power3.out',
+  scrollTrigger: { trigger:'#metricas', start:'top 80%', toggleActions:'play none none none' }
+});
+
+let countersDone = false;
+gsap.set('.metric-card', { y: 30 });
+gsap.to('.metric-card', {
+  opacity:1, y:0, duration:0.6, stagger:0.12, ease:'power3.out',
+  scrollTrigger: {
+    trigger:'#metricas',
+    start:'top 75%',
+    toggleActions:'play none none none',
+    onEnter: () => {
+      if (countersDone) return;
+      countersDone = true;
+      document.querySelectorAll('.counter').forEach(counter => {
+        const isDecimal = counter.dataset.decimal === 'true';
+        const target = parseFloat(counter.dataset.target);
+        const duration = 2000;
+        const steps = duration / 16;
+        const step = target / steps;
+        let current = 0;
+        const timer = setInterval(() => {
+          current += step;
+          if (current >= target) { current = target; clearInterval(timer); }
+          counter.textContent = isDecimal
+            ? current.toFixed(1)
+            : Math.floor(current).toLocaleString('es-CO');
+        }, 16);
+      });
+    }
+  }
+});
+
+
+// ─────────────────────────────────────
+// GSAP: CTA final
+// ─────────────────────────────────────
+gsap.set('#cta-content', { y: 35 });
+gsap.to('#cta-content', {
+  opacity:1, y:0, duration:0.85, ease:'power3.out',
+  scrollTrigger: { trigger:'#cta-section', start:'top 78%', toggleActions:'play none none none' }
+});
+
+
+// ─────────────────────────────────────
+// DASHBOARD CARD: 4 snapshots animados
+// ─────────────────────────────────────
+const CHART_HEIGHT = 80;
+
+const snapshots = [
+  {
+    balance: '$1.240.000',
+    trend: { label:'+12%', up:true },
+    chart: {
+      title:'Egresos por categoría', period:'Este mes',
+      bars: [
+        { label:'Arriendo', value:80, color:'#f87171' },
+        { label:'Comida',   value:46, color:'#fb923c' },
+        { label:'Transp.',  value:28, color:'#fbbf24' },
+        { label:'Servicios',value:20, color:'#a78bfa' },
+        { label:'Otros',    value:15, color:'#94a3b8' },
+      ]
+    },
+    txs: [
+      { icon:'briefcase',     bg:'bg-emerald-100', ic:'text-emerald-600', label:'Salario',       sub:'Ingreso', amount:'+$2.500.000', color:'text-emerald-600' },
+      { icon:'home',          bg:'bg-red-100',     ic:'text-red-500',     label:'Arriendo',      sub:'Egreso',  amount:'-$800.000',   color:'text-red-500' },
+      { icon:'shopping-cart', bg:'bg-amber-100',   ic:'text-amber-600',   label:'Alimentación',  sub:'Egreso',  amount:'-$460.000',   color:'text-red-500' },
+    ]
+  },
+  {
+    balance: '$680.000 ahorrado',
+    trend: { label:'¡Meta al día!', up:true },
+    chart: {
+      title:'Progreso de metas', period:'Acumulado',
+      bars: [
+        { label:'Vacac.',  value:65, color:'#8b5cf6' },
+        { label:'Laptop',  value:40, color:'#a78bfa' },
+        { label:'Fondo',   value:90, color:'#7c3aed' },
+        { label:'Auto',    value:20, color:'#c4b5fd' },
+        { label:'Estudio', value:55, color:'#6d28d9' },
+      ]
+    },
+    txs: [
+      { icon:'piggy-bank', bg:'bg-purple-100', ic:'text-purple-600', label:'Meta vacaciones', sub:'Ahorro', amount:'+$200.000', color:'text-purple-600' },
+      { icon:'piggy-bank', bg:'bg-purple-100', ic:'text-purple-600', label:'Meta laptop',     sub:'Ahorro', amount:'+$150.000', color:'text-purple-600' },
+      { icon:'piggy-bank', bg:'bg-purple-100', ic:'text-purple-600', label:'Fondo emerg.',    sub:'Ahorro', amount:'+$100.000', color:'text-purple-600' },
+    ]
+  },
+  {
+    balance: '⚠ Déficit detectado',
+    trend: { label:'-5% balance', up:false },
+    chart: {
+      title:'Egresos vs Ingreso', period:'Este mes',
+      bars: [
+        { label:'Ingreso', value:70,  color:'#34d399' },
+        { label:'Egresos', value:100, color:'#f87171' },
+        { label:'Ahorro',  value:5,   color:'#94a3b8' },
+        { label:'Libre',   value:5,   color:'#cbd5e1' },
+        { label:'Proy.',   value:30,  color:'#fbbf24' },
+      ]
+    },
+    txs: [
+      { icon:'alert-triangle', bg:'bg-red-100',   ic:'text-red-500',   label:'Déficit detectado', sub:'Alerta',          amount:'!',         color:'text-red-500' },
+      { icon:'zap',            bg:'bg-amber-100', ic:'text-amber-600', label:'Gasto grande',       sub:'30% del ingreso', amount:'-$750.000', color:'text-red-500' },
+      { icon:'bell',           bg:'bg-red-100',   ic:'text-red-500',   label:'Umbral superado',    sub:'80% presupuesto', amount:'80%',       color:'text-red-500' },
+    ]
+  },
+  {
+    balance: '$2.100.000 proyect.',
+    trend: { label:'Proyectado', up:true },
+    chart: {
+      title:'Gastos recurrentes', period:'Proyección mensual',
+      bars: [
+        { label:'Arriendo', value:80, color:'#3b82f6' },
+        { label:'Internet', value:18, color:'#60a5fa' },
+        { label:'Netflix',  value:6,  color:'#93c5fd' },
+        { label:'Gym',      value:12, color:'#bfdbfe' },
+        { label:'Suscr.',   value:10, color:'#dbeafe' },
+      ]
+    },
+    txs: [
+      { icon:'calendar-range', bg:'bg-blue-100', ic:'text-blue-600', label:'Arriendo', sub:'Recurrente', amount:'-$800.000', color:'text-red-500' },
+      { icon:'calendar-range', bg:'bg-blue-100', ic:'text-blue-600', label:'Netflix',  sub:'Recurrente', amount:'-$29.000',  color:'text-red-500' },
+      { icon:'calendar-range', bg:'bg-blue-100', ic:'text-blue-600', label:'Internet', sub:'Recurrente', amount:'-$85.000',  color:'text-red-500' },
+    ]
+  },
+];
+
+let currentSnap = 0;
+const snapDots = document.querySelectorAll('.snap-dot');
+
+function renderChart(chart) {
+  document.getElementById('snap-chart-title').textContent  = chart.title;
+  document.getElementById('snap-chart-period').textContent = chart.period;
+
+  const maxVal = Math.max(...chart.bars.map(b => b.value));
+
+  document.getElementById('snap-chart').innerHTML = chart.bars.map(bar => {
+    const heightPx = Math.max(Math.round((bar.value / maxVal) * CHART_HEIGHT), 4);
+    return `
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:${CHART_HEIGHT}px;">
+        <div style="width:100%; height:0px; background:${bar.color}; border-radius:4px 4px 0 0; transition:height 0.75s cubic-bezier(0.34,1.4,0.64,1);"
+             data-target-height="${heightPx}px"></div>
+      </div>`;
+  }).join('');
+
+  // Animar barras desde 0
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#snap-chart [data-target-height]').forEach(bar => {
+      bar.style.height = bar.dataset.targetHeight;
+    });
+  });
+
+  document.getElementById('snap-chart-labels').innerHTML = chart.bars.map(bar =>
+    `<div style="flex:1;text-align:center;font-size:9px;color:#94a3b8;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${bar.label}</div>`
+  ).join('');
+}
+
+function renderSnapshot(snap) {
+  document.getElementById('snap-balance').textContent = snap.balance;
+
+  const up = snap.trend.up;
+  const trendEl = document.getElementById('snap-trend');
+  trendEl.innerHTML = `<i data-lucide="${up ? 'trending-up':'trending-down'}" class="w-3.5 h-3.5"></i><span>${snap.trend.label}</span>`;
+  trendEl.className = `flex items-center gap-1.5 border text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-500 ${
+    up ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-600'
+  }`;
+
+  renderChart(snap.chart);
+
+  document.getElementById('snap-transactions').innerHTML = snap.txs.map(tx => `
+    <div class="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-100">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg ${tx.bg} flex items-center justify-center shrink-0">
+          <i data-lucide="${tx.icon}" class="w-3.5 h-3.5 ${tx.ic}"></i>
+        </div>
+        <div>
+          <p style="font-size:12px;font-weight:500;color:#334155;">${tx.label}</p>
+          <p style="font-size:10px;color:#94a3b8;">${tx.sub}</p>
+        </div>
+      </div>
+      <span style="font-size:12px;font-weight:700;" class="${tx.color}">${tx.amount}</span>
+    </div>`).join('');
+
+  snapDots.forEach((d, i) => {
+    d.style.width           = i === currentSnap ? '20px' : '6px';
+    d.style.backgroundColor = i === currentSnap ? '#10b981' : '#e2e8f0';
+  });
+
+  lucide.createIcons();
+}
+
+// Render inicial
+renderSnapshot(snapshots[0]);
+
+// Ciclo cada 4.5 s con fade suave
+setInterval(() => {
+  currentSnap = (currentSnap + 1) % snapshots.length;
+  const card = document.getElementById('hero-card');
+  gsap.to(card, {
+    opacity: 0.15, y: -10, duration: 0.25,
+    onComplete: () => {
+      renderSnapshot(snapshots[currentSnap]);
+      gsap.to(card, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' });
+    }
+  });
+}, 4500);
+
+</script>
+{% endblock %}
