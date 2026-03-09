@@ -46,10 +46,11 @@ INSTALLED_APPS = [
     'usuarios',
     'movimientos',
     'ahorros',
-    'planificacion',
     'notificaciones',
     'dashboard',
-    'agente',
+    'programaciones',
+    'agente_financiero',
+    'presupuesto',
 ]
 
 MIDDLEWARE = [
