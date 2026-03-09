@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from categorias.models import Categoria
 
 
 class ModeloBase(models.Model):
@@ -13,29 +14,6 @@ class ModeloBase(models.Model):
 
     class Meta:
         abstract = True
-
-
-class Categoria(ModeloBase):
-    """
-    Representa una categoría para clasificar movimientos financieros.
-    Gestionada por el Admin. Usada por Movimiento como ForeignKey.
-    """
-
-    class TipoCategoria(models.TextChoices):
-        INGRESO = 'INGRESO', 'Ingreso'
-        EGRESO = 'EGRESO', 'Egreso'
-
-    nombre = models.CharField(max_length=100)
-    tipo = models.CharField(max_length=10, choices=TipoCategoria.choices)
-    descripcion = models.CharField(max_length=255, blank=True, null=True)
-
-    class Meta:
-        verbose_name = 'Categoría'
-        verbose_name_plural = 'Categorías'
-        ordering = ['nombre']
-
-    def __str__(self):
-        return f'{self.nombre} ({self.tipo})'
 
 
 class Movimiento(ModeloBase):

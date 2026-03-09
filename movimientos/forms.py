@@ -1,5 +1,6 @@
 from django import forms
-from .models import Movimiento, Categoria
+from .models import Movimiento
+from categorias.models import Categoria
 
 
 class MovimientoForm(forms.ModelForm):

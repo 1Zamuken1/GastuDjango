@@ -1,0 +1,23 @@
+{% extends "movimientos/base.html" %}
+
+{% block titulo %}Categorías{% endblock %}
+
+{% block contenido %}
+<h1>Categorías</h1>
+<a href="{% url 'categorias:crear_categoria' %}">+ Nueva categoría</a>
+
+{% if categorias %}
+    {% for categoria in categorias %}
+        <div>
+            <strong>{{ categoria.nombre }}</strong> — {{ categoria.tipo }}
+            {% if categoria.descripcion %}
+                <p>{{ categoria.descripcion }}</p>
+            {% endif %}
+            <a href="{% url 'categorias:editar_categoria' categoria_id=categoria.id %}">Editar</a> |
+            <a href="{% url 'categorias:eliminar_categoria' categoria_id=categoria.id %}">Eliminar</a>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No hay categorías registradas.</p>
+{% endif %}
+{% endblock %}

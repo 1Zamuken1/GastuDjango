@@ -1,0 +1,14 @@
+{% extends "movimientos/base.html" %}
+
+{% block titulo %}{{ accion }} Categoría{% endblock %}
+
+{% block contenido %}
+<h1>{{ accion }} Categoría</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">{{ accion }}</button>
+    <a href="{% url 'categorias:lista_categorias' %}">Cancelar</a>
+</form>
+{% endblock %}

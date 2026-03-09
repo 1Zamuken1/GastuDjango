@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'programaciones',
     'agente_financiero',
     'presupuesto',
+    'categorias',
 ]
 
 MIDDLEWARE = [
