@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Movimiento, Categoria
 from .forms import MovimientoForm
+from django.db.models import Count, Q
 
 
 @login_required
@@ -16,6 +17,11 @@ def lista_ingresos(request):
         activo=True,
         movimientos__usuario=request.user,
         movimientos__activo=True
+    ).annotate(
+        total_registros=Count(
+            'movimientos',
+            filter=Q(movimientos__usuario=request.user, movimientos__activo=True)
+        )
     ).distinct()
 
     return render(request, 'movimientos/ingresos.html', {
@@ -35,6 +41,11 @@ def lista_egresos(request):
         activo=True,
         movimientos__usuario=request.user,
         movimientos__activo=True
+    ).annotate(
+        total_registros=Count(
+            'movimientos',
+            filter=Q(movimientos__usuario=request.user, movimientos__activo=True)
+        )
     ).distinct()
 
     return render(request, 'movimientos/egresos.html', {

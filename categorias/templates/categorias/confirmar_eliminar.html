@@ -1,0 +1,16 @@
+{% extends "movimientos/base.html" %}
+
+{% block titulo %}Eliminar Categoría{% endblock %}
+
+{% block contenido %}
+<h1>¿Eliminar esta categoría?</h1>
+<p>Nombre: {{ categoria.nombre }}</p>
+<p>Tipo: {{ categoria.tipo }}</p>
+<p>Esta acción ocultará la categoría del sistema.</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirmar eliminación</button>
+    <a href="{% url 'categorias:lista_categorias' %}">Cancelar</a>
+</form>
+{% endblock %}

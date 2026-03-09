@@ -11,7 +11,7 @@
         <div>
             <a href="{% url 'movimientos:detalle_categoria_ingreso' categoria_id=categoria.id %}">
                 <h3>{{ categoria.nombre }}</h3>
-                <p>{{ categoria.movimientos.count }} registro(s)</p>
+                <p>{{ categoria.total_registros }} registro(s)</p>
             </a>
         </div>
     {% endfor %}

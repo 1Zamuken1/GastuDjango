@@ -19,5 +19,12 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+     # Login de Django
+    path('accounts/', include('django.contrib.auth.urls')),
+
     path('', include('movimientos.urls', namespace='movimientos')),
+    path('categorias/', include('categorias.urls', namespace='categorias')),
+
+    #presupuesto
+    path('presupuesto/',include('presupuesto.urls'))
 ]
