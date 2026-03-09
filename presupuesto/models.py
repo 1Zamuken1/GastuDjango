@@ -7,4 +7,5 @@ class Presupuesto(models.Model):
     fecha_fin = models.DateField()
     isActivo = models.BooleanField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    categoria = models.ForeignKey(Categoria, on_delete= models.CASCADE)
+    categoria = models.ForeignKey("categorias.Categoria", on_delete= models.CASCADE)
+    usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE)

@@ -12,3 +12,42 @@ whitenoise==6.9.0
 # Agente Financiero
 google-generativeai==0.8.5
 groq==0.23.1
+
+# =========================================================
+# GUIA RAPIDA PARA EJECUTAR EL PROYECTO
+# =========================================================
+
+# 1. Clonar el repositorio
+# git clone https://github.com/1Zamuken1/GastuDjango.git
+# cd GastuDjango
+
+# 2. Tener instalado Python
+# python --version
+
+# 3. Crear entorno virtual
+# python -m venv .venv
+
+# 4. Activar entorno virtual
+# Windows:
+# .venv\Scripts\activate
+
+# 5. Instalar dependencias de Django
+# pip install -r requirements.txt
+
+# 8. Aplicar migraciones
+# python manage.py migrate
+
+# 9. Ejecutar el servidor
+# python manage.py runserver
+
+# Luego abrir en el navegador:
+# http://127.0.0.1:8000
+
+# =========================================================
+# NOTAS
+# =========================================================
+# - node_modules y .venv no se suben al repositorio porque
+#   se generan automáticamente con npm install y venv.
+# - Tailwind CSS se gestiona con Node.js y npm.
+# - Las dependencias de Python se gestionan con pip.
+# =========================================================
