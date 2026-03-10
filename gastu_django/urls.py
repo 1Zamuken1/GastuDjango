@@ -26,5 +26,5 @@ urlpatterns = [
     path('categorias/', include('categorias.urls', namespace='categorias')),
 
     #presupuesto
-    path('presupuesto/',include('presupuesto.urls'))
+    path('presupuesto/',include('presupuesto.urls')),
 ]
