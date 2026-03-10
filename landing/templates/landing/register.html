@@ -57,35 +57,35 @@
 {% endblock %}
 
 {% block content %}
-<div class="auth-bg min-h-screen flex items-center justify-center px-6 py-32 relative">
+<div class="relative flex items-center justify-center min-h-screen px-6 py-32 auth-bg">
   <div class="auth-grid"></div>
 
-  <div class="w-full max-w-md relative z-10">
+  <div class="relative z-10 w-full max-w-md">
 
     <!-- Logo -->
-    <div id="auth-header" class="text-center mb-8 gsap-hidden">
-      <a href="{% url 'landing:home' %}" class="font-display text-3xl font-black text-slate-900">
+    <div id="auth-header" class="mb-8 text-center gsap-hidden">
+      <a href="{% url 'landing:home' %}" class="text-3xl font-black font-display text-slate-900">
         Gastu<span class="text-emerald-500">App</span>
       </a>
-      <p class="text-slate-400 mt-2 text-sm">Crea tu cuenta · Es gratis</p>
+      <p class="mt-2 text-sm text-slate-400">Crea tu cuenta · Es gratis</p>
     </div>
 
     <!-- Card -->
-    <div id="auth-card" class="glass-card gradient-border rounded-2xl p-8 gsap-hidden">
-      <h1 class="font-display text-2xl font-bold text-slate-900 mb-7">Crear Cuenta</h1>
+    <div id="auth-card" class="p-8 glass-card gradient-border rounded-2xl gsap-hidden">
+      <h1 class="text-2xl font-bold font-display text-slate-900 mb-7">Crear Cuenta</h1>
 
       <!-- Error -->
       <div id="errorMessage" class="hidden mb-5 p-3.5 rounded-xl flex items-start gap-2.5"
            style="background:rgba(248,113,113,0.07); border:1px solid rgba(248,113,113,0.25);">
         <i data-lucide="alert-circle" class="w-4 h-4 text-red-400 shrink-0 mt-0.5"></i>
-        <span id="errorText" class="text-red-500 text-sm"></span>
+        <span id="errorText" class="text-sm text-red-500"></span>
       </div>
 
       <!-- Éxito -->
       <div id="successMessage" class="hidden mb-5 p-3.5 rounded-xl flex items-start gap-2.5"
            style="background:rgba(16,185,129,0.07); border:1px solid rgba(16,185,129,0.3);">
         <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
-        <span class="text-emerald-600 text-sm">¡Registro exitoso! Redirigiendo al login...</span>
+        <span class="text-sm text-emerald-600">¡Registro exitoso! Redirigiendo al login...</span>
       </div>
 
       <form id="registerForm" novalidate class="space-y-5">
@@ -111,7 +111,7 @@
         <div>
           <label class="auth-label" for="telefono">
             Teléfono
-            <span class="text-slate-400 font-normal ml-1">(opcional)</span>
+            <span class="ml-1 font-normal text-slate-400">(opcional)</span>
           </label>
           <input type="tel" id="telefono" name="telefono"
                  class="auth-input" placeholder="3001234567" autocomplete="tel" />
@@ -125,7 +125,7 @@
                    class="auth-input" placeholder="Mínimo 6 caracteres"
                    autocomplete="new-password" style="padding-right:3rem;" />
             <button type="button" id="togglePass"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors p-1">
+                    class="absolute p-1 transition-colors -translate-y-1/2 right-3 top-1/2 text-slate-400 hover:text-emerald-500">
               <i data-lucide="eye" id="eyeIconReg" class="w-4 h-4"></i>
             </button>
           </div>
@@ -147,17 +147,17 @@
 
         <!-- Submit -->
         <button type="submit" id="submitBtn"
-                class="btn-emerald w-full flex items-center justify-center gap-2 py-3 text-sm mt-1">
+                class="flex items-center justify-center w-full gap-2 py-3 mt-1 text-sm btn-emerald">
           <span id="btnText">Registrarme</span>
-          <i data-lucide="loader-2" id="btnSpinner" class="w-4 h-4 hidden"></i>
+          <i data-lucide="loader-2" id="btnSpinner" class="hidden w-4 h-4"></i>
         </button>
 
       </form>
 
-      <div class="mt-7 pt-6 border-t border-slate-100 text-center">
-        <p class="text-slate-400 text-sm">
+      <div class="pt-6 text-center border-t mt-7 border-slate-100">
+        <p class="text-sm text-slate-400">
           ¿Ya tienes cuenta?
-          <a href="{% url 'login' %}" class="text-emerald-500 hover:text-emerald-600 font-medium transition-colors ml-1">
+          <a href="{% url 'login' %}" class="ml-1 font-medium transition-colors text-emerald-500 hover:text-emerald-600">
             Inicia sesión aquí
           </a>
         </p>
@@ -255,7 +255,7 @@
     successDiv.classList.remove('hidden');
     gsap.from('#successMessage', { opacity:0, y:-8, duration:0.3, ease:'power2.out' });
 
-    setTimeout(() => { window.location.href = '/login/'; }, 1400);
+    window.location.href = '/accounts/login/';
   });
 </script>
 {% endblock %}
