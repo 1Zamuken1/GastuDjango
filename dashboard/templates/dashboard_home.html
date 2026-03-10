@@ -1,0 +1,340 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Dashboard — GastuApp{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}{{ mes_nombre }} {{ anio }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .bar-chart-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 120px;
+    padding: 0 4px;
+  }
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    height: 120px;
+  }
+  .bar-fill {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    min-height: 4px;
+    transition: height 0.7s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  .bar-label {
+    font-size: 9px;
+    color: #94a3b8;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
+  }
+  /* Movimiento type indicator */
+  .mov-dot-ingreso { background: #10b981; }
+  .mov-dot-egreso  { background: #f87171; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Saludo -->
+<div class="mb-8 flex items-center justify-between">
+  <div>
+    <h2 class="font-display text-2xl font-black text-slate-900">
+      Hola, {{ request.user.username }} 👋
+    </h2>
+    <p class="text-slate-400 text-sm mt-1">
+      Resumen financiero de <span class="font-semibold text-slate-600">{{ mes_nombre }} {{ anio }}</span>
+    </p>
+  </div>
+
+  {% if hay_deficit %}
+  <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold px-4 py-2.5 rounded-xl">
+    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+    Balance en déficit este mes
+  </div>
+  {% else %}
+  <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-4 py-2.5 rounded-xl">
+    <i data-lucide="check-circle" class="w-4 h-4"></i>
+    Finanzas en orden
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- ── Stats cards ──────────────────────────────── -->
+<div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+
+  <!-- Balance / Ingreso neto -->
+  <div class="stat-card dash-card col-span-2 xl:col-span-1 p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Balance neto</p>
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center
+                  {% if hay_deficit %}bg-red-50{% else %}bg-emerald-50{% endif %}">
+        <i data-lucide="{% if hay_deficit %}trending-down{% else %}trending-up{% endif %}"
+           class="w-4 h-4 {% if hay_deficit %}text-red-500{% else %}text-emerald-500{% endif %}"></i>
+      </div>
+    </div>
+    <p class="font-display font-black text-slate-900 leading-none" style="font-size:1.6rem;">
+      ${{ ingreso_neto|floatformat:0 }}
+    </p>
+    <p class="text-xs text-slate-400 mt-1.5">
+      {% if hay_deficit %}
+        <span class="text-red-500 font-medium">Egresos mayores a ingresos</span>
+      {% else %}
+        <span class="text-emerald-600 font-medium">Positivo</span> este mes
+      {% endif %}
+    </p>
+  </div>
+
+  <!-- Ingresos -->
+  <div class="stat-card dash-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ingresos</p>
+      <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+        <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-500"></i>
+      </div>
+    </div>
+    <p class="font-display font-black text-slate-900 leading-none" style="font-size:1.4rem;">
+      ${{ total_ingresos|floatformat:0 }}
+    </p>
+    <p class="text-xs text-slate-400 mt-1.5">Total del mes</p>
+  </div>
+
+  <!-- Egresos -->
+  <div class="stat-card dash-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Egresos</p>
+      <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+        <i data-lucide="arrow-up-right" class="w-4 h-4 text-red-400"></i>
+      </div>
+    </div>
+    <p class="font-display font-black text-slate-900 leading-none" style="font-size:1.4rem;">
+      ${{ total_egresos|floatformat:0 }}
+    </p>
+    <p class="text-xs text-slate-400 mt-1.5">Total del mes</p>
+  </div>
+
+  <!-- Disponible -->
+  <div class="stat-card dash-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Disponible</p>
+      <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+        <i data-lucide="wallet" class="w-4 h-4 text-blue-500"></i>
+      </div>
+    </div>
+    <p class="font-display font-black text-slate-900 leading-none" style="font-size:1.4rem;">
+      ${{ disponible|floatformat:0 }}
+    </p>
+    <p class="text-xs text-slate-400 mt-1.5">Libre este mes</p>
+  </div>
+
+</div>
+
+
+<!-- ── Gráfico + Notificaciones ───────────────── -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+
+  <!-- Gráfico egresos por categoría -->
+  <div class="xl:col-span-2 dash-card p-6">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="font-display font-bold text-slate-900 text-base">Egresos por categoría</h3>
+        <p class="text-xs text-slate-400 mt-0.5">{{ mes_nombre }} {{ anio }}</p>
+      </div>
+      <a href="{% url 'movimientos:lista_egresos' %}"
+         class="text-xs font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
+        Ver todos →
+      </a>
+    </div>
+
+    {% if chart_data_json != '[]' %}
+      <div class="bar-chart-container" id="chart-container"></div>
+    {% else %}
+      <div class="flex flex-col items-center justify-center h-32 text-center">
+        <i data-lucide="bar-chart-2" class="w-10 h-10 text-slate-200 mb-3"></i>
+        <p class="text-sm text-slate-400 font-medium">Sin egresos registrados este mes</p>
+        <a href="{% url 'movimientos:crear_egreso' %}"
+           class="text-xs text-emerald-600 mt-1 hover:underline">Registrar primer egreso</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Notificaciones recientes -->
+  <div class="dash-card p-6">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="font-display font-bold text-slate-900 text-base">Alertas</h3>
+        <p class="text-xs text-slate-400 mt-0.5">
+          {% if notificaciones_count %}
+            {{ notificaciones_count }} sin leer
+          {% else %}
+            Todo al día
+          {% endif %}
+        </p>
+      </div>
+      <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+        <i data-lucide="bell" class="w-4 h-4 text-amber-500"></i>
+      </div>
+    </div>
+
+    {% if ultimas_notificaciones %}
+      <div class="space-y-3">
+        {% for n in ultimas_notificaciones %}
+        <div class="flex items-start gap-3 p-3 rounded-xl {% if not n.leida %}bg-amber-50 border border-amber-100{% else %}bg-slate-50{% endif %}">
+          <div class="w-7 h-7 rounded-lg {% if not n.leida %}bg-amber-100{% else %}bg-slate-100{% endif %} flex items-center justify-center shrink-0 mt-0.5">
+            <i data-lucide="{% if n.tipo == 'DEFICIT' %}alert-triangle{% elif n.tipo == 'EGRESO_GRANDE' %}zap{% else %}bell{% endif %}"
+               class="w-3.5 h-3.5 {% if not n.leida %}text-amber-600{% else %}text-slate-400{% endif %}"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-slate-700 leading-tight">{{ n.titulo }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">
+              {{ n.fecha_creacion|date:"d/m H:i" }}
+            </p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="flex flex-col items-center justify-center h-28 text-center">
+        <i data-lucide="check-circle" class="w-8 h-8 text-emerald-200 mb-2"></i>
+        <p class="text-xs text-slate-400">Sin alertas pendientes</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+
+<!-- ── Últimos movimientos ────────────────────── -->
+<div class="dash-card p-6">
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h3 class="font-display font-bold text-slate-900 text-base">Últimos movimientos</h3>
+      <p class="text-xs text-slate-400 mt-0.5">Actividad reciente de tu cuenta</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'movimientos:lista_ingresos' %}"
+         class="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors">
+        Ingresos
+      </a>
+      <span class="text-slate-200">·</span>
+      <a href="{% url 'movimientos:lista_egresos' %}"
+         class="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors">
+        Egresos
+      </a>
+    </div>
+  </div>
+
+  {% if ultimos_movimientos %}
+    <div class="space-y-1">
+
+      <!-- Header de tabla -->
+      <div class="grid grid-cols-12 gap-4 px-3 pb-2 border-b border-slate-100">
+        <span class="col-span-5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Descripción</span>
+        <span class="col-span-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Categoría</span>
+        <span class="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha</span>
+        <span class="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Monto</span>
+      </div>
+
+      {% for mov in ultimos_movimientos %}
+      <div class="grid grid-cols-12 gap-4 px-3 py-3 rounded-xl hover:bg-slate-50 transition-colors">
+
+        <!-- Tipo + descripción -->
+        <div class="col-span-5 flex items-center gap-3">
+          <div class="w-2 h-2 rounded-full shrink-0 {% if mov.tipo == 'INGRESO' %}mov-dot-ingreso{% else %}mov-dot-egreso{% endif %}"></div>
+          <div>
+            <p class="text-sm font-medium text-slate-700 truncate">
+              {{ mov.descripcion|default:"Sin descripción" }}
+            </p>
+            <p class="text-[10px] text-slate-400">{{ mov.tipo|capfirst }}</p>
+          </div>
+        </div>
+
+        <!-- Categoría -->
+        <div class="col-span-3 flex items-center">
+          <span class="text-xs text-slate-500 font-medium truncate">{{ mov.categoria.nombre }}</span>
+        </div>
+
+        <!-- Fecha -->
+        <div class="col-span-2 flex items-center">
+          <span class="text-xs text-slate-400">{{ mov.fecha_registro|date:"d/m/Y" }}</span>
+        </div>
+
+        <!-- Monto -->
+        <div class="col-span-2 flex items-center justify-end">
+          <span class="text-sm font-bold {% if mov.tipo == 'INGRESO' %}text-emerald-600{% else %}text-red-500{% endif %}">
+            {% if mov.tipo == 'INGRESO' %}+{% else %}-{% endif %}${{ mov.monto|floatformat:0 }}
+          </span>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="flex flex-col items-center justify-center py-12 text-center">
+      <i data-lucide="inbox" class="w-12 h-12 text-slate-200 mb-4"></i>
+      <p class="text-sm font-medium text-slate-400">Sin movimientos registrados aún</p>
+      <div class="flex gap-3 mt-4">
+        <a href="{% url 'movimientos:crear_ingreso' %}"
+           class="text-xs font-semibold text-emerald-600 hover:underline">+ Registrar ingreso</a>
+        <span class="text-slate-200">·</span>
+        <a href="{% url 'movimientos:crear_egreso' %}"
+           class="text-xs font-semibold text-red-500 hover:underline">+ Registrar egreso</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+<script id="chart-data" type="application/json">{{ chart_data_json|safe }}</script>
+{% block scripts %}
+<script>
+  lucide.createIcons();
+
+  // ── Gráfico de barras con datos reales ──────────────────
+  const chartData = JSON.parse(document.getElementById('chart-data').textContent);
+  const container = document.getElementById('chart-container');
+
+  if (container && chartData.length > 0) {
+    const maxVal = Math.max(...chartData.map(d => d.value));
+    const MAX_HEIGHT = 120; // px — coincide con .bar-chart-container height
+
+    container.innerHTML = chartData.map(bar => {
+      const heightPx = Math.max(Math.round((bar.value / maxVal) * MAX_HEIGHT), 4);
+      const formatted = new Intl.NumberFormat('es-CO', {
+        style: 'currency', currency: 'COP', maximumFractionDigits: 0
+      }).format(bar.value);
+
+      return `
+        <div class="bar-col" title="${bar.label}: ${formatted}">
+          <div class="bar-fill"
+               style="height: 0px; background: ${bar.color};"
+               data-target="${heightPx}"></div>
+          <span class="bar-label">${bar.label}</span>
+        </div>`;
+    }).join('');
+
+    // Animar barras desde 0 con RAF para que la transición CSS se dispare
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.querySelectorAll('.bar-fill[data-target]').forEach(bar => {
+          bar.style.height = bar.dataset.target + 'px';
+        });
+      }, 80);
+    });
+  }
+</script>
+{% endblock %}

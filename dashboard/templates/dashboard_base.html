@@ -1,0 +1,277 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Dashboard — GastuApp{% endblock %}</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            sans:    ['"DM Sans"', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background-color: #f8fafc;
+      color: #1e293b;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-display { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.03em; }
+
+    /* Sidebar */
+    #sidebar {
+      width: 260px;
+      min-height: 100vh;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      position: fixed;
+      top: 0; left: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 40;
+    }
+
+    /* Contenido principal desplazado */
+    #main-content {
+      margin-left: 260px;
+      min-height: 100vh;
+    }
+
+    /* Nav items */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #64748b;
+      transition: background 0.18s, color 0.18s;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: #f1f5f9; color: #1e293b; }
+    .nav-item.active {
+      background: #ecfdf5;
+      color: #059669;
+      font-weight: 600;
+    }
+    .nav-item.active svg { color: #059669; }
+    .nav-item.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* Glass cards */
+    .dash-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 99px; }
+
+    /* Badge notif */
+    .notif-badge {
+      position: absolute;
+      top: -4px; right: -4px;
+      background: #f87171;
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Stat card hover */
+    .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-full">
+
+<!-- ═══════════════════════════════════
+     SIDEBAR
+════════════════════════════════════ -->
+<aside id="sidebar">
+
+  <!-- Logo -->
+  <div class="px-5 py-5 border-b border-slate-100">
+    <a href="{% url 'dashboard:home' %}" class="font-display text-xl font-black text-slate-900">
+      Gastu<span class="text-emerald-500">App</span>
+    </a>
+    <p class="text-xs text-slate-400 mt-0.5 font-medium">Panel financiero</p>
+  </div>
+
+  <!-- Nav principal -->
+  <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+
+    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 pb-2 pt-1">Principal</p>
+
+    <a href="{% url 'dashboard:home' %}"
+       class="nav-item {% block nav_dashboard %}{% endblock %}">
+      <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+      Dashboard
+    </a>
+
+    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 pb-2 pt-4">Finanzas</p>
+
+    <a href="{% url 'movimientos:lista_ingresos' %}"
+       class="nav-item {% block nav_ingresos %}{% endblock %}">
+      <i data-lucide="trending-up" class="w-4 h-4"></i>
+      Ingresos
+    </a>
+
+    <a href="{% url 'movimientos:lista_egresos' %}"
+       class="nav-item {% block nav_egresos %}{% endblock %}">
+      <i data-lucide="trending-down" class="w-4 h-4"></i>
+      Egresos
+    </a>
+
+    <a href="{% url 'listar_presupuestos' %}"
+       class="nav-item {% block nav_presupuestos %}{% endblock %}">
+      <i data-lucide="target" class="w-4 h-4"></i>
+      Presupuestos
+    </a>
+
+    <a href="#" class="nav-item disabled">
+      <i data-lucide="piggy-bank" class="w-4 h-4"></i>
+      Ahorros
+      <span class="ml-auto text-[9px] font-bold bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full">Pronto</span>
+    </a>
+
+    <a href="#" class="nav-item disabled">
+      <i data-lucide="calendar-range" class="w-4 h-4"></i>
+      Planificación
+      <span class="ml-auto text-[9px] font-bold bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full">Pronto</span>
+    </a>
+
+    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 pb-2 pt-4">Herramientas</p>
+
+    <a href="#" class="nav-item disabled">
+      <i data-lucide="bot" class="w-4 h-4"></i>
+      Agente IA
+      <span class="ml-auto text-[9px] font-bold bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full">Pronto</span>
+    </a>
+
+    {% if request.user.is_staff %}
+    <a href="{% url 'categorias:lista_categorias' %}"
+       class="nav-item {% block nav_categorias %}{% endblock %}">
+      <i data-lucide="tag" class="w-4 h-4"></i>
+      Categorías
+    </a>
+    {% endif %}
+
+  </nav>
+
+  <!-- Usuario en la parte inferior -->
+  <div class="px-4 py-4 border-t border-slate-100">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+        <span class="text-emerald-700 font-bold text-sm">
+          {{ request.user.username|first|upper }}
+        </span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-slate-700 truncate">{{ request.user.username }}</p>
+        <p class="text-xs text-slate-400 truncate">{{ request.user.email|default:"Sin email" }}</p>
+      </div>
+      <a href="{% url 'logout' %}"
+         class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+         title="Cerrar sesión">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </a>
+    </div>
+  </div>
+
+</aside>
+
+
+<!-- ═══════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════ -->
+<div id="main-content">
+
+  <!-- Topbar -->
+  <header class="sticky top-0 z-30 bg-white border-b border-slate-100 px-8 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="font-display text-lg font-bold text-slate-900">
+        {% block page_title %}Dashboard{% endblock %}
+      </h1>
+      <p class="text-xs text-slate-400 font-medium">{% block page_subtitle %}{% endblock %}</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Notificaciones -->
+      <div class="relative">
+        <button class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          {% if notificaciones_count %}
+          <span class="notif-badge">{{ notificaciones_count }}</span>
+          {% endif %}
+        </button>
+      </div>
+
+      <!-- Acceso rápido ingresos -->
+      <a href="{% url 'movimientos:crear_ingreso' %}"
+         class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl
+                bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        Ingreso
+      </a>
+
+      <!-- Acceso rápido egresos -->
+      <a href="{% url 'movimientos:crear_egreso' %}"
+         class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl
+                bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors">
+        <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+        Egreso
+      </a>
+    </div>
+  </header>
+
+  <!-- Contenido de la página -->
+  <main class="p-8">
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+
+<script>
+  lucide.createIcons();
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>
