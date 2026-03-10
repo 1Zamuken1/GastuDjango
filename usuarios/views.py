@@ -9,14 +9,14 @@ def register_view(request):
     Registro de nuevos usuarios. Guarda en usuarios_usuario.
     """
     if request.user.is_authenticated:
-        return redirect('listar_presupuestos')
+        return redirect('dashboard:home')
 
     if request.method == 'POST':
         form = UsuarioCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('listar_presupuestos')
+            return redirect('dashboard:home')
     else:
         form = UsuarioCreationForm()
 
@@ -28,7 +28,7 @@ def login_view(request):
     Login de usuarios. Autentica contra usuarios_usuario.
     """
     if request.user.is_authenticated:
-        return redirect('listar_presupuestos')
+        return redirect('dashboard:home')
 
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -36,7 +36,7 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             next_url = request.POST.get('next') or request.GET.get('next')
-            return redirect(next_url if next_url else 'listar_presupuestos')
+            return redirect(next_url if next_url else 'dashboard:home')
     else:
         form = AuthenticationForm()
 

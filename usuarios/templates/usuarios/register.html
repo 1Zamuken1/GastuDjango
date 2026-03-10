@@ -1,9 +1,13 @@
 {% extends 'landing/base.html' %}
-{% block title %}Iniciar Sesión — GastuApp{% endblock %}
+{% block title %}Registrarse — GastuApp{% endblock %}
 
 {% block extra_head %}
 <style>
-  #navbar { background-color: rgba(255,255,255,0.96) !important; border-bottom: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+  #navbar {
+    background-color: rgba(255,255,255,0.96) !important;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
   .auth-bg {
     background:
       radial-gradient(ellipse 60% 50% at 20% 50%, rgba(16,185,129,0.05) 0%, transparent 60%),
@@ -12,7 +16,9 @@
   }
   .auth-grid {
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+    background-image:
+      linear-gradient(#e2e8f0 1px, transparent 1px),
+      linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
     background-size: 48px 48px;
     opacity: 0.25;
   }
@@ -33,6 +39,70 @@
   .auth-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
   .auth-input.input-error { border-color: #f87171; box-shadow: 0 0 0 3px rgba(248,113,113,0.08); }
   .auth-label { display: block; font-size: 0.8rem; font-weight: 500; color: #475569; margin-bottom: 6px; }
+  .field-error { font-size: 0.75rem; color: #ef4444; margin-top: 5px; }
+
+  /* ── Barra de seguridad ── */
+  .strength-bar-track {
+    height: 4px;
+    border-radius: 99px;
+    background: #e2e8f0;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .strength-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.35s ease;
+  }
+  .strength-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-top: 5px;
+    transition: color 0.3s;
+  }
+
+  /* Criterios de contraseña */
+  .pw-criteria {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+  }
+  .pw-criterion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    color: #94a3b8;
+    transition: color 0.2s;
+  }
+  .pw-criterion.met { color: #10b981; }
+  .pw-criterion .criterion-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .pw-criterion.met .criterion-dot { background: #10b981; }
+
+  /* Coincidencia de contraseñas */
+  .match-indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin-top: 6px;
+    min-height: 16px;
+    transition: color 0.2s;
+  }
 </style>
 {% endblock %}
 
@@ -42,65 +112,174 @@
 
   <div class="relative z-10 w-full max-w-md">
 
+    <!-- Header -->
     <div id="auth-header" class="mb-8 text-center gsap-hidden">
       <a href="{% url 'landing:home' %}" class="text-3xl font-black font-display text-slate-900">
         Gastu<span class="text-emerald-500">App</span>
       </a>
-      <p class="mt-2 text-sm text-slate-400">Bienvenido de vuelta</p>
+      <p class="mt-2 text-sm text-slate-400">Crea tu cuenta gratis</p>
     </div>
 
+    <!-- Card -->
     <div id="auth-card" class="p-8 glass-card gradient-border rounded-2xl gsap-hidden">
-      <h1 class="text-2xl font-bold font-display text-slate-900 mb-7">Iniciar Sesión</h1>
+      <h1 class="text-2xl font-bold font-display text-slate-900 mb-7">Crear cuenta</h1>
 
-      {% if form.errors %}
+      <!-- Errores globales -->
+      {% if form.non_field_errors %}
       <div class="mb-5 p-3.5 rounded-xl flex items-start gap-2.5"
            style="background:rgba(248,113,113,0.07); border:1px solid rgba(248,113,113,0.25);">
         <i data-lucide="alert-circle" class="w-4 h-4 text-red-400 shrink-0 mt-0.5"></i>
-        <span class="text-sm text-red-500">Usuario o contraseña incorrectos.</span>
+        <div class="text-sm text-red-500">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
       </div>
       {% endif %}
 
-      <form method="post" class="space-y-5">
+      <form method="post" class="space-y-5" id="register-form" novalidate>
         {% csrf_token %}
 
-        {% if next %}
-          <input type="hidden" name="next" value="{{ next }}">
-        {% endif %}
-
+        <!-- Username -->
         <div>
           <label class="auth-label" for="id_username">Usuario</label>
-          <input type="text" id="id_username" name="username"
-                 class="auth-input {% if form.errors %}input-error{% endif %}"
-                 placeholder="Tu nombre de usuario"
-                 autocomplete="username" required />
+          <input type="text"
+                 id="id_username"
+                 name="username"
+                 value="{{ form.username.value|default:'' }}"
+                 class="auth-input {% if form.username.errors %}input-error{% endif %}"
+                 placeholder="Elige un nombre de usuario"
+                 autocomplete="username"
+                 maxlength="150"
+                 required />
+          {% if form.username.errors %}
+            <p class="field-error">{{ form.username.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
+        <!-- Email -->
         <div>
-          <label class="auth-label" for="id_password">Contraseña</label>
+          <label class="auth-label" for="id_email">Correo electrónico</label>
+          <input type="email"
+                 id="id_email"
+                 name="email"
+                 value="{{ form.email.value|default:'' }}"
+                 class="auth-input {% if form.email.errors %}input-error{% endif %}"
+                 placeholder="tu@correo.com"
+                 autocomplete="email"
+                 maxlength="254" />
+          {% if form.email.errors %}
+            <p class="field-error">{{ form.email.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Teléfono -->
+        <div>
+          <label class="auth-label" for="id_telefono">
+            Teléfono
+            <span style="color:#94a3b8; font-weight:400;">(opcional)</span>
+          </label>
+          <input type="tel"
+                 id="id_telefono"
+                 name="telefono"
+                 value="{{ form.telefono.value|default:'' }}"
+                 class="auth-input {% if form.telefono.errors %}input-error{% endif %}"
+                 placeholder="Ej: 3001234567"
+                 autocomplete="tel"
+                 maxlength="20"
+                 pattern="[0-9\+\-\s]{7,20}" />
+          {% if form.telefono.errors %}
+            <p class="field-error">{{ form.telefono.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Contraseña + barra de seguridad -->
+        <div>
+          <label class="auth-label" for="id_password1">Contraseña</label>
           <div class="relative">
-            <input type="password" id="id_password" name="password"
-                   class="auth-input {% if form.errors %}input-error{% endif %}"
-                   placeholder="Tu contraseña"
-                   autocomplete="current-password"
-                   style="padding-right:3rem;" required />
-            <button type="button" id="togglePass"
+            <input type="password"
+                   id="id_password1"
+                   name="password1"
+                   class="auth-input {% if form.password1.errors %}input-error{% endif %}"
+                   placeholder="Mínimo 8 caracteres"
+                   autocomplete="new-password"
+                   style="padding-right:3rem;"
+                   required />
+            <button type="button" id="togglePass1"
                     class="absolute p-1 transition-colors -translate-y-1/2 right-3 top-1/2 text-slate-400 hover:text-emerald-500">
-              <i data-lucide="eye" id="eyeIcon" class="w-4 h-4"></i>
+              <i data-lucide="eye" id="eyeIcon1" class="w-4 h-4"></i>
             </button>
           </div>
+
+          <!-- Barra de seguridad -->
+          <div class="strength-bar-track">
+            <div class="strength-bar-fill" id="strength-bar"></div>
+          </div>
+          <p class="strength-label" id="strength-label" style="color:#94a3b8;">Escribe una contraseña</p>
+
+          <!-- Criterios -->
+          <div class="pw-criteria" id="pw-criteria">
+            <div class="pw-criterion" id="c-length">
+              <div class="criterion-dot"></div>
+              Mínimo 8 caracteres
+            </div>
+            <div class="pw-criterion" id="c-upper">
+              <div class="criterion-dot"></div>
+              Al menos una mayúscula
+            </div>
+            <div class="pw-criterion" id="c-number">
+              <div class="criterion-dot"></div>
+              Al menos un número
+            </div>
+            <div class="pw-criterion" id="c-special">
+              <div class="criterion-dot"></div>
+              Al menos un carácter especial (!@#$%...)
+            </div>
+          </div>
+
+          {% if form.password1.errors %}
+            <p class="field-error">{{ form.password1.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
-        <button type="submit"
+        <!-- Confirmar contraseña -->
+        <div>
+          <label class="auth-label" for="id_password2">Confirmar contraseña</label>
+          <div class="relative">
+            <input type="password"
+                   id="id_password2"
+                   name="password2"
+                   class="auth-input {% if form.password2.errors %}input-error{% endif %}"
+                   placeholder="Repite tu contraseña"
+                   autocomplete="new-password"
+                   style="padding-right:3rem;"
+                   required />
+            <button type="button" id="togglePass2"
+                    class="absolute p-1 transition-colors -translate-y-1/2 right-3 top-1/2 text-slate-400 hover:text-emerald-500">
+              <i data-lucide="eye" id="eyeIcon2" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Indicador de coincidencia -->
+          <div class="match-indicator" id="match-indicator" style="color:transparent;">
+            <span id="match-icon"></span>
+            <span id="match-text"></span>
+          </div>
+
+          {% if form.password2.errors %}
+            <p class="field-error">{{ form.password2.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <button type="submit" id="submit-btn"
                 class="flex items-center justify-center w-full gap-2 py-3 mt-1 text-sm btn-emerald">
-          Ingresar
+          Crear cuenta
         </button>
       </form>
 
       <div class="pt-6 text-center border-t mt-7 border-slate-100">
         <p class="text-sm text-slate-400">
-          ¿No tienes cuenta?
-          <a href="{% url 'register' %}" class="ml-1 font-medium transition-colors text-emerald-500 hover:text-emerald-600">
-            Regístrate aquí
+          ¿Ya tienes cuenta?
+          <a href="{% url 'login' %}" class="ml-1 font-medium transition-colors text-emerald-500 hover:text-emerald-600">
+            Inicia sesión
           </a>
         </p>
       </div>
@@ -112,16 +291,95 @@
 
 {% block scripts %}
 <script>
-  gsap.set(['#auth-header','#auth-card'], { y: 22 });
+  // ── Entrada GSAP ──────────────────────────────────────
+  gsap.set(['#auth-header', '#auth-card'], { y: 22 });
   gsap.to('#auth-header', { opacity:1, y:0, duration:0.6, ease:'power3.out', delay:0.15 });
   gsap.to('#auth-card',   { opacity:1, y:0, duration:0.7, ease:'power3.out', delay:0.28 });
 
-  const passInput = document.getElementById('id_password');
-  document.getElementById('togglePass').addEventListener('click', () => {
-    const isPass = passInput.type === 'password';
-    passInput.type = isPass ? 'text' : 'password';
-    document.getElementById('eyeIcon').setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+
+  // ── Toggle visibilidad contraseña ─────────────────────
+  function togglePassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon  = document.getElementById(iconId);
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    icon.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
     lucide.createIcons();
+  }
+  document.getElementById('togglePass1').addEventListener('click', () => togglePassword('id_password1', 'eyeIcon1'));
+  document.getElementById('togglePass2').addEventListener('click', () => togglePassword('id_password2', 'eyeIcon2'));
+
+
+  // ── Barra de seguridad ────────────────────────────────
+  const passInput   = document.getElementById('id_password1');
+  const bar         = document.getElementById('strength-bar');
+  const label       = document.getElementById('strength-label');
+  const pass2       = document.getElementById('id_password2');
+  const matchDiv    = document.getElementById('match-indicator');
+  const matchIcon   = document.getElementById('match-icon');
+  const matchText   = document.getElementById('match-text');
+
+  // Criterios individuales
+  const criteria = {
+    length:  { el: document.getElementById('c-length'),  test: v => v.length >= 8 },
+    upper:   { el: document.getElementById('c-upper'),   test: v => /[A-Z]/.test(v) },
+    number:  { el: document.getElementById('c-number'),  test: v => /[0-9]/.test(v) },
+    special: { el: document.getElementById('c-special'), test: v => /[^A-Za-z0-9]/.test(v) },
+  };
+
+  const levels = [
+    { min: 0,  pct: '0%',   color: '#e2e8f0', text: 'Escribe una contraseña',    labelColor: '#94a3b8' },
+    { min: 1,  pct: '25%',  color: '#f87171', text: 'Muy débil',                 labelColor: '#ef4444' },
+    { min: 2,  pct: '50%',  color: '#fb923c', text: 'Débil',                     labelColor: '#ea580c' },
+    { min: 3,  pct: '75%',  color: '#fbbf24', text: 'Aceptable',                 labelColor: '#d97706' },
+    { min: 4,  pct: '100%', color: '#10b981', text: 'Contraseña segura ✓',       labelColor: '#059669' },
+  ];
+
+  function evaluateStrength(value) {
+    let score = 0;
+    for (const key in criteria) {
+      const met = criteria[key].test(value);
+      criteria[key].el.classList.toggle('met', met);
+      if (met) score++;
+    }
+
+    const level = value.length === 0
+      ? levels[0]
+      : levels[Math.min(score, 4)];
+
+    bar.style.width           = level.pct;
+    bar.style.backgroundColor = level.color;
+    label.textContent         = level.text;
+    label.style.color         = level.labelColor;
+  }
+
+  function checkMatch() {
+    const v1 = passInput.value;
+    const v2 = pass2.value;
+
+    if (!v2) {
+      matchDiv.style.color = 'transparent';
+      matchIcon.textContent = '';
+      matchText.textContent = '';
+      return;
+    }
+
+    if (v1 === v2) {
+      matchDiv.style.color = '#10b981';
+      matchIcon.textContent = '✓';
+      matchText.textContent = 'Las contraseñas coinciden';
+    } else {
+      matchDiv.style.color = '#ef4444';
+      matchIcon.textContent = '✕';
+      matchText.textContent = 'Las contraseñas no coinciden';
+    }
+  }
+
+  passInput.addEventListener('input', () => {
+    evaluateStrength(passInput.value);
+    if (pass2.value) checkMatch();
   });
+
+  pass2.addEventListener('input', checkMatch);
 </script>
 {% endblock %}
