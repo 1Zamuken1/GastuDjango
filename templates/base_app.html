@@ -1,0 +1,801 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}GastuApp{% endblock %}</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            sans:    ['"DM Sans"', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-w:      240px;
+      --sidebar-w-mini: 64px;
+      --topbar-h:       60px;
+      --emerald:        #10b981;
+      --emerald-dark:   #059669;
+      --emerald-light:  #ecfdf5;
+      --slate-900:      #0f172a;
+      --slate-700:      #334155;
+      --slate-500:      #64748b;
+      --slate-300:      #cbd5e1;
+      --slate-100:      #f1f5f9;
+      --slate-50:       #f8fafc;
+      --white:          #ffffff;
+      --border:         #e2e8f0;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: #e8edf2;
+      color: var(--slate-700);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 99px; }
+
+    /* ══════════════════════════════════════
+       TOPBAR
+    ══════════════════════════════════════ */
+    #topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--topbar-h);
+      background: var(--white);
+      border-bottom: 1px solid #d1d9e0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px 0 0;
+      z-index: 50;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    /* Zona izquierda del topbar — logo + toggle */
+    #topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      padding: 0 16px;
+      transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                  min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    body.sidebar-mini #topbar-left {
+      width: var(--sidebar-w-mini);
+      min-width: var(--sidebar-w-mini);
+    }
+
+    /* Logo círculo */
+    .logo-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--emerald) 0%, #34d399 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      shrink: 0;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(16,185,129,0.35);
+    }
+
+    .logo-circle span {
+      color: white;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--slate-900);
+      letter-spacing: -0.03em;
+      margin-left: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: opacity 0.2s, max-width 0.28s;
+      max-width: 120px;
+    }
+
+    body.sidebar-mini .logo-text { opacity: 0; max-width: 0; margin-left: 0; }
+
+    /* Toggle btn */
+    #sidebar-toggle {
+      margin-left: auto;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--slate-500);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    #sidebar-toggle:hover { background: var(--slate-100); color: var(--slate-900); }
+
+    /* Zona derecha del topbar */
+    #topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Page title en topbar */
+    #topbar-center {
+      flex: 1;
+      padding: 0 20px;
+    }
+
+    #topbar-page-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--slate-900);
+    }
+
+    #topbar-page-sub {
+      font-size: 0.72rem;
+      color: var(--slate-500);
+      margin-top: 1px;
+    }
+
+    /* Botón notificaciones */
+    .topbar-btn {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--slate-500);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .topbar-btn:hover { background: var(--slate-50); color: var(--slate-900); border-color: var(--slate-300); }
+
+    .notif-badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #f87171;
+      color: white;
+      font-size: 8px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+    }
+
+    /* Separador */
+    .topbar-sep {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* User button */
+    #user-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px 5px 5px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    #user-btn:hover { background: var(--slate-50); border-color: var(--slate-300); }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--emerald-light), #d1fae5);
+      border: 1.5px solid var(--emerald);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .user-avatar span {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--emerald-dark);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .user-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--slate-700);
+      max-width: 100px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Dropdown */
+    #user-dropdown {
+      position: absolute;
+      top: calc(var(--topbar-h) + 6px);
+      right: 16px;
+      width: 200px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+      padding: 6px;
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+    #user-dropdown.open {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .dropdown-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+    .dropdown-header p:first-child {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--slate-700);
+    }
+    .dropdown-header p:last-child {
+      font-size: 0.7rem;
+      color: var(--slate-500);
+      margin-top: 1px;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--slate-600);
+      text-decoration: none;
+      transition: background 0.13s, color 0.13s;
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .dropdown-item:hover { background: var(--slate-50); color: var(--slate-900); }
+    .dropdown-item.danger { color: #ef4444; }
+    .dropdown-item.danger:hover { background: #fef2f2; color: #dc2626; }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+
+    /* ══════════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════════ */
+    #sidebar {
+      position: fixed;
+      top: var(--topbar-h);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--white);
+      border-right: 1px solid #d1d9e0;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      z-index: 40;
+      overflow: hidden;
+      transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body.sidebar-mini #sidebar { width: var(--sidebar-w-mini); }
+
+    /* Scroll del nav */
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px 8px;
+    }
+
+    /* Label de sección */
+    .nav-section-label {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--slate-500);
+      padding: 6px 10px 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: opacity 0.2s;
+    }
+    body.sidebar-mini .nav-section-label { opacity: 0; }
+
+    /* Nav items — base */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      font-size: 0.845rem;
+      font-weight: 500;
+      color: var(--slate-500);
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+      border-left: 3px solid transparent;
+    }
+
+    /* ── Colores por sección: hover + active ── */
+
+    /* Dashboard & Perfil — Indigo */
+    .nav-item--dashboard:hover,
+    .nav-item--dashboard.active {
+      background: #eef2ff;
+      color: #4338ca;
+      border-left-color: #6366f1;
+      font-weight: 600;
+    }
+
+    /* Ingresos — Emerald */
+    .nav-item--ingresos:hover,
+    .nav-item--ingresos.active {
+      background: #ecfdf5;
+      color: #059669;
+      border-left-color: #10b981;
+      font-weight: 600;
+    }
+
+    /* Egresos — Orange */
+    .nav-item--egresos:hover,
+    .nav-item--egresos.active {
+      background: #fff7ed;
+      color: #c2410c;
+      border-left-color: #f97316;
+      font-weight: 600;
+    }
+
+    /* Ahorros — Amber */
+    .nav-item--ahorros:hover,
+    .nav-item--ahorros.active {
+      background: #fffbeb;
+      color: #b45309;
+      border-left-color: #d97706;
+      font-weight: 600;
+    }
+
+    /* Planificaciones — Blue */
+    .nav-item--planificaciones:hover,
+    .nav-item--planificaciones.active {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-left-color: #3b82f6;
+      font-weight: 600;
+    }
+
+    /* Presupuestos — Violet */
+    .nav-item--presupuestos:hover,
+    .nav-item--presupuestos.active {
+      background: #f5f3ff;
+      color: #5b21b6;
+      border-left-color: #7c3aed;
+      font-weight: 600;
+    }
+
+    /* Agente — Sky */
+    .nav-item--agente:hover,
+    .nav-item--agente.active {
+      background: #f0f9ff;
+      color: #0369a1;
+      border-left-color: #0ea5e9;
+      font-weight: 600;
+    }
+
+    /* Categorías — Admin fallback */
+    .nav-item--categorias:hover,
+    .nav-item--categorias.active {
+      background: #fdf4ff;
+      color: #7e22ce;
+      border-left-color: #a855f7;
+      font-weight: 600;
+    }
+
+    /* Fallback genérico para items sin color propio */
+    .nav-item:not([class*="nav-item--"]):hover {
+      background: var(--slate-100);
+      color: var(--slate-900);
+    }
+
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      color: currentColor;
+    }
+
+    .nav-label {
+      transition: opacity 0.18s, max-width 0.28s;
+      max-width: 160px;
+      overflow: hidden;
+    }
+    body.sidebar-mini .nav-label { opacity: 0; max-width: 0; }
+
+    /* Badge "pronto" */
+    .nav-soon {
+      margin-left: auto;
+      font-size: 8px;
+      font-weight: 700;
+      background: var(--slate-100);
+      color: var(--slate-400);
+      padding: 2px 6px;
+      border-radius: 99px;
+      flex-shrink: 0;
+      transition: opacity 0.18s;
+    }
+    body.sidebar-mini .nav-soon { opacity: 0; }
+
+    .nav-item.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* Tooltip en modo mini */
+    body.sidebar-mini .nav-item::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: calc(var(--sidebar-w-mini) - 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--slate-900);
+      color: white;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 60;
+    }
+    body.sidebar-mini .nav-item:hover::after { opacity: 1; }
+
+
+    /* ══════════════════════════════════════
+       MAIN CONTENT
+    ══════════════════════════════════════ */
+    #app-content {
+      margin-top: var(--topbar-h);
+      margin-left: var(--sidebar-w);
+      min-height: calc(100vh - var(--topbar-h));
+      transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 32px;
+    }
+
+    body.sidebar-mini #app-content { margin-left: var(--sidebar-w-mini); }
+
+
+    /* ══════════════════════════════════════
+       CARDS COMUNES (disponibles globalmente)
+    ══════════════════════════════════════ */
+    .app-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      background: var(--emerald);
+      color: white;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover {
+      background: var(--emerald-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(16,185,129,0.25);
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      background: transparent;
+      color: var(--slate-600);
+      font-weight: 500;
+      font-size: 0.85rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover {
+      background: var(--slate-50);
+      border-color: var(--slate-300);
+      color: var(--slate-900);
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-full">
+
+<!-- ══════════════════════════════════════════
+     TOPBAR
+══════════════════════════════════════════ -->
+<header id="topbar">
+
+  <!-- Logo + toggle -->
+  <div id="topbar-left">
+    <div class="logo-circle">
+      <span>G</span>
+    </div>
+    <span class="logo-text">Gastu</span>
+    <button id="sidebar-toggle" title="Expandir/retraer menú" aria-label="Toggle sidebar">
+      <i data-lucide="panel-left" style="width:16px;height:16px;"></i>
+    </button>
+  </div>
+
+  <!-- Título de la página -->
+  <div id="topbar-center">
+    <p id="topbar-page-title">{% block page_title %}{% endblock %}</p>
+    <p id="topbar-page-sub">{% block page_subtitle %}{% endblock %}</p>
+  </div>
+
+  <!-- Derecha: acciones rápidas + notif + user -->
+  <div id="topbar-right">
+
+    <!-- Notificaciones -->
+    <button class="topbar-btn" id="notif-btn" title="Notificaciones">
+      <i data-lucide="bell" style="width:16px;height:16px;"></i>
+      {% if notificaciones_count %}
+      <span class="notif-badge">{{ notificaciones_count }}</span>
+      {% endif %}
+    </button>
+
+    <div class="topbar-sep"></div>
+
+    <!-- User button -->
+    <div style="position:relative;">
+      <button id="user-btn" aria-label="Menú de usuario">
+        <div class="user-avatar">
+          <span>{{ request.user.username|first|upper }}</span>
+        </div>
+        <span class="user-name">{{ request.user.username }}</span>
+        <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--slate-400);flex-shrink:0;transition:transform 0.2s;" id="user-chevron"></i>
+      </button>
+
+      <!-- Dropdown -->
+      <div id="user-dropdown">
+        <div class="dropdown-header">
+          <p>{{ request.user.username }}</p>
+          <p>{{ request.user.email|default:"Sin email" }}</p>
+        </div>
+        <a href="#" class="dropdown-item">
+          <i data-lucide="user" style="width:14px;height:14px;"></i>
+          Mi perfil
+        </a>
+        <div class="dropdown-divider"></div>
+        <a href="{% url 'logout' %}" class="dropdown-item danger">
+          <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+          Cerrar sesión
+        </a>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════ -->
+<aside id="sidebar">
+  <nav class="sidebar-nav">
+
+    <!-- General -->
+    <p class="nav-section-label">General</p>
+
+    <a href="{% url 'dashboard:home' %}"
+       class="nav-item nav-item--dashboard {% block nav_dashboard %}{% endblock %}"
+       data-tooltip="Dashboard">
+      <i data-lucide="layout-dashboard" class="nav-icon"></i>
+      <span class="nav-label">Dashboard</span>
+    </a>
+
+    <!-- Finanzas -->
+    <p class="nav-section-label" style="margin-top:12px;">Finanzas</p>
+
+    <a href="{% url 'movimientos:lista_ingresos' %}"
+       class="nav-item nav-item--ingresos {% block nav_ingresos %}{% endblock %}"
+       data-tooltip="Ingresos">
+      <i data-lucide="trending-up" class="nav-icon"></i>
+      <span class="nav-label">Ingresos</span>
+    </a>
+
+    <a href="{% url 'movimientos:lista_egresos' %}"
+       class="nav-item nav-item--egresos {% block nav_egresos %}{% endblock %}"
+       data-tooltip="Egresos">
+      <i data-lucide="trending-down" class="nav-icon"></i>
+      <span class="nav-label">Egresos</span>
+    </a>
+
+    <a href="#"
+       class="nav-item nav-item--ahorros disabled"
+       data-tooltip="Ahorros (pronto)">
+      <i data-lucide="piggy-bank" class="nav-icon"></i>
+      <span class="nav-label">Ahorros</span>
+      <span class="nav-soon">Pronto</span>
+    </a>
+
+    <a href="#"
+       class="nav-item nav-item--planificaciones disabled"
+       data-tooltip="Planificaciones (pronto)">
+      <i data-lucide="calendar-range" class="nav-icon"></i>
+      <span class="nav-label">Planificaciones</span>
+      <span class="nav-soon">Pronto</span>
+    </a>
+
+    <a href="{% url 'listar_presupuestos' %}"
+       class="nav-item nav-item--presupuestos {% block nav_presupuestos %}{% endblock %}"
+       data-tooltip="Presupuestos">
+      <i data-lucide="target" class="nav-icon"></i>
+      <span class="nav-label">Presupuestos</span>
+    </a>
+
+    <!-- Herramientas -->
+    <p class="nav-section-label" style="margin-top:12px;">Herramientas</p>
+
+    <a href="#"
+       class="nav-item nav-item--agente disabled"
+       data-tooltip="Agente IA (pronto)">
+      <i data-lucide="bot" class="nav-icon"></i>
+      <span class="nav-label">Agente Financiero</span>
+      <span class="nav-soon">Pronto</span>
+    </a>
+
+    <!-- Cuenta -->
+    <p class="nav-section-label" style="margin-top:12px;">Cuenta</p>
+
+    <a href="#"
+       class="nav-item nav-item--dashboard {% block nav_perfil %}{% endblock %}"
+       data-tooltip="Mi perfil">
+      <i data-lucide="user-circle" class="nav-icon"></i>
+      <span class="nav-label">Mi perfil</span>
+    </a>
+
+    {% if request.user.is_staff %}
+    <a href="{% url 'categorias:lista_categorias' %}"
+       class="nav-item nav-item--categorias {% block nav_categorias %}{% endblock %}"
+       data-tooltip="Categorías (Admin)">
+      <i data-lucide="tag" class="nav-icon"></i>
+      <span class="nav-label">Categorías</span>
+    </a>
+    {% endif %}
+
+  </nav>
+</aside>
+
+
+<!-- ══════════════════════════════════════════
+     CONTENIDO PRINCIPAL
+══════════════════════════════════════════ -->
+<main id="app-content">
+  {% block content %}{% endblock %}
+</main>
+
+
+<!-- ══════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════ -->
+<script>
+  lucide.createIcons();
+
+  // ── Toggle sidebar ──────────────────────────────
+  const body = document.body;
+  const toggle = document.getElementById('sidebar-toggle');
+
+  // Recuperar estado del localStorage
+  if (localStorage.getItem('sidebar-mini') === 'true') {
+    body.classList.add('sidebar-mini');
+  }
+
+  toggle.addEventListener('click', () => {
+    body.classList.toggle('sidebar-mini');
+    localStorage.setItem('sidebar-mini', body.classList.contains('sidebar-mini'));
+  });
+
+
+  // ── Dropdown de usuario ──────────────────────────
+  const userBtn      = document.getElementById('user-btn');
+  const userDropdown = document.getElementById('user-dropdown');
+  const userChevron  = document.getElementById('user-chevron');
+
+  userBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = userDropdown.classList.toggle('open');
+    userChevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+
+  // Cerrar dropdown al hacer click fuera
+  document.addEventListener('click', () => {
+    userDropdown.classList.remove('open');
+    userChevron.style.transform = 'rotate(0deg)';
+  });
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
