@@ -1,27 +1,51 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.forms import AuthenticationForm
+from .forms import UsuarioCreationForm
 
-def login_view(request):
-    return render(request, 'landing/login.html')
 
 def register_view(request):
-    """Vista de registro de nuevos usuarios.
-
-    La plantilla original se encontraba dentro de la aplicación **landing**
-    (landing/templates/landing/register.html). Django buscaba `usuarios/register.html`
-    porque así se especificaba aquí, por eso se producía el error
-    ``TemplateDoesNotExist``.  Para reutilizar el diseño de landing basta con
-    indicar la ruta correcta o, alternativamente, mover el fichero a
-    ``usuarios/templates/usuarios/register.html``.
     """
+    Registro de nuevos usuarios. Guarda en usuarios_usuario.
+    """
+    if request.user.is_authenticated:
+        return redirect('listar_presupuestos')
 
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = UsuarioCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('login')
+            user = form.save()
+            login(request, user)
+            return redirect('listar_presupuestos')
     else:
-        form = UserCreationForm()
+        form = UsuarioCreationForm()
 
-    # renderizamos el HTML de landing en lugar de uno inexistente en usuarios
-    return render(request, 'landing/register.html', {'form': form})
+    return render(request, 'usuarios/register.html', {'form': form})
+
+
+def login_view(request):
+    """
+    Login de usuarios. Autentica contra usuarios_usuario.
+    """
+    if request.user.is_authenticated:
+        return redirect('listar_presupuestos')
+
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            next_url = request.POST.get('next') or request.GET.get('next')
+            return redirect(next_url if next_url else 'listar_presupuestos')
+    else:
+        form = AuthenticationForm()
+
+    return render(request, 'usuarios/login.html', {'form': form})
+
+
+def logout_view(request):
+    """
+    Cierra la sesión y redirige al home.
+    """
+    logout(request)
+    return redirect('landing:home')

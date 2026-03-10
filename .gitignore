@@ -5,6 +5,11 @@ __pycache__/
 *.pyd
 *.sqlite3
 
+# Bytecode — evita conflictos en pull/merge del equipo
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
 # Entorno virtual
 .venv/
 venv/
