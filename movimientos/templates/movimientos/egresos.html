@@ -1,21 +1,52 @@
-{% extends "movimientos/base.html" %}
+{% extends "base_app.html" %}
 
-{% block titulo %}Mis Egresos{% endblock %}
+{% block title %}Egresos — GastuApp{% endblock %}
+{% block nav_egresos %}active{% endblock %}
 
-{% block contenido %}
-<h1>Mis Egresos</h1>
-<a href="{% url 'movimientos:crear_egreso' %}">+ Agregar nuevo egreso</a>
+{% block page_title %}Egresos{% endblock %}
+{% block page_subtitle %}Categorías con movimientos registrados{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h2 class="font-display font-black text-slate-900 text-xl">Mis Egresos</h2>
+  <a href="{% url 'movimientos:crear_egreso' %}" class="btn-primary"
+     style="background:#ef4444;">
+    <i data-lucide="plus" style="width:15px;height:15px;"></i>
+    Agregar egreso
+  </a>
+</div>
 
 {% if categorias %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
     {% for categoria in categorias %}
-        <div>
-            <a href="{% url 'movimientos:detalle_categoria_egreso' categoria_id=categoria.id %}">
-                <h3>{{ categoria.nombre }}</h3>
-                <p>{{ categoria.total_registros }} registro(s)</p>
-            </a>
+    <a href="{% url 'movimientos:detalle_categoria_egreso' categoria_id=categoria.id %}"
+       class="app-card p-5 block hover:-translate-y-1 transition-transform duration-200">
+      <div class="flex items-center justify-between mb-4">
+        <div class="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+          <i data-lucide="trending-down" style="width:16px;height:16px;color:#dc2626;"></i>
         </div>
+        <span class="text-xs font-semibold bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full">
+          Egreso
+        </span>
+      </div>
+      <p class="font-display font-bold text-slate-900 text-base">{{ categoria.nombre }}</p>
+      <p class="text-sm text-slate-400 mt-1">{{ categoria.total_registros }} registro{{ categoria.total_registros|pluralize }}</p>
+    </a>
     {% endfor %}
+  </div>
 {% else %}
-    <p>Aún no has registrado egresos.</p>
+  <div class="app-card p-16 flex flex-col items-center justify-center text-center">
+    <i data-lucide="inbox" style="width:48px;height:48px;color:#cbd5e1;margin-bottom:16px;"></i>
+    <p class="font-display font-bold text-slate-700 text-lg mb-1">Sin egresos registrados</p>
+    <p class="text-slate-400 text-sm mb-6">Comienza registrando tu primer egreso</p>
+    <a href="{% url 'movimientos:crear_egreso' %}" class="btn-primary" style="background:#ef4444;">
+      <i data-lucide="plus" style="width:15px;height:15px;"></i>
+      Registrar primer egreso
+    </a>
+  </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>lucide.createIcons();</script>
 {% endblock %}
