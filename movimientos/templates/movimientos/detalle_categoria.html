@@ -1,31 +1,805 @@
-{% extends "movimientos/base.html" %}
+{% extends 'base_app.html' %}
+{% load static %}
 
-{% block titulo %}{{ categoria.nombre }}{% endblock %}
-
-{% block contenido %}
-<h1>{{ categoria.nombre }}</h1>
-<p>Total acumulado: ${{ total }}</p>
+{% block title %}{{ categoria.nombre }} — GastuApp{% endblock %}
+{% block page_title %}{{ categoria.nombre }}{% endblock %}
+{% block page_subtitle %}
+  {% if tipo == 'INGRESO' %}Ingresos{% else %}Egresos{% endif %}
+  · {{ categoria.nombre }}
+{% endblock %}
 
 {% if tipo == 'INGRESO' %}
-    <a href="{% url 'movimientos:crear_ingreso' %}">+ Agregar nuevo ingreso</a>
-    <a href="{% url 'movimientos:lista_ingresos' %}">← Volver</a>
+  {% block nav_ingresos %}active{% endblock %}
 {% else %}
-    <a href="{% url 'movimientos:crear_egreso' %}">+ Agregar nuevo egreso</a>
-    <a href="{% url 'movimientos:lista_egresos' %}">← Volver</a>
+  {% block nav_egresos %}active{% endblock %}
 {% endif %}
 
-{% if movimientos %}
-    {% for movimiento in movimientos %}
-        <div>
-            <p>${{ movimiento.monto }} — {{ movimiento.fecha_registro|date:"d/m/Y" }}</p>
-            {% if movimiento.descripcion %}
-                <p>{{ movimiento.descripcion }}</p>
-            {% endif %}
-            <a href="{% url 'movimientos:editar_movimiento' movimiento_id=movimiento.id %}">Editar</a> |
-            <a href="{% url 'movimientos:eliminar_movimiento' movimiento_id=movimiento.id %}">Eliminar</a>
+{% block extra_head %}
+<style>
+  /* ── Configuración de Variables Dinámicas ── */
+  :root {
+    --ac:           #10b981;
+    --ac-dark:      #059669;
+    --ac-light:     #ecfdf5;
+    --ac-border:    #a7f3d0;
+    --ac-text:      #065f46;
+    --ac-shadow:    rgba(16, 185, 129, 0.28);
+    --amount-color: #059669;
+  }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: var(--slate-400);
+  }
+  .breadcrumb a {
+    color: var(--slate-500);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+  .breadcrumb a:hover { color: var(--ac); }
+  .breadcrumb svg { width: 12px; height: 12px; }
+  .breadcrumb span { color: var(--slate-700); font-weight: 600; }
+
+  /* ── Tarjeta resumen ── */
+  .resumen-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .resumen-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--ac);
+  }
+  .resumen-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--slate-400);
+    margin-bottom: 4px;
+  }
+  .resumen-total {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 900;
+    font-size: 1.9rem;
+    color: var(--slate-900);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .resumen-count {
+    font-size: 12px;
+    color: var(--slate-400);
+    margin-top: 4px;
+  }
+
+  /* ── Botón de acento ── */
+  .btn-ac {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    background: var(--ac);
+    color: white;
+    font-weight: 600;
+    font-size: 0.84rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-ac:hover {
+    background: var(--ac-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--ac-shadow);
+  }
+  .btn-ac svg { width: 15px; height: 15px; }
+
+  /* ── Tabla de movimientos ── */
+  .mov-table-wrap {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .mov-table-head {
+    display: grid;
+    grid-template-columns: 1fr 140px 100px 80px;
+    gap: 8px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--slate-50);
+  }
+  .mov-th {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--slate-400);
+  }
+  .mov-th--right { text-align: right; }
+
+  .mov-row {
+    display: grid;
+    grid-template-columns: 1fr 140px 100px 80px;
+    gap: 8px;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.14s;
+    align-items: center;
+  }
+  .mov-row:last-child { border-bottom: none; }
+  .mov-row:hover { background: var(--slate-50); }
+
+  .mov-desc {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--slate-700);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mov-sub { font-size: 10px; color: var(--slate-400); margin-top: 1px; }
+  .mov-date { font-size: 12px; color: var(--slate-500); }
+
+  .mov-amount {
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+    color: var(--amount-color);
+  }
+
+  .action-btns {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .action-btn {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--slate-400);
+    transition: background 0.13s, color 0.13s, border-color 0.13s;
+  }
+  .action-btn svg { width: 13px; height: 13px; }
+  .action-btn--edit:hover  { background: #eff6ff; color: #3b82f6; border-color: #bfdbfe; }
+  .action-btn--del:hover   { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 24px;
+    gap: 10px;
+    text-align: center;
+  }
+  .empty-state p { font-size: 13px; color: var(--slate-400); }
+
+  /* ── Modales ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal-box {
+    background: var(--white);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 28px 60px rgba(0,0,0,0.2);
+    transform: translateY(18px) scale(0.97);
+    transition: transform 0.26s cubic-bezier(0.34,1.3,0.64,1);
+  }
+  .modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ac); flex-shrink: 0; }
+  .modal-dot--danger { background: #ef4444; }
+
+  .modal-close {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--slate-400);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.13s;
+  }
+  .modal-close:hover { background: var(--slate-100); color: var(--slate-700); }
+  .modal-close svg { width: 14px; height: 14px; }
+
+  .modal-body  { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-label { font-size: 10px; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.07em; }
+  .field-input {
+    background: var(--slate-50);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 13.5px;
+    color: var(--slate-900);
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .field-input:focus {
+    border-color: var(--ac);
+    box-shadow: 0 0 0 3px rgba(var(--ac), 0.1);
+    background: var(--white);
+  }
+  .field-input.has-error { border-color: #f87171; box-shadow: 0 0 0 3px rgba(248,113,113,0.08); }
+  .field-error { font-size: 11px; color: #ef4444; }
+  .form-error-box {
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: 10px; padding: 10px 13px;
+    font-size: 12px; color: #dc2626; display: none;
+  }
+
+  /* Modal delete */
+  .del-preview {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .del-preview p { font-size: 13px; color: var(--slate-700); }
+  .del-preview strong { font-weight: 600; color: #dc2626; }
+  .del-preview small { font-size: 11px; color: var(--slate-400); }
+
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    background: #dc2626;
+    color: white;
+    font-weight: 600;
+    font-size: 0.84rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .btn-danger:hover { background: #b91c1c; transform: translateY(-1px); }
+  .btn-danger svg { width: 15px; height: 15px; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: white;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transform: translateY(80px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.32s cubic-bezier(0.34,1.3,0.64,1), opacity 0.25s;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast svg  { width: 15px; height: 15px; flex-shrink: 0; }
+  #toast.toast-ok  { background: #059669; }
+  #toast.toast-err { background: #dc2626; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 0.7s linear infinite; }
+
+  @media (max-width: 640px) {
+    .mov-table-head { grid-template-columns: 1fr 80px; }
+    .mov-row        { grid-template-columns: 1fr 80px; }
+    .mov-date       { display: none; }
+    .mov-th:nth-child(3) { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  {% if tipo == 'INGRESO' %}
+    <a href="{% url 'movimientos:lista_ingresos' %}">Ingresos</a>
+  {% else %}
+    <a href="{% url 'movimientos:lista_egresos' %}">Egresos</a>
+  {% endif %}
+  <i data-lucide="chevron-right"></i>
+  <span>{{ categoria.nombre }}</span>
+</div>
+
+<div class="resumen-card">
+  <div>
+    <p class="resumen-label">Total {{ categoria.nombre }}</p>
+    <p class="resumen-total" id="total-display">${{ total|floatformat:0 }}</p>
+    <p class="resumen-count" id="count-display">
+      {{ movimientos|length }} registro{{ movimientos|length|pluralize }}
+    </p>
+  </div>
+  <button class="btn-ac" id="btn-nuevo">
+    <i data-lucide="plus"></i>
+    {% if tipo == 'INGRESO' %}Nuevo ingreso{% else %}Nuevo egreso{% endif %}
+  </button>
+</div>
+
+<div class="mov-table-wrap">
+  {% if movimientos %}
+  <div class="mov-table-head">
+    <span class="mov-th">Descripción</span>
+    <span class="mov-th">Fecha</span>
+    <span class="mov-th mov-th--right">Monto</span>
+    <span class="mov-th mov-th--right">Acciones</span>
+  </div>
+
+  <div id="mov-list">
+  {% for mov in movimientos %}
+  <div class="mov-row" id="row-{{ mov.id }}">
+    <div>
+      <p class="mov-desc">{{ mov.descripcion|default:"Sin descripción" }}</p>
+      <p class="mov-sub">{{ mov.categoria.nombre }}</p>
+    </div>
+    <div class="mov-date">{{ mov.fecha_registro|date:"d/m/Y" }}</div>
+    <div class="mov-amount">
+      {% if tipo == 'INGRESO' %}+{% else %}-{% endif %}${{ mov.monto|floatformat:0 }}
+    </div>
+    <div class="action-btns">
+      <button class="action-btn action-btn--edit js-btn-edit"
+              title="Editar"
+              data-id="{{ mov.id }}"
+              data-desc="{{ mov.descripcion|default:'' }}"
+              data-monto="{{ mov.monto }}"
+              data-cat="{{ mov.categoria.id }}">
+        <i data-lucide="pencil"></i>
+      </button>
+      <button class="action-btn action-btn--del js-btn-del"
+              title="Eliminar"
+              data-id="{{ mov.id }}"
+              data-desc="{{ mov.descripcion|default:'Sin descripción' }}"
+              data-monto-fmt="${{ mov.monto|floatformat:0 }}">
+        <i data-lucide="trash-2"></i>
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" id="mov-list">
+    <i data-lucide="inbox" style="width:44px;height:44px;color:#e2e8f0;"></i>
+    <p style="font-size:15px;font-weight:700;color:var(--slate-700);">Sin registros aún</p>
+    <p>Registra el primer movimiento de esta categoría</p>
+    <button class="btn-ac" onclick="openModal('modal-create')">
+      <i data-lucide="plus"></i> Registrar
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<div class="modal-overlay" id="modal-create" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-header">
+      <p class="modal-title">
+        <span class="modal-dot"></span>
+        {% if tipo == 'INGRESO' %}Nuevo ingreso{% else %}Nuevo egreso{% endif %}
+      </p>
+      <button class="modal-close" onclick="closeModal('modal-create')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <form id="form-create" method="post" action="{% if tipo == 'INGRESO' %}{% url 'movimientos:crear_ingreso' %}{% else %}{% url 'movimientos:crear_egreso' %}{% endif %}">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="field-group">
+          <label class="field-label" for="c-categoria">Categoría</label>
+          <select class="field-input" id="c-categoria" name="categoria" required>
+            {% for cat in todas_categorias %}
+            <option value="{{ cat.id }}" {% if cat.id == categoria.id %}selected{% endif %}>{{ cat.nombre }}</option>
+            {% endfor %}
+          </select>
+          <p class="field-error" id="err-c-categoria"></p>
         </div>
-    {% endfor %}
-{% else %}
-    <p>No hay registros en esta categoría.</p>
-{% endif %}
+        <div class="field-group">
+          <label class="field-label" for="c-monto">Monto</label>
+          <input class="field-input" type="number" id="c-monto" name="monto" min="0.01" step="0.01" required>
+          <p class="field-error" id="err-c-monto"></p>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="c-descripcion">Descripción (opcional)</label>
+          <input class="field-input" type="text" id="c-descripcion" name="descripcion">
+          <p class="field-error" id="err-c-descripcion"></p>
+        </div>
+        <div class="form-error-box" id="c-form-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" onclick="closeModal('modal-create')">Cancelar</button>
+        <button type="submit" class="btn-ac" id="c-submit">Registrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-edit" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-header">
+      <p class="modal-title"><span class="modal-dot"></span>Editar movimiento</p>
+      <button class="modal-close" onclick="closeModal('modal-edit')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <form id="form-edit" method="post">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="field-group">
+          <label class="field-label" for="e-categoria">Categoría</label>
+          <select class="field-input" id="e-categoria" name="categoria" required>
+            {% for cat in todas_categorias %}
+            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="e-monto">Monto</label>
+          <input class="field-input" type="number" id="e-monto" name="monto" min="0.01" step="0.01" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="e-descripcion">Descripción</label>
+          <input class="field-input" type="text" id="e-descripcion" name="descripcion">
+        </div>
+        <div class="form-error-box" id="e-form-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" onclick="closeModal('modal-edit')">Cancelar</button>
+        <button type="submit" class="btn-ac" id="e-submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-delete" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width:380px;">
+    <div class="modal-header">
+      <p class="modal-title"><span class="modal-dot modal-dot--danger"></span>Eliminar</p>
+      <button class="modal-close" onclick="closeModal('modal-delete')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--slate-600);">¿Eliminar este registro?</p>
+      <div class="del-preview">
+        <p><strong id="del-amount"></strong></p>
+        <p id="del-desc"></p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-ghost" onclick="closeModal('modal-delete')">No</button>
+      <button type="button" class="btn-danger" id="d-submit">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><i data-lucide="check-circle"></i><span id="toast-msg"></span></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+lucide.createIcons();
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+const TIPO = '{{ tipo }}';
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function showToast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.className = `show toast-${type}`;
+  document.getElementById('toast-msg').textContent = msg;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Delegación de eventos para botones Editar/Eliminar
+document.addEventListener('click', e => {
+  const btnEdit = e.target.closest('.js-btn-edit');
+  if (btnEdit) {
+    const { id, desc, monto, cat } = btnEdit.dataset;
+    document.getElementById('e-monto').value = monto;
+    document.getElementById('e-descripcion').value = desc;
+    document.getElementById('e-categoria').value = cat;
+    document.getElementById('form-edit').action = `/editar/${id}/`;
+    openModal('modal-edit');
+  }
+
+  const btnDel = e.target.closest('.js-btn-del');
+  if (btnDel) {
+    const { id, desc, montoFmt } = btnDel.dataset;
+    document.getElementById('del-amount').textContent = montoFmt;
+    document.getElementById('del-desc').textContent = desc;
+    window._delId = id;
+    openModal('modal-delete');
+  }
+});
+
+document.getElementById('btn-nuevo').addEventListener('click', () => openModal('modal-create'));
+
+document.getElementById('form-create').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('c-submit');
+  setLoading(btn, true);
+
+  try {
+    const resp = await fetch(this.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF },
+      body: new FormData(this),
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      closeModal('modal-create');
+      showToast(TIPO === 'INGRESO' ? 'Ingreso registrado' : 'Egreso registrado');
+      addRow(data.movimiento);
+      updateTotals(data.total_cat, data.cat_registros);
+    } else {
+      showErrors('c', data.errors);
+    }
+  } catch {
+    showToast('Error de conexión', 'err');
+  }
+
+  setLoading(btn, false, '<i data-lucide="check"></i> Registrar');
+  lucide.createIcons();
+});
+
+
+/* ════════════════════════════════════════════════════════
+   EDITAR
+════════════════════════════════════════════════════════ */
+let _editId = null;
+
+function openEdit(id, desc, monto, catId) {
+  _editId = id;
+  clearForm('e');
+
+  // Pre-poblar con los datos que ya tenemos en el DOM
+  document.getElementById('e-monto').value       = parseFloat(monto);
+  document.getElementById('e-descripcion').value  = desc;
+  const catSel = document.getElementById('e-categoria');
+  if (catSel) catSel.value = catId;
+
+  // Apuntar el form action al endpoint correcto
+  document.getElementById('form-edit').action = `/editar/${id}/`;
+
+  openModal('modal-edit');
+}
+
+document.getElementById('form-edit').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('e-submit');
+  setLoading(btn, true);
+
+  try {
+    const resp = await fetch(this.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF },
+      body: new FormData(this),
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      closeModal('modal-edit');
+      showToast('Movimiento actualizado');
+      updateRow(data.movimiento);
+      updateTotals(data.total_cat, data.cat_registros);
+    } else {
+      showErrors('e', data.errors);
+    }
+  } catch {
+    showToast('Error de conexión', 'err');
+  }
+
+  setLoading(btn, false, '<i data-lucide="save"></i> Guardar cambios');
+  lucide.createIcons();
+});
+
+
+/* ════════════════════════════════════════════════════════
+   ELIMINAR
+════════════════════════════════════════════════════════ */
+let _delId = null;
+
+function openDelete(id, desc, amount) {
+  _delId = id;
+  document.getElementById('del-amount').textContent = amount;
+  document.getElementById('del-desc').textContent   = desc;
+  document.getElementById('del-cat').textContent    = '{{ categoria.nombre }}';
+  openModal('modal-delete');
+}
+
+document.getElementById('d-submit').addEventListener('click', async function() {
+  if (!_delId) return;
+  const btn = this;
+  setLoading(btn, true, '');
+
+  try {
+    const resp = await fetch(`/eliminar/${_delId}/`, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF },
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      closeModal('modal-delete');
+      showToast('Movimiento eliminado');
+      removeRow(data.id);
+      updateTotals(data.total_cat, data.cat_registros);
+    } else {
+      showToast('Error al eliminar', 'err');
+    }
+  } catch {
+    showToast('Error de conexión', 'err');
+  }
+
+  setLoading(btn, false, '<i data-lucide="trash-2"></i> Sí, eliminar');
+  lucide.createIcons();
+  _delId = null;
+});
+
+
+/* ════════════════════════════════════════════════════════
+   DOM HELPERS
+════════════════════════════════════════════════════════ */
+
+function addRow(mov) {
+  const list = document.getElementById('mov-list');
+
+  // Si estaba el empty-state, limpiar y añadir encabezado
+  if (list.classList.contains('empty-state')) {
+    // Reconstruir la estructura de tabla
+    const wrap = list.closest('.mov-table-wrap');
+    wrap.innerHTML = `
+      <div class="mov-table-head">
+        <span class="mov-th">Descripción</span>
+        <span class="mov-th">Fecha</span>
+        <span class="mov-th mov-th--right">Monto</span>
+        <span class="mov-th mov-th--right">Acciones</span>
+      </div>
+      <div id="mov-list"></div>`;
+  }
+
+  const newList = document.getElementById('mov-list');
+  const prefix  = TIPO === 'INGRESO' ? '+' : '-';
+  newList.insertAdjacentHTML('afterbegin', buildRow(mov, prefix));
+  lucide.createIcons();
+}
+
+function updateRow(mov) {
+  const row = document.getElementById(`row-${mov.id}`);
+  if (!row) return;
+  const prefix = TIPO === 'INGRESO' ? '+' : '-';
+  row.outerHTML = buildRow(mov, prefix);
+  lucide.createIcons();
+}
+
+function removeRow(id) {
+  const row = document.getElementById(`row-${id}`);
+  if (row) {
+    row.style.transition = 'opacity 0.25s, transform 0.25s';
+    row.style.opacity = '0';
+    row.style.transform = 'translateX(20px)';
+    setTimeout(() => row.remove(), 260);
+  }
+}
+
+function buildRow(mov, prefix) {
+  // Escapamos las comillas para no romper los atributos HTML data-*
+  const safeDesc = (mov.descripcion || '').replace(/"/g, '&quot;');
+  const fallbackDesc = (mov.descripcion || 'Sin descripción').replace(/"/g, '&quot;');
+
+  return `
+    <div class="mov-row" id="row-${mov.id}">
+      <div>
+        <p class="mov-desc">${mov.descripcion || 'Sin descripción'}</p>
+        <p class="mov-sub">${mov.categoria_nombre}</p>
+      </div>
+      <div class="mov-date">${mov.fecha}</div>
+      <div class="mov-amount">${prefix}${mov.monto_fmt}</div>
+      <div class="action-btns">
+        <button class="action-btn action-btn--edit js-btn-edit"
+                title="Editar"
+                data-id="${mov.id}"
+                data-desc="${safeDesc}"
+                data-monto="${mov.monto}"
+                data-cat="${mov.categoria_id}">
+          <i data-lucide="pencil"></i>
+        </button>
+        <button class="action-btn action-btn--del js-btn-del"
+                title="Eliminar"
+                data-id="${mov.id}"
+                data-desc="${fallbackDesc}"
+                data-monto-fmt="${mov.monto_fmt}">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+function updateTotals(totalFmt, count) {
+  const t = document.getElementById('total-display');
+  if (t) t.textContent = totalFmt;
+  const c = document.getElementById('count-display');
+  if (c) c.textContent = `${count} registro${count !== 1 ? 's' : ''}`;
+}
+</script>
 {% endblock %}
