@@ -121,9 +121,9 @@
   letter-spacing: -0.03em;
   color: var(--slate-900);
 }
-.stat-card__value--positive { color: #059669; }
-.stat-card__value--negative { color: #dc2626; }
-.stat-card__value--muted    { color: #cbd5e1; }
+.stat-card__value--positive { color: var(--slate-900); }  /* negro — igual que el valor base */
+.stat-card__value--negative { color: #dc2626; }           /* rojo — único caso de color semántico */
+.stat-card__value--muted    { color: #cbd5e1; }           /* gris — placeholders próximamente */
 
 .stat-card__note {
   font-size: 11px;
