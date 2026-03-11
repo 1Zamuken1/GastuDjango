@@ -37,7 +37,9 @@
       --emerald-light:  #ecfdf5;
       --slate-900:      #0f172a;
       --slate-700:      #334155;
+      --slate-600:      #475569;
       --slate-500:      #64748b;
+      --slate-400:      #94a3b8;
       --slate-300:      #cbd5e1;
       --slate-100:      #f1f5f9;
       --slate-50:       #f8fafc;
@@ -60,6 +62,7 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 99px; }
+
 
     /* ══════════════════════════════════════
        TOPBAR
@@ -105,11 +108,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      shrink: 0;
       flex-shrink: 0;
       box-shadow: 0 2px 8px rgba(16,185,129,0.35);
     }
-
     .logo-circle span {
       color: white;
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -130,7 +131,6 @@
       transition: opacity 0.2s, max-width 0.28s;
       max-width: 120px;
     }
-
     body.sidebar-mini .logo-text { opacity: 0; max-width: 0; margin-left: 0; }
 
     /* Toggle btn */
@@ -163,21 +163,19 @@
       flex: 1;
       padding: 0 20px;
     }
-
     #topbar-page-title {
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 700;
       font-size: 0.95rem;
       color: var(--slate-900);
     }
-
     #topbar-page-sub {
       font-size: 0.72rem;
       color: var(--slate-500);
       margin-top: 1px;
     }
 
-    /* Botón notificaciones */
+    /* Botón topbar */
     .topbar-btn {
       position: relative;
       width: 36px;
@@ -196,10 +194,8 @@
 
     .notif-badge {
       position: absolute;
-      top: -3px;
-      right: -3px;
-      width: 15px;
-      height: 15px;
+      top: -3px; right: -3px;
+      width: 15px; height: 15px;
       border-radius: 50%;
       background: #f87171;
       color: white;
@@ -211,7 +207,6 @@
       border: 2px solid white;
     }
 
-    /* Separador */
     .topbar-sep {
       width: 1px;
       height: 24px;
@@ -234,8 +229,7 @@
     #user-btn:hover { background: var(--slate-50); border-color: var(--slate-300); }
 
     .user-avatar {
-      width: 28px;
-      height: 28px;
+      width: 28px; height: 28px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--emerald-light), #d1fae5);
       border: 1.5px solid var(--emerald);
@@ -289,16 +283,8 @@
       border-bottom: 1px solid var(--border);
       margin-bottom: 4px;
     }
-    .dropdown-header p:first-child {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--slate-700);
-    }
-    .dropdown-header p:last-child {
-      font-size: 0.7rem;
-      color: var(--slate-500);
-      margin-top: 1px;
-    }
+    .dropdown-header p:first-child { font-size: 0.8rem; font-weight: 600; color: var(--slate-700); }
+    .dropdown-header p:last-child  { font-size: 0.7rem; color: var(--slate-500); margin-top: 1px; }
 
     .dropdown-item {
       display: flex;
@@ -339,12 +325,24 @@
       flex-direction: column;
       z-index: 40;
       overflow: hidden;
-      transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     body.sidebar-mini #sidebar { width: var(--sidebar-w-mini); }
 
-    /* Scroll del nav */
+    /* Overlay para mobile */
+    #sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 39;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+    #sidebar-overlay.show { display: block; }
+
     .sidebar-nav {
       flex: 1;
       overflow-y: auto;
@@ -352,7 +350,6 @@
       padding: 12px 8px;
     }
 
-    /* Label de sección */
     .nav-section-label {
       font-size: 9px;
       font-weight: 800;
@@ -366,7 +363,6 @@
     }
     body.sidebar-mini .nav-section-label { opacity: 0; }
 
-    /* Nav items — base */
     .nav-item {
       display: flex;
       align-items: center;
@@ -379,94 +375,55 @@
       text-decoration: none;
       white-space: nowrap;
       overflow: hidden;
-      transition: background 0.15s, color 0.15s;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
       position: relative;
       border-left: 3px solid transparent;
     }
 
-    /* ── Colores por sección: hover + active ── */
-
-    /* Dashboard & Perfil — Indigo */
+    /* ── Colores por sección ── */
     .nav-item--dashboard:hover,
     .nav-item--dashboard.active {
-      background: #eef2ff;
-      color: #4338ca;
-      border-left-color: #6366f1;
-      font-weight: 600;
+      background: #eef2ff; color: #4338ca;
+      border-left-color: #6366f1; font-weight: 600;
     }
-
-    /* Ingresos — Emerald */
     .nav-item--ingresos:hover,
     .nav-item--ingresos.active {
-      background: #ecfdf5;
-      color: #059669;
-      border-left-color: #10b981;
-      font-weight: 600;
+      background: #ecfdf5; color: #059669;
+      border-left-color: #10b981; font-weight: 600;
     }
-
-    /* Egresos — Orange */
     .nav-item--egresos:hover,
     .nav-item--egresos.active {
-      background: #fff7ed;
-      color: #c2410c;
-      border-left-color: #f97316;
-      font-weight: 600;
+      background: #fff7ed; color: #c2410c;
+      border-left-color: #f97316; font-weight: 600;
     }
-
-    /* Ahorros — Amber */
     .nav-item--ahorros:hover,
     .nav-item--ahorros.active {
-      background: #fffbeb;
-      color: #b45309;
-      border-left-color: #d97706;
-      font-weight: 600;
+      background: #fffbeb; color: #b45309;
+      border-left-color: #d97706; font-weight: 600;
     }
-
-    /* Planificaciones — Blue */
     .nav-item--planificaciones:hover,
     .nav-item--planificaciones.active {
-      background: #eff6ff;
-      color: #1d4ed8;
-      border-left-color: #3b82f6;
-      font-weight: 600;
+      background: #eff6ff; color: #1d4ed8;
+      border-left-color: #3b82f6; font-weight: 600;
     }
-
-    /* Presupuestos — Violet */
     .nav-item--presupuestos:hover,
     .nav-item--presupuestos.active {
-      background: #f5f3ff;
-      color: #5b21b6;
-      border-left-color: #7c3aed;
-      font-weight: 600;
+      background: #f5f3ff; color: #5b21b6;
+      border-left-color: #7c3aed; font-weight: 600;
     }
-
-    /* Agente — Sky */
     .nav-item--agente:hover,
     .nav-item--agente.active {
-      background: #f0f9ff;
-      color: #0369a1;
-      border-left-color: #0ea5e9;
-      font-weight: 600;
+      background: #f0f9ff; color: #0369a1;
+      border-left-color: #0ea5e9; font-weight: 600;
     }
-
-    /* Categorías — Admin fallback */
     .nav-item--categorias:hover,
     .nav-item--categorias.active {
-      background: #fdf4ff;
-      color: #7e22ce;
-      border-left-color: #a855f7;
-      font-weight: 600;
-    }
-
-    /* Fallback genérico para items sin color propio */
-    .nav-item:not([class*="nav-item--"]):hover {
-      background: var(--slate-100);
-      color: var(--slate-900);
+      background: #fdf4ff; color: #7e22ce;
+      border-left-color: #a855f7; font-weight: 600;
     }
 
     .nav-icon {
-      width: 18px;
-      height: 18px;
+      width: 18px; height: 18px;
       flex-shrink: 0;
       color: currentColor;
     }
@@ -478,7 +435,6 @@
     }
     body.sidebar-mini .nav-label { opacity: 0; max-width: 0; }
 
-    /* Badge "pronto" */
     .nav-soon {
       margin-left: auto;
       font-size: 8px;
@@ -492,10 +448,7 @@
     }
     body.sidebar-mini .nav-soon { opacity: 0; }
 
-    .nav-item.disabled {
-      opacity: 0.5;
-      pointer-events: none;
-    }
+    .nav-item.disabled { opacity: 0.5; pointer-events: none; }
 
     /* Tooltip en modo mini */
     body.sidebar-mini .nav-item::after {
@@ -527,14 +480,13 @@
       margin-left: var(--sidebar-w);
       min-height: calc(100vh - var(--topbar-h));
       transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      padding: 32px;
+      padding: 28px 32px;
     }
-
     body.sidebar-mini #app-content { margin-left: var(--sidebar-w-mini); }
 
 
     /* ══════════════════════════════════════
-       CARDS COMUNES (disponibles globalmente)
+       CARDS GLOBALES
     ══════════════════════════════════════ */
     .app-card {
       background: var(--white);
@@ -584,6 +536,57 @@
       border-color: var(--slate-300);
       color: var(--slate-900);
     }
+
+
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
+
+    /* Tablet: sidebar en mini automáticamente */
+    @media (max-width: 1023px) and (min-width: 768px) {
+      body:not(.sidebar-forced-open) #sidebar {
+        width: var(--sidebar-w-mini);
+      }
+      body:not(.sidebar-forced-open) #topbar-left {
+        width: var(--sidebar-w-mini);
+        min-width: var(--sidebar-w-mini);
+      }
+      body:not(.sidebar-forced-open) .logo-text { opacity: 0; max-width: 0; margin-left: 0; }
+      body:not(.sidebar-forced-open) .nav-label { opacity: 0; max-width: 0; }
+      body:not(.sidebar-forced-open) .nav-soon  { opacity: 0; }
+      body:not(.sidebar-forced-open) .nav-section-label { opacity: 0; }
+      body:not(.sidebar-forced-open) #app-content { margin-left: var(--sidebar-w-mini); }
+    }
+
+    /* Mobile: sidebar como overlay */
+    @media (max-width: 767px) {
+      #sidebar {
+        transform: translateX(-100%);
+        width: var(--sidebar-w) !important;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+      }
+      body.sidebar-open #sidebar {
+        transform: translateX(0);
+      }
+      /* Ocultar logo-text y nav-labels cuando el sidebar está cerrado */
+      body:not(.sidebar-open) .logo-text { opacity: 0; }
+
+      #topbar-left {
+        width: 60px !important;
+        min-width: 60px !important;
+      }
+      #app-content {
+        margin-left: 0 !important;
+        padding: 18px 16px;
+      }
+      .user-name { display: none; }
+      #topbar-center { padding: 0 12px; }
+    }
+
+    /* Ajuste de padding en pantallas medianas */
+    @media (max-width: 1280px) and (min-width: 1024px) {
+      #app-content { padding: 24px; }
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -591,12 +594,14 @@
 
 <body class="h-full">
 
+<!-- Overlay mobile -->
+<div id="sidebar-overlay"></div>
+
 <!-- ══════════════════════════════════════════
      TOPBAR
 ══════════════════════════════════════════ -->
 <header id="topbar">
 
-  <!-- Logo + toggle -->
   <div id="topbar-left">
     <div class="logo-circle">
       <span>G</span>
@@ -607,16 +612,12 @@
     </button>
   </div>
 
-  <!-- Título de la página -->
   <div id="topbar-center">
     <p id="topbar-page-title">{% block page_title %}{% endblock %}</p>
     <p id="topbar-page-sub">{% block page_subtitle %}{% endblock %}</p>
   </div>
 
-  <!-- Derecha: acciones rápidas + notif + user -->
   <div id="topbar-right">
-
-    <!-- Notificaciones -->
     <button class="topbar-btn" id="notif-btn" title="Notificaciones">
       <i data-lucide="bell" style="width:16px;height:16px;"></i>
       {% if notificaciones_count %}
@@ -626,17 +627,17 @@
 
     <div class="topbar-sep"></div>
 
-    <!-- User button -->
     <div style="position:relative;">
       <button id="user-btn" aria-label="Menú de usuario">
         <div class="user-avatar">
           <span>{{ request.user.username|first|upper }}</span>
         </div>
         <span class="user-name">{{ request.user.username }}</span>
-        <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--slate-400);flex-shrink:0;transition:transform 0.2s;" id="user-chevron"></i>
+        <i data-lucide="chevron-down"
+           style="width:14px;height:14px;color:var(--slate-400);flex-shrink:0;transition:transform 0.2s;"
+           id="user-chevron"></i>
       </button>
 
-      <!-- Dropdown -->
       <div id="user-dropdown">
         <div class="dropdown-header">
           <p>{{ request.user.username }}</p>
@@ -653,7 +654,6 @@
         </a>
       </div>
     </div>
-
   </div>
 </header>
 
@@ -664,7 +664,6 @@
 <aside id="sidebar">
   <nav class="sidebar-nav">
 
-    <!-- General -->
     <p class="nav-section-label">General</p>
 
     <a href="{% url 'dashboard:home' %}"
@@ -674,7 +673,6 @@
       <span class="nav-label">Dashboard</span>
     </a>
 
-    <!-- Finanzas -->
     <p class="nav-section-label" style="margin-top:12px;">Finanzas</p>
 
     <a href="{% url 'movimientos:lista_ingresos' %}"
@@ -691,17 +689,13 @@
       <span class="nav-label">Egresos</span>
     </a>
 
-    <a href="#"
-       class="nav-item nav-item--ahorros disabled"
-       data-tooltip="Ahorros (pronto)">
+    <a href="#" class="nav-item nav-item--ahorros disabled" data-tooltip="Ahorros (pronto)">
       <i data-lucide="piggy-bank" class="nav-icon"></i>
       <span class="nav-label">Ahorros</span>
       <span class="nav-soon">Pronto</span>
     </a>
 
-    <a href="#"
-       class="nav-item nav-item--planificaciones disabled"
-       data-tooltip="Planificaciones (pronto)">
+    <a href="#" class="nav-item nav-item--planificaciones disabled" data-tooltip="Planificaciones (pronto)">
       <i data-lucide="calendar-range" class="nav-icon"></i>
       <span class="nav-label">Planificaciones</span>
       <span class="nav-soon">Pronto</span>
@@ -714,18 +708,14 @@
       <span class="nav-label">Presupuestos</span>
     </a>
 
-    <!-- Herramientas -->
     <p class="nav-section-label" style="margin-top:12px;">Herramientas</p>
 
-    <a href="#"
-       class="nav-item nav-item--agente disabled"
-       data-tooltip="Agente IA (pronto)">
+    <a href="#" class="nav-item nav-item--agente disabled" data-tooltip="Agente IA (pronto)">
       <i data-lucide="bot" class="nav-icon"></i>
       <span class="nav-label">Agente Financiero</span>
       <span class="nav-soon">Pronto</span>
     </a>
 
-    <!-- Cuenta -->
     <p class="nav-section-label" style="margin-top:12px;">Cuenta</p>
 
     <a href="#"
@@ -762,22 +752,58 @@
 <script>
   lucide.createIcons();
 
-  // ── Toggle sidebar ──────────────────────────────
-  const body = document.body;
-  const toggle = document.getElementById('sidebar-toggle');
+  const body       = document.body;
+  const toggle     = document.getElementById('sidebar-toggle');
+  const overlay    = document.getElementById('sidebar-overlay');
+  const isMobile   = () => window.innerWidth < 768;
+  const isTablet   = () => window.innerWidth >= 768 && window.innerWidth < 1024;
 
-  // Recuperar estado del localStorage
-  if (localStorage.getItem('sidebar-mini') === 'true') {
-    body.classList.add('sidebar-mini');
+  // ── Restaurar estado guardado (solo desktop) ──────────────
+  if (!isMobile() && !isTablet()) {
+    if (localStorage.getItem('sidebar-mini') === 'true') {
+      body.classList.add('sidebar-mini');
+    }
   }
 
+  // ── Toggle sidebar ────────────────────────────────────────
   toggle.addEventListener('click', () => {
-    body.classList.toggle('sidebar-mini');
-    localStorage.setItem('sidebar-mini', body.classList.contains('sidebar-mini'));
+    if (isMobile()) {
+      // Mobile: abrir/cerrar como overlay
+      const open = body.classList.toggle('sidebar-open');
+      overlay.classList.toggle('show', open);
+    } else {
+      // Desktop / Tablet: mini mode
+      body.classList.toggle('sidebar-mini');
+      localStorage.setItem('sidebar-mini', body.classList.contains('sidebar-mini'));
+    }
+  });
+
+  // Cerrar sidebar al click en overlay
+  overlay.addEventListener('click', () => {
+    body.classList.remove('sidebar-open');
+    overlay.classList.remove('show');
+  });
+
+  // Cerrar sidebar mobile al navegar
+  document.querySelectorAll('#sidebar .nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (isMobile()) {
+        body.classList.remove('sidebar-open');
+        overlay.classList.remove('show');
+      }
+    });
+  });
+
+  // Ajustar en resize
+  window.addEventListener('resize', () => {
+    if (!isMobile()) {
+      body.classList.remove('sidebar-open');
+      overlay.classList.remove('show');
+    }
   });
 
 
-  // ── Dropdown de usuario ──────────────────────────
+  // ── Dropdown de usuario ───────────────────────────────────
   const userBtn      = document.getElementById('user-btn');
   const userDropdown = document.getElementById('user-dropdown');
   const userChevron  = document.getElementById('user-chevron');
@@ -788,7 +814,6 @@
     userChevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
   });
 
-  // Cerrar dropdown al hacer click fuera
   document.addEventListener('click', () => {
     userDropdown.classList.remove('open');
     userChevron.style.transform = 'rotate(0deg)';
