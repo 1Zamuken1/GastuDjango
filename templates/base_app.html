@@ -675,14 +675,14 @@
 
     <p class="nav-section-label" style="margin-top:12px;">Finanzas</p>
 
-    <a href="{% url 'movimientos:lista_ingresos' %}"
+    <a href="{% url 'movimientos:ingresos' %}"
        class="nav-item nav-item--ingresos {% block nav_ingresos %}{% endblock %}"
        data-tooltip="Ingresos">
       <i data-lucide="trending-up" class="nav-icon"></i>
       <span class="nav-label">Ingresos</span>
     </a>
 
-    <a href="{% url 'movimientos:lista_egresos' %}"
+    <a href="{% url 'movimientos:egresos' %}"
        class="nav-item nav-item--egresos {% block nav_egresos %}{% endblock %}"
        data-tooltip="Egresos">
       <i data-lucide="trending-down" class="nav-icon"></i>

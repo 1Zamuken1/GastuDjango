@@ -368,9 +368,9 @@
 {% block content %}
 <div class="breadcrumb">
   {% if tipo == 'INGRESO' %}
-    <a href="{% url 'movimientos:lista_ingresos' %}">Ingresos</a>
+    <a href="{% url 'movimientos:ingresos' %}">Ingresos</a>
   {% else %}
-    <a href="{% url 'movimientos:lista_egresos' %}">Egresos</a>
+    <a href="{% url 'movimientos:egresos' %}">Egresos</a>
   {% endif %}
   <i data-lucide="chevron-right"></i>
   <span>{{ categoria.nombre }}</span>

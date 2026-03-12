@@ -147,13 +147,13 @@
 
     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 pb-2 pt-4">Finanzas</p>
 
-    <a href="{% url 'movimientos:lista_ingresos' %}"
+    <a href="{% url 'movimientos:ingresos' %}"
        class="nav-item {% block nav_ingresos %}{% endblock %}">
       <i data-lucide="trending-up" class="w-4 h-4"></i>
       Ingresos
     </a>
 
-    <a href="{% url 'movimientos:lista_egresos' %}"
+    <a href="{% url 'movimientos:egresos' %}"
        class="nav-item {% block nav_egresos %}{% endblock %}">
       <i data-lucide="trending-down" class="w-4 h-4"></i>
       Egresos

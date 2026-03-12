@@ -1,511 +1,493 @@
-{% extends 'base_app.html' %}
-{% load static %}
+{% extends "base_app.html" %}
+
+{% block nav_egresos %}active{% endblock %}
 
 {% block title %}Egresos — GastuApp{% endblock %}
 {% block page_title %}Egresos{% endblock %}
-{% block page_subtitle %}Tus categorías de gasto{% endblock %}
-{% block nav_egresos %}active{% endblock %}
+{% block page_subtitle %}{{ mes_nombre }} {{ anio }}{% endblock %}
 
 {% block extra_head %}
 <style>
-  :root {
-    --ac:        #f97316;
-    --ac-dark:   #ea6c0a;
-    --ac-light:  #fff7ed;
-    --ac-border: #fed7aa;
-    --ac-text:   #7c2d12;
-  }
+/* ── Stat cards ──────────────────────────────────── */
+.stats-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.stat-card { padding: 1.5rem; }
+.stat-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .75rem; }
+.stat-card__label { font-size: .8rem; font-weight: 500; color: var(--slate-500); text-transform: uppercase; letter-spacing: .05em; }
+.stat-card__icon { width: 2.5rem; height: 2.5rem; border-radius: .75rem; display: grid; place-items: center; flex-shrink: 0; }
+.stat-card__icon--egreso { background: #fff7ed; color: #f97316; }
+.stat-card__icon svg { width: 1.2rem; height: 1.2rem; }
+.stat-card__value { font-size: 1.75rem; font-weight: 800; color: var(--slate-900); margin: 0 0 .35rem; }
+.stat-card__delta { display: flex; align-items: center; gap: .25rem; font-size: .8rem; margin: 0; color: var(--slate-500); }
 
-  .mov-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .mov-header h2 {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 800;
-    font-size: 1.35rem;
-    color: var(--slate-900);
-    letter-spacing: -0.02em;
-  }
-  .mov-header p { font-size: 12px; color: var(--slate-400); margin-top: 3px; }
+/* ── Toolbar ─────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .875rem 1.25rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.toolbar__search { flex: 1; min-width: 180px; position: relative; }
+.toolbar__search input {
+  width: 100%;
+  padding: .5rem .75rem .5rem 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: .625rem;
+  font-size: .875rem;
+  color: var(--slate-900);
+  background: #f8fafc;
+  outline: none;
+  transition: border-color .15s;
+  box-sizing: border-box;
+}
+.toolbar__search input:focus { border-color: #f97316; background: #fff; }
+.toolbar__search-icon {
+  position: absolute; left: .65rem; top: 50%; transform: translateY(-50%);
+  color: var(--slate-500); pointer-events: none; width: 1rem; height: 1rem;
+}
 
-  .cat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
-  }
+/* ── Grid de categorías ──────────────────────────── */
+.categorias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.categoria-card {
+  background: #fff; border: 1px solid var(--border); border-radius: .875rem;
+  padding: 1.25rem; cursor: pointer; transition: box-shadow .15s, transform .15s;
+}
+.categoria-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); transform: translateY(-1px); }
+.categoria-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .75rem; }
+.categoria-card__icon { width: 2.25rem; height: 2.25rem; border-radius: .625rem; display: grid; place-items: center; background: #fff7ed; color: #f97316; flex-shrink: 0; }
+.categoria-card__icon svg { width: 1.1rem; height: 1.1rem; }
+.categoria-card__nombre { font-size: .95rem; font-weight: 700; color: var(--slate-900); margin: 0 0 .15rem; }
+.categoria-card__cantidad { font-size: .75rem; color: var(--slate-500); margin: 0; }
+.categoria-card__monto { font-size: 1.4rem; font-weight: 800; color: var(--slate-900); margin: 0 0 .5rem; }
+.progress-bar { height: 4px; background: #f1f5f9; border-radius: 9999px; margin: .5rem 0; overflow: hidden; }
+.progress-bar__fill { height: 100%; background: #f97316; border-radius: 9999px; transition: width .4s ease; }
+.categoria-card__footer { font-size: .75rem; color: var(--slate-500); display: flex; align-items: center; gap: .3rem; margin: 0; }
+.categoria-card__footer svg { width: .8rem; height: .8rem; }
+.grid-empty { grid-column: 1/-1; text-align: center; padding: 3rem 1rem; color: var(--slate-500); font-size: .9rem; }
 
-  .cat-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-    text-decoration: none;
-    display: block;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s;
-  }
-  .cat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--ac);
-    border-radius: 14px 14px 0 0;
-  }
-  .cat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 14px 32px rgba(249,115,22,0.13);
-    border-color: var(--ac-border);
-  }
+/* ── Tabla global ────────────────────────────────── */
+.table-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.table-header__title { font-size: 1rem; font-weight: 700; color: var(--slate-900); margin: 0; }
+.table-wrapper { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { padding: .75rem 1.5rem; text-align: left; font-size: .75rem; font-weight: 600; color: var(--slate-500); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+.data-table td { padding: 1rem 1.5rem; font-size: .875rem; color: var(--slate-700); border-bottom: 1px solid var(--border); }
+.data-table tbody tr:hover { background: #f8fafc; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+.table-empty { text-align: center; color: var(--slate-500); padding: 2rem !important; }
+.table-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+.btn-icon { width: 2rem; height: 2rem; border-radius: .5rem; border: 1px solid var(--border); background: white; color: var(--slate-500); cursor: pointer; display: grid; place-items: center; transition: all .15s; }
+.btn-icon:hover { background: #f1f5f9; color: var(--slate-900); }
+.btn-icon.btn-eliminar:hover { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
+.btn-icon:disabled { opacity: .4; cursor: not-allowed; }
+.monto { font-weight: 600; font-variant-numeric: tabular-nums; }
+.monto--egreso { color: #f97316; }
+.text-muted { color: var(--slate-500); }
 
-  .cat-card__icon {
-    width: 36px; height: 36px;
-    border-radius: 10px;
-    background: var(--ac-light);
-    color: var(--ac-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-  }
-  .cat-card__icon svg { width: 16px; height: 16px; }
+/* ── Modal ───────────────────────────────────────── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: grid; place-items: center; z-index: 1000; padding: 1rem; }
+.modal-overlay[hidden] { display: none; }
+.modal-overlay--wide { align-items: flex-start; padding: 2rem; }
+.modal { background: #fff; border-radius: 1rem; width: min(480px, 95vw); box-shadow: 0 20px 60px rgba(0,0,0,.18); animation: modal-in .18s ease; }
+.modal--lg { width: min(680px, 95vw); max-height: 85vh; display: flex; flex-direction: column; }
+@keyframes modal-in { from { opacity:0; transform:scale(.97) translateY(6px); } to { opacity:1; transform:none; } }
+.modal__header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.modal__title { font-size: 1.05rem; font-weight: 700; color: var(--slate-900); margin: 0; }
+.modal__subtitle { font-size: .8rem; color: var(--slate-500); display: block; margin-top: .15rem; }
+.modal__close { width: 2rem; height: 2rem; border-radius: .5rem; border: 1px solid var(--border); background: #fff; color: var(--slate-500); cursor: pointer; display: grid; place-items: center; flex-shrink: 0; }
+.modal__close:hover { background: #f1f5f9; }
+.modal__body { padding: 1.5rem; }
+.modal__body--flush { padding: 0; overflow-y: auto; flex: 1; }
+.modal__footer { display: flex; justify-content: flex-end; gap: .75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border); }
+.modal__footer--pagination { justify-content: space-between; }
 
-  .cat-badge {
-    position: absolute;
-    top: 14px; right: 14px;
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 3px 8px;
-    border-radius: 99px;
-    background: var(--ac-light);
-    color: var(--ac-text);
-    border: 1px solid var(--ac-border);
-  }
+/* ── Form ────────────────────────────────────────── */
+.form-group { margin-bottom: 1rem; }
+.form-label { display: block; font-size: .8rem; font-weight: 600; color: var(--slate-700); margin-bottom: .35rem; }
+.form-control { width: 100%; padding: .55rem .75rem; border: 1px solid var(--border); border-radius: .5rem; font-size: .875rem; color: var(--slate-900); outline: none; transition: border-color .15s; box-sizing: border-box; background: #fff; }
+.form-control:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.12); }
+.form-error { font-size: .78rem; color: #ef4444; margin-top: .3rem; display: block; }
 
-  .cat-card__name {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--slate-900);
-    margin-bottom: 4px;
-  }
-  .cat-card__meta { font-size: 12px; color: var(--slate-400); }
+/* ── Paginación ──────────────────────────────────── */
+.pagination-info { font-size: .8rem; color: var(--slate-500); }
+.pagination-controls { display: flex; align-items: center; gap: .75rem; font-size: .875rem; color: var(--slate-700); }
 
-  .btn-ac {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    background: var(--ac);
-    color: white;
-    font-weight: 600;
-    font-size: 0.84rem;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
-  }
-  .btn-ac:hover {
-    background: var(--ac-dark);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(249,115,22,0.3);
-  }
-  .btn-ac svg { width: 15px; height: 15px; }
+.btn-primary--egreso { background: #f97316; color: #fff; padding: .5rem 1rem; border-radius: .625rem; border: none; font-size: .875rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: .4rem; transition: background .15s; }
+.btn-primary--egreso:hover { background: #ea6a0a; }
 
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 72px 24px;
-    text-align: center;
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    gap: 10px;
-  }
-  .empty-state p { font-size: 13px; color: var(--slate-400); }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(15,23,42,0.55);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.22s ease;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: auto; }
-
-  .modal-box {
-    background: var(--white);
-    border-radius: 18px;
-    width: 100%;
-    max-width: 440px;
-    box-shadow: 0 28px 60px rgba(0,0,0,0.2);
-    transform: translateY(18px) scale(0.97);
-    transition: transform 0.26s cubic-bezier(0.34,1.3,0.64,1);
-  }
-  .modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
-
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 22px 14px;
-    border-bottom: 1px solid var(--border);
-  }
-  .modal-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--slate-900);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .modal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ac); flex-shrink: 0; }
-
-  .modal-close {
-    width: 28px; height: 28px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--slate-400);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.13s, color 0.13s;
-  }
-  .modal-close:hover { background: var(--slate-100); color: var(--slate-700); }
-  .modal-close svg { width: 14px; height: 14px; }
-
-  .modal-body  { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
-  .modal-footer {
-    padding: 14px 22px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .field-group { display: flex; flex-direction: column; gap: 5px; }
-  .field-label { font-size: 10px; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.07em; }
-  .field-input {
-    background: var(--slate-50);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 13px;
-    font-size: 13.5px;
-    color: var(--slate-900);
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    width: 100%;
-    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-  }
-  .field-input:focus {
-    border-color: var(--ac);
-    box-shadow: 0 0 0 3px rgba(249,115,22,0.1);
-    background: var(--white);
-  }
-  .field-input.has-error { border-color: #f87171; box-shadow: 0 0 0 3px rgba(248,113,113,0.08); }
-  .field-error { font-size: 11px; color: #ef4444; }
-
-  .form-error-box {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 10px;
-    padding: 10px 13px;
-    font-size: 12px;
-    color: #dc2626;
-    display: none;
-  }
-
-  #toast {
-    position: fixed;
-    bottom: 24px; right: 24px;
-    padding: 10px 18px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 500;
-    color: white;
-    z-index: 999;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transform: translateY(80px);
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.32s cubic-bezier(0.34,1.3,0.64,1), opacity 0.25s;
-  }
-  #toast.show { transform: translateY(0); opacity: 1; }
-  #toast svg  { width: 15px; height: 15px; flex-shrink: 0; }
-  #toast.toast-ok  { background: #059669; }
-  #toast.toast-err { background: #dc2626; }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spin { animation: spin 0.7s linear infinite; }
+/* ── Toast ───────────────────────────────────────── */
+.toast { padding: .75rem 1.1rem; border-radius: .625rem; font-size: .875rem; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,.12); animation: toast-in .2s ease; max-width: 320px; }
+.toast--ok { background: #fff7ed; color: #065f46; border: 1px solid #a7f3d0; }
+.toast--error { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+@keyframes toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 </style>
 {% endblock %}
 
-
 {% block content %}
-
-<div class="mov-header">
-  <div>
-    <h2>Mis Egresos</h2>
-    <p>Haz clic en una categoría para ver sus movimientos</p>
+<div class="stats-hero">
+  <div class="app-card stat-card">
+    <div class="stat-card__header">
+      <span class="stat-card__label">Total egresos</span>
+      <div class="stat-card__icon stat-card__icon--egreso">
+        <i data-lucide="trending-down"></i>
+      </div>
+    </div>
+    <p class="stat-card__value font-display">${{ total_mes|floatformat:0 }}</p>
+    <p class="stat-card__delta">{{ mes_nombre }} {{ anio }}</p>
   </div>
-  <button class="btn-ac" id="btn-nuevo">
-    <i data-lucide="plus"></i>
-    Nuevo egreso
+
+  <div class="app-card stat-card">
+    <div class="stat-card__header">
+      <span class="stat-card__label">Registros</span>
+      <div class="stat-card__icon" style="background:#eef2ff;color:#6366f1;">
+        <i data-lucide="list"></i>
+      </div>
+    </div>
+    <p class="stat-card__value font-display">{{ cantidad_mes }}</p>
+    <p class="stat-card__delta">movimientos este mes</p>
+  </div>
+
+  <div class="app-card stat-card">
+    <div class="stat-card__header">
+      <span class="stat-card__label">Promedio</span>
+      <div class="stat-card__icon" style="background:#f5f3ff;color:#7c3aed;">
+        <i data-lucide="bar-chart-2"></i>
+      </div>
+    </div>
+    <p class="stat-card__value font-display">${{ promedio_mes|floatformat:0 }}</p>
+    <p class="stat-card__delta">por registro</p>
+  </div>
+</div>
+
+<div class="app-card toolbar">
+  <div class="toolbar__search">
+    <svg class="toolbar__search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="buscador" placeholder="Buscar categoría...">
+  </div>
+  <button class="btn-primary--egreso" id="btn-nuevo">
+    <i data-lucide="plus"></i> Nuevo egreso
   </button>
 </div>
 
-
-{% if categorias %}
-<div class="cat-grid" id="cat-grid">
-  {% for cat in categorias %}
-  <a href="{% url 'movimientos:detalle_categoria_egreso' categoria_id=cat.id %}"
-     class="cat-card"
-     data-cat-id="{{ cat.id }}">
-    <div class="cat-card__icon"><i data-lucide="trending-down"></i></div>
-    <span class="cat-badge">Egreso</span>
-    <p class="cat-card__name">{{ cat.nombre }}</p>
-    <p class="cat-card__meta" id="meta-{{ cat.id }}">
-      {{ cat.total_registros }} registro{{ cat.total_registros|pluralize }}
-    </p>
-  </a>
+<div class="categorias-grid" id="grid-categorias">
+  {% for item in categorias_con_totales %}
+  <div class="categoria-card"
+       data-categoria-id="{{ item.categoria.id }}"
+       data-search-text="{{ item.categoria.nombre|lower }}">
+    <div class="categoria-card__header">
+      <div>
+        <p class="categoria-card__nombre">{{ item.categoria.nombre }}</p>
+        <p class="categoria-card__cantidad">{{ item.cantidad }} registro{{ item.cantidad|pluralize }}</p>
+      </div>
+      <div class="categoria-card__icon">
+        <i data-lucide="folder"></i>
+      </div>
+    </div>
+    <p class="categoria-card__monto font-display">${{ item.total|floatformat:0 }}</p>
+    <div class="progress-bar">
+      <div class="progress-bar__fill" data-porcentaje="{{ item.porcentaje }}"></div>
+    </div>
+    <div class="categoria-card__footer">
+      <i data-lucide="clock"></i>
+      Último: {{ item.ultimo_registro|date:"d M Y" }}
+    </div>
+  </div>
+  {% empty %}
+  <div class="grid-empty">Sin egresos registrados en {{ mes_nombre }} {{ anio }}</div>
   {% endfor %}
 </div>
 
-{% else %}
-<div class="empty-state" id="cat-grid">
-  <i data-lucide="inbox" style="width:48px;height:48px;color:#e2e8f0;"></i>
-  <p style="font-size:16px;font-weight:700;color:var(--slate-700);">Sin egresos registrados</p>
-  <p>Registra tu primer egreso para empezar</p>
-  <button class="btn-ac" onclick="openModal('modal-create')">
-    <i data-lucide="plus"></i> Registrar primer egreso
-  </button>
-</div>
-{% endif %}
-
-
-{# ── Modal: Nuevo Egreso ──────────────────────────────────── #}
-<div class="modal-overlay" id="modal-create" role="dialog" aria-modal="true">
-  <div class="modal-box">
-
-    <div class="modal-header">
-      <p class="modal-title">
-        <span class="modal-dot"></span>
-        Nuevo Egreso
-      </p>
-      <button class="modal-close" onclick="closeModal('modal-create')">
+<div class="modal-overlay" id="modal-movimiento" hidden>
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title font-display" id="modal-titulo">Nuevo egreso</h2>
+      <button class="modal__close" id="btn-cerrar-modal" aria-label="Cerrar">
         <i data-lucide="x"></i>
       </button>
     </div>
-
-    <form id="form-create" method="post" action="{% url 'movimientos:crear_egreso' %}">
+    <form id="form-movimiento" novalidate>
       {% csrf_token %}
       <input type="hidden" name="tipo" value="EGRESO">
-
-      <div class="modal-body">
-
-        <div class="field-group">
-          <label class="field-label" for="c-categoria">Categoría</label>
-          <select class="field-input" id="c-categoria" name="categoria" required>
-            <option value="">— Selecciona una categoría —</option>
-            {% for cat in todas_categorias %}
+      <div class="modal__body">
+        <div class="form-group">
+          <label class="form-label" for="campo-descripcion">Descripción</label>
+          <input class="form-control" type="text" id="campo-descripcion" name="descripcion" placeholder="Descripción del egreso" maxlength="255">
+          <span class="form-error" id="error-descripcion"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="campo-monto">Monto</label>
+          <input class="form-control" type="number" id="campo-monto" name="monto" placeholder="0.00" step="0.01" min="0.01">
+          <span class="form-error" id="error-monto"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="campo-fecha">Fecha</label>
+          <input class="form-control" type="date" id="campo-fecha" name="fecha_registro">
+          <span class="form-error" id="error-fecha_registro"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="campo-categoria">Categoría</label>
+          <select class="form-control" id="campo-categoria" name="categoria">
+            <option value="">Seleccionar categoría</option>
+            {% for cat in categorias_disponibles %}
             <option value="{{ cat.id }}">{{ cat.nombre }}</option>
             {% endfor %}
           </select>
-          <p class="field-error" id="err-c-categoria"></p>
+          <span class="form-error" id="error-categoria"></span>
         </div>
-
-        <div class="field-group">
-          <label class="field-label" for="c-monto">Monto</label>
-          <input class="field-input" type="number" id="c-monto" name="monto"
-                 min="0.01" step="0.01" placeholder="Ej: 150000" required>
-          <p class="field-error" id="err-c-monto"></p>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label" for="c-descripcion">
-            Descripción <span style="font-weight:400;color:var(--slate-400);">(opcional)</span>
-          </label>
-          <input class="field-input" type="text" id="c-descripcion" name="descripcion"
-                 maxlength="255" placeholder="Ej: Mercado semanal">
-          <p class="field-error" id="err-c-descripcion"></p>
-        </div>
-
-        <div class="form-error-box" id="c-form-error"></div>
-
       </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn-ghost" onclick="closeModal('modal-create')">Cancelar</button>
-        <button type="submit" class="btn-ac" id="c-submit">
-          <i data-lucide="check"></i>
-          Registrar
-        </button>
+      <div class="modal__footer">
+        <button type="button" class="btn-ghost" id="btn-cancelar-modal">Cancelar</button>
+        <button type="submit" class="btn-primary--egreso">Guardar</button>
       </div>
     </form>
-
   </div>
 </div>
 
-<div id="toast"><i data-lucide="check-circle"></i><span id="toast-msg"></span></div>
+<div class="modal-overlay modal-overlay--wide" id="modal-registros" hidden>
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <div>
+        <h2 class="modal__title font-display" id="modal-registros-titulo"></h2>
+        <span class="modal__subtitle" id="modal-registros-subtitulo"></span>
+      </div>
+      <button class="modal__close" id="btn-cerrar-registros" aria-label="Cerrar">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="modal__body modal__body--flush">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Descripción</th>
+            <th>Fecha</th>
+            <th>Monto</th>
+            <th style="width:80px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-registros-body"></tbody>
+      </table>
+    </div>
+    <div class="modal__footer modal__footer--pagination">
+      <span class="pagination-info" id="pagination-info"></span>
+      <div class="pagination-controls">
+        <button class="btn-icon" id="btn-pag-anterior" disabled><i data-lucide="chevron-left"></i></button>
+        <span id="pagination-pagina"></span>
+        <button class="btn-icon" id="btn-pag-siguiente"><i data-lucide="chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<div id="toast-container" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;"></div>
 {% endblock %}
-
 
 {% block scripts %}
 <script>
-lucide.createIcons();
+'use strict';
 
-const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+const URL_GUARDAR   = "{% url 'movimientos:guardar_movimiento' %}";
+const URL_EDITAR    = "{% url 'movimientos:editar_movimiento' pk=0 %}".replace('/0/', '/');
+const URL_ELIMINAR  = "{% url 'movimientos:eliminar_movimiento' pk=0 %}".replace('/0/', '/');
+const URL_REGISTROS = "{% url 'movimientos:registros_por_categoria' %}";
+const CSRF_TOKEN    = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-let _toastTimer;
-function showToast(msg, type = 'ok') {
-  const t = document.getElementById('toast');
-  t.className = `show toast-${type}`;
-  document.getElementById('toast-msg').textContent = msg;
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+let movimientoEditandoId = null;
+let categoriaActualId    = null;
+let paginaActual         = 1;
+
+const modalMovimiento    = document.getElementById('modal-movimiento');
+const modalRegistros     = document.getElementById('modal-registros');
+const formMovimiento     = document.getElementById('form-movimiento');
+const tablaRegistrosBody = document.getElementById('tabla-registros-body');
+
+/* Toast */
+function mostrarToast(msg, tipo = 'ok') {
+  const t = document.createElement('div');
+  t.className = `toast toast--${tipo}`;
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3200);
 }
 
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-  document.body.style.overflow = 'hidden';
+/* Errores */
+function limpiarErrores() {
+  document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+  document.querySelectorAll('.form-control').forEach(el => el.style.borderColor = '');
 }
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-  document.body.style.overflow = '';
-}
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape')
-    document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
-});
-document.querySelectorAll('.modal-overlay').forEach(o =>
-  o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); })
-);
-
-document.getElementById('btn-nuevo').addEventListener('click', () => {
-  clearForm('c');
-  openModal('modal-create');
-});
-
-function clearForm(prefix) {
-  ['categoria','monto','descripcion'].forEach(f => {
-    const el = document.getElementById(`${prefix}-${f}`);
-    if (el) { el.value = ''; el.classList.remove('has-error'); }
-    const err = document.getElementById(`err-${prefix}-${f}`);
-    if (err) err.textContent = '';
+function mostrarErrores(errors) {
+  Object.entries(errors).forEach(([campo, msgs]) => {
+    const el = document.getElementById(`error-${campo}`);
+    if (el) el.textContent = Array.isArray(msgs) ? msgs[0] : msgs;
+    const inp = document.querySelector(`[name="${campo}"]`);
+    if (inp) inp.style.borderColor = '#ef4444';
   });
-  const box = document.getElementById(`${prefix}-form-error`);
-  if (box) { box.style.display = 'none'; box.textContent = ''; }
 }
 
-function showErrors(prefix, errors) {
-  const map = {
-    categoria:   `err-${prefix}-categoria`,
-    monto:       `err-${prefix}-monto`,
-    descripcion: `err-${prefix}-descripcion`,
-  };
-  let hasField = false;
-  for (const [field, msgs] of Object.entries(errors)) {
-    if (map[field]) {
-      document.getElementById(map[field]).textContent = msgs.join(', ');
-      const inp = document.getElementById(`${prefix}-${field}`);
-      if (inp) inp.classList.add('has-error');
-      hasField = true;
-    }
-  }
-  if (!hasField || errors.__all__) {
-    const box = document.getElementById(`${prefix}-form-error`);
-    box.textContent = errors.__all__ ? errors.__all__.join(' ') : 'Error al guardar.';
-    box.style.display = 'block';
-  }
+/* Modal CRUD */
+function abrirModalNuevo() {
+  movimientoEditandoId = null;
+  document.getElementById('modal-titulo').textContent = 'Nuevo egreso';
+  formMovimiento.reset();
+  limpiarErrores();
+  document.getElementById('campo-fecha').value = new Date().toISOString().split('T')[0];
+  modalMovimiento.removeAttribute('hidden');
+}
+function abrirModalEditar(id, descripcion, monto, fechaRaw, categoriaId) {
+  movimientoEditandoId = id;
+  document.getElementById('modal-titulo').textContent = 'Editar egreso';
+  document.getElementById('campo-descripcion').value = descripcion;
+  document.getElementById('campo-monto').value = monto;
+  document.getElementById('campo-fecha').value = fechaRaw;
+  document.getElementById('campo-categoria').value = categoriaId;
+  limpiarErrores();
+  modalMovimiento.removeAttribute('hidden');
+}
+function cerrarModalMovimiento() {
+  modalMovimiento.setAttribute('hidden', '');
+  formMovimiento.reset();
+  limpiarErrores();
 }
 
-document.getElementById('form-create').addEventListener('submit', async function(e) {
+/* Submit form */
+formMovimiento.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const btn = document.getElementById('c-submit');
-  setLoading(btn, true);
-
-  try {
-    const resp = await fetch(this.action, {
-      method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF },
-      body: new FormData(this),
-    });
-    const data = await resp.json();
-
-    if (data.ok) {
-      closeModal('modal-create');
-      showToast('Egreso registrado correctamente');
-      updateGrid(data);
-    } else {
-      showErrors('c', data.errors);
-    }
-  } catch {
-    showToast('Error de conexión', 'err');
+  limpiarErrores();
+  const url = movimientoEditandoId ? `${URL_EDITAR}${movimientoEditandoId}/` : URL_GUARDAR;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF_TOKEN },
+    body: new FormData(formMovimiento),
+  });
+  const data = await res.json();
+  if (data.ok) {
+    cerrarModalMovimiento();
+    mostrarToast(movimientoEditandoId ? 'Egreso actualizado.' : 'Egreso registrado.', 'ok');
+    if (categoriaActualId) cargarRegistros(categoriaActualId, paginaActual);
+  } else {
+    mostrarErrores(data.errors || {});
+    mostrarToast('Revisa los campos del formulario.', 'error');
   }
-
-  setLoading(btn, false);
 });
 
-function setLoading(btn, on) {
-  btn.disabled = on;
-  btn.innerHTML = on
-    ? '<i data-lucide="loader-2" class="spin"></i> Guardando...'
-    : '<i data-lucide="check"></i> Registrar';
-  lucide.createIcons();
-}
-
-function updateGrid(data) {
-  const grid = document.getElementById('cat-grid');
-  if (grid.classList.contains('empty-state')) {
-    grid.className = 'cat-grid';
-    grid.innerHTML = '';
-  }
-  if (data.cat_nueva) {
-    grid.insertAdjacentHTML('afterbegin', buildCard(data.cat_id, data.cat_nombre, data.cat_registros));
-    lucide.createIcons();
+/* Eliminar */
+async function eliminarMovimiento(id) {
+  if (!confirm('¿Eliminar este egreso?')) return;
+  const res = await fetch(`${URL_ELIMINAR}${id}/`, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF_TOKEN },
+  });
+  const data = await res.json();
+  if (data.ok) {
+    tablaRegistrosBody.querySelector(`tr[data-id="${id}"]`)?.remove();
+    mostrarToast('Egreso eliminado.', 'ok');
   } else {
-    const meta = document.getElementById(`meta-${data.cat_id}`);
-    if (meta) {
-      const n = data.cat_registros;
-      meta.textContent = `${n} registro${n !== 1 ? 's' : ''}`;
-    }
+    mostrarToast('No se pudo eliminar.', 'error');
   }
 }
 
-function buildCard(id, nombre, registros) {
-  const n = parseInt(registros);
-  return `
-    <a href="/egresos/categoria/${id}/" class="cat-card" data-cat-id="${id}">
-      <div class="cat-card__icon"><i data-lucide="trending-down"></i></div>
-      <span class="cat-badge">Egreso</span>
-      <p class="cat-card__name">${nombre}</p>
-      <p class="cat-card__meta" id="meta-${id}">${n} registro${n !== 1 ? 's' : ''}</p>
-    </a>`;
+/* Modal registros */
+document.querySelectorAll('.categoria-card').forEach(card => {
+  card.addEventListener('click', () => {
+    categoriaActualId = card.dataset.categoriaId;
+    paginaActual = 1;
+    document.getElementById('modal-registros-titulo').textContent =
+      card.querySelector('.categoria-card__nombre').textContent;
+    modalRegistros.removeAttribute('hidden');
+    cargarRegistros(categoriaActualId, paginaActual);
+  });
+});
+
+async function cargarRegistros(categoriaId, pagina) {
+  const res = await fetch(`${URL_REGISTROS}?categoria=${categoriaId}&page=${pagina}`, {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+  });
+  const data = await res.json();
+
+  tablaRegistrosBody.innerHTML = data.registros.length
+    ? data.registros.map(r => `
+        <tr data-id="${r.id}">
+          <td>${r.descripcion}</td>
+          <td class="text-muted">${r.fecha}</td>
+          <td><span class="monto monto--egreso">${r.monto_fmt}</span></td>
+          <td class="table-actions">
+            <button class="btn-icon btn-editar"
+                    data-id="${r.id}"
+                    data-descripcion="${r.descripcion.replace(/"/g,'&quot;')}"
+                    data-monto="${r.monto}"
+                    data-fecha="${r.fecha_raw}"
+                    data-categoria="${r.categoria_id}"
+                    title="Editar"><i data-lucide="pencil"></i></button>
+            <button class="btn-icon btn-eliminar" data-id="${r.id}" title="Eliminar">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </td>
+        </tr>`).join('')
+    : '<tr><td colspan="4" class="table-empty">Sin registros en esta categoría</td></tr>';
+
+  lucide.createIcons();
+
+  document.getElementById('pagination-info').textContent =
+    data.total > 0 ? `Mostrando ${data.desde}–${data.hasta} de ${data.total}` : '';
+  document.getElementById('pagination-pagina').textContent =
+    data.total_paginas > 1 ? `${pagina} / ${data.total_paginas}` : '';
+  document.getElementById('modal-registros-subtitulo').textContent =
+    `${data.total} registro${data.total !== 1 ? 's' : ''}`;
+  document.getElementById('btn-pag-anterior').disabled = pagina <= 1;
+  document.getElementById('btn-pag-siguiente').disabled = pagina >= data.total_paginas;
+
+  tablaRegistrosBody.querySelectorAll('.btn-editar').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      abrirModalEditar(btn.dataset.id, btn.dataset.descripcion, btn.dataset.monto, btn.dataset.fecha, btn.dataset.categoria);
+    });
+  });
+  tablaRegistrosBody.querySelectorAll('.btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); eliminarMovimiento(btn.dataset.id); });
+  });
 }
+
+document.getElementById('btn-pag-anterior').addEventListener('click', () => {
+  if (paginaActual > 1) cargarRegistros(categoriaActualId, --paginaActual);
+});
+document.getElementById('btn-pag-siguiente').addEventListener('click', () => {
+  cargarRegistros(categoriaActualId, ++paginaActual);
+});
+
+/* Buscador */
+document.getElementById('buscador').addEventListener('input', (e) => {
+  const q = e.target.value.toLowerCase().trim();
+  document.querySelectorAll('.categoria-card').forEach(card => {
+    card.style.display = card.dataset.searchText.includes(q) ? '' : 'none';
+  });
+});
+
+/* Eventos cierre */
+document.getElementById('btn-nuevo').addEventListener('click', abrirModalNuevo);
+document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModalMovimiento);
+document.getElementById('btn-cancelar-modal').addEventListener('click', cerrarModalMovimiento);
+document.getElementById('btn-cerrar-registros').addEventListener('click', () => modalRegistros.setAttribute('hidden', ''));
+modalMovimiento.addEventListener('click', (e) => { if (e.target === modalMovimiento) cerrarModalMovimiento(); });
+modalRegistros.addEventListener('click', (e) => { if (e.target === modalRegistros) modalRegistros.setAttribute('hidden', ''); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { cerrarModalMovimiento(); modalRegistros.setAttribute('hidden', ''); }
+});
+
+/* Barras de progreso */
+document.querySelectorAll('.progress-bar__fill').forEach(el => {
+  el.style.width = (el.dataset.porcentaje || 0) + '%';
+});
+
+lucide.createIcons();
 </script>
 {% endblock %}
