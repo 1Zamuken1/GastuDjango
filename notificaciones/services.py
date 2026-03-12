@@ -33,66 +33,17 @@ def crear_notificacion(usuario, tipo, titulo, descripcion):
         )
 
 
-def analizar_movimiento(usuario, mes, anio):
-    """
-    Analiza el estado financiero del usuario tras un movimiento
-    y genera notificaciones según corresponda.
-
-    Args:
-        usuario: instancia del usuario.
-        mes (int): mes del movimiento registrado.
-        anio (int): año del movimiento registrado.
-    """
-    from dashboard.models import ResumenMensual
-    from .models import Notificacion
-
-    resumen = ResumenMensual.objects.filter(
-        usuario=usuario,
-        mes=mes,
-        anio=anio
-    ).first()
-
-    if not resumen:
-        return
-
-    # Obtener preferencias del usuario
-    try:
-        preferencias = usuario.preferencias
-    except Exception:
-        return
-
-    # Notificación: umbral mensual alcanzado
-    if (preferencias.alerta_presupuesto
-            and resumen.total_ingresos > 0):
-        porcentaje_gastado = (resumen.total_egresos / resumen.total_ingresos) * 100
-        if porcentaje_gastado >= preferencias.umbral_advertencia_porcentaje:
-            crear_notificacion(
-                usuario=usuario,
-                tipo=Notificacion.Tipo.UMBRAL_MENSUAL,
-                titulo='Umbral de gastos alcanzado',
-                descripcion=(
-                    f'Has gastado el {porcentaje_gastado:.1f}% de tus ingresos '
-                    f'de este mes (${resumen.total_egresos:,.2f} de '
-                    f'${resumen.total_ingresos:,.2f}).'
-                )
-            )
-
-    # Notificación: déficit
-    if preferencias.alerta_deficit and resumen.deficit:
-        crear_notificacion(
-            usuario=usuario,
-            tipo=Notificacion.Tipo.DEFICIT,
-            titulo='Balance en déficit',
-            descripcion=(
-                f'Tus egresos (${resumen.total_egresos:,.2f}) superan '
-                f'tus ingresos (${resumen.total_ingresos:,.2f}) este mes.'
-            )
-        )
-
 def analizar_movimiento(usuario, mes, anio, ultimo_egreso=None):
     """
     Analiza el estado financiero del usuario tras un movimiento
     y genera notificaciones según corresponda.
+
+    Reglas aplicadas:
+    - UMBRAL_MENSUAL: se dispara cuando los egresos superan el umbral
+      configurado en las preferencias del usuario.
+    - DEFICIT: se dispara cuando los egresos superan los ingresos del mes.
+    - EGRESO_GRANDE: se dispara cuando un egreso individual supera el
+      porcentaje configurado respecto al total de ingresos del mes.
 
     Args:
         usuario: instancia del usuario.
@@ -117,7 +68,7 @@ def analizar_movimiento(usuario, mes, anio, ultimo_egreso=None):
     except Exception:
         return
 
-    # Notificación: umbral mensual alcanzado
+    # Notificacion: umbral mensual alcanzado
     if (preferencias.alerta_presupuesto
             and resumen.total_ingresos > 0):
         porcentaje_gastado = (resumen.total_egresos / resumen.total_ingresos) * 100
@@ -133,7 +84,7 @@ def analizar_movimiento(usuario, mes, anio, ultimo_egreso=None):
                 )
             )
 
-    # Notificación: déficit
+    # Notificacion: deficit
     if preferencias.alerta_deficit and resumen.deficit:
         crear_notificacion(
             usuario=usuario,
@@ -145,7 +96,7 @@ def analizar_movimiento(usuario, mes, anio, ultimo_egreso=None):
             )
         )
 
-    # Notificación: egreso grande
+    # Notificacion: egreso grande
     if (preferencias.alerta_egreso_grande
             and ultimo_egreso is not None
             and resumen.total_ingresos > 0):
