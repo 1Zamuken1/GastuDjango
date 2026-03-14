@@ -11,4 +11,6 @@ urlpatterns = [
     path('guardar/<int:pk>/', views.guardar_movimiento, name='editar_movimiento'),
     path('eliminar/<int:pk>/', views.eliminar_movimiento, name='eliminar_movimiento'),
     path('registros-categoria/', views.registros_por_categoria, name='registros_por_categoria'),
+    path('resumen/', views.resumen_movimientos, name='resumen_movimientos'),
+    path('buscar/', views.buscar_registros, name='buscar_registros'),
 ]

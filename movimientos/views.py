@@ -77,18 +77,13 @@ def lista_ingresos(request):
         if cantidad_mes > 0
         else Decimal('0')
     )
-    mayor_monto = max(
-        (cd['total'] for cd in categorias_con_totales),
-        default=Decimal('0')
-    )
 
     return render(request, 'movimientos/ingresos.html', {
         'categorias_con_totales': categorias_con_totales,
         'total_mes': total_mes,
         'cantidad_mes': cantidad_mes,
         'promedio_mes': promedio_mes,
-        'mayor_monto': mayor_monto,
-        'categorias_disponibles': Categoria.objects.filter(activo=True).order_by('nombre'),
+        'categorias_disponibles': Categoria.objects.filter(activo=True, tipo='INGRESO').order_by('nombre'),
         'mes_nombre': MESES_ES[mes],
         'anio': anio,
         'hoy': hoy,
@@ -111,18 +106,13 @@ def lista_egresos(request):
         if cantidad_mes > 0
         else Decimal('0')
     )
-    mayor_monto = max(
-        (cd['total'] for cd in categorias_con_totales),
-        default=Decimal('0')
-    )
 
     return render(request, 'movimientos/egresos.html', {
         'categorias_con_totales': categorias_con_totales,
         'total_mes': total_mes,
         'cantidad_mes': cantidad_mes,
         'promedio_mes': promedio_mes,
-        'mayor_monto': mayor_monto,
-        'categorias_disponibles': Categoria.objects.filter(activo=True).order_by('nombre'),
+        'categorias_disponibles': Categoria.objects.filter(activo=True, tipo='EGRESO').order_by('nombre'),
         'mes_nombre': MESES_ES[mes],
         'anio': anio,
         'hoy': hoy,
@@ -135,12 +125,12 @@ def guardar_movimiento(request, pk=None):
     """
     Crea o edita un movimiento según si se recibe pk.
 
-    Responde únicamente a peticiones fetch (X-Requested-With: XMLHttpRequest).
-    Devuelve JsonResponse con ok=True y los datos del movimiento guardado,
-    o ok=False con los errores de validación (status 400).
+    Detecta el tipo desde el POST para filtrar las categorías correctas
+    en la validación del form.
     """
     instancia = get_object_or_404(Movimiento, pk=pk, usuario=request.user) if pk else None
-    form = MovimientoForm(request.POST, instance=instancia)
+    tipo_movimiento = request.POST.get('tipo')
+    form = MovimientoForm(request.POST, instance=instancia, tipo_movimiento=tipo_movimiento)
 
     if form.is_valid():
         mov = form.save(commit=False)
@@ -165,11 +155,7 @@ def guardar_movimiento(request, pk=None):
 @login_required
 @require_POST
 def eliminar_movimiento(request, pk):
-    """
-    Elimina un movimiento. Solo el dueño puede eliminarlo.
-
-    Responde JsonResponse con ok=True e id del movimiento eliminado.
-    """
+    """Elimina un movimiento. Solo el dueño puede eliminarlo."""
     mov = get_object_or_404(Movimiento, pk=pk, usuario=request.user)
     mov.delete()
     return JsonResponse({'ok': True, 'id': pk})
@@ -216,4 +202,126 @@ def registros_por_categoria(request):
         'total_paginas': paginator.num_pages,
         'desde': page.start_index(),
         'hasta': page.end_index(),
+    })
+
+
+@login_required
+def resumen_movimientos(request):
+    """
+    Devuelve JSON con los totales y categorías del mes actual para un tipo dado.
+
+    GET param: tipo — 'INGRESO' o 'EGRESO'
+
+    Usado por el frontend para actualizar el grid de categorías y el hero
+    después de un CRUD sin recargar la página.
+    """
+    tipo = request.GET.get('tipo', '').upper()
+    if tipo not in ('INGRESO', 'EGRESO'):
+        return JsonResponse({'ok': False, 'error': 'tipo inválido'}, status=400)
+
+    hoy = timezone.now().date()
+    mes, anio = hoy.month, hoy.year
+
+    categorias_con_totales, total_mes = _build_categorias_con_totales(
+        request.user, tipo, mes, anio
+    )
+
+    cantidad_mes = sum(cd['cantidad'] for cd in categorias_con_totales)
+    promedio_mes = round(total_mes / cantidad_mes, 2) if cantidad_mes > 0 else 0
+
+    return JsonResponse({
+        'ok': True,
+        'total_mes': str(total_mes),
+        'cantidad_mes': cantidad_mes,
+        'promedio_mes': str(promedio_mes),
+        'categorias': [
+            {
+                'id': cd['categoria'].id,
+                'nombre': cd['categoria'].nombre,
+                'total': str(cd['total']),
+                'total_fmt': f"${cd['total']:,.0f}",
+                'cantidad': cd['cantidad'],
+                'porcentaje': cd['porcentaje'],
+                'ultimo_registro': cd['ultimo_registro'].strftime('%d %b %Y'),
+            }
+            for cd in categorias_con_totales
+        ],
+    })
+
+
+@login_required
+def buscar_registros(request):
+    """
+    Busca movimientos del usuario por descripción, monto o fecha.
+
+    GET params:
+    - q    : texto de búsqueda
+    - tipo : INGRESO o EGRESO
+
+    Formatos de fecha aceptados: dd/mm/aaaa o dd/mm/aa
+
+    Para monto busca coincidencia exacta como Decimal.
+    Para fecha usa __date= para compatibilidad con DateTimeField.
+    Para texto usa icontains en descripcion.
+    """
+    from datetime import datetime
+    from decimal import Decimal, InvalidOperation
+    from django.db.models import Q
+
+    q    = request.GET.get('q', '').strip()
+    tipo = request.GET.get('tipo', '').upper()
+
+    if not q or tipo not in ('INGRESO', 'EGRESO'):
+        return JsonResponse({'ok': False, 'error': 'parámetros inválidos'}, status=400)
+
+    qs = Movimiento.objects.filter(
+        usuario=request.user, tipo=tipo
+    ).select_related('categoria')
+
+    # Intentar interpretar como fecha dd/mm/aaaa o dd/mm/aa
+    fecha_buscada = None
+    for fmt in ('%d/%m/%Y', '%d/%m/%y'):
+        try:
+            fecha_buscada = datetime.strptime(q, fmt).date()
+            break
+        except ValueError:
+            pass
+
+    if fecha_buscada:
+        # __date= funciona tanto en DateField como DateTimeField
+        qs = qs.filter(fecha_registro__date=fecha_buscada)
+    else:
+        # Intentar búsqueda por monto exacto
+        filtro = Q(descripcion__icontains=q)
+        try:
+            monto_val = Decimal(q.replace(',', '.'))
+            filtro |= Q(monto=monto_val)
+        except InvalidOperation:
+            pass
+        qs = qs.filter(filtro)
+
+    # Agrupar resultados por categoría
+    categorias_map = {}
+    for m in qs.order_by('-fecha_registro'):
+        cid = m.categoria_id
+        if cid not in categorias_map:
+            categorias_map[cid] = {
+                'categoria_id': cid,
+                'categoria_nombre': m.categoria.nombre,
+                'registros': [],
+            }
+        categorias_map[cid]['registros'].append({
+            'id': m.id,
+            'descripcion': m.descripcion,
+            'fecha': m.fecha_registro.strftime('%d %b %Y'),
+            'fecha_raw': m.fecha_registro.date().isoformat(),
+            'monto': str(m.monto),
+            'monto_fmt': f"${m.monto:,.0f}",
+            'categoria_id': m.categoria_id,
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'categoria_ids': list(categorias_map.keys()),
+        'resultados': list(categorias_map.values()),
     })

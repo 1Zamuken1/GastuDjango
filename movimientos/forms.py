@@ -8,12 +8,11 @@ class MovimientoForm(forms.ModelForm):
     """
     Formulario de creación y edición de movimientos.
 
-    El campo 'tipo' se pasa como campo oculto desde el template —
-    la vista nunca debe confiar ciegamente en él; el clean lo valida.
+    Acepta un kwarg 'tipo_movimiento' para filtrar el queryset de categorías
+    al tipo correcto (INGRESO o EGRESO) según la vista desde la que se use.
 
     fecha_registro se declara fuera de Meta.fields porque el modelo
-    lo tiene como non-editable. Al declararlo como atributo de clase
-    Django lo incluye en el form sin pasar por la validación del modelo.
+    lo tiene como non-editable.
     """
 
     fecha_registro = forms.DateField(
@@ -23,7 +22,7 @@ class MovimientoForm(forms.ModelForm):
 
     class Meta:
         model = Movimiento
-        fields = ['tipo', 'monto', 'descripcion', 'categoria']
+        fields = ['tipo', 'categoria', 'descripcion', 'monto']
         widgets = {
             'tipo': forms.HiddenInput(),
             'descripcion': forms.TextInput(attrs={'placeholder': 'Descripción del movimiento'}),
@@ -35,9 +34,12 @@ class MovimientoForm(forms.ModelForm):
             'categoria': 'Categoría',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, tipo_movimiento=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['categoria'].queryset = Categoria.objects.filter(activo=True).order_by('nombre')
+        qs = Categoria.objects.filter(activo=True)
+        if tipo_movimiento in ('INGRESO', 'EGRESO'):
+            qs = qs.filter(tipo=tipo_movimiento)
+        self.fields['categoria'].queryset = qs.order_by('nombre')
         self.fields['categoria'].empty_label = 'Seleccionar categoría'
 
     def clean_tipo(self):
