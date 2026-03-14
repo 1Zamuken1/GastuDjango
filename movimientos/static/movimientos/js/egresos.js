@@ -1,15 +1,19 @@
 'use strict';
 
-let movimientoEditandoId = null;
-let categoriaActualId    = null;
-let paginaActual         = 1;
+let movimientoEditandoId   = null;
+let movimientoEliminandoId = null;
+let categoriaActualId      = null;
+let paginaActual           = 1;
+let guardandoEnCurso       = false;
 
 const modalMovimiento    = document.getElementById('modal-movimiento');
 const modalRegistros     = document.getElementById('modal-registros');
+const modalConfirmar     = document.getElementById('modal-confirmar-eliminar');
 const formMovimiento     = document.getElementById('form-movimiento');
 const tablaRegistrosBody = document.getElementById('tabla-registros-body');
+const btnGuardar         = document.getElementById('btn-guardar');
 
-/* Toast */
+/* ── Toast ──────────────────────────────────────────── */
 function mostrarToast(msg, tipo = 'ok') {
   const t = document.createElement('div');
   t.className = `toast toast--${tipo}`;
@@ -18,7 +22,7 @@ function mostrarToast(msg, tipo = 'ok') {
   setTimeout(() => t.remove(), 3200);
 }
 
-/* Errores */
+/* ── Errores ─────────────────────────────────────────── */
 function limpiarErrores() {
   document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
   document.querySelectorAll('.form-control').forEach(el => el.style.borderColor = '');
@@ -32,127 +36,280 @@ function mostrarErrores(errors) {
   });
 }
 
-/* Modal CRUD */
+/* ── Modal CRUD ──────────────────────────────────────── */
 function abrirModalNuevo() {
   movimientoEditandoId = null;
   document.getElementById('modal-titulo').textContent = 'Nuevo egreso';
   formMovimiento.reset();
   limpiarErrores();
   document.getElementById('campo-fecha').value = new Date().toISOString().split('T')[0];
+  /* Cerrar registros si está abierto — solo 1 modal a la vez */
+  modalRegistros.setAttribute('hidden', '');
   modalMovimiento.removeAttribute('hidden');
 }
+
 function abrirModalEditar(id, descripcion, monto, fechaRaw, categoriaId) {
   movimientoEditandoId = id;
   document.getElementById('modal-titulo').textContent = 'Editar egreso';
-  document.getElementById('campo-descripcion').value = descripcion;
-  document.getElementById('campo-monto').value = monto;
-  document.getElementById('campo-fecha').value = fechaRaw;
-  document.getElementById('campo-categoria').value = categoriaId;
-  limpiarErrores();
+  /* Cerrar registros primero — solo 1 modal a la vez */
+  modalRegistros.setAttribute('hidden', '');
+  /* Mostrar modal ANTES de poblar, para que el DOM esté activo */
   modalMovimiento.removeAttribute('hidden');
+  /* Poblar campos */
+  document.getElementById('campo-descripcion').value = descripcion;
+  document.getElementById('campo-monto').value        = monto;
+  document.getElementById('campo-fecha').value        = fechaRaw;
+  document.getElementById('campo-categoria').value    = categoriaId;
+  limpiarErrores();
 }
+
 function cerrarModalMovimiento() {
   modalMovimiento.setAttribute('hidden', '');
   formMovimiento.reset();
   limpiarErrores();
+  /* Reabrir registros si había una categoría activa */
+  if (categoriaActualId) {
+    modalRegistros.removeAttribute('hidden');
+  }
 }
 
-/* Submit form */
+/* ── Modal confirmación eliminar ─────────────────────── */
+function abrirModalConfirmar(id) {
+  movimientoEliminandoId = id;
+  modalConfirmar.removeAttribute('hidden');
+}
+function cerrarModalConfirmar() {
+  /* NO limpiar movimientoEliminandoId aquí — lo usa el handler del botón confirmar */
+  modalConfirmar.setAttribute('hidden', '');
+}
+
+document.getElementById('btn-cerrar-confirmar').addEventListener('click', () => {
+  movimientoEliminandoId = null;
+  cerrarModalConfirmar();
+});
+document.getElementById('btn-cancelar-eliminar').addEventListener('click', () => {
+  movimientoEliminandoId = null;
+  cerrarModalConfirmar();
+});
+modalConfirmar.addEventListener('click', (e) => {
+  if (e.target === modalConfirmar) {
+    movimientoEliminandoId = null;
+    cerrarModalConfirmar();
+  }
+});
+
+document.getElementById('btn-confirmar-eliminar').addEventListener('click', async () => {
+  /* Capturar id ANTES de cerrar el modal (que no limpia la variable) */
+  const id = movimientoEliminandoId;
+  if (!id) return;
+  movimientoEliminandoId = null;
+  cerrarModalConfirmar();
+  await ejecutarEliminar(id);
+});
+
+/* ── Actualizar grid sin recargar ────────────────────── */
+async function actualizarGrid() {
+  try {
+    const res = await fetch(`${URL_RESUMEN}?tipo=EGRESO`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const data = await res.json();
+    if (!data.ok) return;
+
+    const heroValue = document.querySelector('.hero-total__value');
+    if (heroValue) heroValue.textContent = `$${parseInt(data.total_mes).toLocaleString('es-CO')}`;
+    const heroStats = document.querySelectorAll('.hero-stat__value');
+    if (heroStats[0]) heroStats[0].textContent = data.cantidad_mes;
+    if (heroStats[1]) heroStats[1].textContent = data.categorias.length;
+    if (heroStats[2]) heroStats[2].textContent = `$${parseInt(data.promedio_mes).toLocaleString('es-CO')}`;
+
+    const grid = document.getElementById('grid-categorias');
+    if (!grid) return;
+
+    if (data.categorias.length === 0) {
+      grid.innerHTML = '<div class="grid-empty">Sin egresos registrados este mes</div>';
+      return;
+    }
+
+    grid.innerHTML = data.categorias.map(cat => `
+      <div class="categoria-card"
+           data-categoria-id="${cat.id}"
+           data-search-text="${cat.nombre.toLowerCase()}">
+        <div class="categoria-card__header">
+          <div>
+            <p class="categoria-card__nombre">${cat.nombre}</p>
+            <p class="categoria-card__cantidad">${cat.cantidad} registro${cat.cantidad !== 1 ? 's' : ''}</p>
+          </div>
+          <div class="categoria-card__icon"><i data-lucide="folder"></i></div>
+        </div>
+        <p class="categoria-card__monto font-display">${cat.total_fmt}</p>
+        <div style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0 .25rem;">
+          <div class="progress-bar" style="flex:1;margin:0;">
+            <div class="progress-bar__fill" data-porcentaje="${cat.porcentaje}"></div>
+          </div>
+          <span style="font-size:.72rem;font-weight:700;color:#f97316;white-space:nowrap;min-width:2.5rem;text-align:right;">${cat.porcentaje}%</span>
+        </div>
+        <div class="categoria-card__footer">
+          <i data-lucide="clock"></i> Último: ${cat.ultimo_registro}
+        </div>
+      </div>`).join('');
+
+    document.querySelectorAll('.progress-bar__fill').forEach(el => {
+      el.style.width = (parseFloat(el.dataset.porcentaje) || 0) + '%';
+    });
+    bindearCards();
+    lucide.createIcons();
+  } catch (e) {
+    console.error('actualizarGrid error:', e);
+  }
+}
+
+/* ── Submit form ─────────────────────────────────────── */
 formMovimiento.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (guardandoEnCurso) return;
+  guardandoEnCurso = true;
+  btnGuardar.disabled = true;
+  btnGuardar.textContent = 'Guardando...';
   limpiarErrores();
-  const url = movimientoEditandoId ? `${URL_EDITAR}${movimientoEditandoId}/` : URL_GUARDAR;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF_TOKEN },
-    body: new FormData(formMovimiento),
-  });
-  const data = await res.json();
-  if (data.ok) {
-    cerrarModalMovimiento();
-    mostrarToast(movimientoEditandoId ? 'Egreso actualizado.' : 'Egreso registrado.', 'ok');
-    if (categoriaActualId) cargarRegistros(categoriaActualId, paginaActual);
-  } else {
-    mostrarErrores(data.errors || {});
-    mostrarToast('Revisa los campos del formulario.', 'error');
+
+  const url = movimientoEditandoId
+    ? `${URL_EDITAR}${movimientoEditandoId}/`
+    : URL_GUARDAR;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF_TOKEN },
+      body: new FormData(formMovimiento),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      cerrarModalMovimiento();
+      mostrarToast(movimientoEditandoId ? 'Egreso actualizado.' : 'Egreso registrado.', 'ok');
+      await actualizarGrid();
+      if (categoriaActualId) cargarRegistros(categoriaActualId, paginaActual);
+    } else {
+      mostrarErrores(data.errors || {});
+      mostrarToast('Revisa los campos del formulario.', 'error');
+    }
+  } catch (e) {
+    mostrarToast('Error de conexión. Intenta de nuevo.', 'error');
+  } finally {
+    guardandoEnCurso = false;
+    btnGuardar.disabled = false;
+    btnGuardar.textContent = 'Guardar';
   }
 });
 
-/* Eliminar */
-async function eliminarMovimiento(id) {
-  if (!confirm('¿Eliminar este egreso?')) return;
-  const res = await fetch(`${URL_ELIMINAR}${id}/`, {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF_TOKEN },
-  });
-  const data = await res.json();
-  if (data.ok) {
-    tablaRegistrosBody.querySelector(`tr[data-id="${id}"]`)?.remove();
-    mostrarToast('Egreso eliminado.', 'ok');
-  } else {
-    mostrarToast('No se pudo eliminar.', 'error');
+/* ── Eliminar ────────────────────────────────────────── */
+async function ejecutarEliminar(id) {
+  try {
+    const res = await fetch(`${URL_ELIMINAR}${id}/`, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF_TOKEN },
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      mostrarToast('Egreso eliminado.', 'ok');
+      await actualizarGrid();
+
+      const filasRestantes = tablaRegistrosBody.querySelectorAll('tr[data-id]').length;
+      if (filasRestantes <= 1) {
+        /* Era el último registro — cerrar modal de registros */
+        modalRegistros.setAttribute('hidden', '');
+        categoriaActualId = null;
+      } else {
+        cargarRegistros(categoriaActualId, paginaActual);
+      }
+    } else {
+      mostrarToast('No se pudo eliminar.', 'error');
+    }
+  } catch (e) {
+    mostrarToast('Error de conexión. Intenta de nuevo.', 'error');
   }
 }
 
-/* Modal registros */
-document.querySelectorAll('.categoria-card').forEach(card => {
-  card.addEventListener('click', () => {
-    categoriaActualId = card.dataset.categoriaId;
-    paginaActual = 1;
-    document.getElementById('modal-registros-titulo').textContent =
-      card.querySelector('.categoria-card__nombre').textContent;
-    modalRegistros.removeAttribute('hidden');
-    cargarRegistros(categoriaActualId, paginaActual);
-  });
-});
-
-async function cargarRegistros(categoriaId, pagina) {
-  const res = await fetch(`${URL_REGISTROS}?categoria=${categoriaId}&page=${pagina}`, {
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-  });
-  const data = await res.json();
-
-  tablaRegistrosBody.innerHTML = data.registros.length
-    ? data.registros.map(r => `
-        <tr data-id="${r.id}">
-          <td>${r.descripcion}</td>
-          <td class="text-muted">${r.fecha}</td>
-          <td><span class="monto monto--egreso">${r.monto_fmt}</span></td>
-          <td class="table-actions">
-            <button class="btn-icon btn-editar"
-                    data-id="${r.id}"
-                    data-descripcion="${r.descripcion.replace(/"/g,'&quot;')}"
-                    data-monto="${r.monto}"
-                    data-fecha="${r.fecha_raw}"
-                    data-categoria="${r.categoria_id}"
-                    title="Editar"><i data-lucide="pencil"></i></button>
-            <button class="btn-icon btn-eliminar" data-id="${r.id}" title="Eliminar">
-              <i data-lucide="trash-2"></i>
-            </button>
-          </td>
-        </tr>`).join('')
-    : '<tr><td colspan="4" class="table-empty">Sin registros en esta categoría</td></tr>';
-
-  lucide.createIcons();
-
-  document.getElementById('pagination-info').textContent =
-    data.total > 0 ? `Mostrando ${data.desde}–${data.hasta} de ${data.total}` : '';
-  document.getElementById('pagination-pagina').textContent =
-    data.total_paginas > 1 ? `${pagina} / ${data.total_paginas}` : '';
-  document.getElementById('modal-registros-subtitulo').textContent =
-    `${data.total} registro${data.total !== 1 ? 's' : ''}`;
-  document.getElementById('btn-pag-anterior').disabled = pagina <= 1;
-  document.getElementById('btn-pag-siguiente').disabled = pagina >= data.total_paginas;
-
-  tablaRegistrosBody.querySelectorAll('.btn-editar').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      abrirModalEditar(btn.dataset.id, btn.dataset.descripcion, btn.dataset.monto, btn.dataset.fecha, btn.dataset.categoria);
+/* ── Modal registros ─────────────────────────────────── */
+function bindearCards() {
+  document.querySelectorAll('.categoria-card').forEach(card => {
+    card.addEventListener('click', () => {
+      categoriaActualId = card.dataset.categoriaId;
+      paginaActual = 1;
+      document.getElementById('modal-registros-titulo').textContent =
+        card.querySelector('.categoria-card__nombre').textContent;
+      modalRegistros.removeAttribute('hidden');
+      cargarRegistros(categoriaActualId, paginaActual);
     });
   });
-  tablaRegistrosBody.querySelectorAll('.btn-eliminar').forEach(btn => {
-    btn.addEventListener('click', (e) => { e.stopPropagation(); eliminarMovimiento(btn.dataset.id); });
-  });
+}
+
+async function cargarRegistros(categoriaId, pagina) {
+  tablaRegistrosBody.innerHTML =
+    '<tr><td colspan="4" class="table-empty">Cargando...</td></tr>';
+
+  try {
+    const res = await fetch(`${URL_REGISTROS}?categoria=${categoriaId}&page=${pagina}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const data = await res.json();
+
+    tablaRegistrosBody.innerHTML = data.registros.length
+      ? data.registros.map(r => `
+          <tr data-id="${r.id}">
+            <td>${r.descripcion}</td>
+            <td class="text-muted">${r.fecha}</td>
+            <td><span class="monto monto--egreso">${r.monto_fmt}</span></td>
+            <td class="table-actions">
+              <button class="btn-icon btn-editar"
+                      data-id="${r.id}"
+                      data-descripcion="${r.descripcion.replace(/"/g,'&quot;')}"
+                      data-monto="${r.monto}"
+                      data-fecha="${r.fecha_raw}"
+                      data-categoria="${r.categoria_id}"
+                      title="Editar"><i data-lucide="pencil"></i></button>
+              <button class="btn-icon btn-eliminar" data-id="${r.id}" title="Eliminar">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </td>
+          </tr>`).join('')
+      : '<tr><td colspan="4" class="table-empty">Sin registros en esta categoría</td></tr>';
+
+    lucide.createIcons();
+
+    document.getElementById('pagination-info').textContent =
+      data.total > 0 ? `Mostrando ${data.desde}–${data.hasta} de ${data.total}` : '';
+    document.getElementById('pagination-pagina').textContent =
+      data.total_paginas > 1 ? `${pagina} / ${data.total_paginas}` : '';
+    document.getElementById('modal-registros-subtitulo').textContent =
+      `${data.total} registro${data.total !== 1 ? 's' : ''}`;
+    document.getElementById('btn-pag-anterior').disabled = pagina <= 1;
+    document.getElementById('btn-pag-siguiente').disabled = pagina >= data.total_paginas;
+
+    tablaRegistrosBody.querySelectorAll('.btn-editar').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        abrirModalEditar(
+          btn.dataset.id,
+          btn.dataset.descripcion,
+          btn.dataset.monto,
+          btn.dataset.fecha,
+          btn.dataset.categoria
+        );
+      });
+    });
+    tablaRegistrosBody.querySelectorAll('.btn-eliminar').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        abrirModalConfirmar(btn.dataset.id);
+      });
+    });
+  } catch (e) {
+    tablaRegistrosBody.innerHTML =
+      '<tr><td colspan="4" class="table-empty">Error al cargar registros.</td></tr>';
+  }
 }
 
 document.getElementById('btn-pag-anterior').addEventListener('click', () => {
@@ -162,27 +319,89 @@ document.getElementById('btn-pag-siguiente').addEventListener('click', () => {
   cargarRegistros(categoriaActualId, ++paginaActual);
 });
 
-/* Buscador */
+/* ── Buscador ────────────────────────────────────────── */
+let debounceTimer = null;
+
 document.getElementById('buscador').addEventListener('input', (e) => {
-  const q = e.target.value.toLowerCase().trim();
-  document.querySelectorAll('.categoria-card').forEach(card => {
-    card.style.display = card.dataset.searchText.includes(q) ? '' : 'none';
-  });
+  const q = e.target.value.trim();
+  clearTimeout(debounceTimer);
+
+  if (!q) {
+    /* Sin query: restaurar todas las cards */
+    document.querySelectorAll('.categoria-card').forEach(card => {
+      card.style.display = '';
+      card.style.outline = '';
+    });
+    return;
+  }
+
+  debounceTimer = setTimeout(async () => {
+    const qLower = q.toLowerCase();
+
+    /* Filtro DOM inmediato por nombre de categoría mientras llega el fetch */
+    document.querySelectorAll('.categoria-card').forEach(card => {
+      card.style.display = card.dataset.searchText.includes(qLower) ? '' : 'none';
+      card.style.outline = '';
+    });
+
+    /* Fetch al backend — busca en descripción, monto y fecha */
+    try {
+      const res = await fetch(
+        `${URL_BUSCAR}?q=${encodeURIComponent(q)}&tipo=EGRESO`,
+        { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+      );
+      const data = await res.json();
+      if (!data.ok) return;
+
+      const idsConResultados = new Set(data.categoria_ids.map(String));
+
+      /* Si el backend encontró resultados, usarlos como fuente de verdad */
+      if (idsConResultados.size > 0) {
+        document.querySelectorAll('.categoria-card').forEach(card => {
+          const tiene = idsConResultados.has(card.dataset.categoriaId);
+          card.style.display = tiene ? '' : 'none';
+          card.style.outline = tiene ? '2px solid #f97316' : '';
+        });
+      }
+    } catch (err) {
+      console.error('buscar error:', err);
+    }
+  }, 300);
 });
 
-/* Eventos cierre */
+/* ── Eventos cierre ──────────────────────────────────── */
 document.getElementById('btn-nuevo').addEventListener('click', abrirModalNuevo);
 document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModalMovimiento);
 document.getElementById('btn-cancelar-modal').addEventListener('click', cerrarModalMovimiento);
-document.getElementById('btn-cerrar-registros').addEventListener('click', () => modalRegistros.setAttribute('hidden', ''));
-modalMovimiento.addEventListener('click', (e) => { if (e.target === modalMovimiento) cerrarModalMovimiento(); });
-modalRegistros.addEventListener('click', (e) => { if (e.target === modalRegistros) modalRegistros.setAttribute('hidden', ''); });
+document.getElementById('btn-cerrar-registros').addEventListener('click', () => {
+  modalRegistros.setAttribute('hidden', '');
+  categoriaActualId = null;
+});
+modalMovimiento.addEventListener('click', (e) => {
+  if (e.target === modalMovimiento) cerrarModalMovimiento();
+});
+modalRegistros.addEventListener('click', (e) => {
+  if (e.target === modalRegistros) {
+    modalRegistros.setAttribute('hidden', '');
+    categoriaActualId = null;
+  }
+});
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { cerrarModalMovimiento(); modalRegistros.setAttribute('hidden', ''); }
+  if (e.key !== 'Escape') return;
+  if (!modalConfirmar.hasAttribute('hidden')) {
+    movimientoEliminandoId = null;
+    cerrarModalConfirmar();
+  } else if (!modalMovimiento.hasAttribute('hidden')) {
+    cerrarModalMovimiento();
+  } else if (!modalRegistros.hasAttribute('hidden')) {
+    modalRegistros.setAttribute('hidden', '');
+    categoriaActualId = null;
+  }
 });
 
-/* Barras de progreso */
+/* ── Init ────────────────────────────────────────────── */
 document.querySelectorAll('.progress-bar__fill').forEach(el => {
   el.style.width = (parseFloat(el.dataset.porcentaje) || 0) + '%';
 });
+bindearCards();
 lucide.createIcons();
