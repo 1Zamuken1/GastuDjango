@@ -8,21 +8,44 @@
 
 {% block extra_head %}
 <style>
-/* ── Stat cards ──────────────────────────────────── */
+/* ── Hero 2 columnas ─────────────────────────────── */
 .stats-hero {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 1fr 2fr;
   gap: 1rem;
   margin-bottom: 1.25rem;
 }
-.stat-card { padding: 1.5rem; }
-.stat-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .75rem; }
-.stat-card__label { font-size: .8rem; font-weight: 500; color: var(--slate-500); text-transform: uppercase; letter-spacing: .05em; }
-.stat-card__icon { width: 2.5rem; height: 2.5rem; border-radius: .75rem; display: grid; place-items: center; flex-shrink: 0; }
-.stat-card__icon--egreso { background: #fff7ed; color: #f97316; }
-.stat-card__icon svg { width: 1.2rem; height: 1.2rem; }
-.stat-card__value { font-size: 1.75rem; font-weight: 800; color: var(--slate-900); margin: 0 0 .35rem; }
-.stat-card__delta { display: flex; align-items: center; gap: .25rem; font-size: .8rem; margin: 0; color: var(--slate-500); }
+@media (max-width: 640px) { .stats-hero { grid-template-columns: 1fr; } }
+.hero-total {
+  background: linear-gradient(135deg, #ea6a0a 0%, #f97316 100%);
+  border-radius: .875rem;
+  padding: .875rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: .35rem;
+  border: none;
+  box-shadow: 0 4px 20px rgba(249,115,22,.25);
+  transition: transform .15s, box-shadow .15s;
+}
+.hero-total:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(249,115,22,.25); }
+.hero-total__top { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
+.hero-total__icon { width: 2rem; height: 2rem; border-radius: .625rem; background: rgba(255,255,255,.2); display: grid; place-items: center; color: #fff; flex-shrink: 0; }
+.hero-total__icon svg { width: 1.2rem; height: 1.2rem; }
+.hero-total__label { font-size: .78rem; font-weight: 600; color: rgba(255,255,255,.75); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .5rem; }
+.hero-total__value { font-size: 2.4rem; font-weight: 900; color: #fff; margin: 0; line-height: 1; }
+.hero-total__footer { display: flex; align-items: center; gap: .4rem; margin-top: .75rem; }
+.hero-total__badge { background: rgba(255,255,255,.2); color: #fff; font-size: .72rem; font-weight: 600; padding: .2rem .55rem; border-radius: 9999px; }
+.hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 0; overflow: hidden; align-items: stretch; }
+.hero-stat { padding: .75rem 1.25rem; display: flex; flex-direction: column; gap: .35rem; border-right: 1px solid var(--border); justify-content: center; align-items: center; text-align: center; transition: background .15s; cursor: default; }
+.hero-stat:last-child { border-right: none; }
+.hero-stat:hover { background: #f8fafc; }
+.hero-stat__label { font-size: .75rem; font-weight: 500; color: var(--slate-500); text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; justify-content: center; gap: .35rem; }
+.hero-stat__label svg { width: .9rem; height: .9rem; color: #f97316; }
+.hero-stat__value { font-size: 1.45rem; font-weight: 800; color: var(--slate-900); line-height: 1; }
+.hero-stat__sub { font-size: .75rem; color: var(--slate-500); }
 
 /* ── Toolbar ─────────────────────────────────────── */
 .toolbar {
@@ -33,7 +56,16 @@
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
 }
-.toolbar__search { flex: 1; min-width: 180px; position: relative; }
+.toolbar__search { width: min(420px, 100%); position: relative; }
+.toolbar__actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: 1.5rem; flex-wrap: wrap; }
+.btn-export { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .85rem; border-radius: .5rem; font-size: .8rem; font-weight: 600; cursor: pointer; border: 1.5px solid; transition: background .15s, transform .1s; }
+.btn-export:hover { transform: translateY(-1px); }
+.btn-export--pdf   { border-color: #fca5a5; color: #dc2626; background: #fff; }
+.btn-export--pdf:hover   { background: #fef2f2; }
+.btn-export--excel { border-color: #86efac; color: #16a34a; background: #fff; }
+.btn-export--excel:hover { background: #f0fdf4; }
+.btn-export--csv   { border-color: #93c5fd; color: #2563eb; background: #fff; }
+.btn-export--csv:hover   { background: #eff6ff; }
 .toolbar__search input {
   width: 100%;
   padding: .5rem .75rem .5rem 2.25rem;
@@ -70,7 +102,7 @@
 .categoria-card__nombre { font-size: .95rem; font-weight: 700; color: var(--slate-900); margin: 0 0 .15rem; }
 .categoria-card__cantidad { font-size: .75rem; color: var(--slate-500); margin: 0; }
 .categoria-card__monto { font-size: 1.4rem; font-weight: 800; color: var(--slate-900); margin: 0 0 .5rem; }
-.progress-bar { height: 4px; background: #f1f5f9; border-radius: 9999px; margin: .5rem 0; overflow: hidden; }
+.progress-bar { height: 6px; background: #cbd5e1; border-radius: 9999px; margin: .5rem 0; overflow: hidden; }
 .progress-bar__fill { height: 100%; background: #f97316; border-radius: 9999px; transition: width .4s ease; }
 .categoria-card__footer { font-size: .75rem; color: var(--slate-500); display: flex; align-items: center; gap: .3rem; margin: 0; }
 .categoria-card__footer svg { width: .8rem; height: .8rem; }
@@ -93,6 +125,7 @@
 .btn-icon:disabled { opacity: .4; cursor: not-allowed; }
 .monto { font-weight: 600; font-variant-numeric: tabular-nums; }
 .monto--egreso { color: #f97316; }
+.monto--egreso  { color: #f97316; }
 .text-muted { color: var(--slate-500); }
 
 /* ── Modal ───────────────────────────────────────── */
@@ -135,51 +168,67 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- Zona 1: Hero -->
 <div class="stats-hero">
-  <div class="app-card stat-card">
-    <div class="stat-card__header">
-      <span class="stat-card__label">Total egresos</span>
-      <div class="stat-card__icon stat-card__icon--egreso">
-        <i data-lucide="trending-down"></i>
-      </div>
-    </div>
-    <p class="stat-card__value font-display">${{ total_mes|floatformat:0 }}</p>
-    <p class="stat-card__delta">{{ mes_nombre }} {{ anio }}</p>
+
+  <!-- Card total -->
+  <div class="hero-total">
+    <p class="hero-total__label">Total egresos</p>
+    <p class="hero-total__value font-display">${{ total_mes|floatformat:0 }}</p>
+    <span class="hero-total__badge">{{ mes_nombre }} {{ anio }}</span>
   </div>
 
-  <div class="app-card stat-card">
-    <div class="stat-card__header">
-      <span class="stat-card__label">Registros</span>
-      <div class="stat-card__icon" style="background:#eef2ff;color:#6366f1;">
-        <i data-lucide="list"></i>
-      </div>
+  <!-- Card métricas -->
+  <div class="app-card hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat__label">
+        <i data-lucide="list"></i> Registros
+      </span>
+      <span class="hero-stat__value font-display">{{ cantidad_mes }}</span>
+      <span class="hero-stat__sub">movimientos</span>
     </div>
-    <p class="stat-card__value font-display">{{ cantidad_mes }}</p>
-    <p class="stat-card__delta">movimientos este mes</p>
+    <div class="hero-stat">
+      <span class="hero-stat__label">
+        <i data-lucide="folder"></i> Categorías
+      </span>
+      <span class="hero-stat__value font-display">{{ categorias_con_totales|length }}</span>
+      <span class="hero-stat__sub">con actividad</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat__label">
+        <i data-lucide="bar-chart-2"></i> Promedio
+      </span>
+      <span class="hero-stat__value font-display">${{ promedio_mes|floatformat:0 }}</span>
+      <span class="hero-stat__sub">por registro</span>
+    </div>
   </div>
 
-  <div class="app-card stat-card">
-    <div class="stat-card__header">
-      <span class="stat-card__label">Promedio</span>
-      <div class="stat-card__icon" style="background:#f5f3ff;color:#7c3aed;">
-        <i data-lucide="bar-chart-2"></i>
-      </div>
-    </div>
-    <p class="stat-card__value font-display">${{ promedio_mes|floatformat:0 }}</p>
-    <p class="stat-card__delta">por registro</p>
-  </div>
 </div>
 
+<!-- Zona 2: Toolbar -->
 <div class="app-card toolbar">
   <div class="toolbar__search">
     <svg class="toolbar__search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input type="text" id="buscador" placeholder="Buscar categoría...">
   </div>
-  <button class="btn-primary--egreso" id="btn-nuevo">
-    <i data-lucide="plus"></i> Nuevo egreso
-  </button>
+  <div class="toolbar__actions">
+    <button class="btn-export btn-export--pdf" type="button">
+      <i data-lucide="file-text"></i> PDF
+    </button>
+    <button class="btn-export btn-export--excel" type="button">
+      <i data-lucide="table-2"></i> Excel
+    </button>
+    <button class="btn-export btn-export--csv" type="button">
+      <i data-lucide="file-spreadsheet"></i> CSV
+    </button>
+    <button class="btn-primary--egreso" id="btn-nuevo">
+      <i data-lucide="plus"></i> Nuevo egreso
+    </button>
+  </div>
 </div>
 
+<!-- Zona 3: Grid de categorías -->
 <div class="categorias-grid" id="grid-categorias">
   {% for item in categorias_con_totales %}
   <div class="categoria-card"
@@ -195,8 +244,11 @@
       </div>
     </div>
     <p class="categoria-card__monto font-display">${{ item.total|floatformat:0 }}</p>
-    <div class="progress-bar">
-      <div class="progress-bar__fill" data-porcentaje="{{ item.porcentaje }}"></div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0 .25rem;">
+      <div class="progress-bar" style="flex:1;margin:0;">
+        <div class="progress-bar__fill" data-porcentaje="{{ item.porcentaje|stringformat:'g' }}"></div>
+      </div>
+      <span style="font-size:.72rem;font-weight:700;color:#f97316;white-space:nowrap;min-width:2.5rem;text-align:right;">{{ item.porcentaje }}%</span>
     </div>
     <div class="categoria-card__footer">
       <i data-lucide="clock"></i>
@@ -208,6 +260,7 @@
   {% endfor %}
 </div>
 
+<!-- Modal CRUD -->
 <div class="modal-overlay" id="modal-movimiento" hidden>
   <div class="modal">
     <div class="modal__header">
@@ -254,6 +307,7 @@
   </div>
 </div>
 
+<!-- Modal registros por categoría -->
 <div class="modal-overlay modal-overlay--wide" id="modal-registros" hidden>
   <div class="modal modal--lg">
     <div class="modal__header">
@@ -291,6 +345,7 @@
 
 <div id="toast-container" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;"></div>
 {% endblock %}
+
 
 {% block scripts %}
 <script>
@@ -485,7 +540,7 @@ document.addEventListener('keydown', (e) => {
 
 /* Barras de progreso */
 document.querySelectorAll('.progress-bar__fill').forEach(el => {
-  el.style.width = (el.dataset.porcentaje || 0) + '%';
+  el.style.width = (parseFloat(el.dataset.porcentaje) || 0) + '%';
 });
 
 lucide.createIcons();
