@@ -118,6 +118,16 @@
       <input type="hidden" name="tipo" value="INGRESO">
       <div class="modal__body">
         <div class="form-group">
+          <label class="form-label" for="campo-categoria">Categoría</label>
+          <select class="form-control" id="campo-categoria" name="categoria">
+            <option value="">Seleccionar categoría</option>
+            {% for cat in categorias_disponibles %}
+            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+            {% endfor %}
+          </select>
+          <span class="form-error" id="error-categoria"></span>
+        </div>
+        <div class="form-group">
           <label class="form-label" for="campo-descripcion">Descripción</label>
           <input class="form-control" type="text" id="campo-descripcion" name="descripcion" placeholder="Descripción del ingreso" maxlength="255">
           <span class="form-error" id="error-descripcion"></span>
@@ -132,20 +142,10 @@
           <input class="form-control" type="date" id="campo-fecha" name="fecha_registro">
           <span class="form-error" id="error-fecha_registro"></span>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="campo-categoria">Categoría</label>
-          <select class="form-control" id="campo-categoria" name="categoria">
-            <option value="">Seleccionar categoría</option>
-            {% for cat in categorias_disponibles %}
-            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
-            {% endfor %}
-          </select>
-          <span class="form-error" id="error-categoria"></span>
-        </div>
       </div>
       <div class="modal__footer">
         <button type="button" class="btn-ghost" id="btn-cancelar-modal">Cancelar</button>
-        <button type="submit" class="btn-primary">Guardar</button>
+        <button type="submit" class="btn-primary" id="btn-guardar">Guardar</button>
       </div>
     </form>
   </div>
@@ -187,6 +187,30 @@
   </div>
 </div>
 
+<!-- Modal confirmación eliminar -->
+<div class="modal-overlay" id="modal-confirmar-eliminar" hidden style="z-index:1200;">
+  <div class="modal" style="width:min(400px,95vw);">
+    <div class="modal__header">
+      <h2 class="modal__title font-display">Confirmar eliminación</h2>
+      <button class="modal__close" id="btn-cerrar-confirmar" aria-label="Cerrar">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="modal__body" style="padding:1.5rem;">
+      <p style="color:var(--slate-700);font-size:.9rem;margin:0;">
+        ¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.
+      </p>
+    </div>
+    <div class="modal__footer">
+      <button type="button" class="btn-ghost" id="btn-cancelar-eliminar">Cancelar</button>
+      <button type="button" id="btn-confirmar-eliminar"
+              style="background:#ef4444;color:#fff;padding:.5rem 1rem;border-radius:.625rem;border:none;font-size:.875rem;font-weight:600;cursor:pointer;">
+        Eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;"></div>
 {% endblock %}
 
@@ -198,6 +222,8 @@
   const URL_ELIMINAR  = "{% url 'movimientos:eliminar_movimiento' pk=0 %}".replace('/0/', '/');
   const URL_REGISTROS = "{% url 'movimientos:registros_por_categoria' %}";
   const CSRF_TOKEN    = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const URL_RESUMEN   = "{% url 'movimientos:resumen_movimientos' %}";
+  const URL_BUSCAR    = "{% url 'movimientos:buscar_registros' %}";
 </script>
 <script src="{% static 'movimientos/js/ingresos.js' %}"></script>
 {% endblock %}
