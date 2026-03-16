@@ -119,13 +119,16 @@
       <input type="hidden" name="tipo" value="EGRESO">
       <div class="modal__body">
         <div class="form-group">
-          <label class="form-label" for="campo-categoria">Categoría</label>
-          <select class="form-control" id="campo-categoria" name="categoria">
-            <option value="">Seleccionar categoría</option>
-            {% for cat in categorias_disponibles %}
-            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
-            {% endfor %}
-          </select>
+          <label class="form-label">Categoría</label>
+          <input type="hidden" id="campo-categoria" name="categoria">
+          <button type="button" id="btn-picker-categoria"
+                  style="width:100%;display:flex;align-items:center;justify-content:space-between;
+                         padding:.55rem .75rem;border:1px solid var(--border);border-radius:.5rem;
+                         background:#fff;color:var(--slate-500);font-size:.875rem;cursor:pointer;
+                         transition:border-color .15s;font-family:'DM Sans',sans-serif;gap:.5rem;">
+            <span id="picker-cat-label" style="flex:1;text-align:left;">Seleccionar categoría</span>
+            <i data-lucide="chevron-right" style="width:14px;height:14px;flex-shrink:0;"></i>
+          </button>
           <span class="form-error" id="error-categoria"></span>
         </div>
         <div class="form-group">
@@ -185,6 +188,72 @@
         <button class="btn-icon" id="btn-pag-siguiente"><i data-lucide="chevron-right"></i></button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Modal picker de categorías -->
+<div class="modal-overlay" id="modal-picker-cat" hidden style="z-index:1200;">
+  <div class="modal" style="width:min(540px,95vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- Header -->
+    <div class="modal__header" style="border-bottom:1px solid #f1f5f9;padding:1.1rem 1.5rem;">
+      <div>
+        <h2 class="modal__title font-display">Seleccionar categoría</h2>
+        <p style="font-size:.75rem;color:var(--slate-500);margin-top:.15rem;">
+          Elige una categoría para este movimiento
+        </p>
+      </div>
+      <button class="modal__close" id="btn-cerrar-picker" aria-label="Cerrar">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <!-- Buscador -->
+    <div style="padding:.875rem 1.5rem;background:#f8fafc;border-bottom:1px solid #f1f5f9;">
+      <div style="position:relative;">
+        <svg style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);
+                    width:14px;height:14px;color:#94a3b8;pointer-events:none;"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input id="picker-buscador" type="text" placeholder="Buscar categoría..."
+               style="width:100%;padding:.55rem .75rem .55rem 2.2rem;
+                      border:1.5px solid #e2e8f0;border-radius:.625rem;
+                      font-size:.875rem;outline:none;background:#fff;
+                      color:#0f172a;font-family:'DM Sans',sans-serif;
+                      transition:border-color .15s,box-shadow .15s;"
+               onfocus="this.style.borderColor='#f97316';this.style.boxShadow='0 0 0 3px rgba(16,185,129,.1)'"
+               onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+      </div>
+    </div>
+
+    <!-- Grid de categorías -->
+    <div id="picker-grid"
+         style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+                gap:.75rem;padding:1.25rem 1.5rem;overflow-y:auto;flex:1;
+                background:#f8fafc;">
+      {% for cat in categorias_disponibles %}
+      <button type="button" class="picker-cat-card"
+              data-id="{{ cat.id }}" data-nombre="{{ cat.nombre }}">
+        <div class="picker-cat-icon">
+          <i data-lucide="folder" style="width:1.1rem;height:1.1rem;"></i>
+        </div>
+        <span class="picker-cat-nombre">{{ cat.nombre }}</span>
+      </button>
+      {% empty %}
+      <p style="grid-column:1/-1;text-align:center;color:var(--slate-500);
+                font-size:.875rem;padding:2.5rem 0;">Sin categorías disponibles</p>
+      {% endfor %}
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:.875rem 1.5rem;border-top:1px solid #f1f5f9;
+                background:#fff;display:flex;justify-content:space-between;align-items:center;">
+      <span id="picker-seleccionado-label"
+            style="font-size:.78rem;color:var(--slate-500);font-style:italic;"></span>
+      <button type="button" class="btn-ghost" id="btn-cancelar-picker">Cancelar</button>
+    </div>
+
   </div>
 </div>
 
