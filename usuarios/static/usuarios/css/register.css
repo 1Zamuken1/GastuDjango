@@ -1,0 +1,74 @@
+/* =============================================================
+   register.css  —  GastuApp
+   Ruta: usuarios/static/usuarios/css/register.css
+   Estilos exclusivos de la vista de registro
+   ============================================================= */
+
+/* ── Barra de fortaleza de contraseña ──────────────────────── */
+.strength-bar-track {
+  height: 4px;
+  border-radius: 99px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.strength-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.35s ease;
+}
+
+.strength-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 5px;
+  transition: color 0.3s;
+}
+
+/* ── Criterios de contraseña ───────────────────────────────── */
+.pw-criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.pw-criterion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.pw-criterion.met { color: #10b981; }
+
+.pw-criterion .criterion-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.pw-criterion.met .criterion-dot { background: #10b981; }
+
+/* ── Indicador de coincidencia de contraseñas ──────────────── */
+.match-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  margin-top: 6px;
+  min-height: 16px;
+  transition: color 0.2s;
+}

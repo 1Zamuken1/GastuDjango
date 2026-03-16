@@ -9,7 +9,7 @@ class AhorroMeta(models.Model):
         SEMANAL= 'SEMANAL', 'Semanal',
         QUINCENAL= 'QUINCENAL', 'Quincenal',
         MENSUAL='MENSUAL', 'Mensual',
-        TRIMESTRAL='TRIMESTRAL', 'Trimestral'
+        TRIMESTRAL='TRIMESTRAL', 'Trimestral',
         SEMESTRAL='SEMESTRAL', 'Semestral',
         ANUAL='ANUAL', 'Anual'
         
@@ -17,12 +17,12 @@ class AhorroMeta(models.Model):
     totalAcumulado=models.DecimalField(max_digits=12, decimal_places=2)
     frecuencia=models.CharField(max_length=15, choices=Frecuencia.choices)
     fechaCreacion = models.DateField(auto_now_add=True)
-    fechaMeta=models.DateField(blank=True)
-    estado= models.BooleanField()
-    cantidadCuotas=models.IntegerField()
-    descripcion=models.CharField(max_length=255)
-    categoria = models.ForeignKey("categorias.Categoria", on_delete= models.CASCADE)
-    usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE)
+    fechaMeta=models.DateField(blank=True, null=False)
+    estado= models.BooleanField(default=True)
+    cantidadCuotas=models.IntegerField(null=False)
+    descripcion=models.CharField(max_length=255, null=False)
+    categoria = models.ForeignKey("categorias.categoria", on_delete= models.CASCADE)
+    usuario = models.ForeignKey("usuarios.usuario", on_delete=models.CASCADE)
     
     class Meta:
         verbose_name = 'Meta de Ahorro'
@@ -30,7 +30,7 @@ class AhorroMeta(models.Model):
         ordering = ['-fechaCreacion'] # El '-' hace que la más nueva salga primero
         
     def __str__(self):
-        return f"{self.descripcion} - {self.montoMeta}"
+        return f"{self.categoria} - {self.descripcion} - {self.montoMeta}"
     
     
 class AporteAhorro(models.Model):
