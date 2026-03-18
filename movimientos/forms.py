@@ -8,17 +8,16 @@ class MovimientoForm(forms.ModelForm):
     """
     Formulario de creación y edición de movimientos.
 
-    Acepta un kwarg 'tipo_movimiento' para filtrar el queryset de categorías
-    al tipo correcto (INGRESO o EGRESO) según la vista desde la que se use.
+    Acepta dos kwargs adicionales:
+    - tipo_movimiento: filtra el queryset de categorías al tipo correcto
+      (INGRESO o EGRESO) según la vista desde la que se use.
+    - disponible: Decimal con el saldo disponible del usuario en el mes actual.
+      Solo se usa cuando tipo_movimiento es EGRESO para impedir que el monto
+      supere el dinero disponible.
 
-    fecha_registro se declara fuera de Meta.fields porque el modelo
-    lo tiene como non-editable.
+    fecha_registro NO se expone al usuario: el modelo usa auto_now_add=True,
+    por lo que se llena automáticamente con la fecha y hora del servidor al guardar.
     """
-
-    fecha_registro = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'}),
-        label='Fecha',
-    )
 
     class Meta:
         model = Movimiento
@@ -34,8 +33,9 @@ class MovimientoForm(forms.ModelForm):
             'categoria': 'Categoría',
         }
 
-    def __init__(self, *args, tipo_movimiento=None, **kwargs):
+    def __init__(self, *args, tipo_movimiento=None, disponible=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self._disponible = disponible
         qs = Categoria.objects.filter(activo=True)
         if tipo_movimiento in ('INGRESO', 'EGRESO'):
             qs = qs.filter(tipo=tipo_movimiento)
@@ -50,8 +50,24 @@ class MovimientoForm(forms.ModelForm):
         return tipo
 
     def clean_monto(self):
-        """Validar que el monto sea mayor a cero."""
+        """
+        Valida que el monto sea mayor a cero.
+        Para egresos, también valida que no supere el disponible del mes actual.
+        """
         monto = self.cleaned_data.get('monto')
         if monto is not None and monto <= 0:
             raise forms.ValidationError('El monto debe ser mayor a cero.')
-        return monto
+
+        tipo = self.cleaned_data.get('tipo')
+        if (
+            tipo == 'EGRESO'
+            and monto is not None
+            and self._disponible is not None
+            and monto > self._disponible
+        ):
+            raise forms.ValidationError(
+                f'El monto excede tu saldo disponible (${self._disponible:,.0f}). '
+                f'Registra un ingreso primero o reduce el monto del egreso.'
+            )
+
+        return monto 

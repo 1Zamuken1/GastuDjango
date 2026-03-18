@@ -107,11 +107,19 @@ def lista_egresos(request):
         else Decimal('0')
     )
 
+    total_ingresos_mes = (
+        Movimiento.objects
+        .filter(usuario=request.user, tipo='INGRESO', fecha_registro__month=mes, fecha_registro__year=anio)
+        .aggregate(total=Sum('monto'))['total'] or Decimal('0')
+    )
+    disponible = total_ingresos_mes - total_mes
+
     return render(request, 'movimientos/egresos.html', {
         'categorias_con_totales': categorias_con_totales,
         'total_mes': total_mes,
         'cantidad_mes': cantidad_mes,
         'promedio_mes': promedio_mes,
+        'disponible': disponible,
         'categorias_disponibles': Categoria.objects.filter(activo=True, tipo='EGRESO').order_by('nombre'),
         'mes_nombre': MESES_ES[mes],
         'anio': anio,
@@ -127,10 +135,40 @@ def guardar_movimiento(request, pk=None):
 
     Detecta el tipo desde el POST para filtrar las categorías correctas
     en la validación del form.
+
+    Para egresos calcula el disponible del mes actual (ingresos - egresos) y lo
+    pasa al form para que valide que el monto no lo supere. En edición, el monto
+    original del egreso se descuenta del total antes de comparar, para que editar
+    un egreso existente no bloquee falsamente la validación.
     """
     instancia = get_object_or_404(Movimiento, pk=pk, usuario=request.user) if pk else None
     tipo_movimiento = request.POST.get('tipo')
-    form = MovimientoForm(request.POST, instance=instancia, tipo_movimiento=tipo_movimiento)
+
+    disponible = None
+    if tipo_movimiento == 'EGRESO':
+        hoy = timezone.now().date()
+        mes, anio = hoy.month, hoy.year
+        total_ingresos = (
+            Movimiento.objects
+            .filter(usuario=request.user, tipo='INGRESO', fecha_registro__month=mes, fecha_registro__year=anio)
+            .aggregate(t=Sum('monto'))['t'] or Decimal('0')
+        )
+        total_egresos = (
+            Movimiento.objects
+            .filter(usuario=request.user, tipo='EGRESO', fecha_registro__month=mes, fecha_registro__year=anio)
+            .aggregate(t=Sum('monto'))['t'] or Decimal('0')
+        )
+        # En edición, el monto original ya está sumado en total_egresos; lo restamos
+        # para que el usuario pueda modificar su propio egreso sin falsa restricción.
+        monto_original = instancia.monto if instancia and instancia.tipo == 'EGRESO' else Decimal('0')
+        disponible = total_ingresos - (total_egresos - monto_original)
+
+    form = MovimientoForm(
+        request.POST,
+        instance=instancia,
+        tipo_movimiento=tipo_movimiento,
+        disponible=disponible,
+    )
 
     if form.is_valid():
         mov = form.save(commit=False)
