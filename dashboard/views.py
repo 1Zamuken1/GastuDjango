@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Q
+from django.db.models import Sum
 from django.shortcuts import render
 
 from dashboard.models import ResumenMensual
@@ -12,8 +12,8 @@ from notificaciones.models import Notificacion
 
 
 MESES_ES = {
-    1: 'Enero',   2: 'Febrero',   3: 'Marzo',    4: 'Abril',
-    5: 'Mayo',    6: 'Junio',     7: 'Julio',     8: 'Agosto',
+    1: 'Enero',   2: 'Febrero',  3: 'Marzo',    4: 'Abril',
+    5: 'Mayo',    6: 'Junio',    7: 'Julio',     8: 'Agosto',
     9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
 }
 
@@ -24,7 +24,7 @@ def _mes_anterior(mes, anio, n):
     """Retorna (mes, anio) retrocediendo n meses."""
     mes_total = mes - n
     if mes_total <= 0:
-        anios_atras   = (-mes_total // 12) + 1
+        anios_atras    = (-mes_total // 12) + 1
         mes_resultado  = mes_total + anios_atras * 12
         anio_resultado = anio - anios_atras
     else:
@@ -33,15 +33,10 @@ def _mes_anterior(mes, anio, n):
     return mes_resultado, anio_resultado
 
 
-def _totales_desde_movimientos(user, mes, anio):
-    """
-    Fallback: calcula ingresos y egresos del mes directamente
-    desde Movimiento cuando ResumenMensual no tiene datos aún
-    (ocurre si las signals están duplicadas o no se han disparado).
-    """
+def _totales_movimiento(user, mes, anio):
+    """Calcula ingresos y egresos directamente desde Movimiento (fallback)."""
     qs = Movimiento.objects.filter(
-        usuario=user,
-        activo=True,
+        usuario=user, activo=True,
         fecha_registro__month=mes,
         fecha_registro__year=anio,
     )
@@ -54,66 +49,50 @@ def _totales_desde_movimientos(user, mes, anio):
 def home_view(request):
     """
     Vista principal del dashboard.
-    Prioriza ResumenMensual; si no hay datos, consulta Movimiento directamente.
+    Lee los valores calculados directamente desde ResumenMensual.
+    El cálculo se delega a dashboard/services.py vía signals de Movimiento.
     """
     hoy  = date.today()
     mes  = hoy.month
     anio = hoy.year
     user = request.user
 
-    # ── Resumen del mes actual ────────────────────────────────────────────────
+    # ── Leer resumen del mes actual desde BD ──────────────────────────────────
     resumen = ResumenMensual.objects.filter(
         usuario=user, mes=mes, anio=anio,
     ).first()
 
-    if resumen and (resumen.total_ingresos or resumen.total_egresos):
-        total_ingresos = resumen.total_ingresos
-        total_egresos  = resumen.total_egresos
-        hay_deficit    = bool(resumen.deficit)
+    if resumen:
+        total_ingresos     = resumen.total_ingresos
+        total_egresos      = resumen.total_egresos
+        total_ahorros      = resumen.total_ahorros
+        utilidad           = resumen.ingreso_neto        # ingresos - egresos - ahorros
+        disponible         = resumen.ganancia_acumulada  # acumulado histórico + mes actual
+        ahorro_total       = resumen.ahorro_total
+        hay_deficit        = resumen.deficit
     else:
-        # Fallback directo a Movimiento
-        total_ingresos, total_egresos = _totales_desde_movimientos(user, mes, anio)
-        hay_deficit = total_egresos > total_ingresos
+        # Resumen no generado aún — fallback directo a Movimiento
+        total_ingresos, total_egresos = _totales_movimiento(user, mes, anio)
+        total_ahorros  = ZERO
+        utilidad       = total_ingresos - total_egresos
+        disponible     = utilidad
+        ahorro_total   = ZERO
+        hay_deficit    = total_egresos > total_ingresos
 
-    total_ahorros = ZERO  # placeholder hasta módulo ahorros
-
-    # ── Cards calculadas ──────────────────────────────────────────────────────
     diferencia = total_ingresos - total_egresos
-    utilidad   = total_ingresos - total_egresos - total_ahorros
-    ahorro_total = ZERO
 
-    # Disponible: suma de ingreso_neto de ResumenMensual anteriores + diferencia actual
-    acumulado_anterior = ResumenMensual.objects.filter(
-        usuario=user,
-    ).exclude(mes=mes, anio=anio).aggregate(t=Sum('ingreso_neto'))['t'] or ZERO
-
-    # Si el ResumenMensual pasado también es vacío, sumar balances mes a mes desde Movimiento
-    if not acumulado_anterior:
-        for i in range(1, 13):     # máximo 12 meses atrás para el acumulado
-            m, a = _mes_anterior(mes, anio, i)
-            if a < anio - 2:       # no ir más de 2 años atrás
-                break
-            ing, egr = _totales_desde_movimientos(user, m, a)
-            acumulado_anterior += (ing - egr)
-
-    disponible = acumulado_anterior + diferencia
-
-    # ── Histórico 6 meses — stacked bar ──────────────────────────────────────
-    labels_h   = []
-    ingresos_h = []
-    egresos_h  = []
-    ahorros_h  = []
+    # ── Histórico 6 meses para gráfico de tendencia ───────────────────────────
+    labels_h, ingresos_h, egresos_h, ahorros_h = [], [], [], []
 
     for i in range(5, -1, -1):
         m, a = _mes_anterior(mes, anio, i)
         r = ResumenMensual.objects.filter(usuario=user, mes=m, anio=a).first()
 
-        if r and (r.total_ingresos or r.total_egresos):
+        if r:
             ing = float(r.total_ingresos)
             egr = float(r.total_egresos)
         else:
-            # Fallback por mes
-            _ing, _egr = _totales_desde_movimientos(user, m, a)
+            _ing, _egr = _totales_movimiento(user, m, a)
             ing = float(_ing)
             egr = float(_egr)
 
@@ -133,9 +112,7 @@ def home_view(request):
     egresos_cat = (
         Movimiento.objects
         .filter(
-            usuario=user,
-            tipo='EGRESO',
-            activo=True,
+            usuario=user, tipo='EGRESO', activo=True,
             fecha_registro__month=mes,
             fecha_registro__year=anio,
         )
@@ -177,27 +154,22 @@ def home_view(request):
     )
 
     context = {
-        # Cards
-        'total_ingresos': total_ingresos,
-        'utilidad':       utilidad,
-        'total_egresos':  total_egresos,
-        'total_ahorros':  total_ahorros,
-        'disponible':     disponible,
-        'diferencia':     diferencia,
-        'ahorro_total':   ahorro_total,
-        'hay_deficit':    hay_deficit,
-        # Gráficos
-        'historico_json': historico_json,
-        'pie_json':       pie_json,
-        # Tabla
-        'ultimos_movimientos': ultimos_movimientos,
-        # Notificaciones
-        'notificaciones_count':   notificaciones_count,
-        'ultimas_notificaciones': ultimas_notificaciones,
-        # Metadata
-        'mes_nombre': MESES_ES[mes],
-        'anio':       anio,
-        'hoy':        hoy,
+        'total_ingresos':          total_ingresos,
+        'total_egresos':           total_egresos,
+        'total_ahorros':           total_ahorros,
+        'utilidad':                utilidad,
+        'disponible':              disponible,
+        'diferencia':              diferencia,
+        'ahorro_total':            ahorro_total,
+        'hay_deficit':             hay_deficit,
+        'historico_json':          historico_json,
+        'pie_json':                pie_json,
+        'ultimos_movimientos':     ultimos_movimientos,
+        'notificaciones_count':    notificaciones_count,
+        'ultimas_notificaciones':  ultimas_notificaciones,
+        'mes_nombre':              MESES_ES[mes],
+        'anio':                    anio,
+        'hoy':                     hoy,
     }
 
     return render(request, 'dashboard/home.html', context)
