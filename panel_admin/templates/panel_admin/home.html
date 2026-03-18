@@ -1,0 +1,189 @@
+{% extends 'panel_admin/base_admin.html' %}
+{% load static %}
+{% block title %}Dashboard Admin — GastuApp{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_breadcrumb %}Admin / Resumen general{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+  <div class="stat-card stat-card--indigo">
+    <p class="stat-label">Total usuarios</p>
+    <p class="stat-value">{{ total_usuarios }}</p>
+    <p class="stat-sub">{{ admins }} administrador{{ admins|pluralize }}</p>
+    <div class="stat-icon"><i data-lucide="users"></i></div>
+  </div>
+  <div class="stat-card stat-card--emerald">
+    <p class="stat-label">Usuarios activos</p>
+    <p class="stat-value">{{ usuarios_activos }}</p>
+    <p class="stat-sub">{{ usuarios_inactivos }} inactivo{{ usuarios_inactivos|pluralize }}</p>
+    <div class="stat-icon"><i data-lucide="user-check"></i></div>
+  </div>
+  <div class="stat-card stat-card--blue">
+    <p class="stat-label">Movimientos totales</p>
+    <p class="stat-value">{{ total_movimientos }}</p>
+    <p class="stat-sub">{{ mov_este_mes }} este mes</p>
+    <div class="stat-icon"><i data-lucide="activity"></i></div>
+  </div>
+  <div class="stat-card stat-card--violet">
+    <p class="stat-label">Categorías activas</p>
+    <p class="stat-value">{{ total_categorias }}</p>
+    <p class="stat-sub">Disponibles en la app</p>
+    <div class="stat-icon"><i data-lucide="tag"></i></div>
+  </div>
+</div>
+
+<!-- Opciones rápidas + Top usuarios -->
+<div style="display:grid; grid-template-columns: 280px 1fr; gap:16px; margin-bottom:16px;">
+
+  <!-- Opciones rápidas -->
+  <div class="admin-card" style="padding:20px;">
+    <p class="section-title" style="margin-bottom:16px;">Opciones rápidas</p>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <a href="{% url 'panel_admin:usuarios' %}" class="quick-action">
+        <div class="quick-action-icon" style="background:#eef2ff; color:#4338ca;">
+          <i data-lucide="users"></i>
+        </div>
+        <span>Gestionar usuarios</span>
+        <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--slate-400);margin-left:auto;"></i>
+      </a>
+      <a href="{% url 'panel_admin:categorias' %}" class="quick-action">
+        <div class="quick-action-icon" style="background:#f5f3ff; color:#5b21b6;">
+          <i data-lucide="tag"></i>
+        </div>
+        <span>Gestionar categorías</span>
+        <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--slate-400);margin-left:auto;"></i>
+      </a>
+      <button class="quick-action" id="btn-open-perfil">
+        <div class="quick-action-icon" style="background:#ecfdf5; color:#059669;">
+          <i data-lucide="user-cog"></i>
+        </div>
+        <span>Mi perfil</span>
+        <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--slate-400);margin-left:auto;"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Top usuarios -->
+  <div class="admin-card" style="padding:20px;">
+    <div class="section-header" style="margin-bottom:14px;">
+      <div>
+        <p class="section-title">Usuarios más activos</p>
+        <p class="section-sub">Por número de movimientos</p>
+      </div>
+      <a href="{% url 'panel_admin:usuarios' %}" class="btn btn--ghost btn--sm">Ver todos</a>
+    </div>
+    {% for u in top_usuarios %}
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--admin-accent);color:white;font-weight:700;font-size:0.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        {{ u.username|first|upper }}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:0.85rem;font-weight:600;color:var(--slate-700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ u.username }}</p>
+        <p style="font-size:0.72rem;color:var(--slate-400);">{{ u.email|default:"Sin correo" }}</p>
+      </div>
+      <span class="badge badge--indigo">{{ u.num_mov }} mov.</span>
+    </div>
+    {% empty %}
+    <p style="font-size:0.85rem;color:var(--slate-400);text-align:center;padding:20px 0;">Sin datos aún</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Últimos movimientos -->
+<div class="admin-card" style="padding:20px;">
+  <div class="section-header">
+    <div>
+      <p class="section-title">Movimientos recientes</p>
+      <p class="section-sub">Últimas transacciones de la plataforma</p>
+    </div>
+  </div>
+  <div class="admin-table-wrap" style="border-radius:10px;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Usuario</th><th>Tipo</th><th>Categoría</th>
+          <th>Descripción</th><th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mov in ultimos_movimientos %}
+        <tr>
+          <td><span style="font-weight:600;color:var(--slate-700);">{{ mov.usuario.username }}</span></td>
+          <td>
+            <span class="badge {% if mov.tipo == 'INGRESO' %}badge--green{% else %}badge--red{% endif %}">
+              {{ mov.tipo|capfirst }}
+            </span>
+          </td>
+          <td>{{ mov.categoria.nombre }}</td>
+          <td style="color:var(--slate-500);">{{ mov.descripcion|default:"—"|truncatechars:30 }}</td>
+          <td style="color:var(--slate-400);font-size:0.8rem;">{{ mov.fecha_registro|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--slate-400);">Sin movimientos aún.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Modal Mi Perfil ──────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-perfil">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <p class="modal-title">
+        <i data-lucide="user-cog" style="width:16px;height:16px;"></i>
+        Mi Perfil
+      </p>
+      <button class="modal-close" id="btn-close-perfil"><i data-lucide="x"></i></button>
+    </div>
+
+    <!-- Avatar -->
+    <div style="display:flex;flex-direction:column;align-items:center;padding:20px 0 8px;">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--admin-accent);color:white;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.5rem;display:flex;align-items:center;justify-content:center;" id="perfil-avatar">
+        {{ request.user.username|first|upper }}
+      </div>
+      <p style="margin-top:10px;font-weight:700;font-size:0.95rem;color:var(--slate-900);" id="perfil-display-name">{{ request.user.username }}</p>
+      <span class="badge badge--indigo" style="margin-top:4px;">Administrador</span>
+    </div>
+
+    <div style="padding:0 24px 24px;">
+      <p id="perfil-msg" style="font-size:0.8rem;margin-bottom:12px;min-height:18px;"></p>
+      <form id="form-perfil" class="admin-form">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Nombre de usuario</label>
+          <input class="form-input" type="text" name="username" id="perfil-username"
+                 value="{{ request.user.username }}" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input class="form-input" type="email" name="email" id="perfil-email"
+                 value="{{ request.user.email|default:'' }}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono <span style="color:var(--slate-400);font-weight:400;">(opcional)</span></label>
+          <input class="form-input" type="tel" name="telefono" id="perfil-telefono"
+                 value="{{ request.user.telefono|default:'' }}" />
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
+          <button type="button" class="btn btn--ghost" id="btn-cancel-perfil">Cancelar</button>
+          <button type="submit" class="btn btn--primary">
+            <i data-lucide="save"></i> Guardar cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.PERFIL_URL = '{% url "panel_admin:perfil" %}';
+</script>
+<script src="{% static 'panel_admin/js/home.js' %}"></script>
+{% endblock %}

@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'notificaciones',
     'dashboard',
     'programaciones',
+    'panel_admin',
     'agente_financiero',
     'presupuesto',
     'categorias',

@@ -1,0 +1,208 @@
+{% extends 'panel_admin/base_admin.html' %}
+{% load static %}
+{% block title %}Usuarios — Admin GastuApp{% endblock %}
+{% block page_title %}Usuarios{% endblock %}
+{% block page_breadcrumb %}Admin / Gestión de usuarios{% endblock %}
+{% block nav_usuarios %}active{% endblock %}
+
+{% block content %}
+
+<div class="section-header">
+  <div>
+    <p class="section-title">Gestión de usuarios</p>
+    <p class="section-sub">{{ usuarios|length }} usuario{{ usuarios|length|pluralize }} encontrado{{ usuarios|length|pluralize }}</p>
+  </div>
+  <button class="btn btn--primary" id="btn-nuevo-usuario">
+    <i data-lucide="user-plus"></i> Nuevo usuario
+  </button>
+</div>
+
+<!-- Filtros -->
+<form method="get" class="filters-bar">
+  <div class="search-wrap">
+    <div class="search-icon"><i data-lucide="search"></i></div>
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por usuario o correo..." id="search-input" />
+  </div>
+  <select name="rol" class="filter-select">
+    <option value="">Todos los roles</option>
+    <option value="USER"  {% if rol_fil == 'USER'  %}selected{% endif %}>Usuario</option>
+    <option value="ADMIN" {% if rol_fil == 'ADMIN' %}selected{% endif %}>Admin</option>
+  </select>
+  <select name="estado" class="filter-select">
+    <option value="">Todos los estados</option>
+    <option value="activo"   {% if estado_fil == 'activo'   %}selected{% endif %}>Activos</option>
+    <option value="inactivo" {% if estado_fil == 'inactivo' %}selected{% endif %}>Inactivos</option>
+  </select>
+  <button type="submit" class="btn btn--ghost"><i data-lucide="filter"></i> Filtrar</button>
+  {% if q or rol_fil or estado_fil %}
+  <a href="{% url 'panel_admin:usuarios' %}" class="btn btn--ghost"><i data-lucide="x"></i> Limpiar</a>
+  {% endif %}
+</form>
+
+<!-- Tabla -->
+<div class="admin-table-wrap">
+  <table class="admin-table" id="tabla-usuarios">
+    <thead>
+      <tr>
+        <th>Usuario</th><th>Correo</th><th>Teléfono</th>
+        <th>Rol</th><th>Registro</th>
+        <th>Estado</th><th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in usuarios %}
+      <tr data-username="{{ u.username|lower }}" data-email="{{ u.email|lower }}">
+        <td>
+          <div style="display:flex;align-items:center;gap:9px;">
+            <div style="width:30px;height:30px;border-radius:50%;background:{% if u.rol == 'ADMIN' %}var(--admin-accent){% else %}var(--emerald){% endif %};color:white;font-weight:700;font-size:0.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              {{ u.username|first|upper }}
+            </div>
+            <span style="font-weight:600;color:var(--slate-700);">{{ u.username }}</span>
+          </div>
+        </td>
+        <td style="color:var(--slate-500);">{{ u.email|default:"—" }}</td>
+        <td style="color:var(--slate-500);">{{ u.telefono|default:"—" }}</td>
+        <td>
+          <span id="badge-rol-{{ u.id }}"
+                class="badge {% if u.rol == 'ADMIN' %}badge--indigo{% else %}badge--slate{% endif %}">
+            {% if u.rol == 'ADMIN' %}Admin{% else %}Usuario{% endif %}
+          </span>
+        </td>
+
+        <td style="font-size:0.8rem;color:var(--slate-400);">{{ u.date_joined|date:"d/m/Y" }}</td>
+        <td>
+          <label class="toggle">
+            <input type="checkbox" class="js-toggle-usuario" data-id="{{ u.id }}"
+                   {% if u.is_active %}checked{% endif %}
+                   {% if u == request.user %}disabled{% endif %} />
+            <span class="toggle-slider"></span>
+          </label>
+        </td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="action-btn action-btn--edit js-btn-editar-usuario"
+                    data-id="{{ u.id }}" title="Editar">
+              <i data-lucide="pencil"></i>
+            </button>
+            {% if u != request.user %}
+            <button class="action-btn js-cambiar-rol" data-id="{{ u.id }}"
+                    title="{% if u.rol == 'ADMIN' %}Quitar admin{% else %}Hacer admin{% endif %}">
+              <i data-lucide="{% if u.rol == 'ADMIN' %}shield-off{% else %}shield-check{% endif %}"></i>
+            </button>
+            {% if u.rol != 'ADMIN' %}
+            <button class="action-btn action-btn--danger js-eliminar-usuario"
+                    data-id="{{ u.id }}" data-username="{{ u.username }}" title="Eliminar">
+              <i data-lucide="trash-2"></i>
+            </button>
+            {% endif %}
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--slate-400);">No se encontraron usuarios.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Modal crear usuario ─────────────────────────────────── -->
+<div class="modal-overlay" id="modal-crear-usuario">
+  <div class="modal-box" style="max-width:500px;">
+    <div class="modal-header">
+      <p class="modal-title"><i data-lucide="user-plus" style="width:16px;height:16px;"></i> Nuevo usuario</p>
+      <button class="modal-close js-close-modal" data-modal="modal-crear-usuario"><i data-lucide="x"></i></button>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <p id="msg-crear" style="font-size:0.8rem;min-height:18px;margin-bottom:10px;"></p>
+      <form id="form-crear-usuario" class="admin-form">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Usuario</label>
+          <input class="form-input" type="text" name="username" placeholder="Nombre de usuario" required />
+          <p class="form-error" id="err-crear-username"></p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input class="form-input" type="email" name="email" placeholder="correo@ejemplo.com" required />
+          <p class="form-error" id="err-crear-email"></p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono <span style="color:var(--slate-400);font-weight:400;">(opcional)</span></label>
+          <input class="form-input" type="tel" name="telefono" placeholder="Ej: 3001234567" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <input class="form-input" type="password" name="password1" placeholder="Mínimo 8 caracteres" required />
+          <p class="form-error" id="err-crear-password1"></p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirmar contraseña</label>
+          <input class="form-input" type="password" name="password2" placeholder="Repite la contraseña" required />
+          <p class="form-error" id="err-crear-password2"></p>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
+          <button type="button" class="btn btn--ghost js-close-modal" data-modal="modal-crear-usuario">Cancelar</button>
+          <button type="submit" class="btn btn--primary"><i data-lucide="user-plus"></i> Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal editar usuario ────────────────────────────────── -->
+<div class="modal-overlay" id="modal-editar-usuario">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <p class="modal-title"><i data-lucide="pencil" style="width:16px;height:16px;"></i> Editar usuario</p>
+      <button class="modal-close js-close-modal" data-modal="modal-editar-usuario"><i data-lucide="x"></i></button>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <p id="msg-editar" style="font-size:0.8rem;min-height:18px;margin-bottom:10px;"></p>
+      <form id="form-editar-usuario" class="admin-form">
+        {% csrf_token %}
+        <input type="hidden" id="editar-usuario-id" />
+        <div class="form-group">
+          <label class="form-label">Usuario</label>
+          <input class="form-input" type="text" name="username" id="editar-username" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input class="form-input" type="email" name="email" id="editar-email" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono <span style="color:var(--slate-400);font-weight:400;">(opcional)</span></label>
+          <input class="form-input" type="tel" name="telefono" id="editar-telefono" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            Nueva contraseña
+            <span style="color:var(--slate-400);font-weight:400;">(dejar vacío para no cambiar)</span>
+          </label>
+          <div style="position:relative;">
+            <input class="form-input" type="password" name="password" id="editar-password"
+                   placeholder="Mínimo 8 caracteres" autocomplete="new-password"
+                   style="padding-right:3rem;" />
+            <button type="button" id="toggleEditPass"
+                    style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--slate-400);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
+          <button type="button" class="btn btn--ghost js-close-modal" data-modal="modal-editar-usuario">Cancelar</button>
+          <button type="submit" class="btn btn--primary"><i data-lucide="save"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.CREAR_USUARIO_URL = '{% url "panel_admin:crear_usuario" %}';
+</script>
+<script src="{% static 'panel_admin/js/usuarios.js' %}"></script>
+{% endblock %}

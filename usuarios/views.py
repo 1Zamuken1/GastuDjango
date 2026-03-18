@@ -47,7 +47,11 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             next_url = request.POST.get('next') or request.GET.get('next')
-            return redirect(next_url if next_url else settings.LOGIN_REDIRECT_URL)
+            if next_url:
+                return redirect(next_url)
+            if user.rol == 'ADMIN' or user.is_staff:
+                return redirect('/admin-panel/')
+            return redirect(settings.LOGIN_REDIRECT_URL)
     else:
         form = LoginForm(request)
 

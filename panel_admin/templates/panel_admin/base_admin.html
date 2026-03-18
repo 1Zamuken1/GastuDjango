@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Panel Admin — GastuApp{% endblock %}</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="{% static 'panel_admin/css/admin.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full">
+
+<!-- ── Sidebar ──────────────────────────────────────────────── -->
+<aside id="admin-sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <i data-lucide="shield-check"></i>
+    </div>
+    <div class="brand-text">
+      <span class="brand-name">GastuApp</span>
+      <span class="brand-role">Panel Admin</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <p class="nav-label-section">General</p>
+
+    <a href="{% url 'panel_admin:home' %}"
+       class="nav-item {% block nav_home %}{% endblock %}">
+      <i data-lucide="layout-dashboard" class="nav-icon"></i>
+      <span>Dashboard</span>
+    </a>
+
+    <p class="nav-label-section">Gestión</p>
+
+    <a href="{% url 'panel_admin:usuarios' %}"
+       class="nav-item {% block nav_usuarios %}{% endblock %}">
+      <i data-lucide="users" class="nav-icon"></i>
+      <span>Usuarios</span>
+    </a>
+
+    <a href="{% url 'panel_admin:categorias' %}"
+       class="nav-item {% block nav_categorias %}{% endblock %}">
+      <i data-lucide="tag" class="nav-icon"></i>
+      <span>Categorías</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+      <div class="user-meta">
+        <p class="user-name">{{ request.user.username }}</p>
+        <p class="user-badge">Administrador</p>
+      </div>
+    </div>
+    <a href="{% url 'logout' %}" class="logout-btn" title="Cerrar sesión">
+      <i data-lucide="log-out"></i>
+    </a>
+  </div>
+</aside>
+
+<!-- ── Contenido principal ───────────────────────────────────── -->
+<div id="admin-main">
+
+  <!-- Topbar -->
+  <header id="admin-topbar">
+    <div class="topbar-left">
+      <button id="sidebar-toggle" class="sidebar-toggle-btn">
+        <i data-lucide="panel-left"></i>
+      </button>
+      <div>
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+        <p class="page-breadcrumb">{% block page_breadcrumb %}Admin{% endblock %}</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+    </div>
+  </header>
+
+  <!-- Mensajes -->
+  {% if messages %}
+  <div class="messages-container">
+    {% for message in messages %}
+    <div class="message message--{{ message.tags }}">
+      {% if 'success' in message.tags %}
+        <i data-lucide="check-circle"></i>
+      {% else %}
+        <i data-lucide="alert-circle"></i>
+      {% endif %}
+      {{ message }}
+      <button class="message-close" onclick="this.parentElement.remove()">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Contenido -->
+  <main id="admin-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="{% static 'panel_admin/js/admin.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

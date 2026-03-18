@@ -1,0 +1,160 @@
+{% extends 'panel_admin/base_admin.html' %}
+{% load static %}
+{% block title %}Categorías — Admin GastuApp{% endblock %}
+{% block page_title %}Categorías{% endblock %}
+{% block page_breadcrumb %}Admin / Gestión de categorías{% endblock %}
+{% block nav_categorias %}active{% endblock %}
+
+{% block content %}
+
+<div class="section-header">
+  <div>
+    <p class="section-title">Gestión de categorías</p>
+    <p class="section-sub">{{ categorias|length }} categoría{{ categorias|length|pluralize }}</p>
+  </div>
+  <button class="btn btn--primary" id="btn-nueva-categoria">
+    <i data-lucide="plus"></i> Nueva categoría
+  </button>
+</div>
+
+<!-- Filtros -->
+<form method="get" class="filters-bar">
+  <div class="search-wrap">
+    <div class="search-icon"><i data-lucide="search"></i></div>
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar categoría..." id="search-cat" />
+  </div>
+  <select name="tipo" class="filter-select" id="filter-tipo">
+    <option value="">Todos los tipos</option>
+    <option value="INGRESO" {% if tipo_fil == 'INGRESO' %}selected{% endif %}>Ingreso</option>
+    <option value="EGRESO"  {% if tipo_fil == 'EGRESO'  %}selected{% endif %}>Egreso</option>
+    <option value="AHORRO"  {% if tipo_fil == 'AHORRO'  %}selected{% endif %}>Ahorro</option>
+  </select>
+  <button type="submit" class="btn btn--ghost"><i data-lucide="filter"></i> Filtrar</button>
+  {% if q or tipo_fil %}
+  <a href="{% url 'panel_admin:categorias' %}" class="btn btn--ghost"><i data-lucide="x"></i> Limpiar</a>
+  {% endif %}
+</form>
+
+<!-- Tabla -->
+<div class="admin-table-wrap">
+  <table class="admin-table" id="tabla-categorias">
+    <thead>
+      <tr>
+        <th>Nombre</th><th>Tipo</th><th>Descripción</th>
+        <th>Creada</th><th>Estado</th><th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cat in categorias %}
+      <tr data-nombre="{{ cat.nombre|lower }}" data-tipo="{{ cat.tipo }}">
+        <td style="font-weight:600;color:var(--slate-700);">{{ cat.nombre }}</td>
+        <td>
+          {% if cat.tipo == 'INGRESO' %}<span class="badge badge--green">Ingreso</span>
+          {% elif cat.tipo == 'EGRESO' %}<span class="badge badge--red">Egreso</span>
+          {% else %}<span class="badge badge--amber">Ahorro</span>{% endif %}
+        </td>
+        <td style="color:var(--slate-500);font-size:0.82rem;">{{ cat.descripcion|default:"—"|truncatechars:40 }}</td>
+        <td style="font-size:0.8rem;color:var(--slate-400);">{{ cat.fecha_creacion|date:"d/m/Y" }}</td>
+        <td>
+          <label class="toggle">
+            <input type="checkbox" class="js-toggle-categoria" data-id="{{ cat.id }}"
+                   {% if cat.activo %}checked{% endif %} />
+            <span class="toggle-slider"></span>
+          </label>
+        </td>
+        <td>
+          <button class="action-btn action-btn--edit js-btn-editar-categoria"
+                  data-id="{{ cat.id }}" title="Editar">
+            <i data-lucide="pencil"></i>
+          </button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--slate-400);">No se encontraron categorías.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Modal crear categoría ──────────────────────────────── -->
+<div class="modal-overlay" id="modal-crear-categoria">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header">
+      <p class="modal-title"><i data-lucide="plus" style="width:16px;height:16px;"></i> Nueva categoría</p>
+      <button class="modal-close js-close-modal" data-modal="modal-crear-categoria"><i data-lucide="x"></i></button>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <p id="msg-crear-cat" style="font-size:0.8rem;min-height:18px;margin-bottom:10px;"></p>
+      <form id="form-crear-categoria" class="admin-form">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input class="form-input" type="text" name="nombre" placeholder="Ej: Alimentación" required maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-input" name="tipo" required>
+            <option value="">Selecciona un tipo...</option>
+            <option value="INGRESO">Ingreso</option>
+            <option value="EGRESO">Egreso</option>
+            <option value="AHORRO">Ahorro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción <span style="color:var(--slate-400);font-weight:400;">(opcional)</span></label>
+          <input class="form-input" type="text" name="descripcion" placeholder="Descripción breve" maxlength="255" />
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
+          <button type="button" class="btn btn--ghost js-close-modal" data-modal="modal-crear-categoria">Cancelar</button>
+          <button type="submit" class="btn btn--primary"><i data-lucide="plus"></i> Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal editar categoría ─────────────────────────────── -->
+<div class="modal-overlay" id="modal-editar-categoria">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header">
+      <p class="modal-title"><i data-lucide="pencil" style="width:16px;height:16px;"></i> Editar categoría</p>
+      <button class="modal-close js-close-modal" data-modal="modal-editar-categoria"><i data-lucide="x"></i></button>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <p id="msg-editar-cat" style="font-size:0.8rem;min-height:18px;margin-bottom:10px;"></p>
+      <form id="form-editar-categoria" class="admin-form">
+        {% csrf_token %}
+        <input type="hidden" id="editar-cat-id" />
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input class="form-input" type="text" name="nombre" id="editar-cat-nombre" required maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-input" name="tipo" id="editar-cat-tipo" required>
+            <option value="INGRESO">Ingreso</option>
+            <option value="EGRESO">Egreso</option>
+            <option value="AHORRO">Ahorro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción <span style="color:var(--slate-400);font-weight:400;">(opcional)</span></label>
+          <input class="form-input" type="text" name="descripcion" id="editar-cat-desc" maxlength="255" />
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
+          <button type="button" class="btn btn--ghost js-close-modal" data-modal="modal-editar-categoria">Cancelar</button>
+          <button type="submit" class="btn btn--primary"><i data-lucide="save"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.CREAR_CATEGORIA_URL = '{% url "panel_admin:crear_categoria" %}';
+</script>
+<script src="{% static 'panel_admin/js/categorias.js' %}"></script>
+{% endblock %}
