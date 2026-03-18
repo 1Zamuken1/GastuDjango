@@ -405,3 +405,266 @@ document.querySelectorAll('.progress-bar__fill').forEach(el => {
 });
 bindearCards();
 lucide.createIcons();
+
+/* ── Picker de categorías ────────────────────────────── */
+(function () {
+  const modalPicker   = document.getElementById('modal-picker-cat');
+  const btnPicker     = document.getElementById('btn-picker-categoria');
+  const pickerLabel   = document.getElementById('picker-cat-label');
+  const inputCat      = document.getElementById('campo-categoria');
+  const buscadorPick  = document.getElementById('picker-buscador');
+
+  if (!modalPicker || !btnPicker) return;
+
+  function abrirPicker() {
+    buscadorPick.value = '';
+    filtrarPicker('');
+    /* Marcar la card ya seleccionada */
+    const selId = inputCat.value;
+    document.querySelectorAll('.picker-cat-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.id === selId);
+    });
+    /* Actualizar label del footer */
+    const selLabel = document.getElementById('picker-seleccionado-label');
+    if (selLabel) {
+      const selCard = document.querySelector(`.picker-cat-card[data-id="${selId}"]`);
+      selLabel.textContent = selCard ? `Seleccionado: ${selCard.dataset.nombre}` : '';
+    }
+    modalPicker.removeAttribute('hidden');
+    lucide.createIcons();
+    setTimeout(() => buscadorPick.focus(), 50);
+  }
+
+  function cerrarPicker() {
+    modalPicker.setAttribute('hidden', '');
+  }
+
+  function filtrarPicker(q) {
+    const qLower = q.toLowerCase().trim();
+    document.querySelectorAll('.picker-cat-card').forEach(card => {
+      const nombre = card.dataset.nombre.toLowerCase();
+      card.style.display = nombre.includes(qLower) ? '' : 'none';
+    });
+  }
+
+  function seleccionarCategoria(id, nombre) {
+    inputCat.value          = id;
+    pickerLabel.textContent = nombre;
+    pickerLabel.style.color = 'var(--slate-900)';
+    btnPicker.style.borderColor = '';
+    /* Marcar card seleccionada visualmente */
+    document.querySelectorAll('.picker-cat-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.id === id);
+    });
+    cerrarPicker();
+  }
+
+  btnPicker.addEventListener('click', (e) => {
+    e.stopPropagation();
+    abrirPicker();
+  });
+
+  document.getElementById('btn-cerrar-picker').addEventListener('click', cerrarPicker);
+  document.getElementById('btn-cancelar-picker').addEventListener('click', cerrarPicker);
+  modalPicker.addEventListener('click', (e) => {
+    if (e.target === modalPicker) cerrarPicker();
+  });
+
+  document.getElementById('picker-grid').addEventListener('click', (e) => {
+    const card = e.target.closest('.picker-cat-card');
+    if (card) seleccionarCategoria(card.dataset.id, card.dataset.nombre);
+  });
+
+  buscadorPick.addEventListener('input', (e) => {
+    filtrarPicker(e.target.value);
+  });
+
+  /* Integrar con el ciclo de vida de los modales CRUD */
+  const _origNuevo  = window.abrirModalNuevo  || abrirModalNuevo;
+  const _origEditar = window.abrirModalEditar || abrirModalEditar;
+  const _origCerrar = window.cerrarModalMovimiento || cerrarModalMovimiento;
+
+  window.abrirModalNuevo = function () {
+    _origNuevo();
+    inputCat.value = '';
+    pickerLabel.textContent = 'Seleccionar categoría';
+    pickerLabel.style.color = '';
+  };
+
+  window.abrirModalEditar = function (id, descripcion, monto, fechaRaw, categoriaId) {
+    _origEditar(id, descripcion, monto, fechaRaw, categoriaId);
+    /* Buscar el nombre de la categoría en las cards del picker */
+    const card = document.querySelector(`.picker-cat-card[data-id="${categoriaId}"]`);
+    if (card) {
+      pickerLabel.textContent = card.dataset.nombre;
+      pickerLabel.style.color = 'var(--slate-900)';
+    }
+  };
+
+  window.cerrarModalMovimiento = function () {
+    _origCerrar();
+    inputCat.value = '';
+    pickerLabel.textContent = 'Seleccionar categoría';
+    pickerLabel.style.color = '';
+  };
+
+  /* Escape cierra el picker con prioridad */
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modalPicker.hasAttribute('hidden')) {
+      e.stopImmediatePropagation();
+      cerrarPicker();
+    }
+  }, true);
+})();
+
+/* ── Modal de reporte ────────────────────────────────── */
+const modalReporte = document.getElementById('modal-reporte');
+let formatoReporte = 'csv';
+let dpDesde = null;
+let dpHasta = null;
+
+const URL_EXPORTAR = {
+  csv:   URL_EXPORTAR_CSV,
+  excel: URL_EXPORTAR_EXCEL,
+  pdf:   URL_EXPORTAR_PDF,
+};
+
+const LABEL_ICONO = { csv: 'file-spreadsheet', excel: 'table-2', pdf: 'file-text' };
+const LABEL_FORMATO = { csv: 'CSV', excel: 'Excel (.xlsx)', pdf: 'PDF' };
+
+function _inicializarDatepickers() {
+  if (!dpDesde) {
+    const inputDesde = document.getElementById('dp-input-desde');
+    const inputHasta = document.getElementById('dp-input-hasta');
+    if (!inputDesde || !inputHasta) return;
+
+    const lblDesde = inputDesde.parentNode;
+    const lblHasta = inputHasta.parentNode;
+
+    dpDesde = new MiniDatepicker(inputDesde);
+    dpHasta = new MiniDatepicker(inputHasta);
+
+    /* Reordenar: label luego dp-wrapper */
+    lblDesde.appendChild(dpDesde.wrapper);
+    lblHasta.appendChild(dpHasta.wrapper);
+  }
+}
+
+function abrirModalReporte(formato) {
+  formatoReporte = formato;
+  document.getElementById('modal-reporte-formato-label').textContent =
+    'Formato: ' + LABEL_FORMATO[formato];
+
+  _inicializarDatepickers();
+
+  /* Fechas por defecto: primer día del mes actual hasta hoy */
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  dpDesde.setValor(primerDia.toISOString().split('T')[0]);
+  dpHasta.setValor(hoy.toISOString().split('T')[0]);
+
+  cargarCategoriasReporte();
+  modalReporte.removeAttribute('hidden');
+  lucide.createIcons();
+}
+
+function cargarCategoriasReporte() {
+  const contenedor = document.getElementById('reporte-categorias');
+  const cards = document.querySelectorAll('.categoria-card');
+  if (cards.length === 0) {
+    contenedor.innerHTML = '<span style="font-size:.78rem;color:var(--slate-500);">Sin categorías con actividad este mes.</span>';
+    actualizarCountReporte();
+    return;
+  }
+  contenedor.innerHTML = Array.from(cards).map(card => {
+    const id     = card.dataset.categoriaId;
+    const nombre = card.querySelector('.categoria-card__nombre').textContent;
+    return `<label style="display:inline-flex;align-items:center;gap:.3rem;
+                          font-size:.78rem;cursor:pointer;padding:.25rem .5rem;
+                          border-radius:.375rem;border:1px solid var(--border);
+                          background:#fff;white-space:nowrap;transition:border-color .13s;">
+      <input type="checkbox" value="${id}" class="cat-check" checked
+             style="accent-color:#10b981;">
+      ${nombre}
+    </label>`;
+  }).join('');
+  actualizarCountReporte();
+}
+
+function actualizarCountReporte() {
+  const total    = document.querySelectorAll('.cat-check').length;
+  const marcadas = document.querySelectorAll('.cat-check:checked').length;
+  const el = document.getElementById('reporte-count');
+  if (el) el.textContent = `${marcadas} de ${total} categoría${total !== 1 ? 's' : ''} seleccionada${total !== 1 ? 's' : ''}`;
+}
+
+document.getElementById('reporte-categorias').addEventListener('change', actualizarCountReporte);
+
+document.getElementById('btn-todas-cats').addEventListener('click', () => {
+  document.querySelectorAll('.cat-check').forEach(c => c.checked = true);
+  actualizarCountReporte();
+});
+
+document.getElementById('btn-ninguna-cat').addEventListener('click', () => {
+  document.querySelectorAll('.cat-check').forEach(c => c.checked = false);
+  actualizarCountReporte();
+});
+
+document.getElementById('btn-descargar-reporte').addEventListener('click', () => {
+  const desde  = dpDesde ? dpDesde.getValor() : '';
+  const hasta  = dpHasta ? dpHasta.getValor() : '';
+  const catIds = Array.from(document.querySelectorAll('.cat-check:checked'))
+                      .map(c => c.value).join(',');
+
+  const params = new URLSearchParams({
+    tipo: 'INGRESO',
+    fecha_desde: desde,
+    fecha_hasta: hasta,
+  });
+  if (catIds) params.set('categorias', catIds);
+
+  window.location.href = `${URL_EXPORTAR[formatoReporte]}?${params.toString()}`;
+  cerrarModalReporte();
+});
+
+function cerrarModalReporte() {
+  modalReporte.setAttribute('hidden', '');
+}
+
+document.getElementById('btn-cerrar-reporte').addEventListener('click', cerrarModalReporte);
+document.getElementById('btn-cancelar-reporte').addEventListener('click', cerrarModalReporte);
+modalReporte.addEventListener('click', (e) => {
+  if (e.target === modalReporte) cerrarModalReporte();
+});
+
+/* Conectar botones del toolbar */
+document.querySelector('.btn-export--pdf').addEventListener('click',   () => abrirModalReporte('pdf'));
+document.querySelector('.btn-export--excel').addEventListener('click', () => abrirModalReporte('excel'));
+document.querySelector('.btn-export--csv').addEventListener('click',   () => abrirModalReporte('csv'));
+
+/* ── Datepicker en modal CRUD ────────────────────────── */
+(function() {
+  const inputFecha = document.getElementById('campo-fecha');
+  if (inputFecha) {
+    const dp = new MiniDatepicker(inputFecha);
+    /* Sobreescribir abrirModalNuevo y abrirModalEditar para usar el datepicker */
+    const _origNuevo  = abrirModalNuevo;
+    const _origEditar = abrirModalEditar;
+
+    window.abrirModalNuevo = function() {
+      _origNuevo();
+      dp.setValor(new Date().toISOString().split('T')[0]);
+    };
+
+    window.abrirModalEditar = function(id, descripcion, monto, fechaRaw, categoriaId) {
+      _origEditar(id, descripcion, monto, fechaRaw, categoriaId);
+      dp.setValor(fechaRaw);
+    };
+
+    const _origCerrar = cerrarModalMovimiento;
+    window.cerrarModalMovimiento = function() {
+      _origCerrar();
+      dp.limpiar();
+    };
+  }
+})();

@@ -9,6 +9,10 @@ dj-database-url==2.3.0
 # Archivos estáticos (producción)
 whitenoise==6.9.0
 
+# Exportación de reportes
+openpyxl==3.1.5
+reportlab==4.2.5
+
 # Agente Financiero
 google-generativeai==0.8.5
 groq==0.23.1

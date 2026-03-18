@@ -61,7 +61,7 @@
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
 
 
     /* ══════════════════════════════════════
@@ -71,14 +71,14 @@
       position: fixed;
       top: 0; left: 0; right: 0;
       height: var(--topbar-h);
-      background: var(--white);
-      border-bottom: 1px solid #d1d9e0;
+      background: #1e293b;
+      border-bottom: 1px solid #2d3f55;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 20px 0 0;
       z-index: 50;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.25);
     }
 
     /* Zona izquierda del topbar — logo + toggle */
@@ -123,7 +123,7 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 800;
       font-size: 1.1rem;
-      color: var(--slate-900);
+      color: #f1f5f9;
       letter-spacing: -0.03em;
       margin-left: 10px;
       white-space: nowrap;
@@ -141,7 +141,7 @@
       border-radius: 8px;
       border: none;
       background: transparent;
-      color: var(--slate-500);
+      color: #94a3b8;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -149,7 +149,7 @@
       flex-shrink: 0;
       transition: background 0.15s, color 0.15s;
     }
-    #sidebar-toggle:hover { background: var(--slate-100); color: var(--slate-900); }
+    #sidebar-toggle:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
 
     /* Zona derecha del topbar */
     #topbar-right {
@@ -167,11 +167,11 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 700;
       font-size: 0.95rem;
-      color: var(--slate-900);
+      color: #f1f5f9;
     }
     #topbar-page-sub {
       font-size: 0.72rem;
-      color: var(--slate-500);
+      color: #94a3b8;
       margin-top: 1px;
     }
 
@@ -181,16 +181,16 @@
       width: 36px;
       height: 36px;
       border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--white);
-      color: var(--slate-500);
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06);
+      color: #cbd5e1;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
-    .topbar-btn:hover { background: var(--slate-50); color: var(--slate-900); border-color: var(--slate-300); }
+    .topbar-btn:hover { background: rgba(255,255,255,0.13); color: #f1f5f9; border-color: rgba(255,255,255,0.2); }
 
     .notif-badge {
       position: absolute;
@@ -204,13 +204,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid white;
+      border: 2px solid #1e293b;
     }
 
     .topbar-sep {
       width: 1px;
       height: 24px;
-      background: var(--border);
+      background: rgba(255,255,255,0.1);
       flex-shrink: 0;
     }
 
@@ -221,12 +221,12 @@
       gap: 8px;
       padding: 5px 10px 5px 5px;
       border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--white);
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06);
       cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
     }
-    #user-btn:hover { background: var(--slate-50); border-color: var(--slate-300); }
+    #user-btn:hover { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.2); }
 
     .user-avatar {
       width: 28px; height: 28px;
@@ -248,7 +248,7 @@
     .user-name {
       font-size: 0.8rem;
       font-weight: 600;
-      color: var(--slate-700);
+      color: #e2e8f0;
       max-width: 100px;
       white-space: nowrap;
       overflow: hidden;
@@ -318,9 +318,9 @@
       left: 0;
       bottom: 0;
       width: var(--sidebar-w);
-      background: var(--white);
-      border-right: 1px solid #d1d9e0;
-      box-shadow: 2px 0 12px rgba(0,0,0,0.05);
+      background: #0f172a;
+      border-right: 1px solid #1e293b;
+      box-shadow: 2px 0 16px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
       z-index: 40;
@@ -355,7 +355,7 @@
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      color: var(--slate-500);
+      color: #64748b;
       padding: 6px 10px 4px;
       white-space: nowrap;
       overflow: hidden;
@@ -371,7 +371,7 @@
       border-radius: 10px;
       font-size: 0.845rem;
       font-weight: 500;
-      color: var(--slate-500);
+      color: #cbd5e1;
       text-decoration: none;
       white-space: nowrap;
       overflow: hidden;
@@ -380,45 +380,45 @@
       border-left: 3px solid transparent;
     }
 
-    /* ── Colores por sección ── */
+    /* ── Colores por sección — adaptados para fondo oscuro ── */
     .nav-item--dashboard:hover,
     .nav-item--dashboard.active {
-      background: #eef2ff; color: #4338ca;
+      background: rgba(99,102,241,0.15); color: #a5b4fc;
       border-left-color: #6366f1; font-weight: 600;
     }
     .nav-item--ingresos:hover,
     .nav-item--ingresos.active {
-      background: #ecfdf5; color: #059669;
+      background: rgba(16,185,129,0.15); color: #6ee7b7;
       border-left-color: #10b981; font-weight: 600;
     }
     .nav-item--egresos:hover,
     .nav-item--egresos.active {
-      background: #fff7ed; color: #c2410c;
+      background: rgba(249,115,22,0.15); color: #fdba74;
       border-left-color: #f97316; font-weight: 600;
     }
     .nav-item--ahorros:hover,
     .nav-item--ahorros.active {
-      background: #fffbeb; color: #b45309;
+      background: rgba(217,119,6,0.15); color: #fcd34d;
       border-left-color: #d97706; font-weight: 600;
     }
     .nav-item--planificaciones:hover,
     .nav-item--planificaciones.active {
-      background: #eff6ff; color: #1d4ed8;
+      background: rgba(59,130,246,0.15); color: #93c5fd;
       border-left-color: #3b82f6; font-weight: 600;
     }
     .nav-item--presupuestos:hover,
     .nav-item--presupuestos.active {
-      background: #f5f3ff; color: #5b21b6;
+      background: rgba(124,58,237,0.15); color: #c4b5fd;
       border-left-color: #7c3aed; font-weight: 600;
     }
     .nav-item--agente:hover,
     .nav-item--agente.active {
-      background: #f0f9ff; color: #0369a1;
+      background: rgba(14,165,233,0.15); color: #7dd3fc;
       border-left-color: #0ea5e9; font-weight: 600;
     }
     .nav-item--categorias:hover,
     .nav-item--categorias.active {
-      background: #fdf4ff; color: #7e22ce;
+      background: rgba(168,85,247,0.15); color: #e879f9;
       border-left-color: #a855f7; font-weight: 600;
     }
 
@@ -439,8 +439,8 @@
       margin-left: auto;
       font-size: 8px;
       font-weight: 700;
-      background: var(--slate-100);
-      color: var(--slate-400);
+      background: rgba(255,255,255,0.08);
+      color: #475569;
       padding: 2px 6px;
       border-radius: 99px;
       flex-shrink: 0;
@@ -634,7 +634,7 @@
         </div>
         <span class="user-name">{{ request.user.username }}</span>
         <i data-lucide="chevron-down"
-           style="width:14px;height:14px;color:var(--slate-400);flex-shrink:0;transition:transform 0.2s;"
+           style="width:14px;height:14px;color:#64748b;flex-shrink:0;transition:transform 0.2s;"
            id="user-chevron"></i>
       </button>
 
