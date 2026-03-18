@@ -13,35 +13,52 @@ class AhorroMeta(models.Model):
         SEMESTRAL='SEMESTRAL', 'Semestral',
         ANUAL='ANUAL', 'Anual'
         
-    montoMeta=models.DecimalField(max_digits=12, decimal_places=2)
-    totalAcumulado=models.DecimalField(max_digits=12, decimal_places=2)
-    frecuencia=models.CharField(max_length=15, choices=Frecuencia.choices)
-    fechaCreacion = models.DateField(auto_now_add=True)
-    fechaMeta=models.DateField(blank=True, null=False)
-    estado= models.BooleanField(default=True)
-    cantidadCuotas=models.IntegerField(null=False)
-    descripcion=models.CharField(max_length=255, null=False)
-    categoria = models.ForeignKey("categorias.categoria", on_delete= models.CASCADE)
-    usuario = models.ForeignKey("usuarios.usuario", on_delete=models.CASCADE)
+    class Estado(models.TextChoices):
+        SIN_INICIAR='SIN_INICIAR', 'Sin_iniciar',
+        ACTIVO='ACTIVO', 'Activo',
+        COMPLETADO='COMPLETADO', 'Completado',
+        ABANDONADO='ABANDONADO', 'Abandonado',
+        
+    monto_meta=models.DecimalField(max_digits=12, decimal_places=2, null=False)
+    total_acumulado=models.DecimalField(max_digits=12, decimal_places=2, null=False)
+    frecuencia=models.CharField(max_length=15, choices=Frecuencia.choices, null=False)
+    fecha_creacion = models.DateField(auto_now_add=True, null=False)
+    fecha_meta=models.DateField(null=False)
+    estado= models.CharField(max_length=25, choices=Estado.choices, null=False)
+    cantidad_cuotas=models.IntegerField(null=False)
+    descripcion=models.CharField(max_length=150, blank=True)
+    categoria = models.ForeignKey("categorias.categoria", on_delete= models.CASCADE, null=False)
+    usuario = models.ForeignKey("usuarios.usuario", on_delete=models.CASCADE, null=False)
     
     class Meta:
         verbose_name = 'Meta de Ahorro'
         verbose_name_plural = 'Metas de Ahorro'
-        ordering = ['-fechaCreacion'] # El '-' hace que la más nueva salga primero
+        ordering = ['-fecha_creacion'] # El '-' hace que la más nueva salga primero
         
     def __str__(self):
-        return f"{self.categoria} - {self.descripcion} - {self.montoMeta}"
+        return f"{self.categoria} - {self.descripcion} - {self.monto_meta}"
     
     
 class AporteAhorro(models.Model):
-    aporteAsignado=models.DecimalField(max_digits=12, decimal_places=2 )
+    
+    class EstadoAp(models.TextChoices):
+        APORTADO= 'APORTADO', 'Aportado',
+        PERDIDO= 'PERDIDO', 'Perdido',
+        PENDIENTE='PENDIENTE', 'Pendiente'
+        
+    aporte_asignado=models.DecimalField(max_digits=12, decimal_places=2 )
     aporte=models.DecimalField(max_digits=12, decimal_places=2)
-    fechaLimite=models.DateField()
-    estadoAp=models.BooleanField()
-    fechaRegistro = models.DateField(auto_now_add=True)
-    ahorro=models.ForeignKey(AhorroMeta, on_delete=models.CASCADE)
+    fecha_limite=models.DateField(null=False)
+    estado_ap=models.CharField(max_length=15, choices=EstadoAp.choices, null=False)
+    fecha_registro = models.DateField(auto_now_add=True, null=False)
+    ahorro=models.ForeignKey(AhorroMeta, on_delete=models.CASCADE, null=False)
     
     
     class Meta:
         verbose_name = 'Aporte de Ahorro'
         verbose_name_plural = 'Aportes de Ahorro' 
+        
+    def __str__(self):
+        return f"{self.aporte_asignado} - {self.aporte} "
+    
+    

@@ -9,4 +9,9 @@ urlpatterns = [
     path('', include('movimientos.urls', namespace='movimientos')),
     path('categorias/', include('categorias.urls', namespace='categorias')),
     path('presupuesto/', include('presupuesto.urls')),
+    
+    
+    
+    
+    path('ahorros/', include('ahorros.urls')),
 ]
