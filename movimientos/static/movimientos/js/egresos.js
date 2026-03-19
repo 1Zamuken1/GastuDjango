@@ -515,6 +515,29 @@ lucide.createIcons();
   }, true);
 })();
 
+/* ── Nuevo desde modal registros (hereda categoría) ─── */
+document.getElementById('btn-nuevo-desde-registros').addEventListener('click', () => {
+  /* Guardar categoría activa antes de que abrirModalNuevo cierre el modal */
+  const catId     = categoriaActualId;
+  const catNombre = document.getElementById('modal-registros-titulo').textContent;
+
+  /* Abrir el modal CRUD limpio */
+  window.abrirModalNuevo();
+
+  /* Preseleccionar la categoría heredada en el picker */
+  const inputCat    = document.getElementById('campo-categoria');
+  const pickerLabel = document.getElementById('picker-cat-label');
+  if (inputCat && pickerLabel && catId) {
+    inputCat.value          = catId;
+    pickerLabel.textContent = catNombre;
+    pickerLabel.style.color = 'var(--slate-900)';
+    /* Marcar visualmente la card en el picker */
+    document.querySelectorAll('.picker-cat-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.id === catId);
+    });
+  }
+});
+
 /* ── Modal de reporte ────────────────────────────────── */
 const modalReporte = document.getElementById('modal-reporte');
 let formatoReporte = 'csv';
