@@ -157,22 +157,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   /* ─────────────────────────────────────────────────────────────
-     GRÁFICO TENDENCIA — día / semana / mes con fetch dinámico
+     GRÁFICO TENDENCIA — día / semana del mes actual
+     Siempre barras apiladas. Destruye y recrea el chart al cambiar
+     granularidad para evitar bugs de tipo entre renders.
      ─────────────────────────────────────────────────────────── */
   const elTendencia  = document.getElementById('chart-tendencia');
   const toggleBtns   = document.querySelectorAll('.tendencia-toggle');
+  const subtitulo    = document.getElementById('tendencia-subtitulo');
+  const mesNombreEl  = document.getElementById('mes-nombre-actual');
+  const MES_NOMBRE   = mesNombreEl?.dataset.mes || '';
+  const ANIO         = mesNombreEl?.dataset.anio || '';
   let tendenciaChart = null;
   let cargando       = false;
 
-  function buildTendenciaOptions(labels, ingresos, egresos, granularidad) {
-    const isLine = granularidad === 'dia';
+  const SUBTITULOS = {
+    dia:    `Ingresos y egresos — ${MES_NOMBRE} ${ANIO} · día a día`,
+    semana: `Ingresos y egresos — ${MES_NOMBRE} ${ANIO} · por semana`,
+  };
+
+  function buildTendenciaOpts(labels, ingresos, egresos, granularidad) {
+    const rotar = granularidad === 'dia' && labels.length > 10 ? -45 : 0;
     return {
       chart: {
-        type: isLine ? 'area' : 'bar',
+        type: 'bar',
+        stacked: true,
         height: 270,
         toolbar: { show: false },
         fontFamily,
-        animations: { enabled: true, speed: 500, easing: 'easeinout' },
+        animations: { enabled: true, speed: 400, easing: 'easeinout' },
         background: 'transparent',
       },
       series: [
@@ -182,25 +194,25 @@ document.addEventListener('DOMContentLoaded', () => {
       colors: ['#10b981', '#f97316'],
       xaxis: {
         categories: labels,
-        labels: { style: axisStyle, rotate: granularidad === 'dia' ? -35 : 0 },
+        labels: { style: axisStyle, rotate: rotar, trim: false },
         axisBorder: { show: false },
         axisTicks:  { show: false },
       },
       yaxis: {
         labels: { style: axisStyle, formatter: formatCOP },
       },
-      grid: { borderColor: '#f1f5f9', strokeDashArray: 4, padding: { left: 4, right: 4 } },
+      grid: {
+        borderColor: '#f1f5f9',
+        strokeDashArray: 4,
+        padding: { left: 4, right: 4 },
+      },
       dataLabels: { enabled: false },
-      ...(isLine ? {
-        stroke: { curve: 'smooth', width: 2 },
-        fill: {
-          type: 'gradient',
-          gradient: { shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.02, stops: [0, 90] },
+      plotOptions: {
+        bar: {
+          borderRadius: granularidad === 'semana' ? 6 : 3,
+          columnWidth: granularidad === 'semana' ? '45%' : '70%',
         },
-        markers: { size: granularidad === 'dia' && labels.length <= 15 ? 4 : 0 },
-      } : {
-        plotOptions: { bar: { borderRadius: 5, columnWidth: '55%' } },
-      }),
+      },
       legend: {
         position: 'top',
         horizontalAlign: 'right',
@@ -221,8 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
   async function cargarTendencia(granularidad) {
     if (cargando || !elTendencia) return;
     cargando = true;
-
-    // Estado de carga visual
     toggleBtns.forEach(b => b.disabled = true);
 
     try {
@@ -232,14 +242,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (!data.ok) return;
 
-      const opts = buildTendenciaOptions(data.labels, data.ingresos, data.egresos, granularidad);
-
+      // Destruir siempre antes de recrear — evita bugs de tipo de gráfico
       if (tendenciaChart) {
-        tendenciaChart.updateOptions(opts, true, true);
-      } else {
-        tendenciaChart = new ApexCharts(elTendencia, opts);
-        tendenciaChart.render();
+        tendenciaChart.destroy();
+        tendenciaChart = null;
+        elTendencia.innerHTML = '';
       }
+
+      const opts = buildTendenciaOpts(data.labels, data.ingresos, data.egresos, granularidad);
+      tendenciaChart = new ApexCharts(elTendencia, opts);
+      await tendenciaChart.render();
+
+      if (subtitulo) subtitulo.textContent = SUBTITULOS[granularidad] || '';
+
     } catch (e) {
       console.error('tendencia error:', e);
     } finally {
@@ -248,16 +263,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Conectar botones de toggle
   toggleBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.classList.contains('active')) return;
       toggleBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       cargarTendencia(btn.dataset.gran);
     });
   });
 
-  // Carga inicial: vista de día
   cargarTendencia('dia');
 
 
