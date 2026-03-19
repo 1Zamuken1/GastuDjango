@@ -211,6 +211,21 @@ def tendencia_mes(request):
         ingresos = [ing_map.get(d, 0) for d in rango]
         egresos  = [egr_map.get(d, 0) for d in rango]
 
+    # ── Mes: todos los meses del año en curso hasta el actual ────
+    if granularidad == 'anio':
+        labels, ingresos, egresos = [], [], []
+        for m in range(1, mes + 1):
+            r = ResumenMensual.objects.filter(usuario=user, mes=m, anio=anio).first()
+            if r:
+                ing = float(r.total_ingresos)
+                egr = float(r.total_egresos)
+            else:
+                _ing, _egr = _totales_movimiento(user, m, anio)
+                ing, egr = float(_ing), float(_egr)
+            labels.append(MESES_ES[m][:3])
+            ingresos.append(ing)
+            egresos.append(egr)
+
     return JsonResponse({
         'ok':           True,
         'granularidad': granularidad,

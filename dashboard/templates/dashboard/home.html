@@ -7,6 +7,8 @@
 {% block nav_dashboard %}active{% endblock %}
 
 {% block extra_head %}
+  <meta name="description" content="Panel financiero personal — resumen de ingresos, egresos y tendencia de {{ mes_nombre }} {{ anio }}">
+  <meta name="robots" content="noindex, nofollow">
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
 {% endblock %}
@@ -179,8 +181,9 @@
         </p>
       </div>
       <div class="tendencia-toggle-group">
-        <button class="tendencia-toggle active" data-gran="dia">Día a día</button>
-        <button class="tendencia-toggle"        data-gran="semana">Por semana</button>
+        <button class="tendencia-toggle active" data-gran="dia">Día</button>
+        <button class="tendencia-toggle"        data-gran="semana">Semana</button>
+        <button class="tendencia-toggle"        data-gran="anio">Mes</button>
       </div>
     </div>
     <div id="chart-tendencia"></div>

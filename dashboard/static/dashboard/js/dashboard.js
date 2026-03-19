@@ -171,8 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let cargando       = false;
 
   const SUBTITULOS = {
-    dia:    `Ingresos y egresos — ${MES_NOMBRE} ${ANIO} · día a día`,
-    semana: `Ingresos y egresos — ${MES_NOMBRE} ${ANIO} · por semana`,
+    dia:   `Ingresos y egresos — ${MES_NOMBRE} ${ANIO} · día a día`,
+    semana:`Ingresos y egresos — ${MES_NOMBRE} ${ANIO} · por semana`,
+    anio:  `Ingresos y egresos — ${ANIO} · todos los meses`,
   };
 
   function buildTendenciaOpts(labels, ingresos, egresos, granularidad) {
@@ -209,8 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
       dataLabels: { enabled: false },
       plotOptions: {
         bar: {
-          borderRadius: granularidad === 'semana' ? 6 : 3,
-          columnWidth: granularidad === 'semana' ? '45%' : '70%',
+          borderRadius: granularidad === 'semana' ? 6 : granularidad === 'anio' ? 5 : 3,
+          columnWidth: granularidad === 'semana' ? '45%' : granularidad === 'anio' ? '55%' : '70%',
         },
       },
       legend: {
