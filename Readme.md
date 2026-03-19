@@ -69,13 +69,22 @@ python manage.py migrate
 > Cada miembro del equipo debe correr este comando en su propia máquina.
 > El archivo `db.sqlite3` es local y no se sube al repositorio.
 
-### 6. Crear superusuario (opcional, para acceder al admin)
+### 6. Crear superusuario (para acceder al admin y gestionar categorías)
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 7. Ejecutar el servidor
+### 7. Cargar categorías iniciales
+
+```bash
+python manage.py loaddata categorias_iniciales
+```
+
+Carga 26 categorías predefinidas: 10 de ingresos, 10 de egresos y 6 de ahorros.
+Solo es necesario correrlo una vez por máquina, después del `migrate`.
+
+### 8. Ejecutar el servidor
 
 ```bash
 python manage.py runserver
