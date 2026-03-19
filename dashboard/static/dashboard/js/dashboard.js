@@ -157,47 +157,100 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   /* ─────────────────────────────────────────────────────────────
-     GRÁFICO TENDENCIA — día / semana del mes actual
-     Siempre barras apiladas. Destruye y recrea el chart al cambiar
-     granularidad para evitar bugs de tipo entre renders.
+     GRÁFICO TENDENCIA — mes actual, barras apiladas con zoom/pan
+     El usuario navega con los controles nativos de ApexCharts.
+     Zoom máximo: 7 días. Zoom mínimo: mes completo.
      ─────────────────────────────────────────────────────────── */
-  const elTendencia  = document.getElementById('chart-tendencia');
-  const toggleBtns   = document.querySelectorAll('.tendencia-toggle');
-  const subtitulo    = document.getElementById('tendencia-subtitulo');
-  const mesNombreEl  = document.getElementById('mes-nombre-actual');
-  const MES_NOMBRE   = mesNombreEl?.dataset.mes || '';
-  const ANIO         = mesNombreEl?.dataset.anio || '';
-  let tendenciaChart = null;
-  let cargando       = false;
+  const elTendencia = document.getElementById('chart-tendencia');
+  const subtitulo   = document.getElementById('tendencia-subtitulo');
+  const mesNombreEl = document.getElementById('mes-nombre-actual');
+  const MES_NOMBRE  = mesNombreEl?.dataset.mes || '';
+  const ANIO        = mesNombreEl?.dataset.anio || '';
 
-  const SUBTITULOS = {
-    dia:   `Ingresos y egresos — ${MES_NOMBRE} ${ANIO} · día a día`,
-    semana:`Ingresos y egresos — ${MES_NOMBRE} ${ANIO} · por semana`,
-    anio:  `Ingresos y egresos — ${ANIO} · todos los meses`,
-  };
+  async function iniciarTendencia() {
+    if (!elTendencia) return;
 
-  function buildTendenciaOpts(labels, ingresos, egresos, granularidad) {
-    const rotar = granularidad === 'dia' && labels.length > 10 ? -45 : 0;
-    return {
+    let data;
+    try {
+      const res = await fetch(URL_TENDENCIA, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      });
+      data = await res.json();
+      if (!data.ok) return;
+    } catch (e) {
+      console.error('tendencia error:', e);
+      return;
+    }
+
+    const totalDias = data.total_dias;
+    const MIN_ZOOM  = 7;   // días mínimos visibles (zoom máximo)
+    const MAX_ZOOM  = totalDias; // días máximos visibles (zoom mínimo = mes completo)
+
+    const opts = {
       chart: {
         type: 'bar',
         stacked: true,
         height: 270,
-        toolbar: { show: false },
         fontFamily,
-        animations: { enabled: true, speed: 400, easing: 'easeinout' },
+        animations: { enabled: true, speed: 400 },
         background: 'transparent',
+        toolbar: {
+          show: true,
+          tools: {
+            download:  false,
+            selection: false,
+            zoom:      true,
+            zoomin:    true,
+            zoomout:   true,
+            pan:       true,
+            reset:     '<i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>',
+          },
+          autoSelected: 'pan',
+        },
+        zoom: { enabled: true, type: 'x' },
+        events: {
+          /* Restringir zoom: min 7 días, max = mes completo */
+          beforeZoom(chartCtx, { xaxis }) {
+            const rawMin = xaxis.min ?? 0;
+            const rawMax = xaxis.max ?? totalDias - 1;
+            let newMin = Math.max(0, Math.round(rawMin));
+            let newMax = Math.min(totalDias - 1, Math.round(rawMax));
+
+            /* Forzar mínimo de MIN_ZOOM días visibles */
+            if (newMax - newMin + 1 < MIN_ZOOM) {
+              const centro = Math.round((newMin + newMax) / 2);
+              newMin = Math.max(0, centro - Math.floor(MIN_ZOOM / 2));
+              newMax = Math.min(totalDias - 1, newMin + MIN_ZOOM - 1);
+            }
+            /* Forzar máximo de MAX_ZOOM días visibles */
+            if (newMax - newMin + 1 > MAX_ZOOM) {
+              newMin = 0;
+              newMax = totalDias - 1;
+            }
+            return { xaxis: { min: newMin, max: newMax } };
+          },
+          /* Restringir pan para no salir del mes */
+          beforeResetZoom() {
+            return { xaxis: { min: 0, max: totalDias - 1 } };
+          },
+        },
       },
       series: [
-        { name: 'Ingresos', data: ingresos },
-        { name: 'Egresos',  data: egresos  },
+        { name: 'Ingresos', data: data.ingresos },
+        { name: 'Egresos',  data: data.egresos  },
       ],
       colors: ['#10b981', '#f97316'],
       xaxis: {
-        categories: labels,
-        labels: { style: axisStyle, rotate: rotar, trim: false },
+        categories: data.labels,   /* 1, 2, 3 … */
+        title: {
+          text: `${MES_NOMBRE} ${ANIO}`,
+          style: { fontSize: '11px', fontWeight: 600, color: '#64748b', fontFamily },
+        },
+        labels: { style: axisStyle },
         axisBorder: { show: false },
         axisTicks:  { show: false },
+        min: 0,
+        max: totalDias - 1,
       },
       yaxis: {
         labels: { style: axisStyle, formatter: formatCOP },
@@ -210,8 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
       dataLabels: { enabled: false },
       plotOptions: {
         bar: {
-          borderRadius: granularidad === 'semana' ? 6 : granularidad === 'anio' ? 5 : 3,
-          columnWidth: granularidad === 'semana' ? '45%' : granularidad === 'anio' ? '55%' : '70%',
+          borderRadius: totalDias > 20 ? 2 : 4,
+          columnWidth: totalDias > 20 ? '75%' : '55%',
         },
       },
       legend: {
@@ -226,54 +279,21 @@ document.addEventListener('DOMContentLoaded', () => {
         theme: 'light',
         shared: true,
         intersect: false,
+        x: { formatter: (val) => `Día ${val} — ${MES_NOMBRE} ${ANIO}` },
         y: { formatter: formatCOP },
       },
     };
-  }
 
-  async function cargarTendencia(granularidad) {
-    if (cargando || !elTendencia) return;
-    cargando = true;
-    toggleBtns.forEach(b => b.disabled = true);
+    const chart = new ApexCharts(elTendencia, opts);
+    await chart.render();
 
-    try {
-      const res  = await fetch(`${URL_TENDENCIA}?granularidad=${granularidad}`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      });
-      const data = await res.json();
-      if (!data.ok) return;
-
-      // Destruir siempre antes de recrear — evita bugs de tipo de gráfico
-      if (tendenciaChart) {
-        tendenciaChart.destroy();
-        tendenciaChart = null;
-        elTendencia.innerHTML = '';
-      }
-
-      const opts = buildTendenciaOpts(data.labels, data.ingresos, data.egresos, granularidad);
-      tendenciaChart = new ApexCharts(elTendencia, opts);
-      await tendenciaChart.render();
-
-      if (subtitulo) subtitulo.textContent = SUBTITULOS[granularidad] || '';
-
-    } catch (e) {
-      console.error('tendencia error:', e);
-    } finally {
-      cargando = false;
-      toggleBtns.forEach(b => b.disabled = false);
+    if (subtitulo) {
+      subtitulo.textContent =
+        `${MES_NOMBRE} ${ANIO} · usa + / − para acercar o alejar`;
     }
   }
 
-  toggleBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.classList.contains('active')) return;
-      toggleBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      cargarTendencia(btn.dataset.gran);
-    });
-  });
-
-  cargarTendencia('dia');
+  iniciarTendencia();
 
 
   /* ─────────────────────────────────────────────────────────────

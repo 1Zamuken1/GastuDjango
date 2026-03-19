@@ -172,19 +172,11 @@
 
   {# Tendencia con toggle #}
   <div class="chart-card">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;
-                flex-wrap:wrap;gap:.5rem;margin-bottom:16px;">
-      <div>
-        <p class="chart-card__title">Tendencia financiera</p>
-        <p class="chart-card__subtitle" id="tendencia-subtitulo">
-          Ingresos y egresos — {{ mes_nombre }} {{ anio }} · día a día
-        </p>
-      </div>
-      <div class="tendencia-toggle-group">
-        <button class="tendencia-toggle active" data-gran="dia">Día</button>
-        <button class="tendencia-toggle"        data-gran="semana">Semana</button>
-        <button class="tendencia-toggle"        data-gran="anio">Mes</button>
-      </div>
+    <div style="margin-bottom:16px;">
+      <p class="chart-card__title">Tendencia financiera</p>
+      <p class="chart-card__subtitle" id="tendencia-subtitulo">
+        {{ mes_nombre }} {{ anio }} · usa + / − para acercar o alejar
+      </p>
     </div>
     <div id="chart-tendencia"></div>
   </div>

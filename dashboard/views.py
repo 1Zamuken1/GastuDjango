@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
-from django.db.models.functions import TruncDate, TruncWeek
+from django.db.models.functions import TruncDate
 from django.http import JsonResponse
 from django.shortcuts import render
 
@@ -143,22 +143,16 @@ def home_view(request):
 @login_required
 def tendencia_mes(request):
     """
-    Endpoint JSON para el gráfico de tendencia del mes actual.
-
-    GET param: granularidad — 'dia' | 'semana'
-    Solo muestra datos del mes en curso, sin histórico.
-
-    - dia    : un punto por día del mes, desde el día 1 hasta hoy
-    - semana : agrupado por semanas del mes, máx 5 puntos
+    Devuelve los totales diarios de ingresos y egresos del mes actual.
+    Cubre desde el día 1 hasta hoy. Labels son números de día: 1, 2, 3...
+    El frontend aplica zoom/pan para navegar dentro del mes.
     """
-    hoy          = date.today()
-    mes          = hoy.month
-    anio         = hoy.year
-    user         = request.user
-    granularidad = request.GET.get('granularidad', 'dia')
-    primer_dia   = date(anio, mes, 1)
+    hoy       = date.today()
+    mes       = hoy.month
+    anio      = hoy.year
+    user      = request.user
+    primer_dia = date(anio, mes, 1)
 
-    # Queryset base del mes actual — dos queries en total (una por tipo)
     qs_base = Movimiento.objects.filter(
         usuario=user,
         activo=True,
@@ -166,70 +160,26 @@ def tendencia_mes(request):
         fecha_registro__year=anio,
     )
 
-    if granularidad == 'semana':
-        def _semanales(tipo):
-            return {
-                row['semana'].date(): float(row['total'])
-                for row in qs_base
-                .filter(tipo=tipo)
-                .annotate(semana=TruncWeek('fecha_registro'))
-                .values('semana')
-                .annotate(total=Sum('monto'))
-                .order_by('semana')
-            }
+    def _diarios(tipo):
+        return {
+            row['fecha']: float(row['total'])
+            for row in qs_base
+            .filter(tipo=tipo)
+            .annotate(fecha=TruncDate('fecha_registro'))
+            .values('fecha')
+            .annotate(total=Sum('monto'))
+        }
 
-        ing_map = _semanales('INGRESO')
-        egr_map = _semanales('EGRESO')
-        semanas = sorted(set(list(ing_map.keys()) + list(egr_map.keys())))
+    ing_map = _diarios('INGRESO')
+    egr_map = _diarios('EGRESO')
 
-        # Calcular qué semana del mes es cada fecha
-        def _num_semana(d):
-            return ((d.day - 1 + primer_dia.weekday()) // 7) + 1
-
-        labels   = [f"Semana {_num_semana(s)}" for s in semanas]
-        ingresos = [ing_map.get(s, 0) for s in semanas]
-        egresos  = [egr_map.get(s, 0) for s in semanas]
-
-    else:
-        # día a día desde el 1 hasta hoy
-        def _diarios(tipo):
-            return {
-                row['fecha']: float(row['total'])
-                for row in qs_base
-                .filter(tipo=tipo)
-                .annotate(fecha=TruncDate('fecha_registro'))
-                .values('fecha')
-                .annotate(total=Sum('monto'))
-            }
-
-        ing_map = _diarios('INGRESO')
-        egr_map = _diarios('EGRESO')
-
-        rango    = [primer_dia + timedelta(days=i)
-                    for i in range((hoy - primer_dia).days + 1)]
-        labels   = [d.strftime('%d/%m') for d in rango]
-        ingresos = [ing_map.get(d, 0) for d in rango]
-        egresos  = [egr_map.get(d, 0) for d in rango]
-
-    # ── Mes: todos los meses del año en curso hasta el actual ────
-    if granularidad == 'anio':
-        labels, ingresos, egresos = [], [], []
-        for m in range(1, mes + 1):
-            r = ResumenMensual.objects.filter(usuario=user, mes=m, anio=anio).first()
-            if r:
-                ing = float(r.total_ingresos)
-                egr = float(r.total_egresos)
-            else:
-                _ing, _egr = _totales_movimiento(user, m, anio)
-                ing, egr = float(_ing), float(_egr)
-            labels.append(MESES_ES[m][:3])
-            ingresos.append(ing)
-            egresos.append(egr)
+    total_dias = (hoy - primer_dia).days + 1
+    rango      = [primer_dia + timedelta(days=i) for i in range(total_dias)]
 
     return JsonResponse({
-        'ok':           True,
-        'granularidad': granularidad,
-        'labels':       labels,
-        'ingresos':     ingresos,
-        'egresos':      egresos,
+        'ok':       True,
+        'labels':   [str(d.day) for d in rango],     # 1, 2, 3 … 31
+        'ingresos': [ing_map.get(d, 0) for d in rango],
+        'egresos':  [egr_map.get(d, 0) for d in rango],
+        'total_dias': total_dias,
     })
