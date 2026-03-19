@@ -42,7 +42,6 @@ function abrirModalNuevo() {
   document.getElementById('modal-titulo').textContent = 'Nuevo egreso';
   formMovimiento.reset();
   limpiarErrores();
-  document.getElementById('campo-fecha').value = new Date().toISOString().split('T')[0];
   /* Cerrar registros si está abierto — solo 1 modal a la vez */
   modalRegistros.setAttribute('hidden', '');
   modalMovimiento.removeAttribute('hidden');
@@ -58,7 +57,6 @@ function abrirModalEditar(id, descripcion, monto, fechaRaw, categoriaId) {
   /* Poblar campos */
   document.getElementById('campo-descripcion').value = descripcion;
   document.getElementById('campo-monto').value        = monto;
-  document.getElementById('campo-fecha').value        = fechaRaw;
   document.getElementById('campo-categoria').value    = categoriaId;
   limpiarErrores();
 }
@@ -641,30 +639,3 @@ modalReporte.addEventListener('click', (e) => {
 document.querySelector('.btn-export--pdf').addEventListener('click',   () => abrirModalReporte('pdf'));
 document.querySelector('.btn-export--excel').addEventListener('click', () => abrirModalReporte('excel'));
 document.querySelector('.btn-export--csv').addEventListener('click',   () => abrirModalReporte('csv'));
-
-/* ── Datepicker en modal CRUD ────────────────────────── */
-(function() {
-  const inputFecha = document.getElementById('campo-fecha');
-  if (inputFecha) {
-    const dp = new MiniDatepicker(inputFecha, { acento: 'egreso' });
-    /* Sobreescribir abrirModalNuevo y abrirModalEditar para usar el datepicker */
-    const _origNuevo  = abrirModalNuevo;
-    const _origEditar = abrirModalEditar;
-
-    window.abrirModalNuevo = function() {
-      _origNuevo();
-      dp.setValor(new Date().toISOString().split('T')[0]);
-    };
-
-    window.abrirModalEditar = function(id, descripcion, monto, fechaRaw, categoriaId) {
-      _origEditar(id, descripcion, monto, fechaRaw, categoriaId);
-      dp.setValor(fechaRaw);
-    };
-
-    const _origCerrar = cerrarModalMovimiento;
-    window.cerrarModalMovimiento = function() {
-      _origCerrar();
-      dp.limpiar();
-    };
-  }
-})();
