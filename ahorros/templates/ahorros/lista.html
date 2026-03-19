@@ -1,0 +1,20 @@
+<h1>Mis Ahorros</h1>
+
+<a href="{% url 'crear_ahorro' %}">Crear nuevo ahorro</a>
+
+<ul>
+    {% for a in ahorros %}
+        <li>
+            <strong>{{ a.categoria }}</strong> - {{ a.monto_meta }} <br>
+            Ahorrado: {{ a.total_acumulado }} <br>
+            Estado: {{ a.estado }} <br>
+
+            <a href="{% url 'editar_ahorro' a.id %}">Editar</a>
+            <a href="{% url 'eliminar_ahorro' a.id %}">Eliminar</a>
+            <a href="{% url 'registrar_aporte' a.id %}">Aportar</a>
+        </li>
+        <hr>
+    {% empty %}
+        <p>No tienes ahorros</p>
+    {% endfor %}
+</ul>

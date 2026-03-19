@@ -1,0 +1,9 @@
+<h1>Crear Ahorro</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Guardar</button>
+</form>
+
+<a href="{% url 'ver_todos_ahorros' %}">Volver</a>

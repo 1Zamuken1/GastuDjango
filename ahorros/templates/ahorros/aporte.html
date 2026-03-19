@@ -1,0 +1,12 @@
+<h1>Registrar Aporte</h1>
+
+<p>Ahorro: {{ ahorro.descripcion }}</p>
+<p>Total actual: {{ ahorro.total_acumulado }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Aportar</button>
+</form>
+
+<a href="{% url 'ver_todos_ahorros' %}">Volver</a>

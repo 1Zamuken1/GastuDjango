@@ -1,0 +1,12 @@
+<h1>Eliminar Ahorro</h1>
+
+<p>¿Seguro que quieres eliminar este ahorro?</p>
+
+<p>{{ ahorro.descripcion }} - {{ ahorro.monto_meta }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Sí, eliminar</button>
+</form>
+
+<a href="{% url 'ver_todos_ahorros' %}">Cancelar</a>
