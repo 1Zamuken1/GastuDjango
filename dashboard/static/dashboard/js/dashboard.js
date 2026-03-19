@@ -167,6 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const MES_NOMBRE  = mesNombreEl?.dataset.mes || '';
   const ANIO        = mesNombreEl?.dataset.anio || '';
 
+  /* Controles de zoom custom encima del gráfico */
+  const zoomControls = document.getElementById('tendencia-zoom-controls');
+
   async function iniciarTendencia() {
     if (!elTendencia) return;
 
@@ -182,118 +185,188 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const totalDias = data.total_dias;
-    const MIN_ZOOM  = 7;   // días mínimos visibles (zoom máximo)
-    const MAX_ZOOM  = totalDias; // días máximos visibles (zoom mínimo = mes completo)
+    /* Todos los datos del mes — nunca se modifican */
+    const labelsTotal   = data.labels;
+    const ingresosTotal = data.ingresos;
+    const egresosTotal  = data.egresos;
+    const totalDias     = data.total_dias;
+    const PASO          = 7;   /* salto de zoom = 1 semana */
 
-    const opts = {
-      chart: {
-        type: 'bar',
-        stacked: true,
-        height: 270,
-        fontFamily,
-        animations: { enabled: true, speed: 400 },
-        background: 'transparent',
-        toolbar: {
-          show: true,
-          tools: {
-            download:  false,
-            selection: false,
-            zoom:      true,
-            zoomin:    true,
-            zoomout:   true,
-            pan:       true,
-            reset:     '<i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>',
-          },
-          autoSelected: 'pan',
-        },
-        zoom: { enabled: true, type: 'x' },
-        events: {
-          /* Restringir zoom: min 7 días, max = mes completo */
-          beforeZoom(chartCtx, { xaxis }) {
-            const rawMin = xaxis.min ?? 0;
-            const rawMax = xaxis.max ?? totalDias - 1;
-            let newMin = Math.max(0, Math.round(rawMin));
-            let newMax = Math.min(totalDias - 1, Math.round(rawMax));
+    /* Ventana actual: índices 0-based sobre labelsTotal */
+    let desde = 0;
+    let hasta = totalDias - 1;
 
-            /* Forzar mínimo de MIN_ZOOM días visibles */
-            if (newMax - newMin + 1 < MIN_ZOOM) {
-              const centro = Math.round((newMin + newMax) / 2);
-              newMin = Math.max(0, centro - Math.floor(MIN_ZOOM / 2));
-              newMax = Math.min(totalDias - 1, newMin + MIN_ZOOM - 1);
-            }
-            /* Forzar máximo de MAX_ZOOM días visibles */
-            if (newMax - newMin + 1 > MAX_ZOOM) {
-              newMin = 0;
-              newMax = totalDias - 1;
-            }
-            return { xaxis: { min: newMin, max: newMax } };
-          },
-          /* Restringir pan para no salir del mes */
-          beforeResetZoom() {
-            return { xaxis: { min: 0, max: totalDias - 1 } };
-          },
-        },
-      },
-      series: [
-        { name: 'Ingresos', data: data.ingresos },
-        { name: 'Egresos',  data: data.egresos  },
-      ],
-      colors: ['#10b981', '#f97316'],
-      xaxis: {
-        categories: data.labels,   /* 1, 2, 3 … */
-        title: {
-          text: `${MES_NOMBRE} ${ANIO}`,
-          style: { fontSize: '11px', fontWeight: 600, color: '#64748b', fontFamily },
-        },
-        labels: { style: axisStyle },
-        axisBorder: { show: false },
-        axisTicks:  { show: false },
-        min: 0,
-        max: totalDias - 1,
-      },
-      yaxis: {
-        labels: { style: axisStyle, formatter: formatCOP },
-      },
-      grid: {
-        borderColor: '#f1f5f9',
-        strokeDashArray: 4,
-        padding: { left: 4, right: 4 },
-      },
-      dataLabels: { enabled: false },
-      plotOptions: {
-        bar: {
-          borderRadius: totalDias > 20 ? 2 : 4,
-          columnWidth: totalDias > 20 ? '75%' : '55%',
-        },
-      },
-      legend: {
-        position: 'top',
-        horizontalAlign: 'right',
-        fontSize: '12px',
-        fontFamily,
-        markers: { width: 10, height: 10, radius: 3 },
-        itemMargin: { horizontal: 8 },
-      },
-      tooltip: {
-        theme: 'light',
-        shared: true,
-        intersect: false,
-        x: { formatter: (val) => `Día ${val} — ${MES_NOMBRE} ${ANIO}` },
-        y: { formatter: formatCOP },
-      },
-    };
+    let chart = null;
 
-    const chart = new ApexCharts(elTendencia, opts);
-    await chart.render();
+    function buildOpts(labels, ingresos, egresos) {
+      return {
+        chart: {
+          type: 'bar',
+          stacked: true,
+          height: 270,
+          fontFamily,
+          animations: { enabled: true, speed: 300, easing: 'easeinout' },
+          background: 'transparent',
+          toolbar:   { show: false },
+          selection:  { enabled: false },
+          zoom:       { enabled: false },
+        },
+        series: [
+          { name: 'Ingresos', data: ingresos },
+          { name: 'Egresos',  data: egresos  },
+        ],
+        colors: ['#10b981', '#f97316'],
+        xaxis: {
+          categories: labels,
+          title: {
+            text: `${MES_NOMBRE} ${ANIO}`,
+            style: { fontSize: '11px', fontWeight: 600, color: '#64748b', fontFamily },
+          },
+          labels: { style: axisStyle },
+          axisBorder: { show: false },
+          axisTicks:  { show: false },
+        },
+        yaxis: {
+          labels: { style: axisStyle, formatter: formatCOP },
+        },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, padding: { left: 4, right: 4 } },
+        dataLabels: { enabled: false },
+        plotOptions: {
+          bar: {
+            borderRadius: labels.length <= 10 ? 4 : 2,
+            columnWidth:  labels.length <= 7  ? '45%' : labels.length <= 14 ? '60%' : '75%',
+          },
+        },
+        legend: {
+          position: 'top', horizontalAlign: 'right',
+          fontSize: '12px', fontFamily,
+          markers: { width: 10, height: 10, radius: 3 },
+          itemMargin: { horizontal: 8 },
+        },
+        tooltip: {
+          theme: 'light', shared: true, intersect: false,
+          x: { formatter: (val) => `Día ${val} — ${MES_NOMBRE} ${ANIO}` },
+          y: { formatter: formatCOP },
+        },
+      };
+    }
+
+    function renderVista() {
+      const labels   = labelsTotal.slice(desde, hasta + 1);
+      const ingresos = ingresosTotal.slice(desde, hasta + 1);
+      const egresos  = egresosTotal.slice(desde, hasta + 1);
+
+      if (chart) {
+        /* Actualizar series y categorías sin destruir el chart */
+        chart.updateOptions({ xaxis: { categories: labels } }, false, false);
+        chart.updateSeries([
+          { name: 'Ingresos', data: ingresos },
+          { name: 'Egresos',  data: egresos  },
+        ]);
+      } else {
+        chart = new ApexCharts(elTendencia, buildOpts(labels, ingresos, egresos));
+        chart.render();
+      }
+
+      sincronizarBotones();
+    }
+
+    function sincronizarBotones() {
+      const visible = hasta - desde + 1;
+      const btnIn    = document.getElementById('btn-zoom-in');
+      const btnOut   = document.getElementById('btn-zoom-out');
+      const btnReset = document.getElementById('btn-zoom-reset');
+      if (btnIn)    btnIn.disabled    = visible <= PASO;
+      if (btnOut)   btnOut.disabled   = visible >= totalDias;
+      if (btnReset) btnReset.disabled = visible >= totalDias;
+    }
+
+    /* Zoom + : reducir ventana 1 semana, centrado */
+    function zoomIn() {
+      const visible = hasta - desde + 1;
+      if (visible <= PASO) return;
+      const nuevos = Math.max(PASO, visible - PASO);
+      const centro = Math.round((desde + hasta) / 2);
+      desde = Math.max(0, centro - Math.floor(nuevos / 2));
+      hasta = Math.min(totalDias - 1, desde + nuevos - 1);
+      desde = Math.max(0, hasta - nuevos + 1);
+      renderVista();
+    }
+
+    /* Zoom - : ampliar ventana 1 semana */
+    function zoomOut() {
+      const visible = hasta - desde + 1;
+      if (visible >= totalDias) return;
+      const nuevos = Math.min(totalDias, visible + PASO);
+      const centro = Math.round((desde + hasta) / 2);
+      desde = Math.max(0, centro - Math.floor(nuevos / 2));
+      hasta = Math.min(totalDias - 1, desde + nuevos - 1);
+      desde = Math.max(0, hasta - nuevos + 1);
+      renderVista();
+    }
+
+    /* Reset: mes completo */
+    function zoomReset() {
+      desde = 0;
+      hasta = totalDias - 1;
+      renderVista();
+    }
+
+    /* Pan con arrastre */
+    let panDragging = false;
+    let panStartX   = 0;
+    let panDesde    = 0;
+
+    elTendencia.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      panDragging = true;
+      panStartX   = e.clientX;
+      panDesde    = desde;
+      elTendencia.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!panDragging) return;
+      const chartW   = elTendencia.getBoundingClientRect().width || 600;
+      const visible  = hasta - desde + 1;
+      const pxPorDia = chartW / Math.max(visible, 1);
+      const delta    = Math.round((panStartX - e.clientX) / pxPorDia);
+      if (delta === 0) return;
+      const newDesde = Math.max(0, Math.min(totalDias - visible, panDesde + delta));
+      if (newDesde === desde) return;
+      desde = newDesde;
+      hasta = desde + visible - 1;
+      renderVista();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!panDragging) return;
+      panDragging = false;
+      elTendencia.style.cursor = '';
+    });
+
+    /* Wheel */
+    elTendencia.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      e.deltaY < 0 ? zoomIn() : zoomOut();
+    }, { passive: false });
+
+    /* Conectar botones */
+    document.getElementById('btn-zoom-in')?.addEventListener('click', zoomIn);
+    document.getElementById('btn-zoom-out')?.addEventListener('click', zoomOut);
+    document.getElementById('btn-zoom-reset')?.addEventListener('click', zoomReset);
+
+    /* Render inicial */
+    renderVista();
 
     if (subtitulo) {
-      subtitulo.textContent =
-        `${MES_NOMBRE} ${ANIO} · usa + / − para acercar o alejar`;
+      subtitulo.textContent = `${MES_NOMBRE} ${ANIO} · arrastra para navegar`;
     }
   }
 
   iniciarTendencia();
+
 
 
   /* ─────────────────────────────────────────────────────────────
