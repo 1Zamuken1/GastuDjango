@@ -6,9 +6,9 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-sr^8%d0t&zht-2qbvnql&_p0a0(qd6b2v*@9u#z^6-u(zbrjul'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-sr^8%d0t&zht-2qbvnql&_p0a0(qd6b2v*@9u#z^6-u(zbrjul')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = []
 
@@ -62,18 +62,36 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'gastu_django.wsgi.application'
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+# ──────────────────────────────────────────────────────────────
+# BASE DE DATOS
+#
+# MODO ACTIVO: SQLite local (USE_SQLITE=True en .env)
+# Para volver a Supabase: cambiar USE_SQLITE=False en .env
+# ──────────────────────────────────────────────────────────────
 
-# Deshabilitar prepared statements para Transaction pooler de Supabase
-DATABASES['default']['OPTIONS'] = {
-    'prepare_threshold': None,
-}
+# ── SQLite — desarrollo local (activo) ───────────────────────
+if os.getenv('USE_SQLITE', 'False') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# ── Supabase / PostgreSQL — producción (en pausa) ────────────
+else:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+    # Requerido para Transaction pooler de Supabase (puerto 6543)
+    # DATABASE_URL debe empezar con postgresql://, no postgres://
+    DATABASES['default']['OPTIONS'] = {
+        'prepare_threshold': None,
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -92,7 +110,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
-# Auth redirects — todas apuntan a vistas propias en usuarios/
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'

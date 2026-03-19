@@ -9,14 +9,13 @@ Sistema de gestión financiera personal desarrollado como proyecto formativo en 
 | Capa | Tecnología |
 |---|---|
 | Backend | Django 5.2 |
-| Base de datos | PostgreSQL vía Supabase (Transaction pooler, puerto 6543) |
+| Base de datos | SQLite (desarrollo) / PostgreSQL vía Supabase (producción) |
 | ORM | Django ORM nativo |
 | Frontend | Django Templates + Tailwind CDN + Lucide Icons |
 | Fuentes | Plus Jakarta Sans (display) + DM Sans (cuerpo) |
 | Auth | Sistema nativo de Django con vistas propias |
 | Exportación | openpyxl (Excel) + reportlab (PDF) + csv stdlib |
 | IA / Agente | Gemini Flash (Google AI Studio) — Groq como fallback |
-| Driver DB | psycopg[binary]==3.2.10 |
 | Python | 3.14 |
 | Entorno | Windows, venv en GastuDjango/venv/ |
 
@@ -48,18 +47,18 @@ pip install -r requirements.txt
 
 ### 4. Configurar variables de entorno
 
-Solicitar el archivo `.env` al equipo. Nunca está en el repositorio.
-
-Estructura esperada:
+Crear un archivo `.env` en la raíz del proyecto con el siguiente contenido:
 
 ```env
-SECRET_KEY=django-insecure-cambia-esto
+SECRET_KEY=django-insecure-sr^8%d0t&zht-2qbvnql&_p0a0(qd6b2v*@9u#z^6-u(zbrjul
 DEBUG=True
-DATABASE_URL=postgresql://postgres.<proyecto>:<PASSWORD>@aws-1-sa-east-1.pooler.supabase.com:6543/postgres
-```
 
-> Usar puerto **6543** (Transaction pooler), no el 5432.  
-> El `DATABASE_URL` debe empezar con `postgresql://`, no `postgres://`.
+# Cambiar a False para usar Supabase
+USE_SQLITE=True
+
+# Solo necesario cuando USE_SQLITE=False
+# DATABASE_URL=postgresql://postgres.<proyecto>:<PASSWORD>@aws-1-sa-east-1.pooler.supabase.com:6543/postgres
+```
 
 ### 5. Aplicar migraciones
 
@@ -67,13 +66,35 @@ DATABASE_URL=postgresql://postgres.<proyecto>:<PASSWORD>@aws-1-sa-east-1.pooler.
 python manage.py migrate
 ```
 
-### 6. Ejecutar el servidor
+> Cada miembro del equipo debe correr este comando en su propia máquina.
+> El archivo `db.sqlite3` es local y no se sube al repositorio.
+
+### 6. Crear superusuario (opcional, para acceder al admin)
+
+```bash
+python manage.py createsuperuser
+```
+
+### 7. Ejecutar el servidor
 
 ```bash
 python manage.py runserver
 ```
 
 Abrir en el navegador: http://127.0.0.1:8000
+
+---
+
+## Switch de base de datos
+
+El proyecto soporta dos modos sin modificar código:
+
+| `USE_SQLITE` en `.env` | Base de datos activa |
+|---|---|
+| `True` | SQLite local — carga instantánea, ideal para desarrollo |
+| `False` o no definido | Supabase / PostgreSQL — para producción |
+
+Para volver a Supabase: cambiar `USE_SQLITE=False` en `.env` y asegurarse de que `DATABASE_URL` esté definido.
 
 ---
 
@@ -104,8 +125,6 @@ Los reportes se generan desde las vistas de ingresos y egresos.
 
 Formatos disponibles: **CSV**, **Excel (.xlsx)**, **PDF**
 
-Parámetros aceptados vía GET:
-
 | Parámetro | Descripción |
 |---|---|
 | `tipo` | `INGRESO`, `EGRESO` o `AMBOS` |
@@ -128,6 +147,7 @@ Parámetros aceptados vía GET:
 
 ## Notas
 
-- `venv/` y `.env` no se suben al repositorio.
+- `venv/`, `.env` y `db.sqlite3` no se suben al repositorio.
 - Tailwind se carga vía CDN — no requiere Node.js.
 - `openpyxl` y `reportlab` son necesarios para la exportación de reportes.
+- En producción con Railway/Render: cambiar `USE_SQLITE=False` y configurar `DATABASE_URL`.
