@@ -14,17 +14,17 @@
 
 {% block content %}
 
-{# ── Saludo + badge ────────────────────────────────────────── #}
+{# ── Saludo + badge ──────────────────────────────────────── #}
 <div class="flex items-start justify-between mb-5 flex-wrap gap-3">
   <div>
-    <h2 class="font-display font-black" style="font-size:1.5rem;color:var(--slate-900);letter-spacing:-0.025em;">
+    <h2 class="font-display font-black"
+        style="font-size:1.5rem;color:var(--slate-900);letter-spacing:-0.025em;">
       Hola, {{ request.user.username }}
     </h2>
     <p style="color:var(--slate-400);font-size:13px;margin-top:4px;">
       Resumen financiero de <strong style="color:var(--slate-600);">{{ mes_nombre }} {{ anio }}</strong>
     </p>
   </div>
-
   {% if hay_deficit %}
   <span class="status-badge status-badge--deficit">
     <i data-lucide="alert-triangle"></i> Balance en déficit este mes
@@ -37,18 +37,17 @@
 </div>
 
 
-{# ── Carrusel de tarjetas ──────────────────────────────────── #}
+{# ── Carrusel ────────────────────────────────────────────── #}
 <section class="carousel-section">
-
   <div class="carousel-header">
     <span class="carousel-title">Resumen del mes</span>
     <div class="carousel-controls">
       <div class="carousel-dots">
         <button class="carousel-dot active" data-index="0" aria-label="Tarjeta 1"></button>
-        <button class="carousel-dot"        data-index="1" aria-label="Tarjeta 2"></button>
-        <button class="carousel-dot"        data-index="2" aria-label="Tarjeta 3"></button>
-        <button class="carousel-dot"        data-index="3" aria-label="Tarjeta 4"></button>
-        <button class="carousel-dot"        data-index="4" aria-label="Tarjeta 5"></button>
+        <button class="carousel-dot" data-index="1" aria-label="Tarjeta 2"></button>
+        <button class="carousel-dot" data-index="2" aria-label="Tarjeta 3"></button>
+        <button class="carousel-dot" data-index="3" aria-label="Tarjeta 4"></button>
+        <button class="carousel-dot" data-index="4" aria-label="Tarjeta 5"></button>
       </div>
       <button class="carousel-btn" id="carousel-prev" aria-label="Anterior">
         <i data-lucide="chevron-left"></i>
@@ -62,14 +61,11 @@
   <div class="carousel-viewport">
     <div class="carousel-track" id="carousel-track">
 
-      {# 1 — Disponible (azul) #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--disponible">
           <div class="stat-card__header">
             <p class="stat-card__label">Disponible</p>
-            <div class="icon-box icon-box--blue">
-              <i data-lucide="wallet"></i>
-            </div>
+            <div class="icon-box icon-box--blue"><i data-lucide="wallet"></i></div>
           </div>
           {% if disponible >= 0 %}
             <p class="stat-card__value">${{ disponible|floatformat:0 }}</p>
@@ -80,14 +76,11 @@
         </div>
       </div>
 
-      {# 2 — Utilidad mensual (violeta) #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--utilidad">
           <div class="stat-card__header">
             <p class="stat-card__label">Utilidad mensual</p>
-            <div class="icon-box icon-box--violet">
-              <i data-lucide="trending-up"></i>
-            </div>
+            <div class="icon-box icon-box--violet"><i data-lucide="trending-up"></i></div>
           </div>
           {% if utilidad >= 0 %}
             <p class="stat-card__value stat-card__value--positive">${{ utilidad|floatformat:0 }}</p>
@@ -98,57 +91,45 @@
         </div>
       </div>
 
-      {# 3 — Ahorro total (gris / próximamente) #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--ahorro-total stat-card--soon">
           <div class="stat-card__header">
             <p class="stat-card__label">Ahorro total</p>
-            <div class="icon-box icon-box--slate">
-              <i data-lucide="landmark"></i>
-            </div>
+            <div class="icon-box icon-box--slate"><i data-lucide="landmark"></i></div>
           </div>
           <p class="stat-card__value stat-card__value--muted">$0</p>
           <span class="badge-soon"><i data-lucide="clock"></i> Próximamente</span>
         </div>
       </div>
 
-      {# 4 — Ingresos del mes (verde) #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--ingresos">
           <div class="stat-card__header">
             <p class="stat-card__label">Ingresos del mes</p>
-            <div class="icon-box icon-box--emerald">
-              <i data-lucide="arrow-down-left"></i>
-            </div>
+            <div class="icon-box icon-box--emerald"><i data-lucide="arrow-down-left"></i></div>
           </div>
           <p class="stat-card__value stat-card__value--positive">${{ total_ingresos|floatformat:0 }}</p>
           <p class="stat-card__note">Total registrado este mes</p>
         </div>
       </div>
 
-      {# 5 — Gastos del mes (naranja) #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--gastos">
           <div class="stat-card__header">
             <p class="stat-card__label">Gastos del mes</p>
-            <div class="icon-box icon-box--orange">
-              <i data-lucide="arrow-up-right"></i>
-            </div>
+            <div class="icon-box icon-box--orange"><i data-lucide="arrow-up-right"></i></div>
           </div>
           <p class="stat-card__value">${{ total_egresos|floatformat:0 }}</p>
           <p class="stat-card__note">Total registrado este mes</p>
         </div>
       </div>
 
-      {# 6 — Diferencia (verde/rojo según valor) #}
       <div class="carousel-slide">
         {% if diferencia >= 0 %}
         <div class="stat-card stat-card--diferencia-pos">
           <div class="stat-card__header">
             <p class="stat-card__label">Diferencia</p>
-            <div class="icon-box icon-box--emerald">
-              <i data-lucide="plus-circle"></i>
-            </div>
+            <div class="icon-box icon-box--emerald"><i data-lucide="plus-circle"></i></div>
           </div>
           <p class="stat-card__value stat-card__value--positive">${{ diferencia|floatformat:0 }}</p>
           <p class="stat-card__note">Ingresos − egresos</p>
@@ -157,9 +138,7 @@
         <div class="stat-card stat-card--diferencia-neg">
           <div class="stat-card__header">
             <p class="stat-card__label">Diferencia</p>
-            <div class="icon-box icon-box--red">
-              <i data-lucide="minus-circle"></i>
-            </div>
+            <div class="icon-box icon-box--red"><i data-lucide="minus-circle"></i></div>
           </div>
           <p class="stat-card__value stat-card__value--negative">${{ diferencia|floatformat:0 }}</p>
           <p class="stat-card__note">Ingresos − egresos</p>
@@ -167,41 +146,48 @@
         {% endif %}
       </div>
 
-      {# 7 — Ahorros del mes (ámbar / próximamente) #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--ahorros-mes stat-card--soon">
           <div class="stat-card__header">
             <p class="stat-card__label">Ahorros del mes</p>
-            <div class="icon-box icon-box--amber">
-              <i data-lucide="piggy-bank"></i>
-            </div>
+            <div class="icon-box icon-box--amber"><i data-lucide="piggy-bank"></i></div>
           </div>
           <p class="stat-card__value stat-card__value--muted">$0</p>
           <span class="badge-soon"><i data-lucide="clock"></i> Próximamente</span>
         </div>
       </div>
 
-    </div>{# /carousel-track #}
-  </div>{# /carousel-viewport #}
-
+    </div>
+  </div>
   <div class="carousel-progress">
     <div class="carousel-progress__bar" id="carousel-progress-bar"></div>
   </div>
-
 </section>
 
 
-{# ── Gráficos ──────────────────────────────────────────────── #}
+{# ── Gráficos ────────────────────────────────────────────── #}
 <div class="charts-grid">
 
+  {# Tendencia con toggle #}
   <div class="chart-card">
-    <div style="margin-bottom:16px;">
-      <p class="chart-card__title">Tendencia financiera</p>
-      <p class="chart-card__subtitle">Ingresos, egresos y ahorros — últimos 6 meses</p>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;
+                flex-wrap:wrap;gap:.5rem;margin-bottom:16px;">
+      <div>
+        <p class="chart-card__title">Tendencia financiera</p>
+        <p class="chart-card__subtitle" id="tendencia-subtitulo">
+          Ingresos y egresos — {{ mes_nombre }} {{ anio }} · día a día
+        </p>
+      </div>
+      <div class="tendencia-toggle-group">
+        <button class="tendencia-toggle active" data-gran="dia">Día</button>
+        <button class="tendencia-toggle"        data-gran="semana">Semana</button>
+        <button class="tendencia-toggle"        data-gran="mes">6 meses</button>
+      </div>
     </div>
     <div id="chart-tendencia"></div>
   </div>
 
+  {# Pie de gastos #}
   <div class="chart-card">
     <div style="margin-bottom:16px;">
       <p class="chart-card__title">Distribución de gastos</p>
@@ -213,25 +199,35 @@
 </div>
 
 
-{# ── Movimientos + Alertas ─────────────────────────────────── #}
+{# ── Movimientos + Alertas ───────────────────────────────── #}
 <div class="bottom-grid">
 
-  {# Últimos movimientos #}
+  {# Últimos movimientos con filtro #}
   <div class="app-card" style="padding:22px 24px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                margin-bottom:16px;flex-wrap:wrap;gap:.5rem;">
       <div>
         <p class="chart-card__title">Últimos movimientos</p>
         <p class="chart-card__subtitle">Actividad reciente</p>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <a href="{% url 'movimientos:ingresos' %}"
-           style="font-size:11px;font-weight:600;color:#059669;text-decoration:none;display:flex;align-items:center;gap:4px;">
-          <i data-lucide="plus" style="width:12px;height:12px;"></i> Ingreso
-        </a>
-        <a href="{% url 'movimientos:egresos' %}"
-           style="font-size:11px;font-weight:600;color:#f97316;text-decoration:none;display:flex;align-items:center;gap:4px;">
-          <i data-lucide="minus" style="width:12px;height:12px;"></i> Egreso
-        </a>
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <div class="mov-filter-group">
+          <button class="mov-filter-btn active" data-filtro="todos">Todos</button>
+          <button class="mov-filter-btn" data-filtro="INGRESO">Ingresos</button>
+          <button class="mov-filter-btn" data-filtro="EGRESO">Egresos</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <a href="{% url 'movimientos:ingresos' %}"
+             style="font-size:11px;font-weight:600;color:#059669;text-decoration:none;
+                    display:flex;align-items:center;gap:4px;">
+            <i data-lucide="plus" style="width:12px;height:12px;"></i> Ingreso
+          </a>
+          <a href="{% url 'movimientos:egresos' %}"
+             style="font-size:11px;font-weight:600;color:#f97316;text-decoration:none;
+                    display:flex;align-items:center;gap:4px;">
+            <i data-lucide="minus" style="width:12px;height:12px;"></i> Egreso
+          </a>
+        </div>
       </div>
     </div>
 
@@ -242,9 +238,8 @@
         <span class="mov-table-label">Fecha</span>
         <span class="mov-table-label mov-table-label--right">Monto</span>
       </div>
-
       {% for mov in ultimos_movimientos %}
-      <div class="mov-row">
+      <div class="mov-row" data-tipo="{{ mov.tipo }}">
         <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
           <div class="mov-dot {% if mov.tipo == 'INGRESO' %}mov-dot--income{% else %}mov-dot--expense{% endif %}"></div>
           <div style="min-width:0;">
@@ -259,7 +254,6 @@
         </div>
       </div>
       {% endfor %}
-
     {% else %}
       <div class="mov-empty">
         <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
@@ -268,7 +262,7 @@
     {% endif %}
   </div>
 
-  {# Panel de alertas #}
+  {# Alertas #}
   <div class="app-card" style="padding:22px 24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div>
@@ -277,23 +271,16 @@
           {% if notificaciones_count %}{{ notificaciones_count }} sin leer{% else %}Todo al día{% endif %}
         </p>
       </div>
-      <div class="icon-box icon-box--amber">
-        <i data-lucide="bell"></i>
-      </div>
+      <div class="icon-box icon-box--amber"><i data-lucide="bell"></i></div>
     </div>
-
     {% if ultimas_notificaciones %}
       <div class="notif-list">
         {% for n in ultimas_notificaciones %}
         <div class="notif-item {% if not n.leida %}notif-item--unread{% else %}notif-item--read{% endif %}">
           <div class="notif-icon {% if not n.leida %}notif-icon--unread{% else %}notif-icon--read{% endif %}">
-            {% if n.tipo == 'DEFICIT' %}
-              <i data-lucide="alert-triangle"></i>
-            {% elif n.tipo == 'EGRESO_GRANDE' %}
-              <i data-lucide="zap"></i>
-            {% else %}
-              <i data-lucide="bell"></i>
-            {% endif %}
+            {% if n.tipo == 'DEFICIT' %}<i data-lucide="alert-triangle"></i>
+            {% elif n.tipo == 'EGRESO_GRANDE' %}<i data-lucide="zap"></i>
+            {% else %}<i data-lucide="bell"></i>{% endif %}
           </div>
           <div>
             <p class="notif-title">{{ n.titulo }}</p>
@@ -312,10 +299,10 @@
 
 </div>
 
-
-{# Datos JSON para dashboard.js #}
-<script id="data-historico" type="application/json">{{ historico_json|safe }}</script>
-<script id="data-pie"       type="application/json">{{ pie_json|safe }}</script>
+{# Datos para JS #}
+<script id="data-pie" type="application/json">{{ pie_json|safe }}</script>
+<span id="url-tendencia" data-url="{% url 'dashboard:tendencia_mes' %}" hidden></span>
+<span id="mes-nombre-actual" data-mes="{{ mes_nombre }}" data-anio="{{ anio }}" hidden></span>
 
 {% endblock %}
 

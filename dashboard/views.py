@@ -1,9 +1,11 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
+from django.db.models.functions import TruncDate, TruncWeek
+from django.http import JsonResponse
 from django.shortcuts import render
 
 from dashboard.models import ResumenMensual
@@ -21,7 +23,6 @@ ZERO = Decimal('0')
 
 
 def _mes_anterior(mes, anio, n):
-    """Retorna (mes, anio) retrocediendo n meses."""
     mes_total = mes - n
     if mes_total <= 0:
         anios_atras    = (-mes_total // 12) + 1
@@ -34,7 +35,6 @@ def _mes_anterior(mes, anio, n):
 
 
 def _totales_movimiento(user, mes, anio):
-    """Calcula ingresos y egresos directamente desde Movimiento (fallback)."""
     qs = Movimiento.objects.filter(
         usuario=user, activo=True,
         fecha_registro__month=mes,
@@ -47,66 +47,32 @@ def _totales_movimiento(user, mes, anio):
 
 @login_required
 def home_view(request):
-    """
-    Vista principal del dashboard.
-    Lee los valores calculados directamente desde ResumenMensual.
-    El cálculo se delega a dashboard/services.py vía signals de Movimiento.
-    """
     hoy  = date.today()
     mes  = hoy.month
     anio = hoy.year
     user = request.user
 
-    # ── Leer resumen del mes actual desde BD ──────────────────────────────────
     resumen = ResumenMensual.objects.filter(
         usuario=user, mes=mes, anio=anio,
     ).first()
 
     if resumen:
-        total_ingresos     = resumen.total_ingresos
-        total_egresos      = resumen.total_egresos
-        total_ahorros      = resumen.total_ahorros
-        utilidad           = resumen.ingreso_neto        # ingresos - egresos - ahorros
-        disponible         = resumen.ganancia_acumulada  # acumulado histórico + mes actual
-        ahorro_total       = resumen.ahorro_total
-        hay_deficit        = resumen.deficit
+        total_ingresos = resumen.total_ingresos
+        total_egresos  = resumen.total_egresos
+        total_ahorros  = resumen.total_ahorros
+        utilidad       = resumen.ingreso_neto
+        disponible     = resumen.ganancia_acumulada
+        ahorro_total   = resumen.ahorro_total
+        hay_deficit    = resumen.deficit
     else:
-        # Resumen no generado aún — fallback directo a Movimiento
         total_ingresos, total_egresos = _totales_movimiento(user, mes, anio)
-        total_ahorros  = ZERO
-        utilidad       = total_ingresos - total_egresos
-        disponible     = utilidad
-        ahorro_total   = ZERO
-        hay_deficit    = total_egresos > total_ingresos
+        total_ahorros = ZERO
+        utilidad      = total_ingresos - total_egresos
+        disponible    = utilidad
+        ahorro_total  = ZERO
+        hay_deficit   = total_egresos > total_ingresos
 
     diferencia = total_ingresos - total_egresos
-
-    # ── Histórico 6 meses para gráfico de tendencia ───────────────────────────
-    labels_h, ingresos_h, egresos_h, ahorros_h = [], [], [], []
-
-    for i in range(5, -1, -1):
-        m, a = _mes_anterior(mes, anio, i)
-        r = ResumenMensual.objects.filter(usuario=user, mes=m, anio=a).first()
-
-        if r:
-            ing = float(r.total_ingresos)
-            egr = float(r.total_egresos)
-        else:
-            _ing, _egr = _totales_movimiento(user, m, a)
-            ing = float(_ing)
-            egr = float(_egr)
-
-        labels_h.append(f"{MESES_ES[m][:3]} {str(a)[2:]}")
-        ingresos_h.append(ing)
-        egresos_h.append(egr)
-        ahorros_h.append(0)
-
-    historico_json = json.dumps({
-        'labels':   labels_h,
-        'ingresos': ingresos_h,
-        'egresos':  egresos_h,
-        'ahorros':  ahorros_h,
-    })
 
     # ── Pie chart — egresos por categoría del mes ─────────────────────────────
     egresos_cat = (
@@ -139,7 +105,7 @@ def home_view(request):
         Movimiento.objects
         .filter(usuario=user, activo=True)
         .select_related('categoria')
-        .order_by('-fecha_registro')[:6]
+        .order_by('-fecha_registro')[:10]
     )
 
     # ── Notificaciones ────────────────────────────────────────────────────────
@@ -154,22 +120,116 @@ def home_view(request):
     )
 
     context = {
-        'total_ingresos':          total_ingresos,
-        'total_egresos':           total_egresos,
-        'total_ahorros':           total_ahorros,
-        'utilidad':                utilidad,
-        'disponible':              disponible,
-        'diferencia':              diferencia,
-        'ahorro_total':            ahorro_total,
-        'hay_deficit':             hay_deficit,
-        'historico_json':          historico_json,
-        'pie_json':                pie_json,
-        'ultimos_movimientos':     ultimos_movimientos,
-        'notificaciones_count':    notificaciones_count,
-        'ultimas_notificaciones':  ultimas_notificaciones,
-        'mes_nombre':              MESES_ES[mes],
-        'anio':                    anio,
-        'hoy':                     hoy,
+        'total_ingresos':         total_ingresos,
+        'total_egresos':          total_egresos,
+        'total_ahorros':          total_ahorros,
+        'utilidad':               utilidad,
+        'disponible':             disponible,
+        'diferencia':             diferencia,
+        'ahorro_total':           ahorro_total,
+        'hay_deficit':            hay_deficit,
+        'pie_json':               pie_json,
+        'ultimos_movimientos':    ultimos_movimientos,
+        'notificaciones_count':   notificaciones_count,
+        'ultimas_notificaciones': ultimas_notificaciones,
+        'mes_nombre':             MESES_ES[mes],
+        'anio':                   anio,
+        'hoy':                    hoy,
     }
 
     return render(request, 'dashboard/home.html', context)
+
+
+@login_required
+def tendencia_mes(request):
+    """
+    Endpoint JSON para el gráfico de tendencia del mes actual.
+
+    GET param: granularidad — 'dia' | 'semana' | 'mes'
+
+    - dia    : un punto por día del mes, desde el día 1 hasta hoy
+    - semana : agrupado por semana ISO, máx 5 puntos
+    - mes    : 6 meses históricos (comportamiento anterior)
+    """
+    hoy          = date.today()
+    mes          = hoy.month
+    anio         = hoy.year
+    user         = request.user
+    granularidad = request.GET.get('granularidad', 'dia')
+
+    if granularidad == 'dia':
+        primer_dia = date(anio, mes, 1)
+        rango = [primer_dia + timedelta(days=i)
+                 for i in range((hoy - primer_dia).days + 1)]
+
+        # Una sola query por tipo, agrupada por fecha
+        def _totales_diarios(tipo):
+            return {
+                row['fecha']: float(row['total'])
+                for row in Movimiento.objects
+                .filter(
+                    usuario=user, tipo=tipo, activo=True,
+                    fecha_registro__date__gte=primer_dia,
+                    fecha_registro__date__lte=hoy,
+                )
+                .annotate(fecha=TruncDate('fecha_registro'))
+                .values('fecha')
+                .annotate(total=Sum('monto'))
+            }
+
+        ing_map = _totales_diarios('INGRESO')
+        egr_map = _totales_diarios('EGRESO')
+
+        labels   = [d.strftime('%-d %b') for d in rango]
+        ingresos = [ing_map.get(d, 0) for d in rango]
+        egresos  = [egr_map.get(d, 0) for d in rango]
+
+    elif granularidad == 'semana':
+        primer_dia = date(anio, mes, 1)
+
+        def _totales_semanales(tipo):
+            return {
+                row['semana']: float(row['total'])
+                for row in Movimiento.objects
+                .filter(
+                    usuario=user, tipo=tipo, activo=True,
+                    fecha_registro__month=mes,
+                    fecha_registro__year=anio,
+                )
+                .annotate(semana=TruncWeek('fecha_registro'))
+                .values('semana')
+                .annotate(total=Sum('monto'))
+                .order_by('semana')
+            }
+
+        ing_map = _totales_semanales('INGRESO')
+        egr_map = _totales_semanales('EGRESO')
+        semanas = sorted(set(list(ing_map.keys()) + list(egr_map.keys())))
+
+        labels   = [f"Sem {i+1}" for i, _ in enumerate(semanas)]
+        ingresos = [ing_map.get(s, 0) for s in semanas]
+        egresos  = [egr_map.get(s, 0) for s in semanas]
+
+    else:
+        # mes: histórico 6 meses
+        labels, ingresos, egresos = [], [], []
+        for i in range(5, -1, -1):
+            m, a = _mes_anterior(mes, anio, i)
+            r = ResumenMensual.objects.filter(usuario=user, mes=m, anio=a).first()
+            if r:
+                ing = float(r.total_ingresos)
+                egr = float(r.total_egresos)
+            else:
+                _ing, _egr = _totales_movimiento(user, m, a)
+                ing, egr = float(_ing), float(_egr)
+            labels.append(f"{MESES_ES[m][:3]} {str(a)[2:]}")
+            ingresos.append(ing)
+            egresos.append(egr)
+
+    return JsonResponse({
+        'ok':          True,
+        'granularidad': granularidad,
+        'labels':      labels,
+        'ingresos':    ingresos,
+        'egresos':     egresos,
+    })
