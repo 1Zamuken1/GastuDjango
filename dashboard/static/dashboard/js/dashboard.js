@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
           { name: 'Ingresos', data: ingresos },
           { name: 'Egresos',  data: egresos  },
         ],
-        colors: ['#10b981', '#f97316'],
+        colors: ['#10b981', '#e11d48'],
         xaxis: {
           categories: labels,
           title: {

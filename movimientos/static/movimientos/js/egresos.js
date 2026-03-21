@@ -145,7 +145,7 @@ async function actualizarGrid() {
           <div class="progress-bar" style="flex:1;margin:0;">
             <div class="progress-bar__fill" data-porcentaje="${cat.porcentaje}"></div>
           </div>
-          <span style="font-size:.72rem;font-weight:700;color:#f97316;white-space:nowrap;min-width:2.5rem;text-align:right;">${cat.porcentaje}%</span>
+          <span style="font-size:.72rem;font-weight:700;color:#e11d48;white-space:nowrap;min-width:2.5rem;text-align:right;">${cat.porcentaje}%</span>
         </div>
         <div class="categoria-card__footer">
           <i data-lucide="clock"></i> Último: ${cat.ultimo_registro}
@@ -358,7 +358,7 @@ document.getElementById('buscador').addEventListener('input', (e) => {
         document.querySelectorAll('.categoria-card').forEach(card => {
           const tiene = idsConResultados.has(card.dataset.categoriaId);
           card.style.display = tiene ? '' : 'none';
-          card.style.outline = tiene ? '2px solid #f97316' : '';
+          card.style.outline = tiene ? '2px solid #e11d48' : '';
         });
       }
     } catch (err) {

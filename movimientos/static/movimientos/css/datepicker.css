@@ -126,22 +126,22 @@
 
 /* ── Variante egresos ────────────────────────────────── */
 [data-acento="egreso"] .dp-display:focus {
-  border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249,115,22,.12);
+  border-color: #e11d48;
+  box-shadow: 0 0 0 3px rgba(225,29,72,.12);
 }
 [data-acento="egreso"] .dp-day--hoy {
-  border-color: #f97316;
-  color: #f97316;
+  border-color: #e11d48;
+  color: #e11d48;
 }
 [data-acento="egreso"] .dp-day--sel {
-  background: #f97316 !important;
+  background: #e11d48 !important;
 }
 [data-acento="egreso"] .dp-day--sel:hover {
-  background: #ea6a0a !important;
+  background: #be123c !important;
 }
 [data-acento="egreso"] .dp-btn-hoy {
-  color: #f97316;
+  color: #e11d48;
 }
 [data-acento="egreso"] .dp-btn-hoy:hover {
-  background: #fff7ed;
+  background: #fff1f2;
 }
