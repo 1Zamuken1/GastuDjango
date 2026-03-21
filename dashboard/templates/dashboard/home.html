@@ -40,33 +40,41 @@
 
 {# ── Navegación de meses ─────────────────────────────────── #}
 <div id="nav-meses"
-     style="display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap;"
+     class="nav-mes-wrap"
      data-mes="{{ mes }}"
      data-anio="{{ anio }}"
      data-es-mes-actual="{{ es_mes_actual|yesno:'true,false' }}">
 
   <button id="btn-mes-actual"
-          class="nav-mes-btn nav-mes-btn--text"
+          class="nav-mes-actual-btn"
           title="Ir al mes actual"
           {% if es_mes_actual %}disabled{% endif %}>
-    <i data-lucide="calendar-check" style="width:14px;height:14px;flex-shrink:0;"></i>
+    <i data-lucide="calendar-check" style="width:13px;height:13px;flex-shrink:0;"></i>
     Mes actual
   </button>
 
-  <button id="btn-mes-anterior"
-          class="nav-mes-btn nav-mes-btn--icon"
-          title="Mes anterior">
-    <i data-lucide="chevron-left" style="width:16px;height:16px;"></i>
-  </button>
+  <div class="nav-mes-group">
+    <button id="btn-mes-anterior"
+            class="nav-mes-arrow"
+            title="Mes anterior">
+      <i data-lucide="chevron-left" style="width:15px;height:15px;"></i>
+    </button>
 
-  <span id="nav-mes-label" class="nav-mes-label">{{ mes_nombre }} {{ anio }}</span>
+    <span id="nav-mes-label" class="nav-mes-label">{{ mes_nombre }} {{ anio }}</span>
 
-  <button id="btn-mes-siguiente"
-          class="nav-mes-btn nav-mes-btn--icon"
-          title="Mes siguiente"
-          {% if es_mes_actual %}disabled{% endif %}>
-    <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
-  </button>
+    <button id="btn-mes-siguiente"
+            class="nav-mes-arrow"
+            title="Mes siguiente"
+            {% if es_mes_actual %}disabled{% endif %}>
+      <i data-lucide="chevron-right" style="width:15px;height:15px;"></i>
+    </button>
+  </div>
+
+  <span id="nav-mes-historico"
+        class="nav-mes-historico {% if not es_mes_actual %}visible{% endif %}">
+    <i data-lucide="history" style="width:10px;height:10px;"></i>
+    Histórico
+  </span>
 
 </div>
 
