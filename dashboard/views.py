@@ -283,7 +283,7 @@ def tendencia_mes(request):
         fecha_registro__year=anio,
     )
 
-    def _diarios(tipo):
+    def _diarios_totales(tipo):
         return {
             row['fecha']: float(row['total'])
             for row in (
@@ -295,8 +295,28 @@ def tendencia_mes(request):
             )
         }
 
-    ing_map = _diarios('INGRESO')
-    egr_map = _diarios('EGRESO')
+    def _diarios_por_categoria(tipo):
+        from collections import defaultdict
+        resultado = defaultdict(list)
+        rows = (
+            qs_base
+            .filter(tipo=tipo)
+            .annotate(fecha=TruncDate('fecha_registro'))
+            .values('fecha', 'categoria__nombre')
+            .annotate(total=Sum('monto'))
+            .order_by('fecha', '-total')
+        )
+        for row in rows:
+            resultado[row['fecha']].append({
+                'nombre': row['categoria__nombre'] or 'Sin categoria',
+                'monto':  float(row['total']),
+            })
+        return dict(resultado)
+
+    ing_map     = _diarios_totales('INGRESO')
+    egr_map     = _diarios_totales('EGRESO')
+    ing_cat_map = _diarios_por_categoria('INGRESO')
+    egr_cat_map = _diarios_por_categoria('EGRESO')
 
     if es_mes_actual:
         total_dias = (hoy - primer_dia).days + 1
@@ -307,13 +327,25 @@ def tendencia_mes(request):
 
     if not rango:
         return JsonResponse({
-            'ok': True, 'labels': [], 'ingresos': [], 'egresos': [], 'total_dias': 0,
+            'ok': True, 'labels': [], 'ingresos': [], 'egresos': [],
+            'detalle_ing': {}, 'detalle_egr': {}, 'total_dias': 0,
         })
 
+    detalle_ing = {
+        str(d.day): ing_cat_map.get(d, [])
+        for d in rango if d in ing_cat_map
+    }
+    detalle_egr = {
+        str(d.day): egr_cat_map.get(d, [])
+        for d in rango if d in egr_cat_map
+    }
+
     return JsonResponse({
-        'ok':        True,
-        'labels':    [str(d.day) for d in rango],
-        'ingresos':  [ing_map.get(d, 0) for d in rango],
-        'egresos':   [egr_map.get(d, 0) for d in rango],
-        'total_dias': len(rango),
+        'ok':          True,
+        'labels':      [str(d.day) for d in rango],
+        'ingresos':    [ing_map.get(d, 0) for d in rango],
+        'egresos':     [egr_map.get(d, 0) for d in rango],
+        'detalle_ing': detalle_ing,
+        'detalle_egr': detalle_egr,
+        'total_dias':  len(rango),
     })

@@ -253,6 +253,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const labelsTotal   = data.labels;
     const ingresosTotal = data.ingresos;
     const egresosTotal  = data.egresos;
+    const detalleIng    = data.detalle_ing || {};
+    const detalleEgr    = data.detalle_egr || {};
     const totalDias     = data.total_dias;
     const PASO          = 7;
 
@@ -301,9 +303,66 @@ document.addEventListener('DOMContentLoaded', () => {
           itemMargin: { horizontal: 8 },
         },
         tooltip: {
-          theme: 'light', shared: true, intersect: false,
+          theme: 'light',
+          shared: true,
+          intersect: false,
           x: { formatter: (val) => `Día ${val} — ${MES_NOMBRE} ${ANIO_LABEL}` },
-          y: { formatter: formatCOP },
+          custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+            const dia      = w.globals.labels[dataPointIndex];
+            const totalIng = series[0][dataPointIndex] || 0;
+            const totalEgr = series[1][dataPointIndex] || 0;
+            const catIng   = detalleIng[dia] || [];
+            const catEgr   = detalleEgr[dia] || [];
+
+            const fmtNum = (v) => '$' + new Intl.NumberFormat('es-CO').format(Math.round(v));
+
+            const filas = (cats, color) => cats.length === 0 ? '' :
+              cats.map(c => `
+                <div style="display:flex;justify-content:space-between;gap:1.5rem;
+                            padding:.15rem 0;font-size:.72rem;color:#64748b;">
+                  <span style="display:flex;align-items:center;gap:.35rem;">
+                    <span style="width:6px;height:6px;border-radius:50%;
+                                 background:${color};flex-shrink:0;"></span>
+                    ${c.nombre}
+                  </span>
+                  <span style="font-weight:600;color:#334155;">${fmtNum(c.monto)}</span>
+                </div>`).join('');
+
+            const seccion = (label, total, color, cats) => `
+              <div style="margin-bottom:.5rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                            margin-bottom:.3rem;">
+                  <span style="display:flex;align-items:center;gap:.4rem;
+                               font-size:.75rem;font-weight:700;color:#0f172a;">
+                    <span style="width:8px;height:8px;border-radius:2px;
+                                 background:${color};flex-shrink:0;"></span>
+                    ${label}
+                  </span>
+                  <span style="font-size:.8rem;font-weight:800;color:#0f172a;">
+                    ${fmtNum(total)}
+                  </span>
+                </div>
+                ${filas(cats, color)}
+              </div>`;
+
+            const header = `
+              <div style="font-size:.72rem;font-weight:700;color:#94a3b8;
+                          text-transform:uppercase;letter-spacing:.06em;
+                          margin-bottom:.5rem;padding-bottom:.4rem;
+                          border-bottom:1px solid #f1f5f9;">
+                Día ${dia} &mdash; ${MES_NOMBRE} ${ANIO_LABEL}
+              </div>`;
+
+            const body = (totalIng > 0 ? seccion('Ingresos', totalIng, '#10b981', catIng) : '')
+                       + (totalEgr > 0 ? seccion('Egresos',  totalEgr, '#e11d48', catEgr) : '');
+
+            return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:.75rem;
+                                padding:.75rem 1rem;min-width:200px;max-width:260px;
+                                box-shadow:0 8px 24px rgba(0,0,0,.1);
+                                font-family:'DM Sans',sans-serif;">
+                      ${header}${body}
+                    </div>`;
+          },
         },
       };
     }
@@ -448,6 +507,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnMesSiguiente) btnMesSiguiente.disabled = esActual;
     if (btnMesAnterior)  btnMesAnterior.disabled  = esPrimero;
     if (navMesLabel)     navMesLabel.textContent  = `${MESES_ES[mesVisto]} ${anioVisto}`;
+
+    /* Badge Histórico */
+    const badge = document.getElementById('nav-mes-historico');
+    if (badge) badge.classList.toggle('visible', !esActual);
   }
 
   function actualizarDOM(data) {
