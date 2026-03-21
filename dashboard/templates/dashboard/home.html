@@ -17,7 +17,7 @@
 {% block content %}
 
 {# ── Saludo + badge ──────────────────────────────────────── #}
-<div class="flex items-start justify-between mb-4 flex-wrap gap-3">
+<div class="flex items-start justify-between mb-4 flex-wrap gap-3 dashboard-header">
   <div>
     <h2 class="font-display font-black"
         style="font-size:1.5rem;color:var(--slate-900);letter-spacing:-0.025em;">
@@ -217,7 +217,8 @@
 
   {# Tendencia #}
   <div class="chart-card">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;
+    <div class="chart-card__header-tendencia"
+         style="display:flex;align-items:flex-start;justify-content:space-between;
                 flex-wrap:wrap;gap:.5rem;margin-bottom:14px;">
       <div>
         <p class="chart-card__title">Tendencia financiera</p>
@@ -225,7 +226,7 @@
           {{ mes_nombre }} {{ anio }} · arrastra para navegar
         </p>
       </div>
-      <div id="tendencia-zoom-controls"
+      <div id="tendencia-zoom-controls" class="tendencia-zoom-controls"
            style="display:flex;align-items:center;gap:.35rem;">
         <button id="btn-zoom-in" title="Acercar"
                 style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
@@ -249,7 +250,7 @@
         </button>
       </div>
     </div>
-    <div id="chart-tendencia"></div>
+    <div id="chart-tendencia" class="chart-tendencia-wrap"></div>
   </div>
 
   {# Pie de gastos #}
@@ -258,7 +259,7 @@
       <p class="chart-card__title">Distribución de gastos</p>
       <p class="chart-card__subtitle" id="pie-subtitulo">Por categoría — {{ mes_nombre }}</p>
     </div>
-    <div id="chart-pie"></div>
+    <div id="chart-pie" class="chart-pie-wrap"></div>
   </div>
 
 </div>

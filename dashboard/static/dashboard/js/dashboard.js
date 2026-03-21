@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pieChartInst = new ApexCharts(elPie, {
       chart: {
         type: 'pie',
-        height: 280,
+        height: window.innerWidth <= 479 ? 220 : window.innerWidth <= 767 ? 240 : 280,
         toolbar:    { show: false },
         fontFamily,
         animations: { enabled: true, speed: 600 },
@@ -265,7 +265,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function buildOpts(labels, ingresos, egresos) {
       return {
         chart: {
-          type: 'bar', stacked: true, height: 270, fontFamily,
+          type: 'bar', stacked: true,
+          height: window.innerWidth <= 479 ? 200 : window.innerWidth <= 767 ? 220 : 270,
+          fontFamily,
           animations: { enabled: true, speed: 300, easing: 'easeinout' },
           background: 'transparent',
           toolbar:    { show: false },

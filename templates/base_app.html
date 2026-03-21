@@ -99,7 +99,7 @@
       min-width: var(--sidebar-w-mini);
     }
 
-    /* Logo círculo */
+    /* Logo círculo — también funciona como botón toggle en mobile */
     .logo-circle {
       width: 32px;
       height: 32px;
@@ -110,13 +110,20 @@
       justify-content: center;
       flex-shrink: 0;
       box-shadow: 0 2px 8px rgba(16,185,129,0.35);
+      /* Reset estilos de botón nativo */
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      transition: box-shadow 0.15s, transform 0.15s;
     }
-    .logo-circle span {
+    .logo-circle:hover { transform: scale(1.05); }
+    .logo-circle-letter {
       color: white;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 900;
       font-size: 13px;
       letter-spacing: -0.5px;
+      pointer-events: none;
     }
 
     .logo-text {
@@ -133,23 +140,65 @@
     }
     body.sidebar-mini .logo-text { opacity: 0; max-width: 0; margin-left: 0; }
 
-    /* Toggle btn */
-    #sidebar-toggle {
-      margin-left: auto;
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      border: none;
-      background: transparent;
-      color: #94a3b8;
-      cursor: pointer;
+    /* ── Toggle dentro del sidebar (desktop) ── */
+    .sidebar-header {
+      padding: 10px 10px 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .sidebar-toggle-btn {
       display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .sidebar-toggle-btn:hover {
+      background: rgba(255,255,255,0.07);
+      color: #94a3b8;
+    }
+    .sidebar-toggle-label {
+      transition: opacity 0.18s, max-width 0.28s;
+      max-width: 160px;
+      overflow: hidden;
+    }
+    body.sidebar-mini .sidebar-toggle-label {
+      opacity: 0;
+      max-width: 0;
+    }
+    /* Cuando mini: mostrar icono open, ocultar close */
+    body.sidebar-mini .sidebar-toggle-icon-open   { display: none !important; }
+    body.sidebar-mini .sidebar-toggle-icon-closed { display: block !important; }
+
+    /* ── Toggle hamburguesa mobile (solo visible en mobile) ── */
+    .sidebar-toggle-mobile-btn {
+      display: none; /* oculto en desktop */
+      margin-left: auto;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(255,255,255,0.08);
+      color: #cbd5e1;
+      cursor: pointer;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       transition: background 0.15s, color 0.15s;
     }
-    #sidebar-toggle:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .sidebar-toggle-mobile-btn:hover  { background: rgba(255,255,255,0.14); color: #f1f5f9; }
+    .sidebar-toggle-mobile-btn:active { background: rgba(255,255,255,0.2); }
 
     /* Zona derecha del topbar */
     #topbar-right {
@@ -565,22 +614,36 @@
         width: var(--sidebar-w) !important;
         box-shadow: 4px 0 24px rgba(0,0,0,0.15);
       }
-      body.sidebar-open #sidebar {
-        transform: translateX(0);
-      }
-      /* Ocultar logo-text y nav-labels cuando el sidebar está cerrado */
-      body:not(.sidebar-open) .logo-text { opacity: 0; }
+      body.sidebar-open #sidebar { transform: translateX(0); }
+      body:not(.sidebar-open) .logo-text { opacity: 0; max-width: 0; margin-left: 0; }
 
+      /* En mobile: topbar-left solo logo + hamburguesa */
       #topbar-left {
-        width: 60px !important;
-        min-width: 60px !important;
+        width: auto !important;
+        min-width: unset !important;
+        padding: 0 12px;
+        gap: 8px;
       }
+
+      /* Mostrar hamburguesa, ocultar toggle del sidebar */
+      .sidebar-toggle-mobile-btn { display: flex; }
+      .sidebar-header { display: none; }
+
       #app-content {
         margin-left: 0 !important;
-        padding: 18px 16px;
+        padding: 16px 14px;
       }
       .user-name { display: none; }
-      #topbar-center { padding: 0 12px; }
+      #topbar-center { padding: 0 10px; }
+      #topbar-page-title { font-size: .85rem; }
+      #topbar-page-sub   { font-size: .65rem; }
+    }
+
+    /* Mobile pequeño */
+    @media (max-width: 479px) {
+      #app-content { padding: 12px 10px; }
+      #topbar { padding: 0 12px 0 0; }
+      .topbar-btn { width: 32px; height: 32px; }
     }
 
     /* Ajuste de padding en pantallas medianas */
@@ -603,12 +666,14 @@
 <header id="topbar">
 
   <div id="topbar-left">
-    <div class="logo-circle">
-      <span>G</span>
+    <div class="logo-circle" id="logo-circle-desktop">
+      <span class="logo-circle-letter">G</span>
     </div>
     <span class="logo-text">Gastu</span>
-    <button id="sidebar-toggle" title="Expandir/retraer menú" aria-label="Toggle sidebar">
-      <i data-lucide="panel-left" style="width:16px;height:16px;"></i>
+    <!-- Toggle visible solo en mobile -->
+    <button id="sidebar-toggle-mobile" class="sidebar-toggle-mobile-btn"
+            title="Abrir menú" aria-label="Toggle sidebar">
+      <i data-lucide="menu" style="width:18px;height:18px;"></i>
     </button>
   </div>
 
@@ -662,6 +727,17 @@
      SIDEBAR
 ══════════════════════════════════════════ -->
 <aside id="sidebar">
+
+  <!-- Botón toggle — visible en desktop dentro del sidebar -->
+  <div class="sidebar-header">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn"
+            title="Expandir/retraer menú" aria-label="Toggle sidebar">
+      <i data-lucide="panel-left-close" class="sidebar-toggle-icon-open" style="width:16px;height:16px;"></i>
+      <i data-lucide="panel-left-open"  class="sidebar-toggle-icon-closed" style="width:16px;height:16px;display:none;"></i>
+      <span class="sidebar-toggle-label">Contraer menú</span>
+    </button>
+  </div>
+
   <nav class="sidebar-nav">
 
     <p class="nav-section-label">General</p>
@@ -752,11 +828,12 @@
 <script>
   lucide.createIcons();
 
-  const body       = document.body;
-  const toggle     = document.getElementById('sidebar-toggle');
-  const overlay    = document.getElementById('sidebar-overlay');
-  const isMobile   = () => window.innerWidth < 768;
-  const isTablet   = () => window.innerWidth >= 768 && window.innerWidth < 1024;
+  const body              = document.body;
+  const toggleDesktop     = document.getElementById('sidebar-toggle');
+  const toggleMobile      = document.getElementById('sidebar-toggle-mobile');
+  const overlay           = document.getElementById('sidebar-overlay');
+  const isMobile          = () => window.innerWidth < 768;
+  const isTablet          = () => window.innerWidth >= 768 && window.innerWidth < 1024;
 
   // ── Restaurar estado guardado (solo desktop) ──────────────
   if (!isMobile() && !isTablet()) {
@@ -765,17 +842,16 @@
     }
   }
 
-  // ── Toggle sidebar ────────────────────────────────────────
-  toggle.addEventListener('click', () => {
-    if (isMobile()) {
-      // Mobile: abrir/cerrar como overlay
-      const open = body.classList.toggle('sidebar-open');
-      overlay.classList.toggle('show', open);
-    } else {
-      // Desktop / Tablet: mini mode
-      body.classList.toggle('sidebar-mini');
-      localStorage.setItem('sidebar-mini', body.classList.contains('sidebar-mini'));
-    }
+  // ── Toggle desktop (dentro del sidebar) ──────────────────
+  toggleDesktop?.addEventListener('click', () => {
+    body.classList.toggle('sidebar-mini');
+    localStorage.setItem('sidebar-mini', body.classList.contains('sidebar-mini'));
+  });
+
+  // ── Toggle mobile (hamburguesa en topbar) ─────────────────
+  toggleMobile?.addEventListener('click', () => {
+    const open = body.classList.toggle('sidebar-open');
+    overlay.classList.toggle('show', open);
   });
 
   // Cerrar sidebar al click en overlay

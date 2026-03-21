@@ -122,60 +122,126 @@
 
 /* Tablet ancho: gráficos en columna */
 @media (max-width: 1180px) {
-  .charts-grid  { grid-template-columns: 1fr; }
-  .bottom-grid  { grid-template-columns: 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .bottom-grid { grid-template-columns: 1fr; }
 }
 
-/* Tablet: 2 slides visibles, tabla reducida */
+/* Tablet: 2 slides, tabla reducida */
 @media (max-width: 1023px) and (min-width: 768px) {
   .carousel-slide { flex: 0 0 calc((100% - 14px) / 2); }
   .mov-table-header, .mov-row { grid-template-columns: 1fr 110px 80px; }
   .mov-table-label:nth-child(2), .mov-cat { display: none; }
 }
 
-/* Mobile: layout completamente apilado */
+/* Mobile: ≤767px */
 @media (max-width: 767px) {
-  /* Carrusel: 1 slide */
-  .carousel-slide { flex: 0 0 100%; }
-  .carousel-dot   { width: 5px; height: 5px; }
+
+  /* ── Carrusel ── */
+  .carousel-slide   { flex: 0 0 100%; }
+  .carousel-dot     { width: 5px; height: 5px; }
   .carousel-dot.active { width: 14px; }
+  .carousel-controls { gap: 5px; }
+  .carousel-btn     { width: 26px; height: 26px; }
+  .carousel-section { margin-bottom: 14px; }
 
-  /* Stat card más compacta */
+  /* ── Stat card ── */
   .stat-card { padding: 14px 16px 12px; }
-  .stat-card__value { font-size: 1.35rem; }
+  .stat-card__value { font-size: 1.3rem; }
+  .stat-card__label { font-size: 10px; }
 
-  /* Grids a columna única */
-  .charts-grid, .bottom-grid { grid-template-columns: 1fr; gap: 12px; }
+  /* ── Grids ── */
+  .charts-grid, .bottom-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
 
-  /* Tabla de movimientos: solo descripción y monto */
-  .mov-table-header { grid-template-columns: 1fr 90px; padding: 0 8px 8px; }
-  .mov-row          { grid-template-columns: 1fr 90px; padding: 8px; }
+  /* ── Chart card ── */
+  .chart-card { padding: 14px 14px 10px; }
+  .chart-card__title { font-size: 13px; }
+  .chart-card__subtitle { font-size: 10px; }
+
+  /* ── Header tendencia: título arriba, zoom abajo ── */
+  .chart-card__header-tendencia {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .5rem;
+    margin-bottom: 10px;
+  }
+  .tendencia-zoom-controls {
+    align-self: flex-end;
+  }
+
+  /* ── Tabla movimientos: descripción + monto ── */
+  .mov-table-header { grid-template-columns: 1fr 80px; padding: 0 8px 8px; }
+  .mov-row          { grid-template-columns: 1fr 80px; padding: 8px; }
   .mov-cat, .mov-date,
   .mov-table-label:nth-child(2),
   .mov-table-label:nth-child(3) { display: none; }
   .mov-amount { font-size: 12px; }
   .mov-desc   { font-size: 12px; }
 
-  /* Toggle tendencia: texto más corto */
-  .tendencia-toggle       { padding: .28rem .55rem; font-size: .7rem; }
-  .tendencia-toggle-group { border-radius: .5rem; }
+  /* ── Filtros movimientos ── */
+  .mov-filter-btn { padding: .2rem .5rem; font-size: .7rem; }
+  #mov-quick-add  { display: none !important; } /* En mobile no hay quick-add */
 
-  /* Filtros movimientos: más compactos */
-  .mov-filter-btn { padding: .2rem .55rem; font-size: .7rem; }
+  /* ── Nav de meses ── */
+  .nav-mes-wrap {
+    gap: .4rem;
+    margin-bottom: 1rem;
+  }
+  .nav-mes-actual-btn {
+    height: 30px;
+    padding: 0 .7rem;
+    font-size: .72rem;
+  }
+  .nav-mes-group { border-radius: .5rem; }
+  .nav-mes-arrow { width: 30px; height: 30px; }
+  .nav-mes-label {
+    font-size: .8rem;
+    min-width: 100px;
+  }
+  .nav-mes-historico { height: 20px; font-size: .65rem; padding: 0 .45rem; }
 
-  /* Header del chart card en columna */
-  .chart-card { padding: 16px 18px; }
+  /* ── Status badge ── */
+  .status-badge { font-size: 11px; padding: 5px 10px; }
 
-  /* Carrusel header: dots y botones alineados */
-  .carousel-controls { gap: 6px; }
-  .carousel-btn { width: 26px; height: 26px; }
+  /* ── Header saludo ── */
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .5rem;
+    margin-bottom: .75rem;
+  }
 }
 
-/* Mobile pequeño */
-@media (max-width: 480px) {
-  .carousel-slide { flex: 0 0 100%; }
-  .stat-card__value { font-size: 1.2rem; }
+/* Mobile pequeño: ≤479px */
+@media (max-width: 479px) {
+  .stat-card__value { font-size: 1.15rem; }
   .charts-grid, .bottom-grid { gap: 10px; }
+  .chart-card { padding: 12px 12px 8px; }
+
+  /* Nav de meses: apilar en dos líneas si no cabe */
+  .nav-mes-wrap { flex-wrap: wrap; }
+  .nav-mes-actual-btn { height: 28px; font-size: .7rem; padding: 0 .6rem; }
+  .nav-mes-arrow { width: 28px; height: 28px; }
+  .nav-mes-label { font-size: .78rem; min-width: 90px; }
+
+  /* Carrusel title + controls más compactos */
+  .carousel-title { font-size: 10px; }
+  .carousel-dot   { width: 4px; height: 4px; }
+  .carousel-dot.active { width: 12px; }
+}
+
+/* ── Alturas de gráficos responsive ─────────────────────── */
+.chart-tendencia-wrap,
+.chart-pie-wrap { width: 100%; overflow: hidden; }
+
+@media (max-width: 767px) {
+  /* ApexCharts respeta el height del contenedor si está fijo */
+  .chart-tendencia-wrap { min-height: 220px; }
+  .chart-pie-wrap       { min-height: 240px; }
+}
+
+@media (max-width: 479px) {
+  .chart-tendencia-wrap { min-height: 200px; }
+  .chart-pie-wrap       { min-height: 220px; }
 }
 
 /* ── Navegacion de meses ─────────────────────────────────── */
