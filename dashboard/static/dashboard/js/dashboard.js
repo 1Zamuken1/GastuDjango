@@ -95,87 +95,140 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   /* ─────────────────────────────────────────────────────────────
-     CONSTANTES
+     CONSTANTES Y URLS
      ─────────────────────────────────────────────────────────── */
-  const fontFamily = "'DM Sans', system-ui, sans-serif";
-  const formatCOP  = (val) => '$' + new Intl.NumberFormat('es-CO').format(val);
-  const axisStyle  = { fontSize: '11px', colors: '#94a3b8', fontFamily };
-  const URL_TENDENCIA = document.getElementById('url-tendencia')?.dataset.url || '/dashboard/tendencia/';
+  const fontFamily        = "'DM Sans', system-ui, sans-serif";
+  const formatCOP         = (val) => '$' + new Intl.NumberFormat('es-CO').format(val);
+  const axisStyle         = { fontSize: '11px', colors: '#94a3b8', fontFamily };
+  const URL_TENDENCIA     = document.getElementById('url-tendencia')?.dataset.url    || '/dashboard/tendencia/';
+  const URL_DASHBOARD     = document.getElementById('url-dashboard')?.dataset.url    || '/dashboard/';
+  const URL_MESES_DISP    = document.getElementById('url-meses-disp')?.dataset.url   || '/dashboard/meses-disponibles/';
+
+
+  /* ─────────────────────────────────────────────────────────────
+     ESTADO DE NAVEGACION
+     ─────────────────────────────────────────────────────────── */
+  const navEl    = document.getElementById('nav-meses');
+  let mesVisto   = parseInt(navEl?.dataset.mes  || new Date().getMonth() + 1);
+  let anioVisto  = parseInt(navEl?.dataset.anio || new Date().getFullYear());
+  let primerMes  = mesVisto;
+  let primerAnio = anioVisto;
+
+  const hoy       = new Date();
+  const MES_HOY   = hoy.getMonth() + 1;
+  const ANIO_HOY  = hoy.getFullYear();
+
+  function esMesActual(mes, anio) {
+    return mes === MES_HOY && anio === ANIO_HOY;
+  }
+
+  function mesSiguiente(mes, anio) {
+    return mes === 12 ? { mes: 1, anio: anio + 1 } : { mes: mes + 1, anio };
+  }
+
+  function mesAnterior(mes, anio) {
+    return mes === 1 ? { mes: 12, anio: anio - 1 } : { mes: mes - 1, anio };
+  }
+
+  function antesDelPrimero(mes, anio) {
+    return (anio < primerAnio) || (anio === primerAnio && mes < primerMes);
+  }
 
 
   /* ─────────────────────────────────────────────────────────────
      PIE CHART — distribución de gastos
      ─────────────────────────────────────────────────────────── */
-  const pieData = JSON.parse(document.getElementById('data-pie')?.textContent || 'null');
-  const elPie   = document.getElementById('chart-pie');
+  const elPie = document.getElementById('chart-pie');
+  let pieChartInst = null;
 
-  if (elPie && pieData) {
-    if (pieData.labels.length > 0) {
-      new ApexCharts(elPie, {
-        chart: {
-          type: 'pie',
-          height: 280,
-          toolbar: { show: false },
-          fontFamily,
-          animations: { enabled: true, speed: 600 },
-          background: 'transparent',
-        },
-        series: pieData.valores,
-        labels: pieData.labels,
-        colors: pieData.colores,
-        legend: {
-          position: 'bottom',
-          fontSize: '11px',
-          fontFamily,
-          markers: { width: 10, height: 10, radius: 3 },
-          itemMargin: { horizontal: 6, vertical: 3 },
-        },
-        dataLabels: {
-          enabled: true,
-          style: { fontSize: '11px', fontFamily, fontWeight: '600' },
-          formatter: (val) => val.toFixed(1) + '%',
-          dropShadow: { enabled: false },
-        },
-        tooltip: {
-          theme: 'light',
-          y: { formatter: formatCOP },
-        },
-        stroke: { width: 2, colors: ['#fff'] },
-        plotOptions: {
-          pie: { expandOnClick: true },
-        },
-      }).render();
-    } else {
+  function renderPie(pieData) {
+    if (!elPie) return;
+
+    if (pieChartInst) {
+      pieChartInst.destroy();
+      pieChartInst = null;
+      elPie.innerHTML = '';
+    }
+
+    if (!pieData || pieData.labels.length === 0) {
       elPie.innerHTML = `
         <div class="chart-empty">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
                stroke="#e2e8f0" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
           Sin egresos registrados este mes
         </div>`;
+      return;
     }
+
+    pieChartInst = new ApexCharts(elPie, {
+      chart: {
+        type: 'pie',
+        height: 280,
+        toolbar:    { show: false },
+        fontFamily,
+        animations: { enabled: true, speed: 600 },
+        background: 'transparent',
+      },
+      series: pieData.valores,
+      labels: pieData.labels,
+      colors: pieData.colores,
+      legend: {
+        position: 'bottom',
+        fontSize: '11px',
+        fontFamily,
+        markers:     { width: 10, height: 10, radius: 3 },
+        itemMargin:  { horizontal: 6, vertical: 3 },
+      },
+      dataLabels: {
+        enabled: true,
+        style:   { fontSize: '11px', fontFamily, fontWeight: '600' },
+        formatter: (val) => val.toFixed(1) + '%',
+        dropShadow: { enabled: false },
+      },
+      tooltip: { theme: 'light', y: { formatter: formatCOP } },
+      stroke:  { width: 2, colors: ['#fff'] },
+      plotOptions: { pie: { expandOnClick: true } },
+    });
+    pieChartInst.render();
   }
+
+  const pieData = JSON.parse(document.getElementById('data-pie')?.textContent || 'null');
+  renderPie(pieData);
 
 
   /* ─────────────────────────────────────────────────────────────
-     GRÁFICO TENDENCIA — mes actual, barras apiladas con zoom/pan
-     El usuario navega con los controles nativos de ApexCharts.
-     Zoom máximo: 7 días. Zoom mínimo: mes completo.
+     GRÁFICO TENDENCIA — barras apiladas con zoom/pan
+     Cada llamada a iniciarTendencia cancela todos los listeners
+     del invocation anterior via AbortController, evitando
+     listeners duplicados que causaban reset de zoom/pan.
      ─────────────────────────────────────────────────────────── */
   const elTendencia = document.getElementById('chart-tendencia');
   const subtitulo   = document.getElementById('tendencia-subtitulo');
-  const mesNombreEl = document.getElementById('mes-nombre-actual');
-  const MES_NOMBRE  = mesNombreEl?.dataset.mes || '';
-  const ANIO        = mesNombreEl?.dataset.anio || '';
 
-  /* Controles de zoom custom encima del gráfico */
-  const zoomControls = document.getElementById('tendencia-zoom-controls');
+  let tendenciaChart  = null;
+  let tendenciaAbort  = null;  /* AbortController de la invocación activa */
 
-  async function iniciarTendencia() {
+  async function iniciarTendencia(mes, anio) {
     if (!elTendencia) return;
+
+    /* Cancelar listeners de la invocación anterior */
+    if (tendenciaAbort) tendenciaAbort.abort();
+    tendenciaAbort = new AbortController();
+    const sig = tendenciaAbort.signal;
+
+    /* Destruir chart anterior */
+    if (tendenciaChart) {
+      tendenciaChart.destroy();
+      tendenciaChart = null;
+      elTendencia.innerHTML = '';
+    }
+
+    const MES_NOMBRE = document.getElementById('mes-nombre-actual')?.dataset.mes  || '';
+    const ANIO_LABEL = document.getElementById('mes-nombre-actual')?.dataset.anio || '';
 
     let data;
     try {
-      const res = await fetch(URL_TENDENCIA, {
+      const res = await fetch(`${URL_TENDENCIA}?mes=${mes}&anio=${anio}`, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
       });
       data = await res.json();
@@ -185,29 +238,35 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    /* Todos los datos del mes — nunca se modifican */
+    if (sig.aborted) return;
+
+    if (data.total_dias === 0) {
+      elTendencia.innerHTML = `
+        <div class="chart-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+               stroke="#e2e8f0" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          Sin movimientos en este período
+        </div>`;
+      return;
+    }
+
     const labelsTotal   = data.labels;
     const ingresosTotal = data.ingresos;
     const egresosTotal  = data.egresos;
     const totalDias     = data.total_dias;
-    const PASO          = 7;   /* salto de zoom = 1 semana */
+    const PASO          = 7;
 
-    /* Ventana actual: índices 0-based sobre labelsTotal */
     let desde = 0;
     let hasta = totalDias - 1;
-
     let chart = null;
 
     function buildOpts(labels, ingresos, egresos) {
       return {
         chart: {
-          type: 'bar',
-          stacked: true,
-          height: 270,
-          fontFamily,
+          type: 'bar', stacked: true, height: 270, fontFamily,
           animations: { enabled: true, speed: 300, easing: 'easeinout' },
           background: 'transparent',
-          toolbar:   { show: false },
+          toolbar:    { show: false },
           selection:  { enabled: false },
           zoom:       { enabled: false },
         },
@@ -219,17 +278,15 @@ document.addEventListener('DOMContentLoaded', () => {
         xaxis: {
           categories: labels,
           title: {
-            text: `${MES_NOMBRE} ${ANIO}`,
+            text:  `${MES_NOMBRE} ${ANIO_LABEL}`,
             style: { fontSize: '11px', fontWeight: 600, color: '#64748b', fontFamily },
           },
-          labels: { style: axisStyle },
+          labels:     { style: axisStyle },
           axisBorder: { show: false },
           axisTicks:  { show: false },
         },
-        yaxis: {
-          labels: { style: axisStyle, formatter: formatCOP },
-        },
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, padding: { left: 4, right: 4 } },
+        yaxis: { labels: { style: axisStyle, formatter: formatCOP } },
+        grid:  { borderColor: '#f1f5f9', strokeDashArray: 4, padding: { left: 4, right: 4 } },
         dataLabels: { enabled: false },
         plotOptions: {
           bar: {
@@ -240,12 +297,12 @@ document.addEventListener('DOMContentLoaded', () => {
         legend: {
           position: 'top', horizontalAlign: 'right',
           fontSize: '12px', fontFamily,
-          markers: { width: 10, height: 10, radius: 3 },
+          markers:    { width: 10, height: 10, radius: 3 },
           itemMargin: { horizontal: 8 },
         },
         tooltip: {
           theme: 'light', shared: true, intersect: false,
-          x: { formatter: (val) => `Día ${val} — ${MES_NOMBRE} ${ANIO}` },
+          x: { formatter: (val) => `Día ${val} — ${MES_NOMBRE} ${ANIO_LABEL}` },
           y: { formatter: formatCOP },
         },
       };
@@ -257,7 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const egresos  = egresosTotal.slice(desde, hasta + 1);
 
       if (chart) {
-        /* Actualizar series y categorías sin destruir el chart */
         chart.updateOptions({ xaxis: { categories: labels } }, false, false);
         chart.updateSeries([
           { name: 'Ingresos', data: ingresos },
@@ -266,6 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         chart = new ApexCharts(elTendencia, buildOpts(labels, ingresos, egresos));
         chart.render();
+        tendenciaChart = chart;
       }
 
       sincronizarBotones();
@@ -281,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnReset) btnReset.disabled = visible >= totalDias;
     }
 
-    /* Zoom + : reducir ventana 1 semana, centrado */
+    /* ── Zoom ── */
     function zoomIn() {
       const visible = hasta - desde + 1;
       if (visible <= PASO) return;
@@ -293,7 +350,6 @@ document.addEventListener('DOMContentLoaded', () => {
       renderVista();
     }
 
-    /* Zoom - : ampliar ventana 1 semana */
     function zoomOut() {
       const visible = hasta - desde + 1;
       if (visible >= totalDias) return;
@@ -305,14 +361,13 @@ document.addEventListener('DOMContentLoaded', () => {
       renderVista();
     }
 
-    /* Reset: mes completo */
     function zoomReset() {
       desde = 0;
       hasta = totalDias - 1;
       renderVista();
     }
 
-    /* Pan con arrastre */
+    /* ── Pan ── */
     let panDragging = false;
     let panStartX   = 0;
     let panDesde    = 0;
@@ -324,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
       panDesde    = desde;
       elTendencia.style.cursor = 'grabbing';
       e.preventDefault();
-    });
+    }, { signal: sig });
 
     document.addEventListener('mousemove', (e) => {
       if (!panDragging) return;
@@ -338,54 +393,311 @@ document.addEventListener('DOMContentLoaded', () => {
       desde = newDesde;
       hasta = desde + visible - 1;
       renderVista();
-    });
+    }, { signal: sig });
 
     document.addEventListener('mouseup', () => {
       if (!panDragging) return;
       panDragging = false;
       elTendencia.style.cursor = '';
-    });
+    }, { signal: sig });
 
-    /* Wheel */
     elTendencia.addEventListener('wheel', (e) => {
       e.preventDefault();
       e.deltaY < 0 ? zoomIn() : zoomOut();
-    }, { passive: false });
+    }, { passive: false, signal: sig });
 
-    /* Conectar botones */
-    document.getElementById('btn-zoom-in')?.addEventListener('click', zoomIn);
-    document.getElementById('btn-zoom-out')?.addEventListener('click', zoomOut);
-    document.getElementById('btn-zoom-reset')?.addEventListener('click', zoomReset);
+    /* ── Botones zoom ── */
+    document.getElementById('btn-zoom-in')?.addEventListener('click',    zoomIn,    { signal: sig });
+    document.getElementById('btn-zoom-out')?.addEventListener('click',   zoomOut,   { signal: sig });
+    document.getElementById('btn-zoom-reset')?.addEventListener('click', zoomReset, { signal: sig });
 
-    /* Render inicial */
+    /* ── Render inicial ── */
     renderVista();
 
     if (subtitulo) {
-      subtitulo.textContent = `${MES_NOMBRE} ${ANIO} · arrastra para navegar`;
+      subtitulo.textContent = `${MES_NOMBRE} ${ANIO_LABEL} · arrastra para navegar`;
     }
   }
 
-  iniciarTendencia();
 
+  /* ─────────────────────────────────────────────────────────────
+     NAVEGACION DE MESES
+     ─────────────────────────────────────────────────────────── */
+  const btnMesActual    = document.getElementById('btn-mes-actual');
+  const btnMesAnterior  = document.getElementById('btn-mes-anterior');
+  const btnMesSiguiente = document.getElementById('btn-mes-siguiente');
+  const navMesLabel     = document.getElementById('nav-mes-label');
+
+  const MESES_ES = {
+    1:'Enero', 2:'Febrero', 3:'Marzo', 4:'Abril', 5:'Mayo', 6:'Junio',
+    7:'Julio', 8:'Agosto', 9:'Septiembre', 10:'Octubre', 11:'Noviembre', 12:'Diciembre',
+  };
+
+  function fmt(v) {
+    const n = parseFloat(v);
+    return '$' + new Intl.NumberFormat('es-CO').format(Math.round(Math.abs(n)));
+  }
+
+  function sincronizarNavBotones() {
+    const esActual = esMesActual(mesVisto, anioVisto);
+    const esPrimero = (anioVisto === primerAnio && mesVisto === primerMes) ||
+                      antesDelPrimero(mesAnterior(mesVisto, anioVisto).mes,
+                                      mesAnterior(mesVisto, anioVisto).anio);
+
+    if (btnMesActual)    btnMesActual.disabled    = esActual;
+    if (btnMesSiguiente) btnMesSiguiente.disabled = esActual;
+    if (btnMesAnterior)  btnMesAnterior.disabled  = esPrimero;
+    if (navMesLabel)     navMesLabel.textContent  = `${MESES_ES[mesVisto]} ${anioVisto}`;
+  }
+
+  function actualizarDOM(data) {
+    /* ── Stat cards ── */
+    const setVal = (id, v, canBeNegative = false) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const n = parseFloat(v);
+      el.textContent = fmt(v);
+      if (canBeNegative) {
+        el.classList.toggle('stat-card__value--negative', n < 0);
+        el.classList.remove('stat-card__value--positive');
+      }
+    };
+
+    setVal('val-disponible',   data.disponible,  true);
+    setVal('val-utilidad',     data.utilidad,    true);
+    setVal('val-ahorro-total', data.ahorro_total);
+    setVal('val-ingresos',     data.total_ingresos);
+    setVal('val-egresos',      data.total_egresos);
+    setVal('val-diferencia',   data.diferencia,  true);
+    setVal('val-ahorros-mes',  data.ahorros_mes);
+
+    /* ── Diferencia card: clase y icono ── */
+    const cardDif  = document.getElementById('stat-card-diferencia');
+    const iconDif  = document.getElementById('icon-diferencia');
+    if (cardDif && iconDif) {
+      const isPos = parseFloat(data.diferencia) >= 0;
+      cardDif.className = `stat-card ${isPos ? 'stat-card--diferencia-pos' : 'stat-card--diferencia-neg'}`;
+      iconDif.className  = `icon-box ${isPos ? 'icon-box--emerald' : 'icon-box--red'}`;
+      iconDif.innerHTML  = `<i data-lucide="${isPos ? 'plus-circle' : 'minus-circle'}"></i>`;
+    }
+
+    /* ── Status badge ── */
+    const badge = document.getElementById('status-badge-wrap');
+    if (badge) {
+      if (data.hay_deficit) {
+        badge.className = 'status-badge status-badge--deficit';
+        badge.innerHTML = '<i data-lucide="alert-triangle"></i> Balance en déficit este mes';
+      } else {
+        badge.className = 'status-badge status-badge--ok';
+        badge.innerHTML = '<i data-lucide="check-circle"></i> Finanzas en orden';
+      }
+    }
+
+    /* ── Subtítulos contextuales ── */
+    const mesNombre = data.mes_nombre;
+    const anio      = data.anio;
+
+    const subPie = document.getElementById('pie-subtitulo');
+    if (subPie) subPie.textContent = `Por categoría — ${mesNombre}`;
+
+    const subMov = document.getElementById('mov-subtitulo');
+    if (subMov) subMov.textContent = `${mesNombre} ${anio}`;
+
+    const subNotif = document.getElementById('notif-subtitulo');
+    if (subNotif) {
+      subNotif.textContent = data.notificaciones_count > 0
+        ? `${data.notificaciones_count} sin leer`
+        : 'Todo al día';
+    }
+
+    /* ── Quick-add: solo visible en mes actual ── */
+    const quickAdd = document.getElementById('mov-quick-add');
+    if (quickAdd) quickAdd.classList.toggle('mov-quick-add--visible', data.es_mes_actual);
+
+    /* ── Tabla de movimientos ── */
+    const movTabla = document.getElementById('mov-tabla');
+    if (movTabla) {
+      if (data.ultimos_movimientos.length === 0) {
+        movTabla.innerHTML = `
+          <div class="mov-empty">
+            <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
+            <p>Sin movimientos en ${mesNombre} ${anio}</p>
+          </div>`;
+      } else {
+        const header = `
+          <div class="mov-table-header">
+            <span class="mov-table-label">Descripción</span>
+            <span class="mov-table-label">Categoría</span>
+            <span class="mov-table-label">Fecha</span>
+            <span class="mov-table-label mov-table-label--right">Monto</span>
+          </div>`;
+
+        const rows = data.ultimos_movimientos.map(m => {
+          const esI    = m.tipo === 'INGRESO';
+          const dotCls = esI ? 'mov-dot--income'   : 'mov-dot--expense';
+          const amtCls = esI ? 'mov-amount--income' : 'mov-amount--expense';
+          const signo  = esI ? '+' : '−';
+          const montoF = '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(m.monto)));
+          return `
+            <div class="mov-row" data-tipo="${m.tipo}">
+              <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
+                <div class="mov-dot ${dotCls}"></div>
+                <div style="min-width:0;">
+                  <p class="mov-desc">${m.descripcion}</p>
+                  <p class="mov-type">${esI ? 'Ingreso' : 'Egreso'}</p>
+                </div>
+              </div>
+              <div class="mov-cat">${m.categoria}</div>
+              <div class="mov-date">${m.fecha}</div>
+              <div class="mov-amount ${amtCls}">${signo}${montoF}</div>
+            </div>`;
+        }).join('');
+
+        movTabla.innerHTML = header + rows;
+      }
+    }
+
+    /* ── Notificaciones ── */
+    const notifLista = document.getElementById('notif-lista');
+    if (notifLista) {
+      if (data.ultimas_notificaciones.length === 0) {
+        notifLista.innerHTML = `
+          <div class="notif-empty">
+            <i data-lucide="check-circle" style="width:30px;height:30px;color:#a7f3d0;"></i>
+            Sin alertas pendientes
+          </div>`;
+      } else {
+        const iconMap = { DEFICIT: 'alert-triangle', EGRESO_GRANDE: 'zap' };
+        notifLista.innerHTML = `<div class="notif-list">` +
+          data.ultimas_notificaciones.map(n => {
+            const cls   = n.leida ? 'notif-item--read'   : 'notif-item--unread';
+            const iCls  = n.leida ? 'notif-icon--read'   : 'notif-icon--unread';
+            const icono = iconMap[n.tipo] || 'bell';
+            return `
+              <div class="notif-item ${cls}">
+                <div class="notif-icon ${iCls}"><i data-lucide="${icono}"></i></div>
+                <div>
+                  <p class="notif-title">${n.titulo}</p>
+                  <p class="notif-date">${n.fecha}</p>
+                </div>
+              </div>`;
+          }).join('') + `</div>`;
+      }
+    }
+
+    /* ── Pie chart ── */
+    renderPie(data.pie_data);
+
+    /* Recrear iconos Lucide en nuevo HTML */
+    lucide.createIcons();
+
+    /* Rebindear filtro de movimientos */
+    bindFiltroMov();
+  }
+
+  async function navegar(mes, anio) {
+    mesVisto  = mes;
+    anioVisto = anio;
+
+    /* Actualizar URL sin recargar */
+    const url = `${URL_DASHBOARD}?mes=${mes}&anio=${anio}`;
+    history.pushState({ mes, anio }, '', url);
+
+    /* Actualizar data-* del span de nombre de mes para tendencia */
+    const mesNombreSpan = document.getElementById('mes-nombre-actual');
+    if (mesNombreSpan) {
+      mesNombreSpan.dataset.mes  = MESES_ES[mes] || '';
+      mesNombreSpan.dataset.anio = String(anio);
+    }
+
+    sincronizarNavBotones();
+
+    /* Fetch datos del mes */
+    try {
+      const res = await fetch(`${URL_DASHBOARD}?mes=${mes}&anio=${anio}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      });
+      const data = await res.json();
+      if (data.ok) actualizarDOM(data);
+    } catch (e) {
+      console.error('navegar error:', e);
+    }
+
+    /* Recargar tendencia para el nuevo mes */
+    iniciarTendencia(mes, anio);
+  }
+
+  /* Manejar botones */
+  btnMesActual?.addEventListener('click', () => {
+    navegar(MES_HOY, ANIO_HOY);
+  });
+
+  btnMesAnterior?.addEventListener('click', () => {
+    const { mes, anio } = mesAnterior(mesVisto, anioVisto);
+    if (!antesDelPrimero(mes, anio)) navegar(mes, anio);
+  });
+
+  btnMesSiguiente?.addEventListener('click', () => {
+    if (!esMesActual(mesVisto, anioVisto)) {
+      const { mes, anio } = mesSiguiente(mesVisto, anioVisto);
+      navegar(mes, anio);
+    }
+  });
+
+  /* Manejar navegación browser (botones atrás/adelante) */
+  window.addEventListener('popstate', (e) => {
+    const state = e.state;
+    if (state && state.mes && state.anio) {
+      mesVisto  = state.mes;
+      anioVisto = state.anio;
+      navegar(state.mes, state.anio);
+    } else {
+      navegar(MES_HOY, ANIO_HOY);
+    }
+  });
+
+  /* Cargar primer mes disponible (1 sola query al arrancar) */
+  async function initPrimerMes() {
+    try {
+      const res  = await fetch(URL_MESES_DISP, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await res.json();
+      if (data.ok) {
+        primerMes  = data.primer_mes;
+        primerAnio = data.primer_anio;
+      }
+    } catch (e) {
+      console.error('meses-disponibles error:', e);
+    }
+    sincronizarNavBotones();
+  }
 
 
   /* ─────────────────────────────────────────────────────────────
      ÚLTIMOS MOVIMIENTOS — filtro por tipo
      ─────────────────────────────────────────────────────────── */
-  const filterBtns = document.querySelectorAll('.mov-filter-btn');
-  const movRows    = document.querySelectorAll('.mov-row[data-tipo]');
+  function bindFiltroMov() {
+    const filterBtns = document.querySelectorAll('.mov-filter-btn');
+    const movRows    = document.querySelectorAll('.mov-row[data-tipo]');
 
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      const filtro = btn.dataset.filtro; // 'todos' | 'INGRESO' | 'EGRESO'
-      movRows.forEach(row => {
-        row.style.display =
-          filtro === 'todos' || row.dataset.tipo === filtro ? '' : 'none';
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filtro = btn.dataset.filtro;
+        movRows.forEach(row => {
+          row.style.display =
+            filtro === 'todos' || row.dataset.tipo === filtro ? '' : 'none';
+        });
       });
     });
-  });
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     ARRANQUE
+     ─────────────────────────────────────────────────────────── */
+  initPrimerMes();
+  iniciarTendencia(mesVisto, anioVisto);
+  bindFiltroMov();
 
 });

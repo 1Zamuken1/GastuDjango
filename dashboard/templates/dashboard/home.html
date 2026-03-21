@@ -17,7 +17,7 @@
 {% block content %}
 
 {# ── Saludo + badge ──────────────────────────────────────── #}
-<div class="flex items-start justify-between mb-5 flex-wrap gap-3">
+<div class="flex items-start justify-between mb-4 flex-wrap gap-3">
   <div>
     <h2 class="font-display font-black"
         style="font-size:1.5rem;color:var(--slate-900);letter-spacing:-0.025em;">
@@ -27,15 +27,47 @@
       Resumen financiero de <strong style="color:var(--slate-600);">{{ mes_nombre }} {{ anio }}</strong>
     </p>
   </div>
-  {% if hay_deficit %}
-  <span class="status-badge status-badge--deficit">
-    <i data-lucide="alert-triangle"></i> Balance en déficit este mes
+  <span id="status-badge-wrap"
+        class="status-badge {% if hay_deficit %}status-badge--deficit{% else %}status-badge--ok{% endif %}">
+    {% if hay_deficit %}
+      <i data-lucide="alert-triangle"></i> Balance en déficit este mes
+    {% else %}
+      <i data-lucide="check-circle"></i> Finanzas en orden
+    {% endif %}
   </span>
-  {% else %}
-  <span class="status-badge status-badge--ok">
-    <i data-lucide="check-circle"></i> Finanzas en orden
-  </span>
-  {% endif %}
+</div>
+
+
+{# ── Navegación de meses ─────────────────────────────────── #}
+<div id="nav-meses"
+     style="display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap;"
+     data-mes="{{ mes }}"
+     data-anio="{{ anio }}"
+     data-es-mes-actual="{{ es_mes_actual|yesno:'true,false' }}">
+
+  <button id="btn-mes-actual"
+          class="nav-mes-btn nav-mes-btn--text"
+          title="Ir al mes actual"
+          {% if es_mes_actual %}disabled{% endif %}>
+    <i data-lucide="calendar-check" style="width:14px;height:14px;flex-shrink:0;"></i>
+    Mes actual
+  </button>
+
+  <button id="btn-mes-anterior"
+          class="nav-mes-btn nav-mes-btn--icon"
+          title="Mes anterior">
+    <i data-lucide="chevron-left" style="width:16px;height:16px;"></i>
+  </button>
+
+  <span id="nav-mes-label" class="nav-mes-label">{{ mes_nombre }} {{ anio }}</span>
+
+  <button id="btn-mes-siguiente"
+          class="nav-mes-btn nav-mes-btn--icon"
+          title="Mes siguiente"
+          {% if es_mes_actual %}disabled{% endif %}>
+    <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
+  </button>
+
 </div>
 
 
@@ -50,6 +82,8 @@
         <button class="carousel-dot" data-index="2" aria-label="Tarjeta 3"></button>
         <button class="carousel-dot" data-index="3" aria-label="Tarjeta 4"></button>
         <button class="carousel-dot" data-index="4" aria-label="Tarjeta 5"></button>
+        <button class="carousel-dot" data-index="5" aria-label="Tarjeta 6"></button>
+        <button class="carousel-dot" data-index="6" aria-label="Tarjeta 7"></button>
       </div>
       <button class="carousel-btn" id="carousel-prev" aria-label="Anterior">
         <i data-lucide="chevron-left"></i>
@@ -63,99 +97,102 @@
   <div class="carousel-viewport">
     <div class="carousel-track" id="carousel-track">
 
+      {# 1 — Disponible (permanente) #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--disponible">
           <div class="stat-card__header">
             <p class="stat-card__label">Disponible</p>
             <div class="icon-box icon-box--blue"><i data-lucide="wallet"></i></div>
           </div>
-          {% if disponible >= 0 %}
-            <p class="stat-card__value">${{ disponible|floatformat:0 }}</p>
-          {% else %}
-            <p class="stat-card__value stat-card__value--negative">${{ disponible|floatformat:0 }}</p>
-          {% endif %}
+          <p id="val-disponible"
+             class="stat-card__value{% if disponible < 0 %} stat-card__value--negative{% endif %}">
+            ${{ disponible|floatformat:0 }}
+          </p>
           <p class="stat-card__note">Saldo acumulado + mes actual</p>
         </div>
       </div>
 
+      {# 2 — Utilidad mensual #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--utilidad">
           <div class="stat-card__header">
             <p class="stat-card__label">Utilidad mensual</p>
             <div class="icon-box icon-box--violet"><i data-lucide="trending-up"></i></div>
           </div>
-          {% if utilidad >= 0 %}
-            <p class="stat-card__value stat-card__value--positive">${{ utilidad|floatformat:0 }}</p>
-          {% else %}
-            <p class="stat-card__value stat-card__value--negative">${{ utilidad|floatformat:0 }}</p>
-          {% endif %}
+          <p id="val-utilidad"
+             class="stat-card__value{% if utilidad < 0 %} stat-card__value--negative{% endif %}">
+            ${{ utilidad|floatformat:0 }}
+          </p>
           <p class="stat-card__note">Ingresos − egresos − ahorros</p>
         </div>
       </div>
 
+      {# 3 — Ahorro total (permanente) #}
       <div class="carousel-slide">
-        <div class="stat-card stat-card--ahorro-total stat-card--soon">
+        <div class="stat-card stat-card--ahorro-total">
           <div class="stat-card__header">
             <p class="stat-card__label">Ahorro total</p>
             <div class="icon-box icon-box--slate"><i data-lucide="landmark"></i></div>
           </div>
-          <p class="stat-card__value stat-card__value--muted">$0</p>
-          <span class="badge-soon"><i data-lucide="clock"></i> Próximamente</span>
+          <p id="val-ahorro-total" class="stat-card__value">${{ ahorro_total|floatformat:0 }}</p>
+          <p class="stat-card__note">Acumulado hasta este mes</p>
         </div>
       </div>
 
+      {# 4 — Ingresos del mes #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--ingresos">
           <div class="stat-card__header">
             <p class="stat-card__label">Ingresos del mes</p>
             <div class="icon-box icon-box--emerald"><i data-lucide="arrow-down-left"></i></div>
           </div>
-          <p class="stat-card__value stat-card__value--positive">${{ total_ingresos|floatformat:0 }}</p>
+          <p id="val-ingresos" class="stat-card__value stat-card__value--positive">
+            ${{ total_ingresos|floatformat:0 }}
+          </p>
           <p class="stat-card__note">Total registrado este mes</p>
         </div>
       </div>
 
+      {# 5 — Gastos del mes #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--gastos">
           <div class="stat-card__header">
             <p class="stat-card__label">Gastos del mes</p>
             <div class="icon-box icon-box--orange"><i data-lucide="arrow-up-right"></i></div>
           </div>
-          <p class="stat-card__value">${{ total_egresos|floatformat:0 }}</p>
+          <p id="val-egresos" class="stat-card__value">${{ total_egresos|floatformat:0 }}</p>
           <p class="stat-card__note">Total registrado este mes</p>
         </div>
       </div>
 
+      {# 6 — Diferencia #}
       <div class="carousel-slide">
-        {% if diferencia >= 0 %}
-        <div class="stat-card stat-card--diferencia-pos">
+        <div id="stat-card-diferencia"
+             class="stat-card {% if diferencia >= 0 %}stat-card--diferencia-pos{% else %}stat-card--diferencia-neg{% endif %}">
           <div class="stat-card__header">
             <p class="stat-card__label">Diferencia</p>
-            <div class="icon-box icon-box--emerald"><i data-lucide="plus-circle"></i></div>
+            <div id="icon-diferencia"
+                 class="icon-box {% if diferencia >= 0 %}icon-box--emerald{% else %}icon-box--red{% endif %}">
+              <i data-lucide="{% if diferencia >= 0 %}plus-circle{% else %}minus-circle{% endif %}"></i>
+            </div>
           </div>
-          <p class="stat-card__value stat-card__value--positive">${{ diferencia|floatformat:0 }}</p>
+          <p id="val-diferencia"
+             class="stat-card__value{% if diferencia < 0 %} stat-card__value--negative{% endif %}">
+            ${{ diferencia|floatformat:0 }}
+          </p>
           <p class="stat-card__note">Ingresos − egresos</p>
         </div>
-        {% else %}
-        <div class="stat-card stat-card--diferencia-neg">
-          <div class="stat-card__header">
-            <p class="stat-card__label">Diferencia</p>
-            <div class="icon-box icon-box--red"><i data-lucide="minus-circle"></i></div>
-          </div>
-          <p class="stat-card__value stat-card__value--negative">${{ diferencia|floatformat:0 }}</p>
-          <p class="stat-card__note">Ingresos − egresos</p>
-        </div>
-        {% endif %}
       </div>
 
+      {# 7 — Ahorros del mes #}
       <div class="carousel-slide">
-        <div class="stat-card stat-card--ahorros-mes stat-card--soon">
+        <div class="stat-card stat-card--ahorros-mes">
           <div class="stat-card__header">
             <p class="stat-card__label">Ahorros del mes</p>
             <div class="icon-box icon-box--amber"><i data-lucide="piggy-bank"></i></div>
           </div>
-          <p class="stat-card__value stat-card__value--muted">$0</p>
-          <span class="badge-soon"><i data-lucide="clock"></i> Próximamente</span>
+          <p id="val-ahorros-mes" class="stat-card__value">${{ ahorros_mes|floatformat:0 }}</p>
+          <p class="stat-card__note">Aportes registrados este mes</p>
         </div>
       </div>
 
@@ -170,7 +207,7 @@
 {# ── Gráficos ────────────────────────────────────────────── #}
 <div class="charts-grid">
 
-  {# Tendencia con toggle #}
+  {# Tendencia #}
   <div class="chart-card">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;
                 flex-wrap:wrap;gap:.5rem;margin-bottom:14px;">
@@ -211,7 +248,7 @@
   <div class="chart-card">
     <div style="margin-bottom:16px;">
       <p class="chart-card__title">Distribución de gastos</p>
-      <p class="chart-card__subtitle">Por categoría — {{ mes_nombre }}</p>
+      <p class="chart-card__subtitle" id="pie-subtitulo">Por categoría — {{ mes_nombre }}</p>
     </div>
     <div id="chart-pie"></div>
   </div>
@@ -222,13 +259,13 @@
 {# ── Movimientos + Alertas ───────────────────────────────── #}
 <div class="bottom-grid">
 
-  {# Últimos movimientos con filtro #}
+  {# Últimos movimientos #}
   <div class="app-card" style="padding:22px 24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;
                 margin-bottom:16px;flex-wrap:wrap;gap:.5rem;">
       <div>
-        <p class="chart-card__title">Últimos movimientos</p>
-        <p class="chart-card__subtitle">Actividad reciente</p>
+        <p class="chart-card__title">Movimientos del mes</p>
+        <p class="chart-card__subtitle" id="mov-subtitulo">{{ mes_nombre }} {{ anio }}</p>
       </div>
       <div style="display:flex;align-items:center;gap:.75rem;">
         <div class="mov-filter-group">
@@ -236,14 +273,14 @@
           <button class="mov-filter-btn" data-filtro="INGRESO">Ingresos</button>
           <button class="mov-filter-btn" data-filtro="EGRESO">Egresos</button>
         </div>
-        <div style="display:flex;gap:8px;">
+        <div id="mov-quick-add" class="{% if es_mes_actual %}mov-quick-add--visible{% endif %}">
           <a href="{% url 'movimientos:ingresos' %}"
              style="font-size:11px;font-weight:600;color:#059669;text-decoration:none;
                     display:flex;align-items:center;gap:4px;">
             <i data-lucide="plus" style="width:12px;height:12px;"></i> Ingreso
           </a>
           <a href="{% url 'movimientos:egresos' %}"
-             style="font-size:11px;font-weight:600;color:#f97316;text-decoration:none;
+             style="font-size:11px;font-weight:600;color:#e11d48;text-decoration:none;
                     display:flex;align-items:center;gap:4px;">
             <i data-lucide="minus" style="width:12px;height:12px;"></i> Egreso
           </a>
@@ -251,35 +288,37 @@
       </div>
     </div>
 
-    {% if ultimos_movimientos %}
-      <div class="mov-table-header">
-        <span class="mov-table-label">Descripción</span>
-        <span class="mov-table-label">Categoría</span>
-        <span class="mov-table-label">Fecha</span>
-        <span class="mov-table-label mov-table-label--right">Monto</span>
-      </div>
-      {% for mov in ultimos_movimientos %}
-      <div class="mov-row" data-tipo="{{ mov.tipo }}">
-        <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
-          <div class="mov-dot {% if mov.tipo == 'INGRESO' %}mov-dot--income{% else %}mov-dot--expense{% endif %}"></div>
-          <div style="min-width:0;">
-            <p class="mov-desc">{{ mov.descripcion|default:"Sin descripción" }}</p>
-            <p class="mov-type">{{ mov.tipo|capfirst }}</p>
+    <div id="mov-tabla">
+      {% if ultimos_movimientos %}
+        <div class="mov-table-header">
+          <span class="mov-table-label">Descripción</span>
+          <span class="mov-table-label">Categoría</span>
+          <span class="mov-table-label">Fecha</span>
+          <span class="mov-table-label mov-table-label--right">Monto</span>
+        </div>
+        {% for mov in ultimos_movimientos %}
+        <div class="mov-row" data-tipo="{{ mov.tipo }}">
+          <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
+            <div class="mov-dot {% if mov.tipo == 'INGRESO' %}mov-dot--income{% else %}mov-dot--expense{% endif %}"></div>
+            <div style="min-width:0;">
+              <p class="mov-desc">{{ mov.descripcion|default:"Sin descripción" }}</p>
+              <p class="mov-type">{{ mov.tipo|capfirst }}</p>
+            </div>
+          </div>
+          <div class="mov-cat">{{ mov.categoria.nombre|default:"—" }}</div>
+          <div class="mov-date">{{ mov.fecha_registro|date:"d/m/Y" }}</div>
+          <div class="mov-amount {% if mov.tipo == 'INGRESO' %}mov-amount--income{% else %}mov-amount--expense{% endif %}">
+            {% if mov.tipo == 'INGRESO' %}+{% else %}−{% endif %}${{ mov.monto|floatformat:0 }}
           </div>
         </div>
-        <div class="mov-cat">{{ mov.categoria.nombre|default:"—" }}</div>
-        <div class="mov-date">{{ mov.fecha_registro|date:"d/m/Y" }}</div>
-        <div class="mov-amount {% if mov.tipo == 'INGRESO' %}mov-amount--income{% else %}mov-amount--expense{% endif %}">
-          {% if mov.tipo == 'INGRESO' %}+{% else %}-{% endif %}${{ mov.monto|floatformat:0 }}
+        {% endfor %}
+      {% else %}
+        <div class="mov-empty">
+          <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
+          <p>Sin movimientos en {{ mes_nombre }} {{ anio }}</p>
         </div>
-      </div>
-      {% endfor %}
-    {% else %}
-      <div class="mov-empty">
-        <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
-        <p>Sin movimientos registrados aún</p>
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
 
   {# Alertas #}
@@ -287,42 +326,46 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div>
         <p class="chart-card__title">Alertas</p>
-        <p class="chart-card__subtitle">
+        <p class="chart-card__subtitle" id="notif-subtitulo">
           {% if notificaciones_count %}{{ notificaciones_count }} sin leer{% else %}Todo al día{% endif %}
         </p>
       </div>
       <div class="icon-box icon-box--amber"><i data-lucide="bell"></i></div>
     </div>
-    {% if ultimas_notificaciones %}
-      <div class="notif-list">
-        {% for n in ultimas_notificaciones %}
-        <div class="notif-item {% if not n.leida %}notif-item--unread{% else %}notif-item--read{% endif %}">
-          <div class="notif-icon {% if not n.leida %}notif-icon--unread{% else %}notif-icon--read{% endif %}">
-            {% if n.tipo == 'DEFICIT' %}<i data-lucide="alert-triangle"></i>
-            {% elif n.tipo == 'EGRESO_GRANDE' %}<i data-lucide="zap"></i>
-            {% else %}<i data-lucide="bell"></i>{% endif %}
+    <div id="notif-lista">
+      {% if ultimas_notificaciones %}
+        <div class="notif-list">
+          {% for n in ultimas_notificaciones %}
+          <div class="notif-item {% if not n.leida %}notif-item--unread{% else %}notif-item--read{% endif %}">
+            <div class="notif-icon {% if not n.leida %}notif-icon--unread{% else %}notif-icon--read{% endif %}">
+              {% if n.tipo == 'DEFICIT' %}<i data-lucide="alert-triangle"></i>
+              {% elif n.tipo == 'EGRESO_GRANDE' %}<i data-lucide="zap"></i>
+              {% else %}<i data-lucide="bell"></i>{% endif %}
+            </div>
+            <div>
+              <p class="notif-title">{{ n.titulo }}</p>
+              <p class="notif-date">{{ n.fecha_creacion|date:"d/m H:i" }}</p>
+            </div>
           </div>
-          <div>
-            <p class="notif-title">{{ n.titulo }}</p>
-            <p class="notif-date">{{ n.fecha_creacion|date:"d/m H:i" }}</p>
-          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="notif-empty">
-        <i data-lucide="check-circle" style="width:30px;height:30px;color:#a7f3d0;"></i>
-        Sin alertas pendientes
-      </div>
-    {% endif %}
+      {% else %}
+        <div class="notif-empty">
+          <i data-lucide="check-circle" style="width:30px;height:30px;color:#a7f3d0;"></i>
+          Sin alertas pendientes
+        </div>
+      {% endif %}
+    </div>
   </div>
 
 </div>
 
 {# Datos para JS #}
 <script id="data-pie" type="application/json">{{ pie_json|safe }}</script>
-<span id="url-tendencia" data-url="{% url 'dashboard:tendencia_mes' %}" hidden></span>
-<span id="mes-nombre-actual" data-mes="{{ mes_nombre }}" data-anio="{{ anio }}" hidden></span>
+<span id="url-tendencia"       data-url="{% url 'dashboard:tendencia_mes' %}"   hidden></span>
+<span id="url-dashboard"       data-url="{% url 'dashboard:home' %}"            hidden></span>
+<span id="url-meses-disp"      data-url="{% url 'dashboard:meses_disponibles' %}" hidden></span>
+<span id="mes-nombre-actual"   data-mes="{{ mes_nombre }}" data-anio="{{ anio }}" hidden></span>
 
 {% endblock %}
 

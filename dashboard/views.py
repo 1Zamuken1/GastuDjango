@@ -1,4 +1,5 @@
 import json
+import calendar
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -11,6 +12,7 @@ from django.shortcuts import render
 from dashboard.models import ResumenMensual
 from movimientos.models import Movimiento
 from notificaciones.models import Notificacion
+from ahorros.models import AporteAhorro
 
 
 MESES_ES = {
@@ -21,20 +23,19 @@ MESES_ES = {
 
 ZERO = Decimal('0')
 
+PIE_COLORES = [
+    '#e11d48', '#f87171', '#fbbf24', '#a3e635',
+    '#34d399', '#38bdf8', '#818cf8', '#f472b6',
+]
 
-def _mes_anterior(mes, anio, n):
-    mes_total = mes - n
-    if mes_total <= 0:
-        anios_atras    = (-mes_total // 12) + 1
-        mes_resultado  = mes_total + anios_atras * 12
-        anio_resultado = anio - anios_atras
-    else:
-        mes_resultado  = mes_total
-        anio_resultado = anio
-    return mes_resultado, anio_resultado
+
+def _ultimo_dia(mes, anio):
+    """Devuelve el último día del mes dado."""
+    return date(anio, mes, calendar.monthrange(anio, mes)[1])
 
 
 def _totales_movimiento(user, mes, anio):
+    """Calcula ingresos y egresos directamente desde Movimiento (fallback sin ResumenMensual)."""
     qs = Movimiento.objects.filter(
         usuario=user, activo=True,
         fecha_registro__month=mes,
@@ -45,12 +46,16 @@ def _totales_movimiento(user, mes, anio):
     return ingresos, egresos
 
 
-@login_required
-def home_view(request):
-    hoy  = date.today()
-    mes  = hoy.month
-    anio = hoy.year
-    user = request.user
+def _build_context(user, mes, anio):
+    """
+    Construye todos los datos del dashboard para un mes/año dado.
+    Fuente principal: ResumenMensual (Opcion A — lectura directa, sin recalculo).
+    Ahorros se calculan directamente desde AporteAhorro porque ResumenMensual
+    no los integra todavia.
+    """
+    hoy           = date.today()
+    es_mes_actual = (mes == hoy.month and anio == hoy.year)
+    ultimo_dia    = hoy if es_mes_actual else _ultimo_dia(mes, anio)
 
     resumen = ResumenMensual.objects.filter(
         usuario=user, mes=mes, anio=anio,
@@ -62,19 +67,38 @@ def home_view(request):
         total_ahorros  = resumen.total_ahorros
         utilidad       = resumen.ingreso_neto
         disponible     = resumen.ganancia_acumulada
-        ahorro_total   = resumen.ahorro_total
         hay_deficit    = resumen.deficit
     else:
         total_ingresos, total_egresos = _totales_movimiento(user, mes, anio)
         total_ahorros = ZERO
         utilidad      = total_ingresos - total_egresos
         disponible    = utilidad
-        ahorro_total  = ZERO
         hay_deficit   = total_egresos > total_ingresos
 
     diferencia = total_ingresos - total_egresos
 
-    # ── Pie chart — egresos por categoría del mes ─────────────────────────────
+    # Ahorros del mes (query directa — ResumenMensual.total_ahorros es siempre 0)
+    ahorros_mes = (
+        AporteAhorro.objects
+        .filter(
+            ahorro__usuario=user,
+            fecha_registro__month=mes,
+            fecha_registro__year=anio,
+        )
+        .aggregate(t=Sum('aporte'))['t'] or ZERO
+    )
+
+    # Ahorro total acumulado hasta el ultimo dia del mes visto
+    ahorro_total = (
+        AporteAhorro.objects
+        .filter(
+            ahorro__usuario=user,
+            fecha_registro__lte=ultimo_dia,
+        )
+        .aggregate(t=Sum('aporte'))['t'] or ZERO
+    )
+
+    # Pie chart — egresos por categoria
     egresos_cat = (
         Movimiento.objects
         .filter(
@@ -87,28 +111,27 @@ def home_view(request):
         .order_by('-total')[:8]
     )
 
-    pie_colores = [
-        '#f97316', '#f87171', '#fbbf24', '#a3e635',
-        '#34d399', '#38bdf8', '#818cf8', '#f472b6',
-    ]
-    pie_labels  = [item['categoria__nombre'] or 'Sin categoría' for item in egresos_cat]
+    pie_labels  = [item['categoria__nombre'] or 'Sin categoria' for item in egresos_cat]
     pie_valores = [float(item['total']) for item in egresos_cat]
-
-    pie_json = json.dumps({
+    pie_data = {
         'labels':  pie_labels,
         'valores': pie_valores,
-        'colores': pie_colores[:len(pie_labels)],
-    })
+        'colores': PIE_COLORES[:len(pie_labels)],
+    }
 
-    # ── Últimos movimientos ───────────────────────────────────────────────────
+    # Movimientos del mes visto
     ultimos_movimientos = (
         Movimiento.objects
-        .filter(usuario=user, activo=True)
+        .filter(
+            usuario=user, activo=True,
+            fecha_registro__month=mes,
+            fecha_registro__year=anio,
+        )
         .select_related('categoria')
         .order_by('-fecha_registro')[:10]
     )
 
-    # ── Notificaciones ────────────────────────────────────────────────────────
+    # Notificaciones — siempre las mas recientes, no dependen del mes
     notificaciones_count = Notificacion.objects.filter(
         usuario=user, leida=False,
     ).count()
@@ -119,7 +142,11 @@ def home_view(request):
         .order_by('-fecha_creacion')[:4]
     )
 
-    context = {
+    return {
+        'mes':                    mes,
+        'anio':                   anio,
+        'mes_nombre':             MESES_ES[mes],
+        'es_mes_actual':          es_mes_actual,
         'total_ingresos':         total_ingresos,
         'total_egresos':          total_egresos,
         'total_ahorros':          total_ahorros,
@@ -127,31 +154,127 @@ def home_view(request):
         'disponible':             disponible,
         'diferencia':             diferencia,
         'ahorro_total':           ahorro_total,
+        'ahorros_mes':            ahorros_mes,
         'hay_deficit':            hay_deficit,
-        'pie_json':               pie_json,
+        'pie_data':               pie_data,
+        'pie_json':               json.dumps(pie_data),
         'ultimos_movimientos':    ultimos_movimientos,
         'notificaciones_count':   notificaciones_count,
         'ultimas_notificaciones': ultimas_notificaciones,
-        'mes_nombre':             MESES_ES[mes],
-        'anio':                   anio,
         'hoy':                    hoy,
     }
 
-    return render(request, 'dashboard/home.html', context)
+
+@login_required
+def meses_disponibles(request):
+    """
+    Devuelve el primer mes/anio con ResumenMensual para el usuario.
+    El frontend lo usa para saber hasta donde puede navegar hacia atras.
+    Se llama una sola vez al cargar la pagina y se cachea en JS.
+    """
+    primer = (
+        ResumenMensual.objects
+        .filter(usuario=request.user)
+        .order_by('anio', 'mes')
+        .first()
+    )
+    hoy = date.today()
+    return JsonResponse({
+        'ok':          True,
+        'primer_mes':  primer.mes  if primer else hoy.month,
+        'primer_anio': primer.anio if primer else hoy.year,
+    })
+
+
+@login_required
+def home_view(request):
+    hoy  = date.today()
+    user = request.user
+
+    # Parsear y validar mes/anio desde query params
+    try:
+        mes  = int(request.GET.get('mes',  hoy.month))
+        anio = int(request.GET.get('anio', hoy.year))
+        if not (1 <= mes <= 12):
+            mes = hoy.month
+    except (ValueError, TypeError):
+        mes, anio = hoy.month, hoy.year
+
+    # No permitir navegar al futuro
+    if (anio, mes) > (hoy.year, hoy.month):
+        mes, anio = hoy.month, hoy.year
+
+    ctx = _build_context(user, mes, anio)
+
+    # Respuesta JSON para requests AJAX (navegacion sin recarga)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        mov_list = [
+            {
+                'tipo':        m.tipo,
+                'descripcion': m.descripcion or 'Sin descripcion',
+                'categoria':   m.categoria.nombre if m.categoria else 'Sin categoria',
+                'fecha':       m.fecha_registro.strftime('%d/%m/%Y'),
+                'monto':       str(m.monto),
+            }
+            for m in ctx['ultimos_movimientos']
+        ]
+
+        notif_list = [
+            {
+                'titulo': n.titulo,
+                'tipo':   n.tipo,
+                'leida':  n.leida,
+                'fecha':  n.fecha_creacion.strftime('%d/%m %H:%M'),
+            }
+            for n in ctx['ultimas_notificaciones']
+        ]
+
+        return JsonResponse({
+            'ok':                    True,
+            'mes':                   mes,
+            'anio':                  anio,
+            'mes_nombre':            ctx['mes_nombre'],
+            'es_mes_actual':         ctx['es_mes_actual'],
+            'total_ingresos':        str(ctx['total_ingresos']),
+            'total_egresos':         str(ctx['total_egresos']),
+            'utilidad':              str(ctx['utilidad']),
+            'disponible':            str(ctx['disponible']),
+            'diferencia':            str(ctx['diferencia']),
+            'ahorro_total':          str(ctx['ahorro_total']),
+            'ahorros_mes':           str(ctx['ahorros_mes']),
+            'hay_deficit':           ctx['hay_deficit'],
+            'pie_data':              ctx['pie_data'],
+            'ultimos_movimientos':   mov_list,
+            'notificaciones_count':  ctx['notificaciones_count'],
+            'ultimas_notificaciones': notif_list,
+        })
+
+    return render(request, 'dashboard/home.html', ctx)
 
 
 @login_required
 def tendencia_mes(request):
     """
-    Devuelve los totales diarios de ingresos y egresos del mes actual.
-    Cubre desde el día 1 hasta hoy. Labels son números de día: 1, 2, 3...
-    El frontend aplica zoom/pan para navegar dentro del mes.
+    Devuelve los totales diarios de ingresos y egresos del mes solicitado.
+
+    Mes actual: rango completo desde dia 1 hasta hoy.
+    Meses pasados: solo dias con al menos un movimiento registrado.
+
+    Query params opcionales:
+    - mes  (int, 1-12)
+    - anio (int)
     """
-    hoy       = date.today()
-    mes       = hoy.month
-    anio      = hoy.year
-    user      = request.user
-    primer_dia = date(anio, mes, 1)
+    hoy  = date.today()
+    user = request.user
+
+    try:
+        mes  = int(request.GET.get('mes',  hoy.month))
+        anio = int(request.GET.get('anio', hoy.year))
+    except (ValueError, TypeError):
+        mes, anio = hoy.month, hoy.year
+
+    es_mes_actual = (mes == hoy.month and anio == hoy.year)
+    primer_dia    = date(anio, mes, 1)
 
     qs_base = Movimiento.objects.filter(
         usuario=user,
@@ -163,23 +286,34 @@ def tendencia_mes(request):
     def _diarios(tipo):
         return {
             row['fecha']: float(row['total'])
-            for row in qs_base
-            .filter(tipo=tipo)
-            .annotate(fecha=TruncDate('fecha_registro'))
-            .values('fecha')
-            .annotate(total=Sum('monto'))
+            for row in (
+                qs_base
+                .filter(tipo=tipo)
+                .annotate(fecha=TruncDate('fecha_registro'))
+                .values('fecha')
+                .annotate(total=Sum('monto'))
+            )
         }
 
     ing_map = _diarios('INGRESO')
     egr_map = _diarios('EGRESO')
 
-    total_dias = (hoy - primer_dia).days + 1
-    rango      = [primer_dia + timedelta(days=i) for i in range(total_dias)]
+    if es_mes_actual:
+        total_dias = (hoy - primer_dia).days + 1
+        rango = [primer_dia + timedelta(days=i) for i in range(total_dias)]
+    else:
+        dias_con_datos = sorted(set(ing_map.keys()) | set(egr_map.keys()))
+        rango = dias_con_datos
+
+    if not rango:
+        return JsonResponse({
+            'ok': True, 'labels': [], 'ingresos': [], 'egresos': [], 'total_dias': 0,
+        })
 
     return JsonResponse({
-        'ok':       True,
-        'labels':   [str(d.day) for d in rango],     # 1, 2, 3 … 31
-        'ingresos': [ing_map.get(d, 0) for d in rango],
-        'egresos':  [egr_map.get(d, 0) for d in rango],
-        'total_dias': total_dias,
+        'ok':        True,
+        'labels':    [str(d.day) for d in rango],
+        'ingresos':  [ing_map.get(d, 0) for d in rango],
+        'egresos':   [egr_map.get(d, 0) for d in rango],
+        'total_dias': len(rango),
     })

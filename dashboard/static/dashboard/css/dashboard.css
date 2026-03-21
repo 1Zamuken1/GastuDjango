@@ -177,3 +177,46 @@
   .stat-card__value { font-size: 1.2rem; }
   .charts-grid, .bottom-grid { gap: 10px; }
 }
+
+/* ── Navegacion de meses ─────────────────────────────────── */
+.nav-mes-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .375rem;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: .5rem;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  font-size: .8rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .14s, color .14s, border-color .14s;
+  white-space: nowrap;
+}
+.nav-mes-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+.nav-mes-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.nav-mes-btn--icon { width: 32px; padding: 0; }
+.nav-mes-btn--text { padding: 0 .75rem; }
+.nav-mes-label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: .95rem;
+  color: #0f172a;
+  min-width: 132px;
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+
+/* ── Quick-add movimientos (solo mes actual) ─────────────── */
+#mov-quick-add { display: none; gap: 8px; }
+#mov-quick-add.mov-quick-add--visible { display: flex; }
