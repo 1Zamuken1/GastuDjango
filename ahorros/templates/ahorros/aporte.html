@@ -1,12 +1,23 @@
 <h1>Registrar Aporte</h1>
 
-<p>Ahorro: {{ ahorro.descripcion }}</p>
-<p>Total actual: {{ ahorro.total_acumulado }}</p>
+<p><strong>Ahorro:</strong> {{ ahorro.descripcion }}</p>
+<p><strong>Total actual:</strong> {{ ahorro.total_acumulado }}</p>
 
 <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
+    
+    <p>
+        <label for="aporte">Monto a aportar:</label>
+        <input type="number" 
+               name="aporte" 
+               id="aporte" 
+               step="0.01" 
+               value="{{ monto_sugerido|stringformat:'.2f' }}" 
+               required>
+    </p>
+    
     <button type="submit">Aportar</button>
 </form>
 
-<a href="{% url 'ver_todos_ahorros' %}">Volver</a>
+<hr>
+<a href="{% url 'listar_ahorros' %}">Volver</a>
