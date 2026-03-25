@@ -1,5 +1,6 @@
 from django import forms
 from .models import AhorroMeta, AporteAhorro
+from categorias.models import Categoria
 from django.utils import timezone
 
 class AhorroMetaForm(forms.ModelForm):
@@ -23,6 +24,14 @@ class AhorroMetaForm(forms.ModelForm):
             'descripcion': forms.Textarea(attrs={'rows': 2, 'placeholder': '¿Para qué es este ahorro?'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # SOLO categorías de tipo AHORRO
+        self.fields['categoria'].queryset = Categoria.objects.filter(
+            tipo=Categoria.TipoCategoria.AHORRO, activo=True)
+        # Quitamos la obligatoriedad automática de estos campos
+        self.fields['fecha_meta'].required = False
+        self.fields['cantidad_cuotas'].required = False
     # --- VALIDACIONES PERSONALIZADAS ---
 
     def clean_monto_meta(self):
@@ -31,19 +40,22 @@ class AhorroMetaForm(forms.ModelForm):
             raise forms.ValidationError("El monto meta debe ser mayor a 0.")
         return monto
 
-    def clean_cantidad_cuotas(self):
-        cuotas = self.cleaned_data.get('cantidad_cuotas')
-        if cuotas  is None or cuotas <= 0:
-            raise forms.ValidationError("La cantidad de cuotas debe ser mayor a 0.")
-        return cuotas
+    def clean(self): #valida fecha meta y cantidad de cuotas
+        cleaned_data = super().clean()
+        fecha = cleaned_data.get('fecha_meta')
+        cuotas = cleaned_data.get('cantidad_cuotas')
 
-    def clean_fecha_meta(self):
-        fecha = self.cleaned_data.get('fecha_meta')
-        hoy = timezone.now().date()
-        if fecha <= hoy:
-            raise forms.ValidationError("La fecha meta debe ser posterior a la fecha actual.")
-        return fecha
+        if not fecha and not cuotas:
+            raise forms.ValidationError(
+                "Debes ingresar fecha meta o cantidad de cuotas."
+            )
+            
+        if fecha and cuotas:
+            raise forms.ValidationError(
+                "Debes ingresar SOLO fecha meta o cantidad de cuotas, no ambos."
+            )
 
+        return cleaned_data
 
 class AporteAhorroForm(forms.ModelForm):
     
