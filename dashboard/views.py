@@ -119,6 +119,21 @@ def _build_context(user, mes, anio):
         'colores': PIE_COLORES[:len(pie_labels)],
     }
 
+    # Top categorias de egresos — para la card de progreso (max 5)
+    top_categorias_egresos = []
+    total_egresos_float = float(total_egresos) if total_egresos else 0
+    for i, item in enumerate(egresos_cat[:5]):
+        nombre = item['categoria__nombre'] or 'Sin categoria'
+        monto  = float(item['total'])
+        pct    = round(monto / total_egresos_float * 100, 1) if total_egresos_float > 0 else 0
+        top_categorias_egresos.append({
+            'nombre':    nombre,
+            'monto':     monto,
+            'monto_fmt': f"${monto:,.0f}",
+            'pct':       pct,
+            'color':     PIE_COLORES[i],
+        })
+
     # Movimientos del mes visto
     ultimos_movimientos = (
         Movimiento.objects
@@ -143,25 +158,26 @@ def _build_context(user, mes, anio):
     )
 
     return {
-        'mes':                    mes,
-        'anio':                   anio,
-        'mes_nombre':             MESES_ES[mes],
-        'es_mes_actual':          es_mes_actual,
-        'total_ingresos':         total_ingresos,
-        'total_egresos':          total_egresos,
-        'total_ahorros':          total_ahorros,
-        'utilidad':               utilidad,
-        'disponible':             disponible,
-        'diferencia':             diferencia,
-        'ahorro_total':           ahorro_total,
-        'ahorros_mes':            ahorros_mes,
-        'hay_deficit':            hay_deficit,
-        'pie_data':               pie_data,
-        'pie_json':               json.dumps(pie_data),
-        'ultimos_movimientos':    ultimos_movimientos,
-        'notificaciones_count':   notificaciones_count,
-        'ultimas_notificaciones': ultimas_notificaciones,
-        'hoy':                    hoy,
+        'mes':                       mes,
+        'anio':                      anio,
+        'mes_nombre':                MESES_ES[mes],
+        'es_mes_actual':             es_mes_actual,
+        'total_ingresos':            total_ingresos,
+        'total_egresos':             total_egresos,
+        'total_ahorros':             total_ahorros,
+        'utilidad':                  utilidad,
+        'disponible':                disponible,
+        'diferencia':                diferencia,
+        'ahorro_total':              ahorro_total,
+        'ahorros_mes':               ahorros_mes,
+        'hay_deficit':               hay_deficit,
+        'pie_data':                  pie_data,
+        'pie_json':                  json.dumps(pie_data),
+        'top_categorias_egresos':    top_categorias_egresos,
+        'ultimos_movimientos':       ultimos_movimientos,
+        'notificaciones_count':      notificaciones_count,
+        'ultimas_notificaciones':    ultimas_notificaciones,
+        'hoy':                       hoy,
     }
 
 
@@ -230,23 +246,24 @@ def home_view(request):
         ]
 
         return JsonResponse({
-            'ok':                    True,
-            'mes':                   mes,
-            'anio':                  anio,
-            'mes_nombre':            ctx['mes_nombre'],
-            'es_mes_actual':         ctx['es_mes_actual'],
-            'total_ingresos':        str(ctx['total_ingresos']),
-            'total_egresos':         str(ctx['total_egresos']),
-            'utilidad':              str(ctx['utilidad']),
-            'disponible':            str(ctx['disponible']),
-            'diferencia':            str(ctx['diferencia']),
-            'ahorro_total':          str(ctx['ahorro_total']),
-            'ahorros_mes':           str(ctx['ahorros_mes']),
-            'hay_deficit':           ctx['hay_deficit'],
-            'pie_data':              ctx['pie_data'],
-            'ultimos_movimientos':   mov_list,
-            'notificaciones_count':  ctx['notificaciones_count'],
-            'ultimas_notificaciones': notif_list,
+            'ok':                       True,
+            'mes':                      mes,
+            'anio':                     anio,
+            'mes_nombre':               ctx['mes_nombre'],
+            'es_mes_actual':            ctx['es_mes_actual'],
+            'total_ingresos':           str(ctx['total_ingresos']),
+            'total_egresos':            str(ctx['total_egresos']),
+            'utilidad':                 str(ctx['utilidad']),
+            'disponible':               str(ctx['disponible']),
+            'diferencia':               str(ctx['diferencia']),
+            'ahorro_total':             str(ctx['ahorro_total']),
+            'ahorros_mes':              str(ctx['ahorros_mes']),
+            'hay_deficit':              ctx['hay_deficit'],
+            'pie_data':                 ctx['pie_data'],
+            'top_categorias_egresos':   ctx['top_categorias_egresos'],
+            'ultimos_movimientos':      mov_list,
+            'notificaciones_count':     ctx['notificaciones_count'],
+            'ultimas_notificaciones':   notif_list,
         })
 
     return render(request, 'dashboard/home.html', ctx)

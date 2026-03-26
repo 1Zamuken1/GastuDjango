@@ -265,10 +265,10 @@
 </div>
 
 
-{# ── Movimientos + Alertas ───────────────────────────────── #}
+{# ── Movimientos + Top Categorías ────────────────────────── #}
 <div class="bottom-grid">
 
-  {# Últimos movimientos #}
+  {# Últimos movimientos — mejorado #}
   <div class="app-card" style="padding:22px 24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;
                 margin-bottom:16px;flex-wrap:wrap;gap:.5rem;">
@@ -321,6 +321,18 @@
           </div>
         </div>
         {% endfor %}
+
+        {# Link ver todos — ancla al pie de la tabla #}
+        <div style="padding:10px 10px 0;border-top:1px solid #f1f5f9;margin-top:4px;
+                    display:flex;justify-content:flex-end;">
+          <a href="{% url 'movimientos:egresos' %}"
+             style="font-size:11px;font-weight:600;color:#64748b;text-decoration:none;
+                    display:flex;align-items:center;gap:4px;transition:color .15s;"
+             onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#64748b'">
+            Ver todos <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
+          </a>
+        </div>
+
       {% else %}
         <div class="mov-empty">
           <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
@@ -330,44 +342,82 @@
     </div>
   </div>
 
-  {# Alertas #}
-  <div class="app-card" style="padding:22px 24px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+
+  {# Top categorías de egresos — reemplaza el panel de alertas #}
+  <div class="app-card" style="padding:22px 24px;" id="top-categorias-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div>
-        <p class="chart-card__title">Alertas</p>
-        <p class="chart-card__subtitle" id="notif-subtitulo">
-          {% if notificaciones_count %}{{ notificaciones_count }} sin leer{% else %}Todo al día{% endif %}
+        <p class="chart-card__title">Top gastos</p>
+        <p class="chart-card__subtitle" id="top-cat-subtitulo">
+          Categorías del mes — {{ mes_nombre }}
         </p>
       </div>
-      <div class="icon-box icon-box--amber"><i data-lucide="bell"></i></div>
+      <div class="icon-box icon-box--orange">
+        <i data-lucide="trending-down"></i>
+      </div>
     </div>
-    <div id="notif-lista">
-      {% if ultimas_notificaciones %}
-        <div class="notif-list">
-          {% for n in ultimas_notificaciones %}
-          <div class="notif-item {% if not n.leida %}notif-item--unread{% else %}notif-item--read{% endif %}">
-            <div class="notif-icon {% if not n.leida %}notif-icon--unread{% else %}notif-icon--read{% endif %}">
-              {% if n.tipo == 'DEFICIT' %}<i data-lucide="alert-triangle"></i>
-              {% elif n.tipo == 'EGRESO_GRANDE' %}<i data-lucide="zap"></i>
-              {% else %}<i data-lucide="bell"></i>{% endif %}
+
+    <div id="top-categorias-lista">
+    {% if top_categorias_egresos %}
+        {% for cat in top_categorias_egresos %}
+        <div class="top-cat-row">
+            <div class="top-cat-header">
+                <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                    <span class="top-cat-dot" style="background-color: {{ cat.color|default:'#ccc' }};"></span>
+                    <span class="top-cat-nombre">{{ cat.nombre }}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <span class="top-cat-pct">{{ cat.pct }}%</span>
+                    <span class="top-cat-monto">{{ cat.monto_fmt }}</span>
+                </div>
             </div>
-            <div>
-              <p class="notif-title">{{ n.titulo }}</p>
-              <p class="notif-date">{{ n.fecha_creacion|date:"d/m H:i" }}</p>
+            <div class="top-cat-bar-track">
+                <div class="top-cat-bar-fill"
+                     style="--fill-width: {{ cat.pct }}%; --fill-color: {{ cat.color }}; width: var(--fill-width); background-color: var(--fill-color);"
+                     data-pct="{{ cat.pct }}">
+                </div>
             </div>
-          </div>
-          {% endfor %}
         </div>
+        {% endfor %}
+
+        {# Footer con total de egresos #}
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;
+                    display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;
+                       letter-spacing:.07em;">Total egresos</span>
+          <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;
+                       font-size:1rem;color:#e11d48;letter-spacing:-.02em;"
+                id="top-cat-total">${{ total_egresos|floatformat:0 }}</span>
+        </div>
+
+        <a href="{% url 'movimientos:egresos' %}"
+           style="display:flex;align-items:center;justify-content:center;gap:5px;
+                  margin-top:12px;padding:8px;border-radius:10px;
+                  font-size:11px;font-weight:600;color:#64748b;text-decoration:none;
+                  background:#f8fafc;border:1px solid #e2e8f0;transition:all .15s;"
+           onmouseover="this.style.background='#f1f5f9';this.style.color='#0f172a'"
+           onmouseout="this.style.background='#f8fafc';this.style.color='#64748b'">
+          Ver detalle de egresos
+          <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
+        </a>
+
       {% else %}
-        <div class="notif-empty">
-          <i data-lucide="check-circle" style="width:30px;height:30px;color:#a7f3d0;"></i>
-          Sin alertas pendientes
+        <div class="top-cat-empty">
+          <i data-lucide="pie-chart" style="width:36px;height:36px;color:#e2e8f0;"></i>
+          <p>Sin egresos registrados este mes</p>
+          <a href="{% url 'movimientos:egresos' %}"
+             style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;
+                    font-size:11px;font-weight:600;color:#e11d48;text-decoration:none;">
+            <i data-lucide="plus" style="width:11px;height:11px;"></i>
+            Registrar egreso
+          </a>
         </div>
       {% endif %}
     </div>
   </div>
 
 </div>
+
 
 {# Datos para JS #}
 <script id="data-pie" type="application/json">{{ pie_json|safe }}</script>

@@ -197,26 +197,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   /* ─────────────────────────────────────────────────────────────
-     GRÁFICO TENDENCIA — barras apiladas con zoom/pan
-     Cada llamada a iniciarTendencia cancela todos los listeners
-     del invocation anterior via AbortController, evitando
-     listeners duplicados que causaban reset de zoom/pan.
+     GRÁFICO TENDENCIA
      ─────────────────────────────────────────────────────────── */
   const elTendencia = document.getElementById('chart-tendencia');
   const subtitulo   = document.getElementById('tendencia-subtitulo');
 
   let tendenciaChart  = null;
-  let tendenciaAbort  = null;  /* AbortController de la invocación activa */
+  let tendenciaAbort  = null;
 
   async function iniciarTendencia(mes, anio) {
     if (!elTendencia) return;
 
-    /* Cancelar listeners de la invocación anterior */
     if (tendenciaAbort) tendenciaAbort.abort();
     tendenciaAbort = new AbortController();
     const sig = tendenciaAbort.signal;
 
-    /* Destruir chart anterior */
     if (tendenciaChart) {
       tendenciaChart.destroy();
       tendenciaChart = null;
@@ -399,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnReset) btnReset.disabled = visible >= totalDias;
     }
 
-    /* ── Zoom ── */
     function zoomIn() {
       const visible = hasta - desde + 1;
       if (visible <= PASO) return;
@@ -428,7 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
       renderVista();
     }
 
-    /* ── Pan ── */
     let panDragging = false;
     let panStartX   = 0;
     let panDesde    = 0;
@@ -467,18 +460,99 @@ document.addEventListener('DOMContentLoaded', () => {
       e.deltaY < 0 ? zoomIn() : zoomOut();
     }, { passive: false, signal: sig });
 
-    /* ── Botones zoom ── */
     document.getElementById('btn-zoom-in')?.addEventListener('click',    zoomIn,    { signal: sig });
     document.getElementById('btn-zoom-out')?.addEventListener('click',   zoomOut,   { signal: sig });
     document.getElementById('btn-zoom-reset')?.addEventListener('click', zoomReset, { signal: sig });
 
-    /* ── Render inicial ── */
     renderVista();
 
     if (subtitulo) {
       subtitulo.textContent = `${MES_NOMBRE} ${ANIO_LABEL} · arrastra para navegar`;
     }
   }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     TOP CATEGORÍAS DE EGRESOS — actualización dinámica
+     ─────────────────────────────────────────────────────────── */
+  function actualizarTopCategorias(cats, mesNombre, totalEgresos) {
+    const lista = document.getElementById('top-categorias-lista');
+    const subEl = document.getElementById('top-cat-subtitulo');
+
+    if (!lista) return;
+
+    if (subEl) subEl.textContent = `Categorías del mes — ${mesNombre}`;
+
+    if (!cats || cats.length === 0) {
+      lista.innerHTML = `
+        <div class="top-cat-empty">
+          <i data-lucide="pie-chart" style="width:36px;height:36px;color:#e2e8f0;"></i>
+          <p>Sin egresos registrados este mes</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+
+    const fmtCOP = (v) => '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(v)));
+
+    const filas = cats.map(cat => `
+      <div class="top-cat-row">
+        <div class="top-cat-header">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <span class="top-cat-dot" style="background:${cat.color};"></span>
+            <span class="top-cat-nombre">${cat.nombre}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="top-cat-pct">${cat.pct}%</span>
+            <span class="top-cat-monto">${cat.monto_fmt}</span>
+          </div>
+        </div>
+        <div class="top-cat-bar-track">
+          <div class="top-cat-bar-fill"
+               style="width:0%;background:${cat.color};"
+               data-pct="${cat.pct}">
+          </div>
+        </div>
+      </div>`).join('');
+
+    const totalFmt = fmtCOP(totalEgresos);
+
+    lista.innerHTML = filas + `
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;
+                  display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;
+                     letter-spacing:.07em;">Total egresos</span>
+        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;
+                     font-size:1rem;color:#e11d48;letter-spacing:-.02em;"
+              id="top-cat-total">${totalFmt}</span>
+      </div>
+      <a href="/egresos/"
+         style="display:flex;align-items:center;justify-content:center;gap:5px;
+                margin-top:12px;padding:8px;border-radius:10px;
+                font-size:11px;font-weight:600;color:#64748b;text-decoration:none;
+                background:#f8fafc;border:1px solid #e2e8f0;transition:all .15s;"
+         onmouseover="this.style.background='#f1f5f9';this.style.color='#0f172a'"
+         onmouseout="this.style.background='#f8fafc';this.style.color='#64748b'">
+        Ver detalle de egresos
+        <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
+      </a>`;
+
+    /* Animar las barras después de que el DOM esté listo */
+    requestAnimationFrame(() => {
+      lista.querySelectorAll('.top-cat-bar-fill').forEach(el => {
+        el.style.width = (parseFloat(el.dataset.pct) || 0) + '%';
+      });
+    });
+
+    lucide.createIcons();
+  }
+
+  /* Animar barras en la carga inicial */
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.top-cat-bar-fill').forEach(el => {
+      el.style.width = (parseFloat(el.dataset.pct) || 0) + '%';
+    });
+  });
 
 
   /* ─────────────────────────────────────────────────────────────
@@ -510,7 +584,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnMesAnterior)  btnMesAnterior.disabled  = esPrimero;
     if (navMesLabel)     navMesLabel.textContent  = `${MESES_ES[mesVisto]} ${anioVisto}`;
 
-    /* Badge Histórico */
     const badge = document.getElementById('nav-mes-historico');
     if (badge) badge.classList.toggle('visible', !esActual);
   }
@@ -568,13 +641,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const subMov = document.getElementById('mov-subtitulo');
     if (subMov) subMov.textContent = `${mesNombre} ${anio}`;
 
-    const subNotif = document.getElementById('notif-subtitulo');
-    if (subNotif) {
-      subNotif.textContent = data.notificaciones_count > 0
-        ? `${data.notificaciones_count} sin leer`
-        : 'Todo al día';
-    }
-
     /* ── Quick-add: solo visible en mes actual ── */
     const quickAdd = document.getElementById('mov-quick-add');
     if (quickAdd) quickAdd.classList.toggle('mov-quick-add--visible', data.es_mes_actual);
@@ -618,37 +684,28 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }).join('');
 
-        movTabla.innerHTML = header + rows;
+        /* Link ver todos al pie */
+        const verTodos = `
+          <div style="padding:10px 10px 0;border-top:1px solid #f1f5f9;margin-top:4px;
+                      display:flex;justify-content:flex-end;">
+            <a href="/egresos/"
+               style="font-size:11px;font-weight:600;color:#64748b;text-decoration:none;
+                      display:flex;align-items:center;gap:4px;transition:color .15s;"
+               onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#64748b'">
+              Ver todos <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
+            </a>
+          </div>`;
+
+        movTabla.innerHTML = header + rows + verTodos;
       }
     }
 
-    /* ── Notificaciones ── */
-    const notifLista = document.getElementById('notif-lista');
-    if (notifLista) {
-      if (data.ultimas_notificaciones.length === 0) {
-        notifLista.innerHTML = `
-          <div class="notif-empty">
-            <i data-lucide="check-circle" style="width:30px;height:30px;color:#a7f3d0;"></i>
-            Sin alertas pendientes
-          </div>`;
-      } else {
-        const iconMap = { DEFICIT: 'alert-triangle', EGRESO_GRANDE: 'zap' };
-        notifLista.innerHTML = `<div class="notif-list">` +
-          data.ultimas_notificaciones.map(n => {
-            const cls   = n.leida ? 'notif-item--read'   : 'notif-item--unread';
-            const iCls  = n.leida ? 'notif-icon--read'   : 'notif-icon--unread';
-            const icono = iconMap[n.tipo] || 'bell';
-            return `
-              <div class="notif-item ${cls}">
-                <div class="notif-icon ${iCls}"><i data-lucide="${icono}"></i></div>
-                <div>
-                  <p class="notif-title">${n.titulo}</p>
-                  <p class="notif-date">${n.fecha}</p>
-                </div>
-              </div>`;
-          }).join('') + `</div>`;
-      }
-    }
+    /* ── Top categorías de egresos ── */
+    actualizarTopCategorias(
+      data.top_categorias_egresos || [],
+      mesNombre,
+      data.total_egresos,
+    );
 
     /* ── Pie chart ── */
     renderPie(data.pie_data);
@@ -664,11 +721,9 @@ document.addEventListener('DOMContentLoaded', () => {
     mesVisto  = mes;
     anioVisto = anio;
 
-    /* Actualizar URL sin recargar */
     const url = `${URL_DASHBOARD}?mes=${mes}&anio=${anio}`;
     history.pushState({ mes, anio }, '', url);
 
-    /* Actualizar data-* del span de nombre de mes para tendencia */
     const mesNombreSpan = document.getElementById('mes-nombre-actual');
     if (mesNombreSpan) {
       mesNombreSpan.dataset.mes  = MESES_ES[mes] || '';
@@ -677,7 +732,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sincronizarNavBotones();
 
-    /* Fetch datos del mes */
     try {
       const res = await fetch(`${URL_DASHBOARD}?mes=${mes}&anio=${anio}`, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -688,11 +742,9 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('navegar error:', e);
     }
 
-    /* Recargar tendencia para el nuevo mes */
     iniciarTendencia(mes, anio);
   }
 
-  /* Manejar botones */
   btnMesActual?.addEventListener('click', () => {
     navegar(MES_HOY, ANIO_HOY);
   });
@@ -709,7 +761,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* Manejar navegación browser (botones atrás/adelante) */
   window.addEventListener('popstate', (e) => {
     const state = e.state;
     if (state && state.mes && state.anio) {
@@ -721,7 +772,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* Cargar primer mes disponible (1 sola query al arrancar) */
   async function initPrimerMes() {
     try {
       const res  = await fetch(URL_MESES_DISP, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });

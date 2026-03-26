@@ -765,10 +765,11 @@
       <span class="nav-label">Egresos</span>
     </a>
 
-    <a href="#" class="nav-item nav-item--ahorros disabled" data-tooltip="Ahorros (pronto)">
+    <a href="{% url 'ahorros:listar_ahorros' %}"
+       class="nav-item nav-item--ahorros {% block nav_ahorros %}{% endblock %}"
+       data-tooltip="Ahorros">
       <i data-lucide="piggy-bank" class="nav-icon"></i>
       <span class="nav-label">Ahorros</span>
-      <span class="nav-soon">Pronto</span>
     </a>
 
     <a href="#" class="nav-item nav-item--planificaciones disabled" data-tooltip="Planificaciones (pronto)">
