@@ -1,0 +1,25 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="{% static 'css/presupuesto.css' %}">
+{% endblock %}
+{% block title %}Presupuestos — GastuApp{% endblock %}
+{% block page_title %}Presupuestos{% endblock %}
+{% block page_subtitle %}Gestiona tus límites de gasto{% endblock %}
+
+{% block nav_presupuestos %}active{% endblock %}
+
+{% block content %}
+    <div class="presupuesto-header">
+        <h1 class="font-display presupuesto-titulo">Mis Presupuestos</h1>
+        <button onclick="abrirModalCrear()" class="btn-crear">Crear Presupuesto +</button>
+    </div>
+  {% block presupuestos_content %}{% endblock %}
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}  {# ← esto conserva el JS de base_app.html #}
+  {% block presupuestos_scripts %}{% endblock %}
+  
+{% endblock %}

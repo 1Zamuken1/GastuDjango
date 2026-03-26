@@ -8,7 +8,11 @@ urlpatterns = [
     path('', include('usuarios.urls')),
     path('', include('movimientos.urls', namespace='movimientos')),
     path('categorias/', include('categorias.urls', namespace='categorias')),
-    path('presupuesto/', include('presupuesto.urls')),
     path('admin-panel/', include('panel_admin.urls', namespace='panel_admin')),
     path('ahorros/', include('ahorros.urls')),
+    #categoria api
+    path('api/',include('categorias.api_urls')),
+    #presupuestos - no me lo toquen sapas
+    path('api/', include('presupuesto.api_urls')),
+    path('presupuesto/', include('presupuesto.urls')),
 ]
