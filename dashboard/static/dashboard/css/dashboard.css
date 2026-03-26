@@ -91,17 +91,90 @@
 .mov-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0; gap: 10px; text-align: center; }
 .mov-empty p { font-size: 13px; font-weight: 500; color: #94a3b8; }
 
-.notif-list { display: flex; flex-direction: column; gap: 8px; }
-.notif-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border-radius: 10px; border: 1px solid transparent; }
-.notif-item--unread { background: #fffbeb; border-color: #fde68a; }
-.notif-item--read   { background: #f8fafc; border-color: #e2e8f0; }
-.notif-icon { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.notif-icon--unread { background: #fef3c7; color: #d97706; }
-.notif-icon--read   { background: #f1f5f9; color: #94a3b8; }
-.notif-icon svg { width: 13px; height: 13px; }
-.notif-title { font-size: 11px; font-weight: 600; color: #334155; line-height: 1.35; }
-.notif-date  { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-.notif-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100px; gap: 6px; text-align: center; color: #94a3b8; font-size: 12px; }
+
+/* ══════════════════════════════════════════════════════
+   TOP CATEGORÍAS DE EGRESOS
+══════════════════════════════════════════════════════ */
+.top-cat-row {
+  margin-bottom: 14px;
+}
+.top-cat-row:last-of-type {
+  margin-bottom: 0;
+}
+
+.top-cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.top-cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.top-cat-nombre {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.top-cat-pct {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: .03em;
+  flex-shrink: 0;
+}
+
+.top-cat-monto {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -.02em;
+  flex-shrink: 0;
+  min-width: 64px;
+  text-align: right;
+}
+
+.top-cat-bar-track {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.top-cat-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.top-cat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0;
+  gap: 8px;
+  text-align: center;
+}
+.top-cat-empty p {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
 
 /* ── Toggle tendencia ── */
 .tendencia-toggle-group { display: inline-flex; border: 1px solid #e2e8f0; border-radius: .625rem; overflow: hidden; background: #f8fafc; }
@@ -179,7 +252,11 @@
 
   /* ── Filtros movimientos ── */
   .mov-filter-btn { padding: .2rem .5rem; font-size: .7rem; }
-  #mov-quick-add  { display: none !important; } /* En mobile no hay quick-add */
+  #mov-quick-add  { display: none !important; }
+
+  /* ── Top categorías en mobile: nombres más cortos ── */
+  .top-cat-nombre { max-width: 90px; font-size: 11px; }
+  .top-cat-monto  { font-size: 11px; min-width: 56px; }
 
   /* ── Nav de meses ── */
   .nav-mes-wrap {
@@ -216,6 +293,7 @@
   .stat-card__value { font-size: 1.15rem; }
   .charts-grid, .bottom-grid { gap: 10px; }
   .chart-card { padding: 12px 12px 8px; }
+  .top-cat-nombre { max-width: 70px; font-size: 10px; }
 
   /* Nav de meses: apilar en dos líneas si no cabe */
   .nav-mes-wrap { flex-wrap: wrap; }
@@ -234,7 +312,6 @@
 .chart-pie-wrap { width: 100%; overflow: hidden; }
 
 @media (max-width: 767px) {
-  /* ApexCharts respeta el height del contenedor si está fijo */
   .chart-tendencia-wrap { min-height: 220px; }
   .chart-pie-wrap       { min-height: 240px; }
 }
@@ -253,7 +330,6 @@
   flex-wrap: wrap;
 }
 
-/* Botón "Mes actual" */
 .nav-mes-actual-btn {
   display: inline-flex;
   align-items: center;
@@ -267,7 +343,6 @@
   cursor: pointer;
   white-space: nowrap;
   transition: all .18s ease;
-  /* Activo: gradiente esmeralda con sombra */
   border: none;
   background: linear-gradient(135deg, #059669 0%, #10b981 100%);
   color: #fff;
@@ -291,7 +366,6 @@
   transform: none;
 }
 
-/* Grupo pill: flechas + label */
 .nav-mes-group {
   display: inline-flex;
   align-items: center;
@@ -329,12 +403,8 @@
   opacity: .3;
   cursor: not-allowed;
 }
-.nav-mes-arrow:first-child {
-  border-right: 1px solid #f1f5f9;
-}
-.nav-mes-arrow:last-child {
-  border-left: 1px solid #f1f5f9;
-}
+.nav-mes-arrow:first-child { border-right: 1px solid #f1f5f9; }
+.nav-mes-arrow:last-child  { border-left:  1px solid #f1f5f9; }
 
 .nav-mes-label {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -348,7 +418,6 @@
   user-select: none;
 }
 
-/* Badge "Histórico" — visible cuando no es mes actual */
 .nav-mes-historico {
   display: none;
   align-items: center;
