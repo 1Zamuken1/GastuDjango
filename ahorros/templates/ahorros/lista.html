@@ -1,20 +1,957 @@
-<h1>Mis Ahorros</h1>
+{% extends "base_app.html" %}
+{% load static %}
 
-<a href="{% url 'crear_ahorro' %}">Crear nuevo ahorro</a>
+{% block title %}Mis Ahorros — GastuApp{% endblock %}
+{% block page_title %}Mis Ahorros{% endblock %}
+{% block page_subtitle %}Gestiona tus metas y registra tus aportes{% endblock %}
 
-<ul>
-    {% for a in ahorros %}
-        <li>
-            <strong>{{ a.categoria }}</strong> - {{ a.monto_meta }} <br>
-            Ahorrado: {{ a.total_acumulado }} <br>
-            Estado: {{ a.estado }} <br>
+{% block nav_dashboard %}active{% endblock %}
 
-            <a href="{% url 'editar_ahorro' a.id %}">Editar</a>
-            <a href="{% url 'eliminar_ahorro' a.id %}">Eliminar</a>
-            <a href="{% url 'registrar_aporte' a.id %}">Aportar</a>
-        </li>
-        <hr>
-    {% empty %}
-        <p>No tienes ahorros</p>
-    {% endfor %}
-</ul>
+{% block extra_head %}
+<style>
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .spin {
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(15, 23, 42, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-overlay[hidden] {
+    display: none;
+  }
+
+  .modal {
+    background: white;
+    border-radius: 1.25rem;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: modalIn .22s cubic-bezier(.34, 1.3, .64, 1);
+  }
+
+  .modal--wide {
+    max-width: 620px;
+  }
+
+  .modal--sm {
+    max-width: 380px;
+  }
+
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      transform: scale(.95) translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .modal__title {
+    font-size: .95rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .modal__close {
+    width: 2rem;
+    height: 2rem;
+    border-radius: .5rem;
+    border: 1px solid #e2e8f0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .modal__close:hover {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .modal__body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .modal__footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: .625rem;
+  }
+
+  /* Form fields */
+  .field-label {
+    display: block;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: .35rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .field-input {
+    width: 100%;
+    padding: .6rem .875rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: .75rem;
+    font-size: .875rem;
+    color: #0f172a;
+    background: #f8fafc;
+    transition: border-color .15s, background .15s;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .field-input:focus {
+    border-color: #d97706;
+    background: white;
+  }
+
+  .field-input.error {
+    border-color: #ef4444;
+  }
+
+  /* Barra de progreso de detalle */
+  .progress-track {
+    height: .625rem;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d97706, #f59e0b);
+    border-radius: 999px;
+    transition: width .6s cubic-bezier(.34, 1.3, .64, 1);
+  }
+
+  /* Card meta hover */
+  .meta-card {
+    transition: box-shadow .2s, border-color .2s, transform .2s;
+  }
+
+  .meta-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+    transform: translateY(-1px);
+  }
+
+  .meta-card.removing {
+    opacity: 0;
+    transform: scale(.95);
+    transition: opacity .3s, transform .3s;
+  }
+
+  /* Danger btn */
+  .btn-danger {
+    padding: .5rem 1.25rem;
+    border-radius: .75rem;
+    border: none;
+    background: #ef4444;
+    color: white;
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+
+  .btn-danger:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+  }
+
+  /* Aporte badge */
+  .aporte-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #059669;
+    font-size: .7rem;
+    font-weight: 700;
+  }
+</style>
+<link rel="stylesheet" href="{% static 'ahorros/css/ahorros.css' %}">
+{% endblock %}
+
+
+{% block content %}
+
+{# ── STAT CARDS ────────────────────────────────────────────────────────────── #}
+<!-- Zona 1: Hero -->
+<div class="stats-hero">
+  <!-- Card total -->
+  <div class="hero-total">
+    <p class="hero-total__label">Total ahorrado</p>
+    <p class="hero-total__value font-display">${{ total_ahorrado|floatformat:0 }}</p>
+    <span class="hero-total__badge">En todas las metas activas</span>
+  </div>
+
+  <!-- Card métricas -->
+  <div class="app-card hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat__label">
+        <i data-lucide="piggy-bank"></i> Metas
+      </span>
+      <span class="hero-stat__value font-display">{{ cantidad_metas }}</span>
+      <span class="hero-stat__sub">creadas</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat__label">
+        <i data-lucide="check-circle-2"></i> Completadas
+      </span>
+      <span class="hero-stat__value font-display" style="color:#d97706;">{{ metas_completadas }}</span>
+      <span class="hero-stat__sub">logradas con éxito</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat__label">
+        <i data-lucide="calendar-clock"></i> Próxima Cuota
+      </span>
+      {% if proxima_meta %}
+      <span class="hero-stat__value font-display" style="font-size:1.05rem; line-height: 1.1; margin-top: .15rem;">
+        {{ proxima_meta.ahorro.descripcion|default:"Ahorro"|truncatechars:18 }}
+      </span>
+      <span class="hero-stat__sub" style="color:#eab308; font-weight:700;">
+        {{ proxima_meta.fecha_limite|date:"d/m/Y" }}
+      </span>
+      {% else %}
+      <span class="hero-stat__value font-display" style="font-size:1.1rem; color: #94a3b8;">
+        N/A
+      </span>
+      <span class="hero-stat__sub">Sin pendientes</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ── ENCABEZADO SECCIÓN METAS ──────────────────────────────────────────────── #}
+<div class="flex items-center justify-between mb-4">
+  <h2 class="font-display text-base font-bold text-slate-800 flex items-center gap-2">
+    <i data-lucide="piggy-bank" style="width:18px;height:18px;color:#d97706;"></i>
+    Mis metas de ahorro
+  </h2>
+  <button class="btn-primary flex items-center gap-2 text-sm" onclick="openModal('modal-crear-ahorro')">
+    <i data-lucide="plus" style="width:15px;height:15px;"></i>
+    Nueva meta
+  </button>
+</div>
+
+{# ── GRID DE METAS ─────────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="grid-metas">
+
+  {% for ahorro in ahorros %}
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 cursor-pointer
+              meta-card js-abrir-detalle" id="meta-card-{{ ahorro.id }}" data-id="{{ ahorro.id }}"
+    data-categoria="{{ ahorro.categoria_id }}" data-frecuencia="{{ ahorro.frecuencia }}"
+    data-descripcion="{{ ahorro.descripcion|default:'' }}" data-objetivo="{{ ahorro.monto_meta }}"
+    data-actual="{{ ahorro.total_acumulado }}" data-cuotas="{{ ahorro.cantidad_cuotas|default:'' }}"
+    data-fecha-objetivo="{{ ahorro.fecha_meta|date:'Y-m-d'|default:'' }}">
+
+    {# Cabecera card #}
+    <div class="flex items-start justify-between mb-3">
+      <div class="flex-1 min-w-0 pr-2">
+        <p class="text-sm font-semibold text-slate-800 truncate">{{ ahorro.categoria.nombre|default:"Meta de Ahorro" }}
+        </p>
+        <p class="text-xs text-slate-400 mt-0.5 truncate">
+          {{ ahorro.descripcion|default:"Sin descripción"|truncatechars:42 }}
+        </p>
+      </div>
+      <div class="flex gap-1 flex-shrink-0">
+        <button class="w-7 h-7 rounded-lg border border-slate-200 flex items-center
+                       justify-center text-slate-400 hover:bg-amber-50 hover:text-amber-600
+                       hover:border-amber-200 transition-colors js-btn-editar" data-id="{{ ahorro.id }}"
+          data-categoria="{{ ahorro.categoria_id }}" data-frecuencia="{{ ahorro.frecuencia }}"
+          data-descripcion="{{ ahorro.descripcion|default:'' }}" data-objetivo="{{ ahorro.monto_meta }}"
+          data-cuotas="{{ ahorro.cantidad_cuotas|default:'' }}"
+          data-fecha-objetivo="{{ ahorro.fecha_meta|date:'Y-m-d'|default:'' }}" title="Editar meta"
+          onclick="event.stopPropagation()">
+          <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+        </button>
+        <button class="w-7 h-7 rounded-lg border border-slate-200 flex items-center
+                       justify-center text-slate-400 hover:bg-red-50 hover:text-red-500
+                       hover:border-red-200 transition-colors js-btn-eliminar" data-id="{{ ahorro.id }}"
+          data-nombre="{{ ahorro.categoria.nombre|default:'Meta' }}" title="Eliminar meta"
+          onclick="event.stopPropagation()">
+          <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+        </button>
+      </div>
+    </div>
+
+    {# Montos #}
+    <div class="flex justify-between items-baseline mb-1">
+      <span class="text-lg font-black text-amber-600 font-display">
+        ${{ ahorro.total_acumulado|floatformat:0 }}
+      </span>
+      <span class="text-xs text-slate-400">
+        de ${{ ahorro.monto_meta|floatformat:0 }}
+      </span>
+    </div>
+
+    {# Barra de progreso — ancho calculado en JS al cargar #}
+    <div class="progress-track mb-1">
+      <div class="progress-fill" id="bar-{{ ahorro.id }}" style="width:0%"></div>
+    </div>
+    <p class="text-xs text-slate-400 text-right" id="pct-{{ ahorro.id }}">0%</p>
+
+    {% if ahorro.fecha_meta %}
+    <p class="text-xs text-slate-400 flex items-center gap-1 mt-2">
+      <i data-lucide="calendar" style="width:11px;height:11px;"></i>
+      Crítica: {{ ahorro.fecha_meta|date:"d/m/Y" }}
+    </p>
+    {% endif %}
+
+  </div>
+  {% empty %}
+  <div class="col-span-full flex flex-col items-center justify-center py-16 gap-3 text-center">
+    <i data-lucide="piggy-bank" style="width:52px;height:52px;color:#e2e8f0;"></i>
+    <p class="text-base font-bold text-slate-600">Sin metas de ahorro</p>
+    <p class="text-sm text-slate-400">Crea tu primera meta y empieza a construir tu futuro</p>
+    <button class="btn-primary mt-2 flex items-center gap-2" onclick="openModal('modal-crear-ahorro')">
+      <i data-lucide="plus" style="width:15px;height:15px;"></i> Crear primera meta
+    </button>
+  </div>
+  {% endfor %}
+
+</div>
+
+
+
+{# ── TOAST CONTAINER ───────────────────────────────────────────────────────── #}
+<div id="toast-container" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+            display:flex;flex-direction:column;gap:.5rem;"></div>
+
+
+{# ════════════════════════════════════════════════════════════════════════════ #}
+{# MODALES #}
+{# ════════════════════════════════════════════════════════════════════════════ #}
+
+{# ── MODAL CREAR META ─────────────────────────────────────────────────────── #}
+<div class="modal-overlay" id="modal-crear-ahorro" hidden>
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title font-display">
+        <i data-lucide="piggy-bank" style="width:16px;height:16px;display:inline;margin-right:6px;color:#d97706;"></i>
+        Nueva meta de ahorro
+      </h2>
+      <button class="modal__close" onclick="closeModal('modal-crear-ahorro')" aria-label="Cerrar">
+        <i data-lucide="x" style="width:14px;height:14px;"></i>
+      </button>
+    </div>
+    <form id="form-crear-ahorro" method="POST" action="{% url 'ahorros:crear_ahorro' %}">
+      {% csrf_token %}
+      <div class="modal__body">
+        <div>
+          <label class="field-label" for="crear-categoria">Categoría *</label>
+          <select class="field-input" id="crear-categoria" name="categoria" required>
+            <option value="">Seleccione...</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="field-label" for="crear-descripcion">Descripción *</label>
+          <input class="field-input" id="crear-descripcion" name="descripcion" type="text" maxlength="150" required
+            placeholder="Ej: Viaje a la playa...">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label" for="crear-objetivo">Monto objetivo *</label>
+            <input class="field-input" id="crear-objetivo" name="monto_meta" type="number" min="1" step="0.01"
+              placeholder="0.00" required>
+          </div>
+          <div>
+            <label class="field-label" for="crear-frecuencia">Frecuencia *</label>
+            <select class="field-input" id="crear-frecuencia" name="frecuencia" required>
+              <option value="MENSUAL">Mensual</option>
+              <option value="QUINCENAL">Quincenal</option>
+              <option value="SEMANAL">Semanal</option>
+              <option value="DIARIA">Diaria</option>
+              <option value="TRIMESTRAL">Trimestral</option>
+              <option value="SEMESTRAL">Semestral</option>
+              <option value="ANUAL">Anual</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label" for="crear-cuotas">Cant. Cuotas (Opcional)</label>
+            <input class="field-input" id="crear-cuotas" name="cantidad_cuotas" type="number" min="1"
+              placeholder="Ej: 12">
+          </div>
+          <div>
+            <label class="field-label" for="crear-fecha-objetivo">Fecha límite (Opcional)</label>
+            <input class="field-input" id="crear-fecha-objetivo" name="fecha_meta" type="date">
+          </div>
+        </div>
+
+        <p id="crear-errores" class="text-xs text-red-500 hidden"></p>
+
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn-ghost" onclick="closeModal('modal-crear-ahorro')">Cancelar</button>
+        <button type="submit" class="btn-primary flex items-center gap-2" id="btn-guardar-crear">
+          <i data-lucide="save" style="width:14px;height:14px;"></i> Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{# ── MODAL EDITAR META ────────────────────────────────────────────────────── #}
+<div class="modal-overlay" id="modal-editar-ahorro" hidden>
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title font-display">
+        <i data-lucide="pencil" style="width:16px;height:16px;display:inline;margin-right:6px;color:#d97706;"></i>
+        Editar meta
+      </h2>
+      <button class="modal__close" onclick="closeModal('modal-editar-ahorro')" aria-label="Cerrar">
+        <i data-lucide="x" style="width:14px;height:14px;"></i>
+      </button>
+    </div>
+    <form id="form-editar-ahorro" method="POST" action="">
+      {% csrf_token %}
+      <div class="modal__body">
+
+        <div>
+          <label class="field-label" for="editar-categoria">Categoría *</label>
+          <select class="field-input" id="editar-categoria" name="categoria" required>
+            <option value="">Seleccione...</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="field-label" for="editar-descripcion">Descripción *</label>
+          <input class="field-input" id="editar-descripcion" name="descripcion" type="text" maxlength="150" required>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label" for="editar-objetivo">Monto objetivo *</label>
+            <input class="field-input" id="editar-objetivo" name="monto_meta" type="number" min="1" step="0.01"
+              required>
+          </div>
+          <div>
+            <label class="field-label" for="editar-frecuencia">Frecuencia *</label>
+            <select class="field-input" id="editar-frecuencia" name="frecuencia" required>
+              <option value="MENSUAL">Mensual</option>
+              <option value="QUINCENAL">Quincenal</option>
+              <option value="SEMANAL">Semanal</option>
+              <option value="DIARIA">Diaria</option>
+              <option value="TRIMESTRAL">Trimestral</option>
+              <option value="SEMESTRAL">Semestral</option>
+              <option value="ANUAL">Anual</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label" for="editar-cuotas">Cant. Cuotas</label>
+            <input class="field-input" id="editar-cuotas" name="cantidad_cuotas" type="number" min="1">
+          </div>
+          <div>
+            <label class="field-label" for="editar-fecha-objetivo">Fecha límite</label>
+            <input class="field-input" id="editar-fecha-objetivo" name="fecha_meta" type="date">
+          </div>
+        </div>
+
+        <p id="editar-errores" class="text-xs text-red-500 hidden"></p>
+
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn-ghost" onclick="closeModal('modal-editar-ahorro')">Cancelar</button>
+        <button type="submit" class="btn-primary flex items-center gap-2" id="btn-guardar-editar">
+          <i data-lucide="save" style="width:14px;height:14px;"></i> Actualizar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+<div class="modal-overlay" id="modal-eliminar-ahorro" hidden>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h2 class="modal__title font-display text-red-600">
+        <i data-lucide="trash-2" style="width:16px;height:16px;display:inline;margin-right:6px;"></i>
+        Eliminar meta
+      </h2>
+      <button class="modal__close" onclick="closeModal('modal-eliminar-ahorro')" type="button" aria-label="Cerrar">
+        <i data-lucide="x" style="width:14px;height:14px;"></i>
+      </button>
+    </div>
+    <form id="form-eliminar-ahorro" method="POST" action="">
+      {% csrf_token %}
+      <div class="modal__body">
+        <div class="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-100">
+          <i data-lucide="alert-triangle"
+            style="width:20px;height:20px;color:#ef4444;flex-shrink:0;margin-top:1px;"></i>
+          <p class="text-sm text-slate-700">
+            ¿Estás seguro de que quieres eliminar la meta
+            <strong id="eliminar-nombre-meta" class="text-slate-900"></strong>?
+            Esta acción no se puede deshacer y se perderán todos los aportes registrados.
+          </p>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn-ghost" onclick="closeModal('modal-eliminar-ahorro')">Cancelar</button>
+        <button type="submit" class="btn-danger flex items-center gap-2" id="btn-confirmar-eliminar">
+          <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Eliminar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+<div class="modal-overlay" id="modal-detalle-ahorro" hidden>
+  <div class="modal modal--wide">
+    <div class="modal__header">
+      <div>
+        <h2 class="modal__title font-display" id="detalle-titulo">Detalle de meta</h2>
+        <p class="text-xs text-slate-400 mt-0.5" id="detalle-descripcion"></p>
+      </div>
+      <button class="modal__close" onclick="closeModal('modal-detalle-ahorro')" aria-label="Cerrar">
+        <i data-lucide="x" style="width:14px;height:14px;"></i>
+      </button>
+    </div>
+
+    <div class="modal__body" style="gap:.875rem;">
+
+      {# Progreso dentro del detalle #}
+      <div class="p-4 bg-amber-50 rounded-xl border border-amber-100">
+        <div class="flex justify-between items-baseline mb-2">
+          <span class="text-2xl font-black font-display text-amber-600" id="detalle-actual">$0</span>
+          <span class="text-sm text-slate-500">de <span id="detalle-objetivo">$0</span></span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="detalle-bar" style="width:0%"></div>
+        </div>
+        <div class="flex justify-between mt-1">
+          <span class="text-xs text-slate-400" id="detalle-pct">0% completado</span>
+          <span class="text-xs text-slate-400" id="detalle-restante"></span>
+        </div>
+      </div>
+
+      {# Formulario aporte inline #}
+      <form id="form-agregar-aporte" method="POST" action="">
+        {% csrf_token %}
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 mt-4">
+          Registrar aporte
+        </p>
+        <div>
+          <label class="field-label" for="aporte-monto">Monto a abonar *</label>
+          <input class="field-input" id="aporte-monto" name="aporte" type="number" min="0.01" step="0.01"
+            placeholder="Ej: 50000" required>
+        </div>
+        <p id="aporte-errores" class="text-xs text-red-500 hidden mt-2"></p>
+        <div class="flex justify-end mt-4">
+          <button type="submit" class="btn-primary flex items-center gap-2" id="btn-guardar-aporte">
+            <i data-lucide="plus-circle" style="width:14px;height:14px;"></i> Agregar aporte
+          </button>
+        </div>
+      </form>
+
+      {# Lista de aportes de la meta #}
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">
+          Historial de aportes
+        </p>
+        <div id="lista-aportes-detalle" class="max-h-48 overflow-y-auto flex flex-col gap-1 pr-1">
+          <p class="text-xs text-slate-400 text-center py-4">
+            <i data-lucide="loader-2" class="spin mr-1" style="width:12px;height:12px;"></i>
+            Cargando...
+          </p>
+        </div>
+      </div>
+
+    </div>{# end modal__body #}
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+
+  const URL_CREAR = "{% url 'ahorros:crear_ahorro' %}";
+  const URL_EDITAR = "{% url 'ahorros:editar_ahorro' id=0 %}".replace('/0/', '/');
+  const URL_ELIMINAR = "{% url 'ahorros:eliminar_ahorro' id=0 %}".replace('/0/', '/');
+  const URL_APORTE = "{% url 'ahorros:registrar_aporte' meta_id=0 %}".replace('/0/', '/');
+
+  const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  function openModal(id) {
+    document.getElementById(id).removeAttribute('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id) {
+    document.getElementById(id).setAttribute('hidden', '');
+    document.body.style.overflow = '';
+  }
+
+  function setLoading(btn, loading) {
+    if (loading) {
+      btn._html = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width:14px;height:14px;"></i> Guardando...';
+      lucide.createIcons();
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = btn._html;
+      lucide.createIcons();
+    }
+  }
+
+  function showToast(msg, type = 'ok') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      padding:10px 18px;border-radius:12px;font-size:13px;font-weight:500;
+      color:white;display:flex;align-items:center;gap:8px;
+      background:${type === 'ok' ? '#059669' : '#dc2626'};
+      transform:translateY(80px);opacity:0;
+      transition:all .32s cubic-bezier(.34,1.3,.64,1);
+    `;
+    toast.innerHTML = `<i data-lucide="${type === 'ok' ? 'check-circle' : 'x-circle'}"
+                          style="width:15px;height:15px;flex-shrink:0;"></i>${msg}`;
+    container.appendChild(toast);
+    lucide.createIcons();
+    requestAnimationFrame(() => { toast.style.transform = 'translateY(0)'; toast.style.opacity = '1'; });
+    setTimeout(() => {
+      toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)';
+      setTimeout(() => toast.remove(), 350);
+    }, 3000);
+  }
+
+  function calcPct(actual, objetivo) {
+    if (!objetivo || objetivo <= 0) return 0;
+    return Math.min(100, Math.round((actual / objetivo) * 100));
+  }
+
+  function fmt(n) {
+    return Number(n).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function showErrors(el, errors) {
+    el.textContent = Array.isArray(errors) ? errors.join(', ') : (errors || 'Error inesperado');
+    el.classList.remove('hidden');
+  }
+  function clearErrors(el) { el.textContent = ''; el.classList.add('hidden'); }
+
+  function initBars() {
+    let totalActual = 0, totalObjetivo = 0;
+    document.querySelectorAll('.js-abrir-detalle').forEach(card => {
+      const actual = parseFloat(card.dataset.actual) || 0;
+      const objetivo = parseFloat(card.dataset.objetivo) || 0;
+      const pct = calcPct(actual, objetivo);
+      const bar = document.getElementById('bar-' + card.dataset.id);
+      const lbl = document.getElementById('pct-' + card.dataset.id);
+      if (bar) bar.style.width = pct + '%';
+      if (lbl) lbl.textContent = pct + '% completado';
+      totalActual += actual;
+      totalObjetivo += objetivo;
+    });
+    const globalPct = calcPct(totalActual, totalObjetivo);
+    const statEl = document.getElementById('stat-progreso-global');
+    if (statEl) statEl.textContent = globalPct + ' %';
+  }
+
+
+  async function cargarAportesRecientes() {
+    document.getElementById('tabla-aportes-body').innerHTML =
+      '<tr><td colspan="5" class="text-center py-8 text-slate-400 text-xs text-slate-300">' +
+      'Conecta el endpoint de aportes recientes para ver el historial.</td></tr>';
+  }
+
+
+  function abrirDetalle(card) {
+    const id = card.dataset.id;
+    const nombre = card.dataset.nombre;
+    const desc = card.dataset.descripcion;
+    const actual = parseFloat(card.dataset.actual) || 0;
+    const objetivo = parseFloat(card.dataset.objetivo) || 0;
+    const pct = calcPct(actual, objetivo);
+    const restante = Math.max(0, objetivo - actual);
+
+    document.getElementById('detalle-titulo').textContent = nombre;
+    document.getElementById('detalle-descripcion').textContent = desc || 'Sin descripción';
+    document.getElementById('detalle-actual').textContent = '$' + fmt(actual);
+    document.getElementById('detalle-objetivo').textContent = '$' + fmt(objetivo);
+    document.getElementById('detalle-bar').style.width = pct + '%';
+    document.getElementById('detalle-pct').textContent = pct + '% completado';
+    document.getElementById('detalle-restante').textContent = 'Faltan $' + fmt(restante);
+
+    // Set the form action correctly matching URL_APORTE
+    document.getElementById('form-agregar-aporte').action = URL_APORTE.replace('0/aporte/', id + '/aporte/');
+
+    document.getElementById('aporte-monto').value = '';
+    clearErrors(document.getElementById('aporte-errores'));
+
+    // Cargar aportes de esta meta
+    cargarAportesDetalle(id);
+    openModal('modal-detalle-ahorro');
+  }
+
+  async function cargarAportesDetalle(metaId) {
+
+    document.getElementById('lista-aportes-detalle').innerHTML =
+      '<p class="text-xs text-slate-300 text-center py-4">Historial disponible cuando se implemente el endpoint.</p>';
+  }
+
+  function buildAporteItem(a) {
+    return `
+      <div class="flex items-center justify-between px-3 py-2 rounded-xl
+                  bg-slate-50 border border-slate-100" id="aporte-item-${a.id}">
+        <div>
+          <p class="text-xs font-semibold text-slate-700">$${fmt(a.monto)}</p>
+          <p class="text-xs text-slate-400">${a.fecha}${a.nota ? ' · ' + a.nota : ''}</p>
+        </div>
+        <span class="aporte-tag">
+          <i data-lucide="check" style="width:10px;height:10px;"></i>
+          aporte
+        </span>
+      </div>`;
+  }
+
+  function actualizarCard(metaId, nuevoActual, nuevoObjetivo) {
+    const card = document.getElementById('meta-card-' + metaId);
+    if (!card) return;
+    card.dataset.actual = nuevoActual;
+    const pct = calcPct(nuevoActual, nuevoObjetivo);
+    const bar = document.getElementById('bar-' + metaId);
+    const lbl = document.getElementById('pct-' + metaId);
+    if (bar) bar.style.width = pct + '%';
+    if (lbl) lbl.textContent = pct + '% completado';
+    // Actualizar monto visible
+    const montoEl = card.querySelector('.text-amber-600.font-display');
+    if (montoEl) montoEl.textContent = '$' + fmt(nuevoActual);
+    // Actualizar detalle si está abierto
+    document.getElementById('detalle-actual').textContent = '$' + fmt(nuevoActual);
+    document.getElementById('detalle-bar').style.width = pct + '%';
+    document.getElementById('detalle-pct').textContent = pct + '% completado';
+    const restante = Math.max(0, nuevoObjetivo - nuevoActual);
+    document.getElementById('detalle-restante').textContent = 'Faltan $' + fmt(restante);
+  }
+
+  // Los formularios en modal de Ahorros ahora envían peticiones POST tradicionales
+  // El action de crear-ahorro ya está fijo en el HTML.
+
+  // Cuando se hace submit, solo mostramos el loader en el botón
+  const forms = ['form-crear-ahorro', 'form-editar-ahorro', 'form-agregar-aporte', 'form-eliminar-ahorro'];
+  forms.forEach(formId => {
+    const formEl = document.getElementById(formId);
+    if (formEl) {
+      formEl.addEventListener('submit', function () {
+        const btn = this.querySelector('button[type="submit"]');
+        if (btn) setLoading(btn, true);
+      });
+    }
+  });
+
+  let _eliminarId = null;
+
+  function confirmarEliminar(id, nombre) {
+    _eliminarId = id;
+    document.getElementById('eliminar-nombre-meta').textContent = nombre;
+    document.getElementById('form-eliminar-ahorro').action = URL_ELIMINAR.replace('0/eliminar/', id + '/eliminar/');
+    openModal('modal-eliminar-ahorro');
+  }
+
+
+  function agregarFilaAporte(a) {
+    const tbody = document.getElementById('tabla-aportes-body');
+    const emptyRow = tbody.querySelector('td[colspan]');
+    if (emptyRow && emptyRow.textContent.trim().startsWith('Conecta')) return;
+    if (emptyRow) emptyRow.closest('tr').remove();
+    tbody.insertAdjacentHTML('afterbegin', `
+      <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors"
+          id="aporte-row-${a.id}">
+        <td class="px-5 py-3 font-medium text-slate-700">${a.ahorro_nombre || '—'}</td>
+        <td class="px-5 py-3 text-slate-500">${a.fecha}</td>
+        <td class="px-5 py-3 text-slate-400 text-xs">${a.nota || '—'}</td>
+        <td class="px-5 py-3 text-right font-bold text-emerald-600">+$${fmt(a.monto)}</td>
+        <td class="px-5 py-3 text-right">
+          <button class="w-7 h-7 rounded-lg border border-slate-200 inline-flex items-center
+                         justify-center text-slate-400 hover:bg-red-50 hover:text-red-500
+                         hover:border-red-200 transition-colors"
+                  data-id="${a.id}" title="Eliminar aporte"
+                  onclick="eliminarAporte(${a.id})">
+            <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+          </button>
+        </td>
+      </tr>`);
+    lucide.createIcons();
+  }
+
+
+  function eliminarAporte(id) {
+    showToast('Endpoint de eliminación de aporte pendiente de implementar', 'err');
+  }
+
+
+  function buildMetaCard(a) {
+    return `
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 cursor-pointer
+                meta-card js-abrir-detalle"
+         id="meta-card-${a.id}"
+         data-id="${a.id}"
+         data-nombre="${a.nombre}"
+         data-descripcion="${a.descripcion || ''}"
+         data-objetivo="${a.monto_objetivo}"
+         data-actual="${a.monto_actual || 0}"
+         data-fecha-objetivo="${a.fecha_objetivo || ''}">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex-1 min-w-0 pr-2">
+          <p class="text-sm font-semibold text-slate-800 truncate">${a.nombre}</p>
+          <p class="text-xs text-slate-400 mt-0.5 truncate">${(a.descripcion || 'Sin descripción').substring(0, 42)}</p>
+        </div>
+        <div class="flex gap-1 flex-shrink-0">
+          <button class="w-7 h-7 rounded-lg border border-slate-200 flex items-center
+                         justify-center text-slate-400 hover:bg-amber-50 hover:text-amber-600
+                         hover:border-amber-200 transition-colors js-btn-editar"
+                  data-id="${a.id}" data-nombre="${a.nombre}"
+                  data-descripcion="${a.descripcion || ''}"
+                  data-objetivo="${a.monto_objetivo}"
+                  data-fecha-objetivo="${a.fecha_objetivo || ''}"
+                  title="Editar meta" onclick="event.stopPropagation()">
+            <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+          </button>
+          <button class="w-7 h-7 rounded-lg border border-slate-200 flex items-center
+                         justify-center text-slate-400 hover:bg-red-50 hover:text-red-500
+                         hover:border-red-200 transition-colors js-btn-eliminar"
+                  data-id="${a.id}" data-nombre="${a.nombre}"
+                  title="Eliminar meta" onclick="event.stopPropagation()">
+            <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+          </button>
+        </div>
+      </div>
+      <div class="flex justify-between items-baseline mb-1">
+        <span class="text-lg font-black text-amber-600 font-display">$${fmt(a.monto_actual || 0)}</span>
+        <span class="text-xs text-slate-400">de $${fmt(a.monto_objetivo)}</span>
+      </div>
+      <div class="progress-track mb-1">
+        <div class="progress-fill" id="bar-${a.id}" style="width:0%"></div>
+      </div>
+      <p class="text-xs text-slate-400 text-right" id="pct-${a.id}">0% completado</p>
+      ${a.fecha_objetivo ? `<p class="text-xs text-slate-400 flex items-center gap-1 mt-2">
+        <i data-lucide="calendar" style="width:11px;height:11px;"></i>
+        Meta: ${a.fecha_objetivo}</p>` : ''}
+    </div>`;
+  }
+
+  function initBarsForCard(a) {
+    const pct = calcPct(parseFloat(a.monto_actual) || 0, parseFloat(a.monto_objetivo) || 0);
+    const bar = document.getElementById('bar-' + a.id);
+    const lbl = document.getElementById('pct-' + a.id);
+    if (bar) bar.style.width = pct + '%';
+    if (lbl) lbl.textContent = pct + '% completado';
+  }
+
+  document.getElementById('grid-metas').addEventListener('click', function (e) {
+    // Botón editar
+    const btnEditar = e.target.closest('.js-btn-editar');
+    if (btnEditar) {
+      const d = btnEditar.dataset;
+      document.getElementById('form-editar-ahorro').action = URL_EDITAR.replace('0/editar/', d.id + '/editar/');
+      document.getElementById('editar-categoria').value = d.categoria;
+      document.getElementById('editar-descripcion').value = d.descripcion || '';
+      document.getElementById('editar-objetivo').value = d.objetivo;
+      document.getElementById('editar-frecuencia').value = d.frecuencia;
+      document.getElementById('editar-cuotas').value = d.cuotas || '';
+      document.getElementById('editar-fecha-objetivo').value = d.fechaObjetivo || '';
+      clearErrors(document.getElementById('editar-errores'));
+      openModal('modal-editar-ahorro');
+      return;
+    }
+    // Botón eliminar
+    const btnEliminar = e.target.closest('.js-btn-eliminar');
+    if (btnEliminar) {
+      confirmarEliminar(btnEliminar.dataset.id, btnEliminar.dataset.nombre);
+      return;
+    }
+    // Click en card → abrir detalle
+    const card = e.target.closest('.js-abrir-detalle');
+    if (card) abrirDetalle(card);
+  });
+
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      ['modal-detalle-ahorro', 'modal-editar-ahorro',
+        'modal-crear-ahorro', 'modal-eliminar-ahorro'].forEach(id => {
+          const el = document.getElementById(id);
+          if (!el.hasAttribute('hidden')) closeModal(id);
+        });
+    }
+  });
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function (e) {
+      if (e.target === this) closeModal(this.id);
+    });
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    initBars();
+    cargarAportesRecientes();
+    // Fecha de hoy en el form de crear
+    document.getElementById('crear-inicio').value = new Date().toISOString().slice(0, 10);
+  });
+</script>
+{% endblock %}

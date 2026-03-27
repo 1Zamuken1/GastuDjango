@@ -1,0 +1,170 @@
+/* ── Hero 2 columnas ─────────────────────────────── */
+.stats-hero {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .stats-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hero-total {
+  background: linear-gradient(135deg, #c2410c 0%, #ca8a04 100%);
+  border-radius: .875rem;
+  padding: .875rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: .35rem;
+  border: none;
+  box-shadow: 0 4px 20px rgba(194, 65, 12, 0.25);
+  transition: transform .15s, box-shadow .15s;
+}
+
+.hero-total:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(202, 138, 4, 0.35);
+}
+
+.hero-total__top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+}
+
+.hero-total__icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: .625rem;
+  background: rgba(255, 255, 255, .2);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.hero-total__icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.hero-total__label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, .85);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 0 0 .5rem;
+}
+
+.hero-total__value {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: #fff;
+  margin: 0;
+  line-height: 1;
+}
+
+.hero-total__footer {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: .75rem;
+}
+
+.hero-total__badge {
+  background: rgba(255, 255, 255, .25);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .2rem .55rem;
+  border-radius: 9999px;
+}
+
+.app-card {
+  background: #fff;
+  border-radius: .875rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.hero-stat {
+  padding: .75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  border-right: 1px solid #e2e8f0;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  transition: background .15s;
+  cursor: default;
+}
+
+.hero-stat:last-child {
+  border-right: none;
+}
+
+.hero-stat:hover {
+  background: #f8fafc;
+}
+
+.hero-stat__label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+}
+
+.hero-stat__label svg {
+  width: .9rem;
+  height: .9rem;
+  color: #d97706;
+}
+
+.hero-stat__value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.hero-stat__sub {
+  font-size: .75rem;
+  color: #64748b;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+/* Botones Primary Ahorros */
+.btn-primary {
+  background: #d97706 !important;
+  color: #fff !important;
+  border-color: #d97706 !important;
+}
+
+.btn-primary:hover {
+  background: #b45309 !important;
+  border-color: #b45309 !important;
+}

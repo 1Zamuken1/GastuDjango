@@ -8,7 +8,9 @@ from dateutil.relativedelta import relativedelta #pip install python-dateutil
 from decimal import Decimal, ROUND_HALF_UP
 from django.utils import timezone
 import math
-from django.db.models import Q
+from django.db.models import Q, Sum
+from dashboard.models import ResumenMensual
+from categorias.models import Categoria
 
 # LISTAR AHORROS
 
@@ -29,10 +31,27 @@ def listar(request):
            
     ahorros = ahorros.order_by('-fecha_creacion')
     
+    total_ahorrado = ahorros.aggregate(total=Sum('total_acumulado'))['total'] or Decimal('0.00')
+    cantidad_metas = ahorros.count()
+    metas_completadas = ahorros.filter(estado=AhorroMeta.Estado.COMPLETADO).count()
+    
+    # Calcular la proxima_meta basándose en los aportes pendientes
+    proxima_meta = AporteAhorro.objects.filter(
+        ahorro__usuario=request.user, 
+        estado_ap=AporteAhorro.EstadoAp.PENDIENTE
+    ).order_by('fecha_limite').select_related('ahorro', 'ahorro__categoria').first()
+    
+    categorias_ahorro = Categoria.objects.filter(tipo=Categoria.TipoCategoria.AHORRO, activo=True)
+    
     return render(request, "ahorros/lista.html", {
         "ahorros": ahorros,
         "estado": estado,
-        "texto": texto
+        "texto": texto,
+        "total_ahorrado": total_ahorrado,
+        "cantidad_metas": cantidad_metas,
+        "metas_completadas": metas_completadas,
+        "proxima_meta": proxima_meta,
+        "categorias": categorias_ahorro,
     })
     
 
@@ -161,7 +180,7 @@ def crear_ahorro(request):
 
             generar_cuotas(ahorro)
 
-            return redirect("listar_ahorros")
+            return redirect("ahorros:listar_ahorros")
 
     else:
         form = AhorroMetaForm()
@@ -305,7 +324,7 @@ def editar_ahorro(request, id):
             ahorro.save()
             recalcular_aportes(ahorro)
             recalcular_fechas_cuotas(ahorro)
-            return redirect("listar_ahorros")
+            return redirect("ahorros:listar_ahorros")
     else:
         form = AhorroMetaForm(instance=ahorro)
 
@@ -321,7 +340,7 @@ def eliminar_ahorro(request, id):
     AporteAhorro.objects.filter(ahorro=ahorro).delete()
     # eliminar ahorro
     ahorro.delete()
-    return redirect("listar_ahorros")
+    return redirect("ahorros:listar_ahorros")
 
 
 #   APORTES
@@ -399,26 +418,33 @@ def obtener_cuota_disponible(meta_id, usuario):
 def registrar_aporte(request, meta_id, aporte_id=None):
     usuario = request.user
     ahorro = get_object_or_404(AhorroMeta, id=meta_id, usuario=usuario)
-    
-    pasar_cuotas_a_perdidas(ahorro)
-    
+
     if request.method == "GET":
-        cuota_disponible = find_cuota_disponible(meta_id, usuario)
-        monto_sugerido = cuota_disponible.aporte_asignado if cuota_disponible else Decimal('0.00')
-        
-        return render(request, "ahorros/aporte.html", {"ahorro": ahorro,
-            "monto_sugerido": monto_sugerido,
-            "cuota": cuota_disponible       
-        })
-    
+        return render(request, "ahorros/aporte.html", {"ahorro": ahorro})
+
     monto_input = request.POST.get("aporte")
     aporte_ingresado = Decimal(monto_input or '0.00')
 
     if aporte_ingresado <= Decimal('0.00'):
+        return render(request, "ahorros/aporte.html", {"ahorro": ahorro,"error": "El monto del aporte debe ser mayor que cero."})
+
+    hoy = date.today()
+
+    resumen = ResumenMensual.objects.filter(
+        usuario=usuario,
+        mes=hoy.month,
+        anio=hoy.year
+    ).select_for_update().first()
+
+    if not resumen:
+        return render(request, "ahorros/aporte.html", {"ahorro": ahorro, "error": "No existe un resumen mensual"})
+
+    if resumen.disponible <= Decimal('0.00'):
         return render(request, "ahorros/aporte.html", {
             "ahorro": ahorro,
-            "error": "El monto del aporte debe ser mayor que cero."})
-        
+            "error": "No tienes saldo disponible para realizar aportes."
+        })
+
     pasar_cuotas_a_perdidas(ahorro)
 
     if aporte_id:
@@ -429,23 +455,42 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         cuota_temp = find_cuota_disponible(meta_id, usuario)
 
         if not cuota_temp:
-            raise ValueError("No hay cuota disponible para aportar hoy")
+            return render(request, "ahorros/aporte.html", {
+                "ahorro": ahorro,
+                "error": "No hay cuota disponible para aportar hoy."
+            })
 
         cuota = AporteAhorro.objects.select_for_update().get(id=cuota_temp.id)
 
     if cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE:
-        raise ValueError(f"La cuota no está disponible (estado={cuota.estado_ap})")
+        return render(request, "ahorros/aporte.html", {
+            "ahorro": ahorro,
+            "error": f"La cuota no está disponible (estado={cuota.estado_ap})"
+        })
 
     if cuota.aporte is not None:
-        raise ValueError("Esta cuota ya tiene un aporte registrado")
+        return render(request, "ahorros/aporte.html", {
+            "ahorro": ahorro,
+            "error": "Esta cuota ya tiene un aporte registrado."
+        })
 
     if not cuota_disponible_pago(cuota, ahorro.frecuencia):
-        raise ValueError("La cuota no está disponible para pago todavía")
-
+        return render(request, "ahorros/aporte.html", {
+            "ahorro": ahorro,
+            "error": "La cuota no está disponible para pago todavía."
+        })
+        
+    # registrar aporte
     cuota.aporte = aporte_ingresado
     cuota.estado_ap = AporteAhorro.EstadoAp.APORTADO
     cuota.save()
 
+    # ACTUALIZAR DASHBOARD
+    resumen.disponible -= aporte_ingresado
+    resumen.total_ahorros += aporte_ingresado
+    resumen.save()
+
+    # actualizar acumulado ahorro
     total_acumulado = ahorro.total_acumulado or Decimal('0.00')
     total_acumulado += aporte_ingresado
 
@@ -473,4 +518,4 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     ahorro.save()
 
-    return redirect("listar_ahorros")
+    return redirect("ahorros:listar_ahorros")

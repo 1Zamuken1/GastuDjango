@@ -10,5 +10,5 @@ urlpatterns = [
     path('categorias/', include('categorias.urls', namespace='categorias')),
     path('presupuesto/', include('presupuesto.urls')),
     path('admin-panel/', include('panel_admin.urls', namespace='panel_admin')),
-    path('ahorros/', include('ahorros.urls')),
+    path('ahorros/', include('ahorros.urls', namespace='ahorros')),
 ]
