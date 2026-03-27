@@ -424,13 +424,43 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     ahorro = get_object_or_404(AhorroMeta, id=meta_id, usuario=usuario)
 
     if request.method == "GET":
-        return render(request, "ahorros/aporte.html", {"ahorro": ahorro})
+        cuotas = AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite')
+        pagadas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.APORTADO).count()
+        perdidas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
+        pendientes = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
+
+        return render(request, "ahorros/aporte.html", {
+            "ahorro": ahorro,
+            "cuotas": cuotas,
+            "pagadas": pagadas,
+            "perdidas": perdidas,
+            "pendientes": pendientes
+        })
 
     monto_input = request.POST.get("aporte")
     aporte_ingresado = Decimal(monto_input or '0.00')
+    
+    # Capturar aporte_id desde POST si viene de la tabla
+    post_aporte_id = request.POST.get("aporte_id")
+    if post_aporte_id and not aporte_id:
+        aporte_id = post_aporte_id
+
+    # Preparar el contexto base en caso de error
+    cuotas = AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite')
+    pagadas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.APORTADO).count()
+    perdidas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
+    pendientes = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
+    ctx_error = {
+        "ahorro": ahorro,
+        "cuotas": cuotas,
+        "pagadas": pagadas,
+        "perdidas": perdidas,
+        "pendientes": pendientes
+    }
 
     if aporte_ingresado <= Decimal('0.00'):
-        return render(request, "ahorros/aporte.html", {"ahorro": ahorro,"error": "El monto del aporte debe ser mayor que cero."})
+        ctx_error["error"] = "El monto del aporte debe ser mayor que cero."
+        return render(request, "ahorros/aporte.html", ctx_error)
 
     hoy = date.today()
 
@@ -441,13 +471,12 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     ).select_for_update().first()
 
     if not resumen:
-        return render(request, "ahorros/aporte.html", {"ahorro": ahorro, "error": "No existe un resumen mensual"})
+        ctx_error["error"] = "No existe un resumen mensual"
+        return render(request, "ahorros/aporte.html", ctx_error)
 
     if resumen.disponible <= Decimal('0.00'):
-        return render(request, "ahorros/aporte.html", {
-            "ahorro": ahorro,
-            "error": "No tienes saldo disponible para realizar aportes."
-        })
+        ctx_error["error"] = "No tienes saldo disponible para realizar aportes."
+        return render(request, "ahorros/aporte.html", ctx_error)
 
     pasar_cuotas_a_perdidas(ahorro)
 
@@ -459,30 +488,22 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         cuota_temp = find_cuota_disponible(meta_id, usuario)
 
         if not cuota_temp:
-            return render(request, "ahorros/aporte.html", {
-                "ahorro": ahorro,
-                "error": "No hay cuota disponible para aportar hoy."
-            })
+            ctx_error["error"] = "No hay cuota disponible para aportar hoy."
+            return render(request, "ahorros/aporte.html", ctx_error)
 
         cuota = AporteAhorro.objects.select_for_update().get(id=cuota_temp.id)
 
     if cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE:
-        return render(request, "ahorros/aporte.html", {
-            "ahorro": ahorro,
-            "error": f"La cuota no está disponible (estado={cuota.estado_ap})"
-        })
+        ctx_error["error"] = f"La cuota no está disponible (estado={cuota.estado_ap})"
+        return render(request, "ahorros/aporte.html", ctx_error)
 
     if cuota.aporte is not None:
-        return render(request, "ahorros/aporte.html", {
-            "ahorro": ahorro,
-            "error": "Esta cuota ya tiene un aporte registrado."
-        })
+        ctx_error["error"] = "Esta cuota ya tiene un aporte registrado."
+        return render(request, "ahorros/aporte.html", ctx_error)
 
     if not cuota_disponible_pago(cuota, ahorro.frecuencia):
-        return render(request, "ahorros/aporte.html", {
-            "ahorro": ahorro,
-            "error": "La cuota no está disponible para pago todavía."
-        })
+        ctx_error["error"] = "La cuota no está disponible para pago todavía."
+        return render(request, "ahorros/aporte.html", ctx_error)
         
     # registrar aporte
     cuota.aporte = aporte_ingresado

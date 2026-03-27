@@ -12,7 +12,7 @@ urlpatterns = [
     path('ahorros/', include('ahorros.urls', namespace='ahorros')),
     #categoria api
     path('api/',include('categorias.api_urls')),
-    #presupuestos - no me lo toquen sapas IDIOTA me daño todo 
+    #presupuestos - a mi no me hable asi me oyo??????
     path('api/', include('presupuesto.api_urls')),
     path('presupuesto/', include('presupuesto.urls')),
     # notificaicones
