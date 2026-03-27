@@ -312,10 +312,10 @@
 
     {# Acciones #}
     <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-      <a href="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}" class="btn-primary"
-        style="padding:0.4rem 0.8rem; font-size:0.75rem; border-radius:0.5rem; text-decoration:none; display:inline-flex; align-items:center; gap:0.25rem;">
+      <button type="button" class="btn-primary btn-abrir-modal-aporte" data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
+        style="padding:0.4rem 0.8rem; font-size:0.75rem; border-radius:0.5rem; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:0.25rem;">
         <i data-lucide="plus-circle" style="width:12px; height:12px;"></i> Aporte
-      </a>
+      </button>
       <a href="{% url 'ahorros:editar_ahorro' id=ahorro.id %}"
         style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; border:1px solid #e2e8f0; color:#64748b; background:transparent; transition:background .15s;">
         <i data-lucide="pencil" style="width:12px; height:12px;"></i>
@@ -344,6 +344,9 @@
   {% endfor %}
 
 </div>
+
+<!-- Contenedor Maestro del Modal de Aportes -->
+<div class="modal-overlay" id="modal-overlay-aporte" hidden style="z-index: 1000; display: none;"></div>
 
 {% endblock %}
 
@@ -377,6 +380,96 @@
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
+
+    // Lógica del modal interactivo
+    const modalOverlay = document.getElementById('modal-overlay-aporte');
+
+    function cerrarModal() {
+      modalOverlay.style.display = 'none';
+      modalOverlay.hidden = true;
+      modalOverlay.innerHTML = ''; 
+    }
+
+    // Al hacer click en cualquier botón "Aporte"
+    document.querySelectorAll('.btn-abrir-modal-aporte').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const url = btn.dataset.url;
+        try {
+          // Mostrar overlay de carga u oscurecido opcional
+          modalOverlay.innerHTML = '<div style="color:white; font-size:1.5rem;" class="spin"><i data-lucide="loader-2"></i></div>';
+          modalOverlay.style.display = 'flex';
+          modalOverlay.hidden = false;
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+
+          const resp = await fetch(url);
+          const html = await resp.text();
+          modalOverlay.innerHTML = html;
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+        } catch(error) {
+          cerrarModal();
+          alert('Error al cargar la meta.');
+        }
+      });
+    });
+
+    // Delegación de eventos para el modal cargado dinámicamente
+    modalOverlay.addEventListener('click', function(e) {
+      if (e.target.closest('.btn-cerrar-modal-aporte')) {
+        cerrarModal();
+      }
+      // Cerrar al clickear fuera del modal
+      if (e.target === modalOverlay) {
+        cerrarModal();
+      }
+    });
+
+    // Delegación para submit de formularios de pago dentro del modal
+    modalOverlay.addEventListener('submit', async function(e) {
+      if (e.target.matches('.form-aporte-modal')) {
+        e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+
+        try {
+          const resp = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          const data = await resp.json();
+
+          if (data.success) {
+            // Recargar pantalla suavemente para ver cambios generales
+            window.location.reload();
+          } else {
+            // Mostrar error inyectado directamente sin perder las plantillas UI
+            modalOverlay.innerHTML = modalOverlay.innerHTML; // Truco de redibujado no deseado idealmente, pero mejor reconstruimos error:
+            // Insertaremos barra roja de error dinamicamente para no recargar Fetch GET.
+            const errorInyectado = `
+              <div class="mx-6 mt-6 p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3 injected-error">
+                <div class="text-sm text-red-800 font-medium font-sans mt-0.5">${data.error}</div>
+              </div>`;
+            const wrapper = modalOverlay.querySelector('div[style*="overflow-y: auto"]');
+            
+            // quitar errores previos
+            const previos = wrapper.querySelectorAll('.injected-error');
+            previos.forEach(p => p.remove());
+            const errorOriginal = document.getElementById('modal-error-message');
+            if (errorOriginal) errorOriginal.closest('.bg-red-50').remove();
+            
+            wrapper.insertAdjacentHTML('afterbegin', errorInyectado);
+            submitBtn.disabled = false;
+          }
+        } catch {
+          alert("Error de red.");
+          submitBtn.disabled = false;
+        }
+      }
+    });
   });
 </script>
 {% endblock %}

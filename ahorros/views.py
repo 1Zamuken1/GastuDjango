@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from .models import AhorroMeta, AporteAhorro
@@ -429,6 +430,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         perdidas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
         pendientes = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
 
+        # Si es un GET tradicional pero viene de modal (fetch) está ok, retorna HTML puro
         return render(request, "ahorros/aporte.html", {
             "ahorro": ahorro,
             "cuotas": cuotas,
@@ -445,22 +447,8 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if post_aporte_id and not aporte_id:
         aporte_id = post_aporte_id
 
-    # Preparar el contexto base en caso de error
-    cuotas = AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite')
-    pagadas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.APORTADO).count()
-    perdidas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
-    pendientes = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
-    ctx_error = {
-        "ahorro": ahorro,
-        "cuotas": cuotas,
-        "pagadas": pagadas,
-        "perdidas": perdidas,
-        "pendientes": pendientes
-    }
-
     if aporte_ingresado <= Decimal('0.00'):
-        ctx_error["error"] = "El monto del aporte debe ser mayor que cero."
-        return render(request, "ahorros/aporte.html", ctx_error)
+        return JsonResponse({"success": False, "error": "El monto del aporte debe ser mayor que cero."})
 
     hoy = date.today()
 
@@ -471,12 +459,10 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     ).select_for_update().first()
 
     if not resumen:
-        ctx_error["error"] = "No existe un resumen mensual"
-        return render(request, "ahorros/aporte.html", ctx_error)
+        return JsonResponse({"success": False, "error": "No existe un resumen mensual"})
 
     if resumen.disponible <= Decimal('0.00'):
-        ctx_error["error"] = "No tienes saldo disponible para realizar aportes."
-        return render(request, "ahorros/aporte.html", ctx_error)
+        return JsonResponse({"success": False, "error": "No tienes saldo disponible para realizar aportes."})
 
     pasar_cuotas_a_perdidas(ahorro)
 
@@ -488,22 +474,18 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         cuota_temp = find_cuota_disponible(meta_id, usuario)
 
         if not cuota_temp:
-            ctx_error["error"] = "No hay cuota disponible para aportar hoy."
-            return render(request, "ahorros/aporte.html", ctx_error)
+            return JsonResponse({"success": False, "error": "No hay cuota disponible para aportar hoy."})
 
         cuota = AporteAhorro.objects.select_for_update().get(id=cuota_temp.id)
 
     if cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE:
-        ctx_error["error"] = f"La cuota no está disponible (estado={cuota.estado_ap})"
-        return render(request, "ahorros/aporte.html", ctx_error)
+        return JsonResponse({"success": False, "error": f"La cuota no está disponible (estado={cuota.estado_ap})"})
 
     if cuota.aporte is not None:
-        ctx_error["error"] = "Esta cuota ya tiene un aporte registrado."
-        return render(request, "ahorros/aporte.html", ctx_error)
+        return JsonResponse({"success": False, "error": "Esta cuota ya tiene un aporte registrado."})
 
     if not cuota_disponible_pago(cuota, ahorro.frecuencia):
-        ctx_error["error"] = "La cuota no está disponible para pago todavía."
-        return render(request, "ahorros/aporte.html", ctx_error)
+        return JsonResponse({"success": False, "error": "La cuota no está disponible para pago todavía."})
         
     # registrar aporte
     cuota.aporte = aporte_ingresado
@@ -543,4 +525,4 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     ahorro.save()
 
-    return redirect("ahorros:listar_ahorros")
+    return JsonResponse({"success": True})

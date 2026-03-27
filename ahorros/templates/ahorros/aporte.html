@@ -1,25 +1,21 @@
-{% extends 'base_app.html' %}
-{% load static %}
-{% block title %}Detalle de Meta - Ahorros{% endblock %}
-{% block nav_ahorros %}active{% endblock %}
+<!-- CONTENIDO PARCIAL PARA INYECCIÓN EN MODAL -->
+<div class="modal modal--lg" style="width: min(800px, 95vw); max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; background: white; border-radius: 1.25rem;">
+  
+  <!-- Cabecera (Pegajosa) -->
+  <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50 sticky top-0 z-10">
+    <h2 class="text-xl font-bold font-display text-slate-800">Detalle de Meta</h2>
+    <button type="button" class="text-slate-400 hover:text-slate-600 transition-colors btn-cerrar-modal-aporte" aria-label="Cerrar">
+      <i data-lucide="x" style="width:20px;height:20px;"></i>
+    </button>
+  </div>
 
-{% block content %}
-<div class="max-w-4xl mx-auto py-8">
-  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-    
-    <!-- Cabecera -->
-    <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-      <h2 class="text-xl font-bold font-display text-slate-800">Detalle de Meta</h2>
-      <a href="{% url 'ahorros:listar_ahorros' %}" class="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Cerrar">
-        <i data-lucide="x" style="width:20px;height:20px;"></i>
-      </a>
-    </div>
-
+  <!-- Cuerpo (Scrollable) -->
+  <div style="overflow-y: auto; flex: 1;">
     <!-- Error Inyectado -->
     {% if error %}
     <div class="mx-6 mt-6 p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
       <i data-lucide="alert-triangle" style="color: #ef4444; margin-top: 2px; width: 18px; height: 18px;"></i>
-      <div class="text-sm text-red-800 font-medium font-sans mt-0.5">
+      <div class="text-sm text-red-800 font-medium font-sans mt-0.5" id="modal-error-message">
         {{ error }}
       </div>
     </div>
@@ -110,25 +106,27 @@
               </td>
               <td class="py-3 pr-4">
                 {% if cuota.estado_ap == 'PENDIENTE' %}
-                <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}" class="flex items-center gap-2 max-w-[200px]">
+                <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}" class="form-aporte-modal flex items-center gap-2 max-w-[200px]">
                   {% csrf_token %}
                   <input type="hidden" name="aporte_id" value="{{ cuota.id }}">
                   <div class="relative flex-1">
                     <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
                       <span class="text-slate-500 font-bold text-xs">$</span>
                     </div>
-                    <input type="number" name="aporte" step="0.01" min="0.01" 
-                           value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
-                           class="w-full pl-6 pr-2 py-1.5 bg-white border border-slate-300 rounded focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none text-sm font-medium text-slate-800">
+                    <input type="number" name="aporte" step="0.01" min="0.01"
+                      value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
+                      class="w-full pl-6 pr-2 py-1.5 bg-white border border-slate-300 rounded focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none text-sm font-medium text-slate-800">
                   </div>
-                  <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded p-1.5 transition-colors shadow-sm flex-shrink-0" title="Aportar">
+                  <button type="submit"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white rounded p-1.5 transition-colors shadow-sm flex-shrink-0"
+                    title="Aportar">
                     <i data-lucide="check" style="width:16px;height:16px;stroke-width:3;"></i>
                   </button>
                 </form>
                 {% else %}
-                  <span class="font-medium text-slate-700">
-                    $ {% if cuota.aporte %}{{ cuota.aporte|floatformat:2 }}{% else %}0.00{% endif %}
-                  </span>
+                <span class="font-medium text-slate-700">
+                  $ {% if cuota.aporte %}{{ cuota.aporte|floatformat:2 }}{% else %}0.00{% endif %}
+                </span>
                 {% endif %}
               </td>
               <td class="py-3 font-medium text-slate-700 pr-4">
@@ -136,17 +134,20 @@
               </td>
               <td class="py-3">
                 {% if cuota.estado_ap == 'APORTADO' %}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-white bg-emerald-600 uppercase tracking-wider">
-                    APORTADO
-                  </span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-white bg-emerald-600 uppercase tracking-wider">
+                  APORTADO
+                </span>
                 {% elif cuota.estado_ap == 'PENDIENTE' %}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 bg-emerald-100 uppercase tracking-wider">
-                    PENDIENTE
-                  </span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 bg-emerald-100 uppercase tracking-wider">
+                  PENDIENTE
+                </span>
                 {% else %}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-red-700 bg-red-100 uppercase tracking-wider">
-                    {{ cuota.estado_ap }}
-                  </span>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-red-700 bg-red-100 uppercase tracking-wider">
+                  {{ cuota.estado_ap }}
+                </span>
                 {% endif %}
               </td>
             </tr>
@@ -162,20 +163,14 @@
       </div>
 
     </div>
-    
-    <!-- Footer Footer -->
-    <div class="px-6 py-4 border-t border-slate-200 flex justify-end bg-slate-50/50">
-      <a href="{% url 'ahorros:listar_ahorros' %}" class="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
-        Cerrar
-      </a>
-    </div>
-
   </div>
-</div>
+  
+  <!-- Footer (Pegajoso al fondo) -->
+  <div class="px-6 py-4 border-t border-slate-200 flex justify-end bg-slate-50/50 sticky bottom-0 z-10">
+    <button type="button" class="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors btn-cerrar-modal-aporte">
+      Cerrar
+    </button>
+  </div>
 
-<script>
-  if(typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
-</script>
-{% endblock %}
+</div>
+<!-- FIN CONTENIDO PARCIAL -->
