@@ -363,7 +363,7 @@
         <div class="top-cat-row">
             <div class="top-cat-header">
                 <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-                    <span class="top-cat-dot" style="background-color: {{ cat.color|default:'#ccc' }};"></span>
+                    <span class="top-cat-dot" data-color="{{ cat.color|default:'#ccc' }}"></span>
                     <span class="top-cat-nombre">{{ cat.nombre }}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">

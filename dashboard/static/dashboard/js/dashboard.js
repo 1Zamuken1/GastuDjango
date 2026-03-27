@@ -547,12 +547,15 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
   }
 
-  /* Animar barras en la carga inicial */
-  requestAnimationFrame(() => {
-    document.querySelectorAll('.top-cat-bar-fill').forEach(el => {
-      el.style.width = (parseFloat(el.dataset.pct) || 0) + '%';
-    });
+  /* Animar barras y aplicar colores en la carga inicial */
+requestAnimationFrame(() => {
+  document.querySelectorAll('.top-cat-bar-fill').forEach(el => {
+    el.style.width = (parseFloat(el.dataset.pct) || 0) + '%';
   });
+  document.querySelectorAll('.top-cat-dot[data-color]').forEach(el => {
+    el.style.backgroundColor = el.dataset.color;
+  });
+});
 
 
   /* ─────────────────────────────────────────────────────────────

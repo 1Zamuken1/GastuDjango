@@ -252,7 +252,7 @@
       .then(data => {
         const select = document.getElementById(selectId)
         select.innerHTML = '<option value="">Seleccione una categoría</option>'
-        data.forEach(cat => {
+        data.categorias.forEach(cat => {
           const option = document.createElement('option')
           option.value = cat.id
           option.textContent = cat.nombre
