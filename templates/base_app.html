@@ -692,6 +692,48 @@
 
     <div class="topbar-sep"></div>
 
+    <!-- Panel notificaciones -->
+    <div id="notif-panel" style="
+      position:fixed;
+      top:calc(var(--topbar-h) + 8px);
+      right:60px;
+      width:340px;
+      max-height:480px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.15);
+      z-index:200;
+      display:none;
+      flex-direction:column;
+      overflow:hidden;
+    ">
+      <!-- Header -->
+      <div style="padding:14px 18px 12px;border-bottom:1px solid var(--border);
+                  display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <i data-lucide="bell" style="width:15px;height:15px;color:#64748b;"></i>
+          <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;
+                       font-size:.9rem;color:#0f172a;">Notificaciones</span>
+        </div>
+        <button onclick="toggleNotifDropdown()"
+                style="width:26px;height:26px;border-radius:8px;border:1px solid var(--border);
+                       background:transparent;color:#94a3b8;cursor:pointer;
+                       display:grid;place-items:center;">
+          <i data-lucide="x" style="width:13px;height:13px;"></i>
+        </button>
+      </div>
+
+      <!-- Lista -->
+      <div id="notif-lista" style="overflow-y:auto;flex:1;padding:8px;">
+        <div style="display:flex;flex-direction:column;align-items:center;
+                    justify-content:center;padding:40px 20px;gap:8px;color:#94a3b8;">
+          <i data-lucide="loader" style="width:28px;height:28px;"></i>
+          <span style="font-size:.82rem;">Cargando...</span>
+        </div>
+      </div>
+    </div>
+
     <div style="position:relative;">
       <button id="user-btn" aria-label="Menú de usuario">
         <div class="user-avatar">
@@ -891,10 +933,94 @@
     userChevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
   });
 
+  // ── Notificaciones ────────────────────────────────────
+  const notifBtn = document.getElementById('notif-btn');
+  notifBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleNotifDropdown();
+  });
+
   document.addEventListener('click', () => {
     userDropdown.classList.remove('open');
     userChevron.style.transform = 'rotate(0deg)';
+    // Cerrar panel notificaciones al click fuera
+    const panel = document.getElementById('notif-panel');
+    if (panel) panel.style.display = 'none';
   });
+
+  /* ── Notificaciones ──────────────────────────────────── */
+  const COLORES_NOTIF = {
+    DEFICIT:        { bg: '#fef2f2', border: '#fecaca', dot: '#e11d48',  icon: 'trending-down'  },
+    EGRESO_GRANDE:  { bg: '#fff7ed', border: '#fed7aa', dot: '#f97316',  icon: 'arrow-up-right' },
+    UMBRAL_MENSUAL: { bg: '#fefce8', border: '#fde68a', dot: '#d97706',  icon: 'alert-triangle' },
+    DEFAULT:        { bg: '#f0fdf4', border: '#bbf7d0', dot: '#10b981',  icon: 'bell'           },
+  };
+
+  let notifCargadas = false;
+
+  function toggleNotifDropdown() {
+    const panel = document.getElementById('notif-panel');
+    if (!panel) return;
+    const visible = panel.style.display === 'flex';
+    panel.style.display = visible ? 'none' : 'flex';
+    if (!visible && !notifCargadas) cargarNotificaciones();
+  }
+
+  async function cargarNotificaciones() {
+    const lista = document.getElementById('notif-lista');
+    if (!lista) return;
+
+    try {
+      const res  = await fetch('/notificaciones/json/', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const data = await res.json();
+      notifCargadas = true;
+
+      if (!data.ok || data.notificaciones.length === 0) {
+        lista.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;
+                      justify-content:center;padding:40px 20px;gap:8px;color:#94a3b8;">
+            <i data-lucide="bell-off" style="width:32px;height:32px;"></i>
+            <span style="font-size:.82rem;font-weight:500;">Sin notificaciones</span>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      lista.innerHTML = data.notificaciones.map(n => {
+        const c = COLORES_NOTIF[n.tipo] || COLORES_NOTIF.DEFAULT;
+        return `
+          <div style="display:flex;gap:10px;padding:10px 10px;border-radius:10px;
+                      background:${c.bg};border:1px solid ${c.border};
+                      margin-bottom:6px;">
+            <div style="width:30px;height:30px;border-radius:8px;
+                        background:${c.dot}20;color:${c.dot};
+                        display:grid;place-items:center;flex-shrink:0;margin-top:1px;">
+              <i data-lucide="${c.icon}" style="width:14px;height:14px;"></i>
+            </div>
+            <div style="min-width:0;">
+              <p style="font-size:.8rem;font-weight:700;color:#0f172a;
+                        margin:0 0 2px;">${n.titulo}</p>
+              <p style="font-size:.75rem;color:#475569;margin:0;
+                        line-height:1.4;">${n.descripcion}</p>
+              <p style="font-size:.68rem;color:#94a3b8;margin:4px 0 0;">
+                ${n.fecha}</p>
+            </div>
+            ${!n.leida ? `<span style="width:7px;height:7px;border-radius:50%;
+                                       background:${c.dot};flex-shrink:0;
+                                       margin-top:4px;"></span>` : ''}
+          </div>`;
+      }).join('');
+
+      lucide.createIcons();
+    } catch (e) {
+      lista.innerHTML = `
+        <div style="padding:20px;text-align:center;font-size:.8rem;color:#94a3b8;">
+          Error al cargar notificaciones
+        </div>`;
+    }
+  }
 </script>
 
 {% block scripts %}{% endblock %}

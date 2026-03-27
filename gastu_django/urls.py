@@ -15,4 +15,6 @@ urlpatterns = [
     #presupuestos - no me lo toquen sapas
     path('api/', include('presupuesto.api_urls')),
     path('presupuesto/', include('presupuesto.urls')),
+    # notificaicones
+    path('notificaciones/', include('notificaciones.urls')),
 ]
