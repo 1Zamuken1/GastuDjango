@@ -402,9 +402,8 @@ def _check_concentracion_gastos(usuario, egreso):
                 usuario=usuario,
                 tipo='EGRESO',
                 fecha_registro__range=(inicio, now),
-                concepto__isnull=False,
             )
-            .values('concepto', 'concepto__nombre')
+            .values('categoria', 'categoria__nombre')
             .annotate(total=Sum('monto'))
         )
 
@@ -414,23 +413,23 @@ def _check_concentracion_gastos(usuario, egreso):
                 Decimal('0.01'), rounding=ROUND_HALF_UP
             )
             if porcentaje >= UMBRAL_CONCENTRACION_PCT:
-                _crear_notificacion(
-                    usuario=usuario,
-                    tipo=Notificacion.Tipo.CONCENTRACION_GASTO,
-                    titulo='Concentración de gastos en un concepto',
-                    descripcion=(
-                        f"El concepto '{stat['concepto__nombre']}' representa el {porcentaje}% "
-                        f"de tus egresos este mes (${total_concepto:,.2f} de ${total_egresos:,.2f}). "
-                        f"Considera diversificar."
-                    ),
-                )
+             _crear_notificacion(
+                usuario=usuario,
+                tipo=Notificacion.Tipo.CONCENTRACION_GASTO,
+                titulo='Concentración de gastos en una categoría',
+                descripcion=(
+                    f"La categoría '{stat['categoria__nombre']}' representa el {porcentaje}% "
+                    f"de tus egresos este mes (${total_concepto:,.2f} de ${total_egresos:,.2f}). "
+                    f"Considera diversificar."
+                ),
+            )
     except Exception as e:
         print(f'[notificaciones] Error en _check_concentracion_gastos: {e}')
 
 
 def _check_concepto_sin_uso(usuario, ingreso):
     """
-    Alerta cuando un concepto que aparece en 3+ de los últimos 6 meses
+    Alerta cuando una categoría que apareció en 3+ de los últimos 6 meses
     no tiene registros recientes (más de N días de inactividad).
     """
     try:
@@ -441,23 +440,22 @@ def _check_concepto_sin_uso(usuario, ingreso):
         apariciones = {}
 
         for i in range(1, 7):
-            mes_dt  = now.replace(day=1)
+            mes_dt = now.replace(day=1)
             for _ in range(i):
                 mes_dt = (mes_dt - timezone.timedelta(days=1)).replace(day=1)
             inicio_h = _inicio_mes(mes_dt)
             fin_h    = _fin_mes(mes_dt)
 
-            conceptos_mes = (
+            categorias_mes = (
                 Movimiento.objects.filter(
                     usuario=usuario,
                     tipo='INGRESO',
                     fecha_registro__range=(inicio_h, fin_h),
-                    concepto__isnull=False,
                 )
-                .values_list('concepto', flat=True)
+                .values_list('categoria_id', flat=True)
                 .distinct()
             )
-            for c_id in conceptos_mes:
+            for c_id in categorias_mes:
                 apariciones[c_id] = apariciones.get(c_id, 0) + 1
 
         recurrentes = [c_id for c_id, veces in apariciones.items() if veces >= 3]
@@ -467,20 +465,17 @@ def _check_concepto_sin_uso(usuario, ingreso):
             tiene_recientes = Movimiento.objects.filter(
                 usuario=usuario,
                 tipo='INGRESO',
-                concepto_id=c_id,
+                categoria_id=c_id,
                 fecha_registro__gte=fecha_limite,
             ).exists()
 
             if not tiene_recientes:
-                nombre = (
-                    Movimiento.objects.filter(usuario=usuario, concepto_id=c_id)
-                    .values_list('concepto__nombre', flat=True)
-                    .first() or 'desconocido'
-                )
+                from categorias.models import Categoria
+                nombre = Categoria.objects.filter(pk=c_id).values_list('nombre', flat=True).first() or 'desconocida'
                 _crear_notificacion(
                     usuario=usuario,
                     tipo=Notificacion.Tipo.CONCEPTO_SIN_USO,
-                    titulo='Concepto recurrente sin actividad',
+                    titulo='Categoría recurrente sin actividad',
                     descripcion=(
                         f"No has registrado ingresos para '{nombre}' en los últimos "
                         f"{UMBRAL_CONCEPTO_SIN_USO_DIAS} días. ¿Olvidaste registrar algún ingreso?"
@@ -834,7 +829,7 @@ def _check_egreso_sin_concepto(usuario, egreso):
         cantidad = Movimiento.objects.filter(
             usuario=usuario,
             tipo='EGRESO',
-            concepto__isnull=True,
+            descripcion__isnull=True,
         ).count()
 
         if cantidad >= UMBRAL_EGRESOS_SIN_CONCEPTO:

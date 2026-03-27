@@ -201,17 +201,17 @@ def eliminar_movimiento(request, pk):
 
 @login_required
 def registros_por_categoria(request):
-    """
-    Lista paginada (10 por página) de movimientos de una categoría específica.
-
-    Parámetros GET:
-    - categoria: id de la categoría
-    - page: número de página (default 1)
-
-    Solo devuelve movimientos del usuario autenticado.
-    """
     categoria_id = request.GET.get('categoria')
-    pagina = int(request.GET.get('page', 1))
+    
+    # Guard: categoria_id obligatorio
+    if not categoria_id:
+        return JsonResponse({'error': 'categoria requerida'}, status=400)
+    
+    try:
+        pagina = int(request.GET.get('page', 1))
+    except (ValueError, TypeError):
+        pagina = 1
+    
     PER_PAGE = 10
 
     qs = Movimiento.objects.filter(
@@ -226,7 +226,7 @@ def registros_por_categoria(request):
         'registros': [
             {
                 'id': m.id,
-                'descripcion': m.descripcion,
+                'descripcion': m.descripcion or 'Sin descripción',
                 'fecha': m.fecha_registro.strftime('%d %b %Y'),
                 'fecha_raw': m.fecha_registro.isoformat(),
                 'monto': str(m.monto),

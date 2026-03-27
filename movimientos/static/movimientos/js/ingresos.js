@@ -249,9 +249,20 @@ async function cargarRegistros(categoriaId, pagina) {
     '<tr><td colspan="4" class="table-empty">Cargando...</td></tr>';
 
   try {
-    const res = await fetch(`${URL_REGISTROS}?categoria=${categoriaId}&page=${pagina}`, {
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    });
+    const res = await fetch(
+      `${URL_REGISTROS}?categoria=${categoriaId}&page=${pagina}`,
+      { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+    );
+
+    // ← NUEVO: detectar respuestas no-JSON antes de parsear
+    if (!res.ok) {
+      const texto = await res.text();
+      console.error(`[registros] HTTP ${res.status}:`, texto);
+      tablaRegistrosBody.innerHTML =
+        `<tr><td colspan="4" class="table-empty">Error ${res.status} — revisa la consola.</td></tr>`;
+      return;
+    }
+
     const data = await res.json();
 
     tablaRegistrosBody.innerHTML = data.registros.length
