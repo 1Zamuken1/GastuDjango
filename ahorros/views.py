@@ -336,11 +336,15 @@ def editar_ahorro(request, id):
 @transaction.atomic
 def eliminar_ahorro(request, id):
     ahorro = get_object_or_404(AhorroMeta,id=id,usuario=request.user)
-    # eliminar aportes relacionados
-    AporteAhorro.objects.filter(ahorro=ahorro).delete()
-    # eliminar ahorro
-    ahorro.delete()
-    return redirect("ahorros:listar_ahorros")
+    
+    if request.method == "POST":
+        # eliminar aportes relacionados
+        AporteAhorro.objects.filter(ahorro=ahorro).delete()
+        # eliminar ahorro
+        ahorro.delete()
+        return redirect("ahorros:listar_ahorros")
+        
+    return render(request, "ahorros/eliminar.html", {"ahorro": ahorro})
 
 
 #   APORTES

@@ -1,9 +1,101 @@
-<h1>Crear Ahorro</h1>
+{% extends 'base_app.html' %}
+{% load static %}
+{% block title %}Crear Meta de Ahorro{% endblock %}
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Guardar</button>
-</form>
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+  <div class="mb-6 flex items-center justify-between">
+    <h2 class="text-2xl font-bold font-display text-slate-800 flex items-center gap-2">
+      <i data-lucide="piggy-bank" style="color: #ca8a04;"></i>
+      Nueva Meta de Ahorro
+    </h2>
+    <a href="{% url 'ahorros:listar_ahorros' %}" class="text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-colors">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Volver
+    </a>
+  </div>
 
-<a href="{% url 'ahorros:listar_ahorros' %}">Volver</a>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
+    <form method="post" class="form-ahorros" novalidate>
+      {% csrf_token %}
+      
+      {% if form.errors %}
+      <div class="mb-6 p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
+        <i data-lucide="alert-circle" style="color: #ef4444; margin-top: 2px;"></i>
+        <div class="text-sm text-red-800 font-medium">
+          Por favor, corrige los errores debajo para poder continuar.
+        </div>
+      </div>
+      {% endif %}
+
+      <div>
+        {{ form.as_p }}
+      </div>
+
+      <div class="mt-8 pt-6 border-t border-slate-100 flex justify-end gap-3">
+        <a href="{% url 'ahorros:listar_ahorros' %}" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
+          Cancelar
+        </a>
+        <button type="submit" class="px-5 py-2.5 rounded-xl font-semibold text-white bg-amber-600 hover:bg-amber-700 transition-colors flex items-center gap-2 shadow-sm">
+          <i data-lucide="save" style="width:16px;height:16px;"></i>
+          Guardar Meta
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  /* Inyectar estilo elegante directo para los inputs de Django */
+  .form-ahorros p {
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .form-ahorros label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+  }
+  .form-ahorros input[type="text"],
+  .form-ahorros input[type="number"],
+  .form-ahorros input[type="date"],
+  .form-ahorros select,
+  .form-ahorros textarea {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    font-size: 0.95rem;
+    color: #0f172a;
+    transition: all 0.2s;
+  }
+  .form-ahorros input:focus,
+  .form-ahorros select:focus,
+  .form-ahorros textarea:focus {
+    outline: none;
+    background: white;
+    border-color: #d97706; /* Amber-600 */
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+  }
+  .form-ahorros .errorlist {
+    color: #ef4444;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+    padding-left: 0;
+    list-style: none;
+  }
+  .form-ahorros .helptext {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.2rem;
+  }
+</style>
+<script>
+  if(typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+</script>
+{% endblock %}

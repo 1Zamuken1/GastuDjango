@@ -1,23 +1,87 @@
-<h1>Registrar Aporte</h1>
+{% extends 'base_app.html' %}
+{% load static %}
+{% block title %}Registrar Aporte - Ahorros{% endblock %}
 
-<p><strong>Ahorro:</strong> {{ ahorro.descripcion }}</p>
-<p><strong>Total actual:</strong> {{ ahorro.total_acumulado }}</p>
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+  <div class="mb-6 flex items-center justify-between">
+    <h2 class="text-2xl font-bold font-display text-slate-800 flex items-center gap-2">
+      <i data-lucide="plus-circle" style="color: #ca8a04;"></i>
+      Registrar Aporte
+    </h2>
+    <a href="{% url 'ahorros:listar_ahorros' %}" class="text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-colors">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Volver
+    </a>
+  </div>
 
-<form method="post">
-    {% csrf_token %}
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
     
-    <p>
-        <label for="aporte">Monto a aportar:</label>
-        <input type="number" 
-               name="aporte" 
-               id="aporte" 
-               step="0.01" 
-               value="{{ monto_sugerido|stringformat:'.2f' }}" 
-               required>
-    </p>
-    
-    <button type="submit">Aportar</button>
-</form>
+    <!-- Info Hero del Ahorro -->
+    <div class="p-5 bg-amber-50 rounded-xl border border-amber-100 mb-6 font-display flex flex-col sm:flex-row justify-between sm:items-center">
+      <div>
+        <h3 class="text-slate-800 font-bold mb-1" style="font-size: 1.05rem;">
+          {{ ahorro.categoria.nombre|default:"Meta de Ahorro" }}
+        </h3>
+        <p class="text-sm text-slate-500 font-sans">
+          {{ ahorro.descripcion|default:"Sin descripción" }}
+        </p>
+      </div>
+      <div class="mt-4 sm:mt-0 sm:text-right bg-white px-4 py-2 rounded-lg border border-amber-100 shadow-[0_1px_2px_rgba(217,119,6,0.1)]">
+        <p class="text-xs text-slate-400 font-sans uppercase tracking-widest font-bold mb-0.5">Total Actual</p>
+        <p class="text-xl font-black text-amber-600">${{ ahorro.total_acumulado|floatformat:0 }}</p>
+      </div>
+    </div>
 
-<hr>
-<a href="{% url 'ahorros:listar_ahorros' %}">Volver</a>
+    <!-- Error Inyectado por views.py -->
+    {% if error %}
+    <div class="mb-6 p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
+      <i data-lucide="alert-triangle" style="color: #ef4444; margin-top: 2px;"></i>
+      <div class="text-sm text-red-800 font-medium font-sans">
+        {{ error }}
+      </div>
+    </div>
+    {% endif %}
+
+    <form method="post" class="form-ahorros rounded-xl border border-slate-100 p-5 bg-[#fcfcfd]" novalidate>
+      {% csrf_token %}
+      
+      <div class="mb-3">
+        <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide" for="aporte">
+          Monto a aportar *
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span class="text-slate-400 font-bold text-lg">$</span>
+          </div>
+          <input type="number" 
+                 name="aporte" 
+                 id="aporte" 
+                 step="0.01" 
+                 min="0.01"
+                 placeholder="0.00"
+                 {% if monto_sugerido %}value="{{ monto_sugerido|stringformat:'.2f' }}"{% endif %} 
+                 required
+                 class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-lg font-black text-slate-900 shadow-sm focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all">
+        </div>
+        <p class="text-xs text-slate-400 mt-2 font-medium">Ingresa el total exacto que deseas sumar a esta meta desde tus fondos disponibles.</p>
+      </div>
+      
+      <div class="mt-8 pt-5 border-t border-slate-100 flex justify-end gap-3">
+        <a href="{% url 'ahorros:listar_ahorros' %}" class="px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
+          Cancelar
+        </a>
+        <button type="submit" class="px-6 py-2.5 rounded-xl font-bold text-white bg-amber-600 hover:bg-amber-700 transition-colors flex items-center gap-2 shadow-md shadow-amber-600/20">
+          <i data-lucide="plus-circle" style="width:18px;height:18px;"></i>
+          Confirmar Aporte
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  if(typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+</script>
+{% endblock %}

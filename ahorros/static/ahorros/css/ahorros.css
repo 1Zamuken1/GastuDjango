@@ -13,7 +13,7 @@
 }
 
 .hero-total {
-  background: linear-gradient(135deg, #c2410c 0%, #ca8a04 100%);
+  background: #dfaa0e;
   border-radius: .875rem;
   padding: .875rem 1.25rem;
   display: flex;
@@ -23,7 +23,7 @@
   text-align: center;
   gap: .35rem;
   border: none;
-  box-shadow: 0 4px 20px rgba(194, 65, 12, 0.25);
+  box-shadow: 0 4px 20px rgba(161, 98, 7, 0.25);
   transition: transform .15s, box-shadow .15s;
 }
 
@@ -159,12 +159,113 @@
 
 /* Botones Primary Ahorros */
 .btn-primary {
-  background: #d97706 !important;
+  background: #eab308 !important;
   color: #fff !important;
-  border-color: #d97706 !important;
+  border-color: #eab308 !important;
 }
 
 .btn-primary:hover {
-  background: #b45309 !important;
-  border-color: #b45309 !important;
+  background: #ca8a04 !important;
+  border-color: #ca8a04 !important;
+}
+
+/* ── Grid de categorías (Metas de Ahorro) ──────────────────────────── */
+.categorias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.categoria-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: .875rem;
+  padding: 1.25rem;
+  transition: box-shadow .15s, transform .15s;
+}
+
+.categoria-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+  transform: translateY(-1px);
+}
+
+.categoria-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: .75rem;
+}
+
+.categoria-card__icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: .625rem;
+  display: grid;
+  place-items: center;
+  background: #fef08a;
+  color: #ca8a04;
+  flex-shrink: 0;
+}
+
+.categoria-card__icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.categoria-card__nombre {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 .15rem;
+}
+
+.categoria-card__cantidad {
+  font-size: .75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.categoria-card__monto {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 .5rem;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #cbd5e1;
+  border-radius: 9999px;
+  margin: .5rem 0;
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: #eab308;
+  border-radius: 9999px;
+  transition: width .4s ease;
+}
+
+.categoria-card__footer {
+  font-size: .75rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  margin: 0;
+}
+
+.categoria-card__footer svg {
+  width: .8rem;
+  height: .8rem;
+}
+
+.grid-empty {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+  font-size: .9rem;
 }
