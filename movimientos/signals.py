@@ -19,9 +19,7 @@ def actualizar_resumen_al_guardar(sender, instance, **kwargs):
     )
     analizar_movimiento(
         usuario=instance.usuario,
-        mes=instance.fecha_registro.month,
-        anio=instance.fecha_registro.year,
-        ultimo_egreso=instance.monto if instance.tipo == 'EGRESO' and instance.activo else None,
+        movimiento=instance,
     )
 
 
