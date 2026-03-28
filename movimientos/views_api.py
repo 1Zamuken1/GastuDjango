@@ -70,24 +70,42 @@ def _serializar_movimiento(mov):
 
 def _calcular_disponible(usuario, mes, anio, monto_original=Decimal('0')):
     """
-    Calcula el saldo disponible del usuario para un mes dado.
-    Descuenta monto_original del total de egresos (útil al editar para no
-    contar el egreso actual dos veces).
-    Devuelve Decimal.
+    Devuelve el saldo disponible del usuario para un mes dado.
+
+    Lee desde ResumenMensual (cache pre-calculado por signals) para evitar
+    queries brutas a la tabla Movimiento en cada validacion de egreso.
+    Si no existe el resumen (usuario nuevo), cae en fallback con queries directas.
+
+    monto_original: en edicion de un egreso, se suma al disponible base para
+    evitar que la validacion bloquee falsamente el propio egreso editado.
     """
-    total_ingresos = (
-        Movimiento.objects
-        .filter(usuario=usuario, tipo='INGRESO',
-                fecha_registro__month=mes, fecha_registro__year=anio)
-        .aggregate(t=Sum('monto'))['t'] or Decimal('0')
-    )
-    total_egresos = (
-        Movimiento.objects
-        .filter(usuario=usuario, tipo='EGRESO',
-                fecha_registro__month=mes, fecha_registro__year=anio)
-        .aggregate(t=Sum('monto'))['t'] or Decimal('0')
-    )
-    return total_ingresos - (total_egresos - monto_original)
+    from dashboard.models import ResumenMensual
+
+    ZERO = Decimal('0')
+
+    resumen = ResumenMensual.objects.filter(
+        usuario=usuario, mes=mes, anio=anio
+    ).first()
+
+    if resumen:
+        disponible_base = resumen.disponible
+    else:
+        # Fallback: primer movimiento del usuario, aun no hay ResumenMensual
+        total_ingresos = (
+            Movimiento.objects
+            .filter(usuario=usuario, tipo='INGRESO',
+                    fecha_registro__month=mes, fecha_registro__year=anio)
+            .aggregate(t=Sum('monto'))['t'] or ZERO
+        )
+        total_egresos = (
+            Movimiento.objects
+            .filter(usuario=usuario, tipo='EGRESO',
+                    fecha_registro__month=mes, fecha_registro__year=anio)
+            .aggregate(t=Sum('monto'))['t'] or ZERO
+        )
+        disponible_base = total_ingresos - total_egresos
+
+    return disponible_base + monto_original
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────

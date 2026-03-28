@@ -12,6 +12,50 @@ from categorias.models import Categoria
 from .forms import MovimientoForm
 from .models import Movimiento
 
+
+def _disponible_del_mes(usuario, mes, anio, monto_original=None):
+    """
+    Devuelve el saldo disponible del usuario para el mes dado.
+
+    Lee desde ResumenMensual (caché pre-calculado por signals).
+    Si no existe el resumen aun (usuario nuevo o primer movimiento),
+    cae en fallback con queries directas a Movimiento.
+
+    En edicion de un egreso existente, monto_original se suma al disponible
+    base para evitar que la validacion bloquee falsamente el propio egreso.
+    """
+    from decimal import Decimal
+    from dashboard.models import ResumenMensual
+    from django.db.models import Sum
+
+    ZERO = Decimal('0')
+
+    resumen = ResumenMensual.objects.filter(
+        usuario=usuario, mes=mes, anio=anio
+    ).first()
+
+    if resumen:
+        disponible_base = resumen.disponible
+    else:
+        # Fallback: primer movimiento del usuario, aun no hay ResumenMensual
+        total_ingresos = (
+            Movimiento.objects
+            .filter(usuario=usuario, tipo='INGRESO',
+                    fecha_registro__month=mes, fecha_registro__year=anio)
+            .aggregate(t=Sum('monto'))['t'] or ZERO
+        )
+        total_egresos = (
+            Movimiento.objects
+            .filter(usuario=usuario, tipo='EGRESO',
+                    fecha_registro__month=mes, fecha_registro__year=anio)
+            .aggregate(t=Sum('monto'))['t'] or ZERO
+        )
+        disponible_base = total_ingresos - total_egresos
+
+    if monto_original is not None:
+        return disponible_base + monto_original
+    return disponible_base
+
 MESES_ES = [
     '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -148,20 +192,8 @@ def guardar_movimiento(request, pk=None):
     if tipo_movimiento == 'EGRESO':
         hoy = timezone.now().date()
         mes, anio = hoy.month, hoy.year
-        total_ingresos = (
-            Movimiento.objects
-            .filter(usuario=request.user, tipo='INGRESO', fecha_registro__month=mes, fecha_registro__year=anio)
-            .aggregate(t=Sum('monto'))['t'] or Decimal('0')
-        )
-        total_egresos = (
-            Movimiento.objects
-            .filter(usuario=request.user, tipo='EGRESO', fecha_registro__month=mes, fecha_registro__year=anio)
-            .aggregate(t=Sum('monto'))['t'] or Decimal('0')
-        )
-        # En edición, el monto original ya está sumado en total_egresos; lo restamos
-        # para que el usuario pueda modificar su propio egreso sin falsa restricción.
-        monto_original = instancia.monto if instancia and instancia.tipo == 'EGRESO' else Decimal('0')
-        disponible = total_ingresos - (total_egresos - monto_original)
+        monto_original = instancia.monto if instancia and instancia.tipo == 'EGRESO' else None
+        disponible = _disponible_del_mes(request.user, mes, anio, monto_original=monto_original)
 
     form = MovimientoForm(
         request.POST,
