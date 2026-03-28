@@ -319,58 +319,71 @@ def resumen_movimientos(request):
     })
 
 
+def _detectar_tipo_query(q):
+    """
+    Clasifica el texto de busqueda en uno de tres tipos:
+      ('fecha', date)     — si q coincide con dd/mm/aaaa o dd/mm/aa
+      ('monto', Decimal)  — si q es un numero positivo
+      ('texto', str)      — cualquier otro texto libre
+
+    Centraliza la deteccion para que sea facil de testear y extender.
+    """
+    from datetime import datetime
+    from decimal import Decimal, InvalidOperation
+
+    for fmt in ('%d/%m/%Y', '%d/%m/%y'):
+        try:
+            return ('fecha', datetime.strptime(q, fmt).date())
+        except ValueError:
+            pass
+
+    try:
+        val = Decimal(q.replace(',', '.'))
+        if val > 0:
+            return ('monto', val)
+    except InvalidOperation:
+        pass
+
+    return ('texto', q)
+
+
 @login_required
 def buscar_registros(request):
     """
-    Busca movimientos del usuario por descripción, monto o fecha.
+    Busca movimientos del usuario por descripcion, monto o fecha.
 
     GET params:
-    - q    : texto de búsqueda
+    - q    : texto de busqueda
     - tipo : INGRESO o EGRESO
 
     Formatos de fecha aceptados: dd/mm/aaaa o dd/mm/aa
-
     Para monto busca coincidencia exacta como Decimal.
     Para fecha usa __date= para compatibilidad con DateTimeField.
     Para texto usa icontains en descripcion.
     """
-    from datetime import datetime
-    from decimal import Decimal, InvalidOperation
     from django.db.models import Q
 
     q    = request.GET.get('q', '').strip()
     tipo = request.GET.get('tipo', '').upper()
 
     if not q or tipo not in ('INGRESO', 'EGRESO'):
-        return JsonResponse({'ok': False, 'error': 'parámetros inválidos'}, status=400)
+        return JsonResponse({'ok': False, 'error': 'parametros invalidos'}, status=400)
 
     qs = Movimiento.objects.filter(
         usuario=request.user, tipo=tipo
     ).select_related('categoria')
 
-    # Intentar interpretar como fecha dd/mm/aaaa o dd/mm/aa
-    fecha_buscada = None
-    for fmt in ('%d/%m/%Y', '%d/%m/%y'):
-        try:
-            fecha_buscada = datetime.strptime(q, fmt).date()
-            break
-        except ValueError:
-            pass
+    tipo_query, valor = _detectar_tipo_query(q)
 
-    if fecha_buscada:
+    if tipo_query == 'fecha':
         # __date= funciona tanto en DateField como DateTimeField
-        qs = qs.filter(fecha_registro__date=fecha_buscada)
+        qs = qs.filter(fecha_registro__date=valor)
+    elif tipo_query == 'monto':
+        qs = qs.filter(Q(monto=valor) | Q(descripcion__icontains=q))
     else:
-        # Intentar búsqueda por monto exacto
-        filtro = Q(descripcion__icontains=q)
-        try:
-            monto_val = Decimal(q.replace(',', '.'))
-            filtro |= Q(monto=monto_val)
-        except InvalidOperation:
-            pass
-        qs = qs.filter(filtro)
+        qs = qs.filter(descripcion__icontains=valor)
 
-    # Agrupar resultados por categoría
+    # Agrupar resultados por categoria
     categorias_map = {}
     for m in qs.order_by('-fecha_registro'):
         cid = m.categoria_id
