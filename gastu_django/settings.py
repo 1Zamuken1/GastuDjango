@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'agente_financiero',
     'presupuesto',
     'categorias',
+    'historial',
 ]
 
 MIDDLEWARE = [

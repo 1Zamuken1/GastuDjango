@@ -653,6 +653,7 @@
   </style>
 
   {% block extra_head %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'historial/css/historial.css' %}">
 </head>
 
 <body class="h-full">
@@ -757,13 +758,40 @@
         <div class="dropdown-divider"></div>
         <a href="{% url 'logout' %}" class="dropdown-item danger">
           <i data-lucide="log-out" style="width:14px;height:14px;"></i>
-          Cerrar sesión
+          Cerrar sesion
         </a>
       </div>
     </div>
   </div>
 </header>
 
+
+<!-- ══════════════════════════════════════════
+     HISTORIAL OFFCANVAS
+══════════════════════════════════════════ -->
+<div id="historial-overlay"></div>
+<div id="historial-offcanvas">
+  <div class="historial-header">
+    <div class="historial-header__top">
+      <div class="historial-header__info">
+        <div class="historial-header__icon-wrapper">
+          <i data-lucide="history"></i>
+        </div>
+        <div>
+          <h2 class="historial-header__title">Historial de acciones</h2>
+          <p class="historial-header__sub">Ultimos 30 dias</p>
+        </div>
+      </div>
+      <button id="btn-cerrar-historial" class="historial-header__close" aria-label="Cerrar historial">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div id="historial-stats"></div>
+  </div>
+  <div id="historial-lista" class="historial-body">
+    <!-- Renderizado por JS -->
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════
      SIDEBAR

@@ -58,6 +58,15 @@
     <input type="text" id="buscador" placeholder="Buscar categoría...">
   </div>
   <div class="toolbar__actions">
+    <button class="btn-ghost" type="button" id="btn-historial"
+            data-modulo="INGRESOS"
+            data-tema-accent="#10b981"
+            data-tema-light="#ecfdf5"
+            data-tema-label="Ingresos"
+            data-tema-icon="trending-up"
+            style="padding: 9px 12px;">
+      <i data-lucide="history"></i> Historial
+    </button>
     <button class="btn-export btn-export--pdf" type="button">
       <i data-lucide="file-text"></i> PDF
     </button>
@@ -365,4 +374,5 @@
 </script>
 <script src="{% static 'movimientos/js/datepicker.js' %}"></script>
 <script src="{% static 'movimientos/js/ingresos.js' %}"></script>
+<script src="{% static 'historial/js/historial.js' %}"></script>
 {% endblock %}

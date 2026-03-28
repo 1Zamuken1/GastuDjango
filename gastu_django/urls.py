@@ -17,4 +17,5 @@ urlpatterns = [
     path('presupuesto/', include('presupuesto.urls')),
     # notificaicones
     path('notificaciones/', include('notificaciones.urls')),
+    path('historial/', include('historial.urls', namespace='historial')),
 ]
