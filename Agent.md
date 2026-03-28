@@ -494,3 +494,41 @@ python manage.py runserver
 - **Seguridad:** toda query filtra por `request.user`. Editar/eliminar siempre con `get_object_or_404(Modelo, pk=pk, usuario=request.user)`.
 - **Imports circulares:** resolverlos con import local dentro de la función (patrón usado en signals).
 - **Modelos nuevos:** heredar de `ModeloBase`, campos en snake_case, FKs a otras apps con string `'app.Modelo'`, `get_user_model()` en lugar de `User` directo.
+
+---
+
+## 20. Sistema de Historial (Audit Log)
+
+Implementado en la app `historial` para rastrear operaciones CRUD de los usuarios en una ventana de 30 días. La interfaz se basa en un panel Offcanvas renderizado dinámicamente según el módulo.
+
+### Instrucciones para que otras IAs/Devs integren el Historial en sus módulos:
+
+1. **Backend (Signals)**: En tu app (ej. `ahorros/signals.py`), crea signals `post_save` y `post_delete` para registrar la acción.
+   ```python
+   from historial.models import AccionHistorial
+   
+   AccionHistorial.objects.create(
+       usuario=instance.usuario,
+       accion=AccionHistorial.AccionChoices.CREACION, # o EDICION / ELIMINACION
+       modulo=AccionHistorial.ModuloChoices.AHORROS,  # Agregar a ModuloChoices si no existe
+       descripcion=f"Se registró un ahorro...",
+       referencia_id=str(instance.id),
+       monto_afectado=instance.monto
+   )
+   ```
+2. **Frontend (Botón)**: En tu template HTML, añade el botón con los atributos `data-tema-*` del color de tu app:
+   ```html
+   <button class="btn-ghost" type="button" id="btn-historial"
+           data-modulo="AHORROS"
+           data-tema-accent="#d97706"
+           data-tema-light="#fffbeb"
+           data-tema-label="Ahorros"
+           data-tema-icon="piggy-bank">
+     <i data-lucide="history"></i> Historial
+   </button>
+   ```
+3. **Scripts**: Importa el script central en tu template:
+   ```html
+   <script src="{% static 'historial/js/historial.js' %}"></script>
+   ```
+El panel se pintará con tus colores y solo listará las acciones de tu `data-modulo`. No agregues emojis por favor.
