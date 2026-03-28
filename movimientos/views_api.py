@@ -25,6 +25,7 @@ from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from categorias.models import Categoria
@@ -224,6 +225,7 @@ def api_listar_categorias(request):
     })
 
 
+@csrf_exempt
 @login_required
 @require_http_methods(['POST'])
 def api_crear_movimiento(request):
@@ -305,6 +307,7 @@ def api_crear_movimiento(request):
     return JsonResponse({'ok': True, 'movimiento': _serializar_movimiento(mov)}, status=201)
 
 
+@csrf_exempt
 @login_required
 @require_http_methods(['POST'])
 def api_editar_movimiento(request, pk):
@@ -387,6 +390,7 @@ def api_editar_movimiento(request, pk):
     return JsonResponse({'ok': True, 'movimiento': _serializar_movimiento(mov)})
 
 
+@csrf_exempt
 @login_required
 @require_http_methods(['POST'])
 def api_eliminar_movimiento(request, pk):
