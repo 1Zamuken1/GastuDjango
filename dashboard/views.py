@@ -62,6 +62,8 @@ def _build_context(user, mes, anio):
     ).first()
 
     if resumen:
+        # Leer totales directamente del cache pre-calculado por signals.
+        # No llamar a _totales_movimiento() — es redundante y costoso.
         total_ingresos = resumen.total_ingresos
         total_egresos  = resumen.total_egresos
         total_ahorros  = resumen.total_ahorros
@@ -69,6 +71,7 @@ def _build_context(user, mes, anio):
         disponible     = resumen.ganancia_acumulada
         hay_deficit    = resumen.deficit
     else:
+        # Fallback: usuario sin historial o primer movimiento del mes.
         total_ingresos, total_egresos = _totales_movimiento(user, mes, anio)
         total_ahorros = ZERO
         utilidad      = total_ingresos - total_egresos
@@ -77,7 +80,8 @@ def _build_context(user, mes, anio):
 
     diferencia = total_ingresos - total_egresos
 
-    # Ahorros del mes (query directa — ResumenMensual.total_ahorros es siempre 0)
+    # Ahorros del mes (query directa — ResumenMensual.total_ahorros es siempre 0
+    # hasta que el modulo ahorros conecte sus propios signals)
     ahorros_mes = (
         AporteAhorro.objects
         .filter(
