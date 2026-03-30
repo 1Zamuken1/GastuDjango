@@ -308,8 +308,15 @@
 }
 
 /* ── Alturas de gráficos responsive ─────────────────────── */
-.chart-tendencia-wrap,
+.chart-tendencia-wrap { width: 100%; overflow: visible; }
 .chart-pie-wrap { width: 100%; overflow: hidden; }
+
+/* El tooltip sigue el cursor sin recortarse por el contenedor */
+.chart-tendencia-wrap .apexcharts-canvas,
+.chart-tendencia-wrap .apexcharts-canvas svg { overflow: visible; }
+.chart-tendencia-wrap .apexcharts-tooltip {
+  z-index: 9999 !important;
+}
 
 @media (max-width: 767px) {
   .chart-tendencia-wrap { min-height: 220px; }

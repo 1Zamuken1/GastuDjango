@@ -248,8 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const labelsTotal   = data.labels;
     const ingresosTotal = data.ingresos;
     const egresosTotal  = data.egresos;
-    const detalleIng    = data.detalle_ing || {};
-    const detalleEgr    = data.detalle_egr || {};
+    const ahorrosTotal  = data.ahorros  || [];
+    const detalleIng    = data.detalle_ing  || {};
+    const detalleEgr    = data.detalle_egr  || {};
+    const detalleAhor   = data.detalle_ahor || {};
     const totalDias     = data.total_dias;
     const PASO          = 7;
 
@@ -257,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let hasta = totalDias - 1;
     let chart = null;
 
-    function buildOpts(labels, ingresos, egresos) {
+    function buildOpts(labels, ingresos, egresos, ahorros) {
       return {
         chart: {
           type: 'bar', stacked: true,
@@ -272,8 +274,9 @@ document.addEventListener('DOMContentLoaded', () => {
         series: [
           { name: 'Ingresos', data: ingresos },
           { name: 'Egresos',  data: egresos  },
+          { name: 'Ahorros',  data: ahorros   },
         ],
-        colors: ['#10b981', '#e11d48'],
+        colors: ['#10b981', '#e11d48', '#d97706'],
         xaxis: {
           categories: labels,
           title: {
@@ -306,10 +309,12 @@ document.addEventListener('DOMContentLoaded', () => {
           x: { formatter: (val) => `Día ${val} — ${MES_NOMBRE} ${ANIO_LABEL}` },
           custom: ({ series, seriesIndex, dataPointIndex, w }) => {
             const dia      = w.globals.labels[dataPointIndex];
-            const totalIng = series[0][dataPointIndex] || 0;
-            const totalEgr = series[1][dataPointIndex] || 0;
-            const catIng   = detalleIng[dia] || [];
-            const catEgr   = detalleEgr[dia] || [];
+            const totalIng  = series[0][dataPointIndex] || 0;
+            const totalEgr  = series[1][dataPointIndex] || 0;
+            const totalAhor = series[2] ? (series[2][dataPointIndex] || 0) : 0;
+            const catIng   = detalleIng[dia]  || [];
+            const catEgr   = detalleEgr[dia]  || [];
+            const catAhor  = detalleAhor[dia]  || [];
 
             const fmtNum = (v) => '$' + new Intl.NumberFormat('es-CO').format(Math.round(v));
 
@@ -350,8 +355,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 Día ${dia} &mdash; ${MES_NOMBRE} ${ANIO_LABEL}
               </div>`;
 
-            const body = (totalIng > 0 ? seccion('Ingresos', totalIng, '#10b981', catIng) : '')
-                       + (totalEgr > 0 ? seccion('Egresos',  totalEgr, '#e11d48', catEgr) : '');
+            const body = (totalIng  > 0 ? seccion('Ingresos', totalIng,  '#10b981', catIng)  : '')
+                       + (totalEgr  > 0 ? seccion('Egresos',  totalEgr,  '#e11d48', catEgr)  : '')
+                       + (totalAhor > 0 ? seccion('Ahorros',  totalAhor, '#d97706', catAhor) : '');
 
             return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:.75rem;
                                 padding:.75rem 1rem;min-width:200px;max-width:260px;
@@ -368,15 +374,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const labels   = labelsTotal.slice(desde, hasta + 1);
       const ingresos = ingresosTotal.slice(desde, hasta + 1);
       const egresos  = egresosTotal.slice(desde, hasta + 1);
+      const ahorros  = ahorrosTotal.slice(desde, hasta + 1);
 
       if (chart) {
         chart.updateOptions({ xaxis: { categories: labels } }, false, false);
         chart.updateSeries([
           { name: 'Ingresos', data: ingresos },
           { name: 'Egresos',  data: egresos  },
+          { name: 'Ahorros',  data: ahorros   },
         ]);
       } else {
-        chart = new ApexCharts(elTendencia, buildOpts(labels, ingresos, egresos));
+        chart = new ApexCharts(elTendencia, buildOpts(labels, ingresos, egresos, ahorros));
         chart.render();
         tendenciaChart = chart;
       }

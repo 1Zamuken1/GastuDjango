@@ -339,17 +339,51 @@ def tendencia_mes(request):
     ing_cat_map = _diarios_por_categoria('INGRESO')
     egr_cat_map = _diarios_por_categoria('EGRESO')
 
+    # Ahorros diarios (solo aportes con estado APORTADO)
+    qs_ahorros = AporteAhorro.objects.filter(
+        ahorro__usuario=user,
+        estado_ap='APORTADO',
+        fecha_registro__month=mes,
+        fecha_registro__year=anio,
+    )
+
+    ahor_map = {
+        row['fecha_registro']: float(row['total'])
+        for row in (
+            qs_ahorros
+            .values('fecha_registro')
+            .annotate(total=Sum('aporte'))
+        )
+    }
+
+    from collections import defaultdict
+    ahor_cat_map = defaultdict(list)
+    for row in (
+        qs_ahorros
+        .values('fecha_registro', 'ahorro__categoria__nombre')
+        .annotate(total=Sum('aporte'))
+        .order_by('fecha_registro', '-total')
+    ):
+        ahor_cat_map[row['fecha_registro']].append({
+            'nombre': row['ahorro__categoria__nombre'] or 'Sin categoria',
+            'monto':  float(row['total']),
+        })
+    ahor_cat_map = dict(ahor_cat_map)
+
     if es_mes_actual:
         total_dias = (hoy - primer_dia).days + 1
         rango = [primer_dia + timedelta(days=i) for i in range(total_dias)]
     else:
-        dias_con_datos = sorted(set(ing_map.keys()) | set(egr_map.keys()))
+        dias_con_datos = sorted(
+            set(ing_map.keys()) | set(egr_map.keys()) | set(ahor_map.keys())
+        )
         rango = dias_con_datos
 
     if not rango:
         return JsonResponse({
             'ok': True, 'labels': [], 'ingresos': [], 'egresos': [],
-            'detalle_ing': {}, 'detalle_egr': {}, 'total_dias': 0,
+            'ahorros': [], 'detalle_ing': {}, 'detalle_egr': {},
+            'detalle_ahor': {}, 'total_dias': 0,
         })
 
     detalle_ing = {
@@ -360,13 +394,19 @@ def tendencia_mes(request):
         str(d.day): egr_cat_map.get(d, [])
         for d in rango if d in egr_cat_map
     }
+    detalle_ahor = {
+        str(d.day): ahor_cat_map.get(d, [])
+        for d in rango if d in ahor_cat_map
+    }
 
     return JsonResponse({
-        'ok':          True,
-        'labels':      [str(d.day) for d in rango],
-        'ingresos':    [ing_map.get(d, 0) for d in rango],
-        'egresos':     [egr_map.get(d, 0) for d in rango],
-        'detalle_ing': detalle_ing,
-        'detalle_egr': detalle_egr,
-        'total_dias':  len(rango),
+        'ok':           True,
+        'labels':       [str(d.day) for d in rango],
+        'ingresos':     [ing_map.get(d, 0) for d in rango],
+        'egresos':      [egr_map.get(d, 0) for d in rango],
+        'ahorros':      [ahor_map.get(d, 0) for d in rango],
+        'detalle_ing':  detalle_ing,
+        'detalle_egr':  detalle_egr,
+        'detalle_ahor': detalle_ahor,
+        'total_dias':   len(rango),
     })
