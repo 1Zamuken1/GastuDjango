@@ -4,19 +4,31 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from .models import AhorroMeta, AporteAhorro
 from .forms import AhorroMetaForm, AporteAhorroForm
-from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta #pip install python-dateutil
-from decimal import Decimal, ROUND_HALF_UP
-from django.utils import timezone
-import math
+from decimal import Decimal
 from django.db.models import Q, Sum
 from dashboard.models import ResumenMensual
 from categorias.models import Categoria
+from datetime import date
 
-# LISTAR AHORROS
+from .services import (
+    calcular_campo_faltante,
+    generar_cuotas,
+    recalcular_aportes,
+    recalcular_aportes_restantes,
+    recalcular_fechas_cuotas,
+    pasar_cuotas_a_perdidas,
+    abandono_ahorro,
+    cuota_disponible_pago,
+    find_cuota_disponible,
+    obtener_aportes_por_meta,
+)
+
+
+# ── LISTAR AHORROS ──────────────────────────────────────────────────────────
 
 @login_required
 def listar(request):
+    """Vista principal de ahorros: lista metas con estadisticas."""
     estado = request.GET.get("estado")
     texto = request.GET.get("texto")
     ahorros = AhorroMeta.objects.filter(usuario=request.user)
@@ -36,7 +48,6 @@ def listar(request):
     cantidad_metas = ahorros.count()
     metas_completadas = ahorros.filter(estado=AhorroMeta.Estado.COMPLETADO).count()
     
-    # Calcular la proxima_meta basándose en los aportes pendientes
     proxima_meta = AporteAhorro.objects.filter(
         ahorro__usuario=request.user, 
         estado_ap=AporteAhorro.EstadoAp.PENDIENTE
@@ -54,115 +65,23 @@ def listar(request):
         "proxima_meta": proxima_meta,
         "categorias": categorias_ahorro,
     })
-    
-
-#validaciones para crear ahorro
-def calcular_periodo(frecuencia):
-    mapa = {
-        'DIARIA': 1,
-        'SEMANAL': 7,
-        'QUINCENAL': 15,
-        'MENSUAL': 30,
-        'TRIMESTRAL': 90,
-        'SEMESTRAL': 180,
-        'ANUAL': 365
-    }
-
-    return mapa.get(frecuencia, 30)  # default mensual
-
-def sumar_frecuencia(fecha, frecuencia):
-    dias = calcular_periodo(frecuencia)
-    return fecha + timedelta(days=dias)
-
-def calcular_campo_faltante(fecha_meta, cuotas, frecuencia):
-    hoy = date.today()
-
-    if not fecha_meta and not cuotas:
-        raise ValueError("Debes enviar fecha_meta o cuotas")
-
-    #calcular cuotas
-    if not cuotas:
-        dias = max(1, (fecha_meta - hoy).days)
-        periodo = calcular_periodo(frecuencia)
-        cuotas = max(1, dias // periodo)
-
-    #calcular fecha
-    if not fecha_meta:
-        fecha_calculada = hoy
-        for _ in range(cuotas):
-            fecha_calculada = sumar_frecuencia(fecha_calculada, frecuencia)
-        return fecha_calculada, cuotas
-
-    return fecha_meta, cuotas
 
 
-def generar_cuotas_preview(ahorro):
-    if ahorro.cantidad_cuotas <= 0:
-        raise ValueError("La cantidad de cuotas debe ser mayor a 0")
-
-    cuotas = []
-    fecha = ahorro.fecha_creacion + timedelta(days=1)
-
-    monto_total = ahorro.monto_meta or Decimal('0.00')
-    cantidad = ahorro.cantidad_cuotas
-
-    monto_base = Decimal('0.00')
-    resto = Decimal('0.00')
-
-    if monto_total > 0:
-        monto_base = (monto_total / cantidad).quantize(
-            Decimal('0.01'), rounding=ROUND_HALF_UP
-        )
-        total_calculado = monto_base * cantidad
-        resto = monto_total - total_calculado
-
-    for i in range(cantidad):
-        if i > 0:
-            fecha = sumar_frecuencia(fecha, ahorro.frecuencia)
-
-        cuota = AporteAhorro(
-            ahorro=ahorro,
-            estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
-            fecha_limite=fecha,
-            aporte_asignado=(
-                monto_base + resto if i == cantidad - 1 else monto_base
-            )
-        )
-
-        cuotas.append(cuota)
-
-    return cuotas
-
-def generar_cuotas(ahorro):
-    cuotas = generar_cuotas_preview(ahorro)
-    #  Asegurar relación 
-    for c in cuotas:
-        c.ahorro = ahorro
-    # Guardar en BD
-    AporteAhorro.objects.bulk_create(cuotas)
-    return cuotas
-
-# CREAR AHORRO
+# ── CREAR AHORRO ────────────────────────────────────────────────────────────
 
 @login_required
 @transaction.atomic
 def crear_ahorro(request):
+    """Crea una nueva meta de ahorro con sus cuotas generadas."""
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
     if request.method == "POST":
         form = AhorroMetaForm(request.POST)
 
         if form.is_valid():
-
-            #Crear entidad sin guardar 
             ahorro = form.save(commit=False)
-
-            #Asignar usuario
             ahorro.usuario = request.user
 
-            #calcular campo faltante 
-            if ahorro.fecha_meta and ahorro.fecha_meta < date.today():
-                raise ValueError("La fecha meta no puede ser pasada")
-            
             fecha_meta, cuotas = calcular_campo_faltante(
                 ahorro.fecha_meta,
                 ahorro.cantidad_cuotas,
@@ -170,139 +89,53 @@ def crear_ahorro(request):
             )
             ahorro.fecha_meta = fecha_meta
             ahorro.cantidad_cuotas = cuotas
-
-            # valores por defecto 
             ahorro.total_acumulado = Decimal('0.00')
 
             if not ahorro.estado:
                 ahorro.estado = AhorroMeta.Estado.SIN_INICIAR
 
             ahorro.save()
-
             generar_cuotas(ahorro)
 
+            if es_ajax:
+                return JsonResponse({'ok': True, 'message': 'Meta creada exitosamente'})
             return redirect("ahorros:listar_ahorros")
+
+        else:
+            if es_ajax:
+                errores = {campo: list(errs) for campo, errs in form.errors.items()}
+                return JsonResponse({'ok': False, 'errors': errores}, status=400)
 
     else:
         form = AhorroMetaForm()
 
-    return render(request, "ahorros/crear.html", {"form": form})
+    categorias_ahorro = Categoria.objects.filter(tipo=Categoria.TipoCategoria.AHORRO, activo=True)
+    return render(request, "ahorros/crear.html", {"form": form, "categorias": categorias_ahorro})
 
 
-#validaciones para editar ahorro
-def recalcular_aportes_restantes(ahorro):
-    aportes = list(AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite'))
-    # sumar aportado
-    aportado = sum(
-        (a.aporte if a.aporte else Decimal('0.00'))
-        for a in aportes
-        if a.estado_ap == AporteAhorro.EstadoAp.APORTADO
-    )
-    monto_meta = ahorro.monto_meta or Decimal('0.00')
-    restante = monto_meta - aportado
+# ── EDITAR AHORRO ───────────────────────────────────────────────────────────
 
-    if restante <= Decimal('0.00'):
-        return
-    
-    # pendientes
-    pendientes = [
-        a for a in aportes
-        if a.estado_ap == AporteAhorro.EstadoAp.PENDIENTE
-    ]
-
-    cuotas_faltantes = len(pendientes)
-
-    if cuotas_faltantes == 0:
-        return
-
-    # base
-    asignado_base = (restante / cuotas_faltantes).quantize(
-        Decimal('0.01'), rounding=ROUND_HALF_UP
-    )
-
-    # asignar
-    for p in pendientes:
-        p.aporte_asignado = asignado_base
-
-    AporteAhorro.objects.bulk_update(pendientes, ['aporte_asignado'])
-
-    #corregir diferencia
-    suma_asignados = sum(
-        (p.aporte_asignado or Decimal('0.00'))
-        for p in pendientes
-    )
-
-    diff = (restante - suma_asignados).quantize(
-        Decimal('0.01'), rounding=ROUND_HALF_UP
-    )
-
-    if diff != Decimal('0.00') and pendientes:
-        ultima = pendientes[-1]
-        ultima.aporte_asignado = (ultima.aporte_asignado or Decimal('0.00')) + diff
-        ultima.save()
-        
-
-def recalcular_aportes(ahorro):
-    todas = list(AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite'))
-    # separar
-    aportadas = [
-        a for a in todas
-        if a.estado_ap == AporteAhorro.EstadoAp.APORTADO
-    ]
-    pendientes = [
-        a for a in todas
-        if a.estado_ap in [
-            AporteAhorro.EstadoAp.PENDIENTE,
-            AporteAhorro.EstadoAp.PERDIDO
-        ]
-    ]
-    # eliminar pendientes/perdidas
-    if pendientes:
-        AporteAhorro.objects.filter(id__in=[p.id for p in pendientes]).delete()
-    # generar TODAS las cuotas nuevas
-    cuotas_nuevas = generar_cuotas_preview(ahorro)
-    cuotas_aportadas_count = len(aportadas)
-    
-    if len(cuotas_nuevas) < cuotas_aportadas_count:
-        raise ValueError(
-            "No se puede reducir cuotas por debajo de las ya aportadas"
-        )
-
-    # solo nuevas
-    cuotas_a_registrar = cuotas_nuevas[cuotas_aportadas_count:]
-    #asignar ahorro
-    for c in cuotas_a_registrar:
-        c.ahorro = ahorro
-        
-    if cuotas_a_registrar:
-        AporteAhorro.objects.bulk_create(cuotas_a_registrar)
-
-    recalcular_aportes_restantes(ahorro)
-
-
-def recalcular_fechas_cuotas(ahorro):
-    cuotas = list(
-        AporteAhorro.objects
-        .filter(ahorro=ahorro)
-        .order_by('fecha_limite'))
-
-    nuevas = generar_cuotas_preview(ahorro)
-
-    if len(nuevas) < len(cuotas):
-        raise ValueError("No hay suficientes cuotas nuevas para reasignar fechas")
-
-    for i, cuota in enumerate(cuotas):
-        if cuota.estado_ap == AporteAhorro.EstadoAp.APORTADO:
-            continue 
-
-        cuota.fecha_limite = nuevas[i].fecha_limite
-
-    AporteAhorro.objects.bulk_update(cuotas, ['fecha_limite'])  
-#  EDITAR AHORRO
 @login_required
 @transaction.atomic
 def editar_ahorro(request, id):
-    ahorro = get_object_or_404(AhorroMeta,id=id,usuario=request.user)
+    """Edita una meta existente y recalcula sus cuotas."""
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    ahorro = get_object_or_404(AhorroMeta, id=id, usuario=request.user)
+
+    if request.method == "GET" and es_ajax:
+        return JsonResponse({
+            'ok': True,
+            'ahorro': {
+                'id': ahorro.id,
+                'categoria_id': ahorro.categoria_id,
+                'categoria_nombre': ahorro.categoria.nombre if ahorro.categoria else '',
+                'monto_meta': str(ahorro.monto_meta),
+                'frecuencia': ahorro.frecuencia,
+                'fecha_meta': ahorro.fecha_meta.strftime('%Y-%m-%d') if ahorro.fecha_meta else '',
+                'cantidad_cuotas': ahorro.cantidad_cuotas,
+                'descripcion': ahorro.descripcion or '',
+            }
+        })
 
     if request.method == "POST":
         form = AhorroMetaForm(request.POST, instance=ahorro)
@@ -310,10 +143,7 @@ def editar_ahorro(request, id):
         if form.is_valid():
             ahorro = form.save(commit=False)
             ahorro.usuario = request.user
-            
-            if ahorro.frecuencia is None:
-                raise ValueError("La frecuencia es obligatoria")
-            
+
             fecha_meta, cuotas = calcular_campo_faltante(
                 ahorro.fecha_meta,
                 ahorro.cantidad_cuotas,
@@ -321,106 +151,62 @@ def editar_ahorro(request, id):
             )
             ahorro.fecha_meta = fecha_meta
             ahorro.cantidad_cuotas = cuotas
-            
+
             ahorro.save()
             recalcular_aportes(ahorro)
             recalcular_fechas_cuotas(ahorro)
+
+            if es_ajax:
+                return JsonResponse({'ok': True, 'message': 'Meta actualizada exitosamente'})
             return redirect("ahorros:listar_ahorros")
+
+        else:
+            if es_ajax:
+                errores = {campo: list(errs) for campo, errs in form.errors.items()}
+                return JsonResponse({'ok': False, 'errors': errores}, status=400)
+
     else:
         form = AhorroMetaForm(instance=ahorro)
 
-    return render(request, "ahorros/editar.html", {"form": form,"ahorro": ahorro})
-    
-    
-# ELIMINAR AHORRO
+    categorias_ahorro = Categoria.objects.filter(tipo=Categoria.TipoCategoria.AHORRO, activo=True)
+    return render(request, "ahorros/editar.html", {"form": form, "ahorro": ahorro, "categorias": categorias_ahorro})
+
+
+# ── ELIMINAR AHORRO ─────────────────────────────────────────────────────────
+
 @login_required
 @transaction.atomic
 def eliminar_ahorro(request, id):
-    ahorro = get_object_or_404(AhorroMeta,id=id,usuario=request.user)
-    
+    """Elimina una meta y todos sus aportes asociados."""
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    ahorro = get_object_or_404(AhorroMeta, id=id, usuario=request.user)
+
     if request.method == "POST":
-        # eliminar aportes relacionados
         AporteAhorro.objects.filter(ahorro=ahorro).delete()
-        # eliminar ahorro
         ahorro.delete()
+        if es_ajax:
+            return JsonResponse({'ok': True, 'message': 'Meta eliminada exitosamente'})
         return redirect("ahorros:listar_ahorros")
-        
+
+    if es_ajax:
+        return JsonResponse({
+            'ok': True,
+            'nombre': ahorro.categoria.nombre if ahorro.categoria else 'esta meta',
+            'descripcion': ahorro.descripcion or '',
+        })
+
     return render(request, "ahorros/eliminar.html", {"ahorro": ahorro})
 
 
-#   APORTES
+# ── REGISTRAR APORTE ────────────────────────────────────────────────────────
 
-#listas aportes de un ahorro
-def obtener_aportes_por_meta(meta_id, usuario):
-    
-    meta = get_object_or_404(AhorroMeta,id=meta_id,usuario=usuario)
-    aportes = AporteAhorro.objects.filter(ahorro=meta).order_by('fecha_limite')
-    return aportes
-
-#pasar cuotas a perdidas
-def pasar_cuotas_a_perdidas(ahorro):
-   # Busca todas las cuotas pendientes cuya fecha límite es menor a hoy y las marca como PERDIDO
-    hoy = date.today()
-   # Filtramos: mismo ahorro, estado pendiente y fecha ya pasada
-    cuotas_vencidas = AporteAhorro.objects.filter(
-        ahorro=ahorro,
-        estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
-        fecha_limite__lt=hoy
-        )
-    cuotas_vencidas.update(estado_ap=AporteAhorro.EstadoAp.PERDIDO)
-    
-def cuota_disponible_pago(cuota, frecuencia):
-    
-    if cuota is None:
-        return False
-    
-    hoy = date.today()
-    limite = cuota.fecha_limite
-    if frecuencia == AhorroMeta.Frecuencia.DIARIA:
-        return limite <= hoy + timedelta(days=3)
-    elif frecuencia == AhorroMeta.Frecuencia.SEMANAL:
-        return limite <= hoy + timedelta(days=7)
-    elif frecuencia == AhorroMeta.Frecuencia.QUINCENAL:
-        return limite <= hoy + timedelta(days=15)
-    elif frecuencia == AhorroMeta.Frecuencia.MENSUAL:
-        return limite <= hoy + relativedelta(months=1)
-    elif frecuencia == AhorroMeta.Frecuencia.TRIMESTRAL:
-        return limite <= hoy + relativedelta(months=3)
-    elif frecuencia == AhorroMeta.Frecuencia.SEMESTRAL:
-        return limite <= hoy + relativedelta(months=6)
-    elif frecuencia == AhorroMeta.Frecuencia.ANUAL:
-        return limite <= hoy + relativedelta(years=1)
-    return limite <= hoy + timedelta(days=3) 
-
-def abandono_ahorro(ahorro):
-    todas = list(AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite'))
-    
-    if len(todas) < 3:
-        return
-    
-    ultimas_3 = todas[-3:]
-    if all(a.estado_ap == AporteAhorro.EstadoAp.PERDIDO for a in ultimas_3):
-        ahorro.estado = AhorroMeta.Estado.ABANDONADO
-        
-def find_cuota_disponible(meta_id, usuario):
-    meta = get_object_or_404(AhorroMeta,id=meta_id,usuario=usuario)
-    cuotas = AporteAhorro.objects.filter(ahorro=meta).order_by('fecha_limite')
-
-    for c in cuotas:
-        if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE:
-            if cuota_disponible_pago(c, meta.frecuencia):
-                return c
-    return None
-
-def obtener_cuota_disponible(meta_id, usuario):
-    cuota = find_cuota_disponible(meta_id, usuario)
-    return cuota 
-
-
-# REGISTRAR APORTE
 @login_required
 @transaction.atomic
 def registrar_aporte(request, meta_id, aporte_id=None):
+    """
+    GET: Renderiza el parcial HTML de detalle de meta con tabla de cuotas.
+    POST: Registra un aporte en una cuota, actualiza dashboard y estado.
+    """
     usuario = request.user
     ahorro = get_object_or_404(AhorroMeta, id=meta_id, usuario=usuario)
 
@@ -430,39 +216,38 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         perdidas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
         pendientes = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
 
-        # Si es un GET tradicional pero viene de modal (fetch) está ok, retorna HTML puro
         return render(request, "ahorros/aporte.html", {
             "ahorro": ahorro,
             "cuotas": cuotas,
             "pagadas": pagadas,
             "perdidas": perdidas,
-            "pendientes": pendientes
+            "pendientes": pendientes,
         })
 
     monto_input = request.POST.get("aporte")
     aporte_ingresado = Decimal(monto_input or '0.00')
-    
+
     # Capturar aporte_id desde POST si viene de la tabla
     post_aporte_id = request.POST.get("aporte_id")
     if post_aporte_id and not aporte_id:
         aporte_id = post_aporte_id
 
     if aporte_ingresado <= Decimal('0.00'):
-        return JsonResponse({"success": False, "error": "El monto del aporte debe ser mayor que cero."})
+        return JsonResponse({"ok": False, "error": "El monto del aporte debe ser mayor que cero."})
 
     hoy = date.today()
 
     resumen = ResumenMensual.objects.filter(
         usuario=usuario,
         mes=hoy.month,
-        anio=hoy.year
+        anio=hoy.year,
     ).select_for_update().first()
 
     if not resumen:
-        return JsonResponse({"success": False, "error": "No existe un resumen mensual"})
+        return JsonResponse({"ok": False, "error": "No existe un resumen mensual"})
 
     if resumen.disponible <= Decimal('0.00'):
-        return JsonResponse({"success": False, "error": "No tienes saldo disponible para realizar aportes."})
+        return JsonResponse({"ok": False, "error": "No tienes saldo disponible para realizar aportes."})
 
     pasar_cuotas_a_perdidas(ahorro)
 
@@ -474,30 +259,30 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         cuota_temp = find_cuota_disponible(meta_id, usuario)
 
         if not cuota_temp:
-            return JsonResponse({"success": False, "error": "No hay cuota disponible para aportar hoy."})
+            return JsonResponse({"ok": False, "error": "No hay cuota disponible para aportar hoy."})
 
         cuota = AporteAhorro.objects.select_for_update().get(id=cuota_temp.id)
 
     if cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE:
-        return JsonResponse({"success": False, "error": f"La cuota no está disponible (estado={cuota.estado_ap})"})
+        return JsonResponse({"ok": False, "error": f"La cuota no esta disponible (estado={cuota.estado_ap})"})
 
     if cuota.aporte is not None:
-        return JsonResponse({"success": False, "error": "Esta cuota ya tiene un aporte registrado."})
+        return JsonResponse({"ok": False, "error": "Esta cuota ya tiene un aporte registrado."})
 
     if not cuota_disponible_pago(cuota, ahorro.frecuencia):
-        return JsonResponse({"success": False, "error": "La cuota no está disponible para pago todavía."})
-        
-    # registrar aporte
+        return JsonResponse({"ok": False, "error": "La cuota no esta disponible para pago todavia."})
+
+    # Registrar aporte
     cuota.aporte = aporte_ingresado
     cuota.estado_ap = AporteAhorro.EstadoAp.APORTADO
     cuota.save()
 
-    # ACTUALIZAR DASHBOARD
+    # Actualizar dashboard
     resumen.disponible -= aporte_ingresado
     resumen.total_ahorros += aporte_ingresado
     resumen.save()
 
-    # actualizar acumulado ahorro
+    # Actualizar acumulado del ahorro
     total_acumulado = ahorro.total_acumulado or Decimal('0.00')
     total_acumulado += aporte_ingresado
 
@@ -510,7 +295,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     if ahorro.estado in [
         AhorroMeta.Estado.SIN_INICIAR,
-        AhorroMeta.Estado.ABANDONADO
+        AhorroMeta.Estado.ABANDONADO,
     ]:
         ahorro.estado = AhorroMeta.Estado.ACTIVO
 
@@ -525,4 +310,4 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     ahorro.save()
 
-    return JsonResponse({"success": True})
+    return JsonResponse({"ok": True, "message": "Aporte registrado exitosamente"})

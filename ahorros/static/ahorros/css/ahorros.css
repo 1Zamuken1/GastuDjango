@@ -1,3 +1,7 @@
+/* ═══════════════════════════════════════════════════════════
+   ahorros.css — App Ahorros · GastuApp
+   ═══════════════════════════════════════════════════════════ */
+
 /* ── Hero 2 columnas ─────────────────────────────── */
 .stats-hero {
   display: grid;
@@ -13,7 +17,7 @@
 }
 
 .hero-total {
-  background: #dfaa0e;
+  background: #eab308;
   border-radius: .875rem;
   padding: .875rem 1.25rem;
   display: flex;
@@ -23,13 +27,13 @@
   text-align: center;
   gap: .35rem;
   border: none;
-  box-shadow: 0 4px 20px rgba(161, 98, 7, 0.25);
+  box-shadow: 0 4px 20px rgba(234, 179, 8, 0.3);
   transition: transform .15s, box-shadow .15s;
 }
 
 .hero-total:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(202, 138, 4, 0.35);
+  box-shadow: 0 8px 28px rgba(234, 179, 8, 0.4);
 }
 
 .hero-total__top {
@@ -88,6 +92,7 @@
   border-radius: 9999px;
 }
 
+/* ── App card ─────────────────────────────────────── */
 .app-card {
   background: #fff;
   border-radius: .875rem;
@@ -95,6 +100,7 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+/* ── Hero stats ───────────────────────────────────── */
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -140,7 +146,7 @@
 .hero-stat__label svg {
   width: .9rem;
   height: .9rem;
-  color: #d97706;
+  color: #eab308;
 }
 
 .hero-stat__value {
@@ -157,19 +163,324 @@
   font-weight: 500;
 }
 
-/* Botones Primary Ahorros */
-.btn-primary {
-  background: #eab308 !important;
-  color: #fff !important;
-  border-color: #eab308 !important;
+/* ── Toolbar ──────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .875rem 1.25rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
 }
 
-.btn-primary:hover {
-  background: #ca8a04 !important;
-  border-color: #ca8a04 !important;
+.toolbar__search {
+  width: min(380px, 100%);
+  position: relative;
 }
 
-/* ── Grid de categorías (Metas de Ahorro) ──────────────────────────── */
+.toolbar__search input {
+  width: 100%;
+  padding: .5rem .75rem .5rem 2.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: .625rem;
+  font-size: .875rem;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color .15s, background .15s;
+  box-sizing: border-box;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.toolbar__search input:focus {
+  border-color: #eab308;
+  background: #fff;
+}
+
+.toolbar__search-icon {
+  position: absolute;
+  left: .65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* ── Botones de exportación ───────────────────────── */
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .45rem .85rem;
+  border-radius: .5rem;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: background .15s, transform .1s;
+  background: #fff;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.btn-export:hover {
+  transform: translateY(-1px);
+}
+
+.btn-export--pdf {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.btn-export--pdf:hover {
+  background: #fef2f2;
+}
+
+.btn-export--excel {
+  border-color: #86efac;
+  color: #16a34a;
+}
+
+.btn-export--excel:hover {
+  background: #f0fdf4;
+}
+
+.btn-export--csv {
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+
+.btn-export--csv:hover {
+  background: #eff6ff;
+}
+
+/* ── Botones Primary (scoped a ahorros — NO contamina otras apps) ── */
+/* Se usa la clase wrapper .ahorros-scope que se pone en el body de la app */
+.ahorros-scope .btn-primary,
+#app-content .btn-primary-ahorro {
+  background: #eab308;
+  color: #fff;
+  border-color: #eab308;
+}
+.ahorros-scope .btn-primary:hover,
+#app-content .btn-primary-ahorro:hover {
+  background: #ca8a04;
+  border-color: #ca8a04;
+  box-shadow: 0 6px 20px rgba(234,179,8,0.3);
+}
+
+/* ── Boton puntual amber para usar dentro del layout ── */
+.btn-amber {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: #eab308;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.btn-amber:hover {
+  background: #ca8a04;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(234,179,8,0.3);
+}
+
+/* ── Formulario de ahorro (modal o página) ─────────── */
+.form-ahorros p {
+  margin-bottom: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.form-ahorros label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.form-ahorros input[type="text"],
+.form-ahorros input[type="number"],
+.form-ahorros input[type="date"],
+.form-ahorros select,
+.form-ahorros textarea {
+  width: 100%;
+  padding: 0.6rem 0.875rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  outline: none;
+  box-sizing: border-box;
+  font-family: 'DM Sans', sans-serif;
+}
+.form-ahorros input:focus,
+.form-ahorros select:focus,
+.form-ahorros textarea:focus {
+  background: white;
+  border-color: #eab308;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+.form-ahorros .errorlist {
+  color: #ef4444;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+  padding-left: 0;
+  list-style: none;
+}
+.form-ahorros .helptext {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+.form-ahorros__errors {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+}
+.form-ahorros__errors-text {
+  font-size: 0.82rem;
+  color: #991b1b;
+  font-weight: 500;
+}
+
+/* ── Picker de categorías (ahorros) ───────────────── */
+.picker-cat-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.875rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: 'DM Sans', sans-serif;
+  gap: 0.5rem;
+  text-align: left;
+}
+.picker-cat-btn:hover,
+.picker-cat-btn.selected {
+  border-color: #eab308;
+  background: #fff;
+  color: #0f172a;
+}
+.picker-cat-btn.selected {
+  box-shadow: 0 0 0 3px rgba(234,179,8,0.1);
+}
+.picker-cat-label {
+  flex: 1;
+}
+.picker-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.625rem;
+  padding: 1.1rem 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+  background: #f8fafc;
+}
+.picker-cat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 0.5rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.875rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  font-family: 'DM Sans', sans-serif;
+  text-align: center;
+}
+.picker-cat-card:hover {
+  border-color: #eab308;
+  box-shadow: 0 2px 12px rgba(234,179,8,0.15);
+  transform: translateY(-1px);
+}
+.picker-cat-card.selected {
+  border-color: #eab308;
+  background: #fffbeb;
+  box-shadow: 0 0 0 3px rgba(234,179,8,0.15);
+}
+.picker-cat-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.625rem;
+  background: #fef08a;
+  color: #b45309;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.picker-cat-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+.picker-cat-nombre {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.2;
+}
+
+/* ── Modal de meta (crear/editar) EXTRA GRANDE ─────── */
+.modal--meta {
+  width: min(560px, 95vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal--meta .modal__body {
+  overflow-y: auto;
+  flex: 1;
+}
+.modal--picker {
+  width: min(520px, 95vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal--eliminar {
+  width: min(420px, 95vw);
+}
+.modal-overlay--z1100 {
+  z-index: 1100;
+}
+.modal-overlay--z1200 {
+  z-index: 1200;
+}
+
+/* ── Grid de categorías (Metas de Ahorro) ─────────── */
 .categorias-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -233,6 +544,7 @@
   margin: 0 0 .5rem;
 }
 
+/* ── Barra de progreso ────────────────────────────── */
 .progress-bar {
   height: 6px;
   background: #cbd5e1;
@@ -268,4 +580,471 @@
   padding: 3rem 1rem;
   color: #64748b;
   font-size: .9rem;
+}
+
+/* ── Modal overlay ────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.modal-overlay[hidden] {
+  display: none !important;
+}
+
+.modal {
+  background: white;
+  border-radius: 1.25rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: modalIn .22s cubic-bezier(.34, 1.3, .64, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal__title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.modal__subtitle {
+  font-size: .8rem;
+  color: #64748b;
+  display: block;
+  margin-top: .15rem;
+}
+
+.modal__close {
+  width: 2rem;
+  height: 2rem;
+  border-radius: .5rem;
+  border: 1px solid #e2e8f0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+
+.modal__close:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.modal__body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal__footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: .625rem;
+}
+
+/* ── Form fields ──────────────────────────────────── */
+.field-label {
+  display: block;
+  font-size: .75rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: .35rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.field-input {
+  width: 100%;
+  padding: .6rem .875rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: .75rem;
+  font-size: .875rem;
+  color: #0f172a;
+  background: #f8fafc;
+  transition: border-color .15s, background .15s;
+  outline: none;
+  box-sizing: border-box;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.field-input:focus {
+  border-color: #eab308;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+
+/* ── Toast ────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.7s linear infinite; display: inline-block; }
+
+/* ── Botones de accion en card ────────────────────── */
+.card-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: transparent;
+  transition: background .15s;
+  cursor: pointer;
+}
+
+.card-action-btn--edit {
+  color: #64748b;
+}
+.card-action-btn--edit:hover {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #16a34a;
+}
+
+.card-action-btn--delete {
+  color: #ef4444;
+}
+.card-action-btn--delete:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* ── Detalle de meta (modal aporte) ───────────────── */
+.detalle-modal {
+  width: min(800px, 95vw);
+  max-width: none;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.detalle-modal__body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.detalle-modal__content {
+  padding: 1.25rem 1.5rem;
+}
+
+/* Grid de especificaciones */
+.specs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.specs-grid__label {
+  margin-bottom: .2rem;
+}
+
+.specs-grid__value {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: .9rem;
+  margin: 0;
+}
+
+.specs-grid__value--accent {
+  color: #eab308;
+}
+
+/* Resumen de cuotas */
+.cuotas-resumen {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: .75rem;
+  padding: .875rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.cuotas-resumen__text {
+  font-size: .85rem;
+  font-weight: 600;
+  color: #065f46;
+  margin: 0;
+}
+
+/* Tabla de cuotas */
+.cuotas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .85rem;
+}
+
+.cuotas-table thead tr {
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.cuotas-table th {
+  padding: .5rem .75rem .5rem 0;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.cuotas-table th--right {
+  text-align: right;
+}
+
+.cuotas-table th--aporte {
+  width: 220px;
+}
+
+.cuotas-table tbody tr {
+  border-bottom: 1px solid #f8fafc;
+  transition: background .1s;
+}
+
+.cuotas-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.cuotas-table td {
+  padding: .625rem .75rem .625rem 0;
+}
+
+.cuotas-table__num {
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.cuotas-table__monto {
+  color: #475569;
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cuotas-table__fecha {
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cuotas-table__aportado {
+  font-weight: 600;
+  color: #475569;
+}
+
+.cuotas-table__empty td {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  font-size: .85rem;
+}
+
+/* Form inline dentro de tabla cuotas */
+.form-aporte-inline {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  max-width: 200px;
+}
+
+.form-aporte-inline__wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.form-aporte-inline__prefix {
+  position: absolute;
+  left: .5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-weight: 700;
+  font-size: .75rem;
+  pointer-events: none;
+}
+
+.form-aporte-inline__input {
+  width: 100%;
+  padding: .4rem .5rem .4rem 1.4rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: .5rem;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color .15s;
+}
+
+.form-aporte-inline__input:focus {
+  border-color: #eab308;
+}
+
+.form-aporte-inline__submit {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: .5rem;
+  padding: .4rem .5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+
+.form-aporte-inline__submit:hover {
+  background: #059669;
+}
+
+/* Badges de estado */
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  padding: .15rem .55rem;
+  border-radius: .375rem;
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.badge-estado--aportado {
+  background: #10b981;
+  color: #fff;
+}
+
+.badge-estado--pendiente {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-estado--perdido {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Badge de estado para especificaciones */
+.badge-estado-meta {
+  display: inline-flex;
+  align-items: center;
+  padding: .2rem .6rem;
+  border-radius: .375rem;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.badge-estado-meta--activo {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-estado-meta--completado {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-estado-meta--abandonado {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.badge-estado-meta--sin-iniciar {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* Botones de accion en card de metas */
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.card-actions .btn-amber {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+  gap: 0.25rem;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 768px) {
+  .toolbar {
+    gap: .5rem;
+    padding: .75rem 1rem;
+  }
+
+  .toolbar__search {
+    width: 100%;
+    order: 1;
+  }
+
+  .toolbar__actions {
+    width: 100%;
+    order: 2;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .btn-export span,
+  .btn-export i + * {
+    display: none;
+  }
+
+  .btn-export {
+    padding: .45rem .6rem;
+  }
+
+  .specs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-stat {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .hero-stat:last-child {
+    border-bottom: none;
+  }
+
+  .categorias-grid {
+    grid-template-columns: 1fr;
+  }
 }
