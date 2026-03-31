@@ -1,6 +1,6 @@
 """
 Vistas de exportación de movimientos.
-Soporta CSV, Excel (openpyxl) y PDF (reportlab).
+Soporta CSV, Excel (openpyxl) y PDF (xhtml2pdf).
 
 Parámetros GET comunes:
 - tipo        : INGRESO | EGRESO | AMBOS
@@ -14,8 +14,10 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.staticfiles import finders
 from django.db.models import Q, Sum
 from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 from categorias.models import Categoria
@@ -221,121 +223,46 @@ def exportar_excel(request):
 
 @login_required
 def exportar_pdf(request):
-    """Exporta movimientos a PDF usando reportlab."""
+    """Exporta movimientos a PDF usando xhtml2pdf con plantilla corporativa Gastu."""
     try:
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4, landscape
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import cm
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from xhtml2pdf import pisa
     except ImportError:
-        return HttpResponse('reportlab no está instalado. Ejecuta: pip install reportlab', status=500)
+        return HttpResponse('xhtml2pdf no está instalado. Ejecuta: pip install xhtml2pdf', status=500)
 
     qs, fecha_desde, fecha_hasta, tipo = _build_qs(request)
     nombre = _nombre_archivo(tipo, fecha_desde, fecha_hasta, 'pdf')
+    total_ingresos, total_egresos, balance = _resumen(qs)
+
+    tipo_str = {'INGRESO': 'Ingresos', 'EGRESO': 'Egresos', 'AMBOS': 'Ingresos y Egresos'}.get(tipo, tipo)
+
+    # Ruta absoluta del logo para xhtml2pdf (requiere path del sistema de archivos)
+    logo_path = finders.find('img/gastu_logo_rostro.png')
+    if logo_path:
+        logo_path = logo_path.replace('\\', '/')
+
+    contexto = {
+        'logo_path':        logo_path,
+        'tipo_str':         tipo_str,
+        'fecha_desde':      fecha_desde.strftime('%d/%m/%Y'),
+        'fecha_hasta':      fecha_hasta.strftime('%d/%m/%Y'),
+        'usuario':          request.user.get_full_name() or request.user.username,
+        'fecha_generacion': timezone.now().strftime('%d/%m/%Y %H:%M'),
+        'movimientos':      list(qs),
+        'total_ingresos':   total_ingresos,
+        'total_egresos':    total_egresos,
+        'balance':          balance,
+        'cantidad':         qs.count(),
+    }
+
+    html_string = render_to_string('movimientos/reporte_pdf.html', contexto)
 
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=landscape(A4),
-        leftMargin=1.5*cm, rightMargin=1.5*cm,
-        topMargin=1.5*cm, bottomMargin=1.5*cm,
-    )
+    pisa_status = pisa.CreatePDF(html_string, dest=buffer)
 
-    styles = getSampleStyleSheet()
-    COLOR_HEADER  = colors.HexColor('#0F172A')
-    COLOR_INGRESO = colors.HexColor('#D1FAE5')
-    COLOR_EGRESO  = colors.HexColor('#FFEDD5')
-    COLOR_TOTAL   = colors.HexColor('#F1F5F9')
-    COLOR_TEXT    = colors.HexColor('#334155')
+    if pisa_status.err:
+        return HttpResponse('Error al generar el PDF. Intenta nuevamente.', status=500)
 
-    estilo_titulo = ParagraphStyle(
-        'titulo', parent=styles['Normal'],
-        fontSize=14, fontName='Helvetica-Bold',
-        textColor=colors.white, spaceAfter=4,
-    )
-    estilo_sub = ParagraphStyle(
-        'sub', parent=styles['Normal'],
-        fontSize=9, fontName='Helvetica',
-        textColor=colors.HexColor('#64748b'), spaceAfter=12,
-    )
-
-    elementos = []
-
-    # Encabezado del reporte
-    tipo_str = {'INGRESO': 'Ingresos', 'EGRESO': 'Egresos', 'AMBOS': 'Ingresos y Egresos'}[tipo]
-    header_data = [[
-        Paragraph(f'<font color="white"><b>GastuApp — {tipo_str}</b></font>', styles['Normal']),
-        Paragraph(
-            f'<font color="#94a3b8">{fecha_desde.strftime("%d/%m/%Y")} al {fecha_hasta.strftime("%d/%m/%Y")}'
-            f' · Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}</font>',
-            styles['Normal']
-        ),
-    ]]
-    header_table = Table(header_data, colWidths=['50%', '50%'])
-    header_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), COLOR_HEADER),
-        ('PADDING',    (0,0), (-1,-1), 10),
-        ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
-        ('FONTSIZE',   (0,0), (-1,-1), 10),
-        ('TEXTCOLOR',  (1,0), (1,0),   colors.HexColor('#94a3b8')),
-        ('ALIGN',      (1,0), (1,0),   'RIGHT'),
-    ]))
-    elementos.append(header_table)
-    elementos.append(Spacer(1, 0.4*cm))
-
-    # Tabla de movimientos
-    encabezados = ['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Monto']
-    filas = [encabezados]
-    for m in qs:
-        filas.append([
-            m.fecha_registro.date().strftime('%d/%m/%Y'),
-            m.get_tipo_display(),
-            m.categoria.nombre,
-            m.descripcion or '—',
-            f'${m.monto:,.0f}',
-        ])
-
-    total_ingresos, total_egresos, balance = _resumen(qs)
-    filas.append(['', '', '', 'Total ingresos', f'${total_ingresos:,.0f}'])
-    filas.append(['', '', '', 'Total egresos',  f'${total_egresos:,.0f}'])
-    filas.append(['', '', '', 'Balance',         f'${balance:,.0f}'])
-
-    n_datos = len(filas) - 4  # sin encabezado ni las 3 filas de totales
-
-    tabla = Table(filas, colWidths=[2.8*cm, 2.2*cm, 4.5*cm, 9*cm, 3*cm], repeatRows=1)
-
-    style_cmds = [
-        # Encabezado
-        ('BACKGROUND',  (0,0), (-1,0),  colors.HexColor('#334155')),
-        ('TEXTCOLOR',   (0,0), (-1,0),  colors.white),
-        ('FONTNAME',    (0,0), (-1,0),  'Helvetica-Bold'),
-        ('FONTSIZE',    (0,0), (-1,-1), 8),
-        ('ALIGN',       (4,0), (4,-1),  'RIGHT'),
-        ('ALIGN',       (3,-3),(3,-1),  'RIGHT'),
-        ('FONTNAME',    (0,-3),(-1,-1), 'Helvetica-Bold'),
-        ('BACKGROUND',  (0,-3),(-1,-1), COLOR_TOTAL),
-        ('GRID',        (0,0), (-1,-1), 0.4, colors.HexColor('#e2e8f0')),
-        ('ROWBACKGROUNDS', (0,1), (-1, n_datos),
-         [COLOR_INGRESO, colors.white] if tipo == 'INGRESO'
-         else [COLOR_EGRESO, colors.white] if tipo == 'EGRESO'
-         else [colors.white]),
-        ('PADDING',     (0,0), (-1,-1), 5),
-        ('VALIGN',      (0,0), (-1,-1), 'MIDDLE'),
-    ]
-
-    # Color por tipo en filas mixtas
-    if tipo == 'AMBOS':
-        for i, m in enumerate(qs, 1):
-            color = COLOR_INGRESO if m.tipo == 'INGRESO' else COLOR_EGRESO
-            style_cmds.append(('BACKGROUND', (0,i), (-1,i), color))
-
-    tabla.setStyle(TableStyle(style_cmds))
-    elementos.append(tabla)
-
-    doc.build(elementos)
     buffer.seek(0)
-
     response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{nombre}"'
     return response

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    /* stylelint-disable at-rule-no-unknown */
+    @page {
+      size: letter landscape;
+      margin: 1.5cm 1.5cm;
+      @frame footer {
+        -pdf-frame-content: page-footer;
+        bottom: 0.5cm;
+        margin-left: 1.5cm;
+        margin-right: 1.5cm;
+        height: 1cm;
+      }
+    }
+
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      color: #334155;
+      line-height: 1.4;
+    }
+
+    /* ── Cabecera con marca ── */
+    .header-table {
+      width: 100%;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #10b981;
+    }
+
+    .brand {
+      font-size: 26px;
+      font-weight: bold;
+      color: #0f172a;
+      letter-spacing: -1px;
+      margin: 0;
+    }
+
+    .brand-accent {
+      color: #10b981;
+    }
+
+    .report-title {
+      font-size: 13px;
+      color: #64748b;
+      margin: 4px 0 0;
+    }
+
+    .report-meta {
+      font-size: 9px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    /* ── Bloque de resumen ── */
+    .summary-table {
+      width: 100%;
+      margin-bottom: 20px;
+      border-collapse: collapse;
+    }
+
+    .summary-table td {
+      padding: 10px 14px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+
+    .summary-label {
+      font-size: 9px;
+      font-weight: bold;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .summary-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: #0f172a;
+    }
+
+    .summary-value.income  { color: #059669; }
+    .summary-value.expense { color: #e11d48; }
+    .summary-value.balance-pos { color: #059669; }
+    .summary-value.balance-neg { color: #e11d48; }
+
+    /* ── Tabla de detalle ── */
+    .section-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #0f172a;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .data-table th {
+      background-color: #0f172a;
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .data-table th.right {
+      text-align: right;
+    }
+
+    .data-table td {
+      padding: 6px 10px;
+      font-size: 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .row-ingreso td { background-color: #ecfdf5; }
+    .row-egreso  td { background-color: #fef2f2; }
+
+    .tipo-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 8px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .tipo-ingreso { background-color: #d1fae5; color: #059669; }
+    .tipo-egreso  { background-color: #fee2e2; color: #e11d48; }
+
+    .monto-ingreso { color: #059669; font-weight: bold; text-align: right; }
+    .monto-egreso  { color: #e11d48; font-weight: bold; text-align: right; }
+    .monto-ambos   { color: #0f172a; font-weight: bold; text-align: right; }
+
+    /* ── Fila de totales ── */
+    .totals-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+
+    .totals-table td {
+      padding: 6px 10px;
+      background-color: #f1f5f9;
+      font-size: 10px;
+      font-weight: bold;
+      border: 1px solid #e2e8f0;
+    }
+
+    .totals-table .label { color: #64748b; }
+    .totals-table .val-income  { color: #059669; text-align: right; }
+    .totals-table .val-expense { color: #e11d48; text-align: right; }
+    .totals-table .val-balance { color: #0f172a; text-align: right; }
+
+    /* ── Footer ── */
+    .footer-content {
+      font-size: 8px;
+      color: #94a3b8;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cabecera corporativa -->
+  <table class="header-table">
+    <tr>
+      <td style="width: 160px; vertical-align: middle; text-align: center;">
+        <img src="{{ logo_path }}" width="130">
+      </td>
+      <td style="vertical-align: middle; text-align: left; padding-left: 14px;">
+        <p class="brand">Gastu<span class="brand-accent">.</span></p>
+        <p class="report-title">Reporte de {{ tipo_str }} — {{ fecha_desde }} al {{ fecha_hasta }}</p>
+        <p class="report-meta">Generado por {{ usuario }} el {{ fecha_generacion }}</p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Resumen del período -->
+  <table class="summary-table">
+    <tr>
+      <td>
+        <span class="summary-label">Ingresos</span>
+        <span class="summary-value income">${{ total_ingresos|floatformat:0 }}</span>
+      </td>
+      <td>
+        <span class="summary-label">Egresos</span>
+        <span class="summary-value expense">${{ total_egresos|floatformat:0 }}</span>
+      </td>
+      <td>
+        <span class="summary-label">Balance</span>
+        <span class="summary-value {% if balance >= 0 %}balance-pos{% else %}balance-neg{% endif %}">
+          ${{ balance|floatformat:0 }}
+        </span>
+      </td>
+      <td>
+        <span class="summary-label">Registros</span>
+        <span class="summary-value">{{ cantidad }}</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Detalle de transacciones -->
+  <p class="section-title">Detalle de Transacciones</p>
+
+  {% if movimientos %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width: 12%;">Fecha</th>
+        <th style="width: 10%;">Tipo</th>
+        <th style="width: 18%;">Categoría</th>
+        <th style="width: 42%;">Descripción</th>
+        <th class="right" style="width: 18%;">Monto</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in movimientos %}
+      <tr class="{% if m.tipo == 'INGRESO' %}row-ingreso{% else %}row-egreso{% endif %}">
+        <td>{{ m.fecha_registro|date:"d/m/Y" }}</td>
+        <td>
+          <span class="tipo-badge {% if m.tipo == 'INGRESO' %}tipo-ingreso{% else %}tipo-egreso{% endif %}">
+            {{ m.tipo }}
+          </span>
+        </td>
+        <td>{{ m.categoria.nombre }}</td>
+        <td>{{ m.descripcion|default:"—" }}</td>
+        <td class="{% if m.tipo == 'INGRESO' %}monto-ingreso{% else %}monto-egreso{% endif %}">
+          ${{ m.monto|floatformat:0 }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Totales finales -->
+  <table class="totals-table">
+    <tr>
+      <td class="label">Total ingresos</td>
+      <td class="val-income">${{ total_ingresos|floatformat:0 }}</td>
+      <td class="label">Total egresos</td>
+      <td class="val-expense">${{ total_egresos|floatformat:0 }}</td>
+      <td class="label">Balance</td>
+      <td class="val-balance">${{ balance|floatformat:0 }}</td>
+    </tr>
+  </table>
+
+  {% else %}
+  <p style="text-align:center; color:#94a3b8; padding:20px;">
+    No hay movimientos registrados en el período seleccionado.
+  </p>
+  {% endif %}
+
+  <!-- Footer de página -->
+  <div id="page-footer">
+    <div class="footer-content">
+      Gastu — Tu plataforma de finanzas personales · Reporte generado automáticamente
+    </div>
+  </div>
+
+</body>
+</html>
