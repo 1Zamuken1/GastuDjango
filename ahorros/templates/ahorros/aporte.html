@@ -1,159 +1,147 @@
-<!-- CONTENIDO PARCIAL PARA INYECCIÓN EN MODAL -->
-<div class="modal modal--lg" style="width: min(800px, 95vw); max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; background: white; border-radius: 1.25rem;">
-  
-  <!-- Cabecera (Pegajosa) -->
-  <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50 sticky top-0 z-10">
-    <h2 class="text-xl font-bold font-display text-slate-800">Detalle de Meta</h2>
-    <button type="button" class="text-slate-400 hover:text-slate-600 transition-colors btn-cerrar-modal-aporte" aria-label="Cerrar">
-      <i data-lucide="x" style="width:20px;height:20px;"></i>
+<!-- CONTENIDO PARCIAL PARA INYECCION EN MODAL -->
+<div class="modal detalle-modal">
+
+  <!-- Cabecera -->
+  <div class="modal__header" style="background:linear-gradient(135deg,#0f172a,#1e293b);">
+    <div>
+      <h2 class="modal__title font-display" style="color:#f1f5f9;">Detalle de Meta</h2>
+      <span class="modal__subtitle" style="color:#64748b;">
+        {{ ahorro.categoria.nombre|default:"Meta de Ahorro" }}
+        {% if ahorro.descripcion %} — {{ ahorro.descripcion }}{% endif %}
+      </span>
+    </div>
+    <button type="button" class="modal__close btn-cerrar-modal-aporte"
+            style="border-color:rgba(255,255,255,.2);color:#cbd5e1;background:rgba(255,255,255,.08);"
+            aria-label="Cerrar">
+      <i data-lucide="x"></i>
     </button>
   </div>
 
-  <!-- Cuerpo (Scrollable) -->
-  <div style="overflow-y: auto; flex: 1;">
-    <!-- Error Inyectado -->
-    {% if error %}
-    <div class="mx-6 mt-6 p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
-      <i data-lucide="alert-triangle" style="color: #ef4444; margin-top: 2px; width: 18px; height: 18px;"></i>
-      <div class="text-sm text-red-800 font-medium font-sans mt-0.5" id="modal-error-message">
-        {{ error }}
-      </div>
+  <!-- Cuerpo scrollable -->
+  <div class="detalle-modal__body">
+
+    <!-- Alerta de error (siempre presente, oculta por defecto) -->
+    <div class="form-ahorros__errors" id="modal-error-container"
+         style="margin:1.25rem 1.25rem 0;{% if not error %}display:none;{% endif %}">
+      <i data-lucide="alert-triangle" style="color:#ef4444;width:18px;height:18px;flex-shrink:0;margin-top:1px;"></i>
+      <div class="form-ahorros__errors-text" id="modal-error-message">{% if error %}{{ error }}{% endif %}</div>
     </div>
-    {% endif %}
 
-    <div class="p-6 md:p-8">
-      
+    <div class="detalle-modal__content">
+
       <!-- Especificaciones -->
-      <h3 class="font-bold text-slate-800 text-sm tracking-wide mb-6">Especificaciones</h3>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 mb-8">
-        <!-- Fila 1 -->
-        <div>
-          <p class="text-xs text-slate-500 mb-1">Concepto</p>
-          <p class="font-bold text-slate-900 text-sm">{{ ahorro.categoria.nombre|default:"Otro" }}</p>
-        </div>
-        <div>
-          <p class="text-xs text-slate-500 mb-1">Descripción</p>
-          <p class="font-bold text-slate-900 text-sm">{{ ahorro.descripcion|default:"Sin descripción" }}</p>
-        </div>
+      <h3 class="field-label" style="margin-bottom:1rem;font-size:.7rem;">Especificaciones</h3>
 
-        <!-- Fila 2 -->
+      <div class="specs-grid">
         <div>
-          <p class="text-xs text-slate-500 mb-1">Monto Meta</p>
-          <p class="font-bold text-slate-900 text-sm">$ {{ ahorro.monto_meta|floatformat:2 }}</p>
+          <p class="field-label specs-grid__label">Concepto</p>
+          <p class="specs-grid__value">{{ ahorro.categoria.nombre|default:"Otro" }}</p>
         </div>
         <div>
-          <p class="text-xs text-slate-500 mb-1">Total Acumulado</p>
-          <p class="font-bold text-sm" style="color: #be185d;">$ {{ ahorro.total_acumulado|floatformat:2 }}</p>
-        </div>
-
-        <!-- Fila 3 -->
-        <div>
-          <p class="text-xs text-slate-500 mb-1">Frecuencia</p>
-          <p class="font-bold text-slate-900 text-sm uppercase">{{ ahorro.frecuencia }}</p>
+          <p class="field-label specs-grid__label">Descripcion</p>
+          <p class="specs-grid__value">{{ ahorro.descripcion|default:"Sin descripcion" }}</p>
         </div>
         <div>
-          <p class="text-xs text-slate-500 mb-1">Fecha Meta</p>
-          <p class="font-bold text-slate-900 text-sm">{{ ahorro.fecha_meta|date:"d/m/Y" }}</p>
-        </div>
-
-        <!-- Fila 4 -->
-        <div>
-          <p class="text-xs text-slate-500 mb-1">Cantidad de Cuotas</p>
-          <p class="font-bold text-slate-900 text-sm">{{ ahorro.cantidad_cuotas }}</p>
+          <p class="field-label specs-grid__label">Monto Meta</p>
+          <p class="specs-grid__value">$ {{ ahorro.monto_meta|floatformat:2 }}</p>
         </div>
         <div>
-          <p class="text-xs text-slate-500 mb-1">Estado</p>
-          <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-            {% if ahorro.estado == 'ACTIVO' %}bg-emerald-100 text-emerald-800
-            {% elif ahorro.estado == 'COMPLETADO' %}bg-blue-100 text-blue-800
-            {% elif ahorro.estado == 'ABANDONADO' %}bg-red-100 text-red-800
-            {% else %}bg-slate-100 text-slate-800{% endif %}">
+          <p class="field-label specs-grid__label">Total Acumulado</p>
+          <p class="specs-grid__value specs-grid__value--accent">$ {{ ahorro.total_acumulado|floatformat:2 }}</p>
+        </div>
+        <div>
+          <p class="field-label specs-grid__label">Frecuencia</p>
+          <p class="specs-grid__value" style="text-transform:uppercase;">{{ ahorro.frecuencia }}</p>
+        </div>
+        <div>
+          <p class="field-label specs-grid__label">Fecha Meta</p>
+          <p class="specs-grid__value">{{ ahorro.fecha_meta|date:"d/m/Y" }}</p>
+        </div>
+        <div>
+          <p class="field-label specs-grid__label">Cuotas totales</p>
+          <p class="specs-grid__value">{{ ahorro.cantidad_cuotas }}</p>
+        </div>
+        <div>
+          <p class="field-label specs-grid__label">Estado</p>
+          <span class="badge-estado-meta
+            {% if ahorro.estado == 'ACTIVO' %}badge-estado-meta--activo
+            {% elif ahorro.estado == 'COMPLETADO' %}badge-estado-meta--completado
+            {% elif ahorro.estado == 'ABANDONADO' %}badge-estado-meta--abandonado
+            {% else %}badge-estado-meta--sin-iniciar{% endif %}">
             {{ ahorro.estado }}
           </span>
         </div>
       </div>
 
       <!-- Resumen Cuotas -->
-      <div class="bg-[#e0f8f8] border border-[#a5ecec] rounded-lg p-4 mb-8">
-        <p class="text-sm font-semibold text-[#0f5c5c]">
-          Resumen: {{ pagadas }} pagadas | {{ perdidas }} perdidas | {{ pendientes }} pendientes
+      <div class="cuotas-resumen">
+        <p class="cuotas-resumen__text">
+          <i data-lucide="bar-chart-2" style="width:14px;height:14px;vertical-align:-2px;margin-right:.3rem;"></i>
+          {{ pagadas }} pagadas &nbsp;&middot;&nbsp; {{ perdidas }} perdidas &nbsp;&middot;&nbsp; {{ pendientes }} pendientes
         </p>
       </div>
 
-      <!-- Tabla de Cuotas Detalladas -->
-      <h3 class="font-bold text-slate-800 text-sm mb-4">Cuotas Detalladas</h3>
-      
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm whitespace-nowrap">
+      <!-- Tabla de Cuotas -->
+      <h3 class="field-label" style="margin-bottom:.875rem;">Cuotas Detalladas</h3>
+
+      <div style="overflow-x:auto;">
+        <table class="cuotas-table">
           <thead>
-            <tr class="border-b-2 border-slate-100">
-              <th class="pb-3 font-bold text-slate-800 pr-4">Cuota</th>
-              <th class="pb-3 font-bold text-slate-800 pr-4">Asignado</th>
-              <th class="pb-3 font-bold text-slate-800 pr-4 w-1/3">Aportado</th>
-              <th class="pb-3 font-bold text-slate-800 pr-4">Fecha Límite</th>
-              <th class="pb-3 font-bold text-slate-800">Estado</th>
+            <tr>
+              <th>Cuota</th>
+              <th class="cuotas-table__monto">Asignado</th>
+              <th class="cuotas-table th--aporte">Aportado</th>
+              <th>Limite</th>
+              <th>Estado</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody>
             {% for cuota in cuotas %}
-            <tr class="hover:bg-slate-50/50 transition-colors">
-              <td class="py-3 font-bold text-slate-900 pr-4">
+            <tr>
+              <td class="cuotas-table__num">
                 {{ forloop.counter|stringformat:"02d" }}/{{ cuotas|length|stringformat:"02d" }}
               </td>
-              <td class="py-3 font-medium text-slate-700 pr-4">
-                $ {{ cuota.aporte_asignado|floatformat:2 }}
+              <td class="cuotas-table__monto">
+                ${{ cuota.aporte_asignado|floatformat:2 }}
               </td>
-              <td class="py-3 pr-4">
+              <td>
                 {% if cuota.estado_ap == 'PENDIENTE' %}
-                <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}" class="form-aporte-modal flex items-center gap-2 max-w-[200px]">
+                <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
+                      class="form-aporte-modal form-aporte-inline">
                   {% csrf_token %}
                   <input type="hidden" name="aporte_id" value="{{ cuota.id }}">
-                  <div class="relative flex-1">
-                    <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                      <span class="text-slate-500 font-bold text-xs">$</span>
-                    </div>
+                  <div class="form-aporte-inline__wrapper">
+                    <span class="form-aporte-inline__prefix">$</span>
                     <input type="number" name="aporte" step="0.01" min="0.01"
-                      value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
-                      class="w-full pl-6 pr-2 py-1.5 bg-white border border-slate-300 rounded focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none text-sm font-medium text-slate-800">
+                           value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
+                           class="form-aporte-inline__input">
                   </div>
-                  <button type="submit"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white rounded p-1.5 transition-colors shadow-sm flex-shrink-0"
-                    title="Aportar">
-                    <i data-lucide="check" style="width:16px;height:16px;stroke-width:3;"></i>
+                  <button type="submit" class="form-aporte-inline__submit" title="Registrar aporte">
+                    <i data-lucide="check" style="width:15px;height:15px;stroke-width:3;"></i>
                   </button>
                 </form>
                 {% else %}
-                <span class="font-medium text-slate-700">
-                  $ {% if cuota.aporte %}{{ cuota.aporte|floatformat:2 }}{% else %}0.00{% endif %}
+                <span class="cuotas-table__aportado">
+                  ${% if cuota.aporte %}{{ cuota.aporte|floatformat:2 }}{% else %}0.00{% endif %}
                 </span>
                 {% endif %}
               </td>
-              <td class="py-3 font-medium text-slate-700 pr-4">
+              <td class="cuotas-table__fecha">
                 {{ cuota.fecha_limite|date:"d/m/Y" }}
               </td>
-              <td class="py-3">
+              <td>
                 {% if cuota.estado_ap == 'APORTADO' %}
-                <span
-                  class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-white bg-emerald-600 uppercase tracking-wider">
-                  APORTADO
-                </span>
+                <span class="badge-estado badge-estado--aportado">APORTADO</span>
                 {% elif cuota.estado_ap == 'PENDIENTE' %}
-                <span
-                  class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 bg-emerald-100 uppercase tracking-wider">
-                  PENDIENTE
-                </span>
+                <span class="badge-estado badge-estado--pendiente">PENDIENTE</span>
                 {% else %}
-                <span
-                  class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-red-700 bg-red-100 uppercase tracking-wider">
-                  {{ cuota.estado_ap }}
-                </span>
+                <span class="badge-estado badge-estado--perdido">{{ cuota.estado_ap }}</span>
                 {% endif %}
               </td>
             </tr>
             {% empty %}
-            <tr>
-              <td colspan="5" class="py-4 text-center text-sm text-slate-500">
+            <tr class="cuotas-table__empty">
+              <td colspan="5">
                 No se han generado cuotas para esta meta.
               </td>
             </tr>
@@ -164,12 +152,10 @@
 
     </div>
   </div>
-  
-  <!-- Footer (Pegajoso al fondo) -->
-  <div class="px-6 py-4 border-t border-slate-200 flex justify-end bg-slate-50/50 sticky bottom-0 z-10">
-    <button type="button" class="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors btn-cerrar-modal-aporte">
-      Cerrar
-    </button>
+
+  <!-- Footer pegajoso -->
+  <div class="modal__footer" style="background:#f8fafc;">
+    <button type="button" class="btn-ghost btn-cerrar-modal-aporte">Cerrar</button>
   </div>
 
 </div>

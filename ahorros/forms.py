@@ -44,6 +44,7 @@ class AhorroMetaForm(forms.ModelForm):
         cleaned_data = super().clean()
         fecha = cleaned_data.get('fecha_meta')
         cuotas = cleaned_data.get('cantidad_cuotas')
+        hoy = timezone.now().date()
 
         if not fecha and not cuotas:
             raise forms.ValidationError(
@@ -53,6 +54,11 @@ class AhorroMetaForm(forms.ModelForm):
         if fecha and cuotas:
             raise forms.ValidationError(
                 "Debes ingresar SOLO fecha meta o cantidad de cuotas, no ambos."
+            )
+            
+        if fecha and fecha < hoy:
+            raise forms.ValidationError(
+                "La fecha meta no puede estar en el pasado."
             )
 
         return cleaned_data
