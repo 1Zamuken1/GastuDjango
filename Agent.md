@@ -532,3 +532,20 @@ Implementado en la app `historial` para rastrear operaciones CRUD de los usuario
    <script src="{% static 'historial/js/historial.js' %}"></script>
    ```
 El panel se pintará con tus colores y solo listará las acciones de tu `data-modulo`. No agregues emojis por favor.
+
+---
+
+## 21. Sistema de Reportes y Exportación
+
+Implementado a nivel global (principalmente desde la app `dashboard`) para generar documentos consolidados con la imagen corporativa de Gastu.
+
+### Tecnologías Utilizadas
+- **Excel (.xlsx)**: Generado mediante `openpyxl`. Genera tablas estilizadas con anchos de columna dinámicos, celdas formateadas como moneda (`#,##0.00`) y colores diferenciados para ingresos (verde) y egresos (rojo).
+- **PDF (.pdf)**: Generado mediante `xhtml2pdf`. Utiliza el template HTML `reporte_pdf.html` y lo convierte a PDF. 
+
+### Lineamientos de Identidad Visual (Branding)
+- El sistema de reportes PDF incluye cabeceras dinámicas definidas mediante `@page` y `@frame` de xhtml2pdf.
+- Los reportes están equipados con la cabecera corporativa de Gastu (logo posicionado a la izquierda, título del proyecto y fecha de generación).
+- Todos los recursos estáticos para reportes (logos y banners) se centralizan en la ruta global `static/img/` bajo configuración en `settings.py`. Use nombres como `gastu_logo_rostro.png` o `gastu_grafica.png`.
+
+**Importante:** Cuando se trabaje con templates de renderizado a PDF mediante xhtml2pdf, utilizar estrictamente estilos en línea o bloques `<style>` internos básicos. No usar Tailwind vía CDN porque el motor de PDF no resuelve correctamente utilidades complejas ni variables nativas CSS complejas. Tampoco soporta flexbox/grid. Se debe maquetar usando modelo de cajas tradicional y tablas `<table>`.
