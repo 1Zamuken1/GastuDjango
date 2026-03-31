@@ -481,73 +481,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   /* ─────────────────────────────────────────────────────────────
-     TOP CATEGORÍAS DE EGRESOS — actualización dinámica
+     METAS DE AHORRO — actualización dinámica
      ─────────────────────────────────────────────────────────── */
-  function actualizarTopCategorias(cats, mesNombre, totalEgresos) {
-    const lista = document.getElementById('top-categorias-lista');
-    const subEl = document.getElementById('top-cat-subtitulo');
-
+  function actualizarMetasAhorro(metas) {
+    const lista = document.getElementById('metas-ahorro-lista');
     if (!lista) return;
 
-    if (subEl) subEl.textContent = `Categorías del mes — ${mesNombre}`;
-
-    if (!cats || cats.length === 0) {
+    if (!metas || metas.length === 0) {
       lista.innerHTML = `
-        <div class="top-cat-empty">
-          <i data-lucide="pie-chart" style="width:36px;height:36px;color:#e2e8f0;"></i>
-          <p>Sin egresos registrados este mes</p>
+        <div class="meta-empty">
+          <i data-lucide="piggy-bank" style="width:36px;height:36px;color:#e2e8f0;"></i>
+          <p>Sin metas de ahorro activas</p>
         </div>`;
       lucide.createIcons();
       return;
     }
 
-    const fmtCOP = (v) => '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(v)));
-
-    const filas = cats.map(cat => `
-      <div class="top-cat-row">
-        <div class="top-cat-header">
+    const filas = metas.map(m => `
+      <div class="meta-row">
+        <div class="meta-header">
           <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-            <span class="top-cat-dot" style="background:${cat.color};"></span>
-            <span class="top-cat-nombre">${cat.nombre}</span>
+            <span class="meta-dot"></span>
+            <div style="min-width:0;">
+              <span class="meta-nombre">${m.descripcion}</span>
+              <span class="meta-frecuencia">${m.frecuencia}</span>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <span class="top-cat-pct">${cat.pct}%</span>
-            <span class="top-cat-monto">${cat.monto_fmt}</span>
+            <span class="meta-pct">${m.pct}%</span>
+            <span class="meta-monto">${m.acumulado_fmt}</span>
           </div>
         </div>
-        <div class="top-cat-bar-track">
-          <div class="top-cat-bar-fill"
-               style="width:0%;background:${cat.color};"
-               data-pct="${cat.pct}">
+        <div class="meta-bar-track">
+          <div class="meta-bar-fill"
+               style="width:0%;"
+               data-pct="${m.pct}">
           </div>
+        </div>
+        <div class="meta-footer">
+          <span class="meta-detail">${m.categoria}</span>
+          <span class="meta-detail">Meta: ${m.meta_fmt}</span>
         </div>
       </div>`).join('');
 
-    const totalFmt = fmtCOP(totalEgresos);
-
-    lista.innerHTML = filas + `
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;
-                  display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;
-                     letter-spacing:.07em;">Total egresos</span>
-        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;
-                     font-size:1rem;color:#e11d48;letter-spacing:-.02em;"
-              id="top-cat-total">${totalFmt}</span>
-      </div>
-      <a href="/egresos/"
-         style="display:flex;align-items:center;justify-content:center;gap:5px;
-                margin-top:12px;padding:8px;border-radius:10px;
-                font-size:11px;font-weight:600;color:#64748b;text-decoration:none;
-                background:#f8fafc;border:1px solid #e2e8f0;transition:all .15s;"
-         onmouseover="this.style.background='#f1f5f9';this.style.color='#0f172a'"
-         onmouseout="this.style.background='#f8fafc';this.style.color='#64748b'">
-        Ver detalle de egresos
-        <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
-      </a>`;
+    lista.innerHTML = filas;
 
     /* Animar las barras después de que el DOM esté listo */
     requestAnimationFrame(() => {
-      lista.querySelectorAll('.top-cat-bar-fill').forEach(el => {
+      lista.querySelectorAll('.meta-bar-fill').forEach(el => {
         el.style.width = (parseFloat(el.dataset.pct) || 0) + '%';
       });
     });
@@ -555,13 +536,10 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
   }
 
-  /* Animar barras y aplicar colores en la carga inicial */
+  /* Animar barras en la carga inicial */
 requestAnimationFrame(() => {
-  document.querySelectorAll('.top-cat-bar-fill').forEach(el => {
+  document.querySelectorAll('.meta-bar-fill').forEach(el => {
     el.style.width = (parseFloat(el.dataset.pct) || 0) + '%';
-  });
-  document.querySelectorAll('.top-cat-dot[data-color]').forEach(el => {
-    el.style.backgroundColor = el.dataset.color;
   });
 });
 
@@ -676,9 +654,11 @@ requestAnimationFrame(() => {
 
         const rows = data.ultimos_movimientos.map(m => {
           const esI    = m.tipo === 'INGRESO';
-          const dotCls = esI ? 'mov-dot--income'   : 'mov-dot--expense';
-          const amtCls = esI ? 'mov-amount--income' : 'mov-amount--expense';
-          const signo  = esI ? '+' : '−';
+          const esA    = m.tipo === 'AHORRO';
+          const dotCls = esI ? 'mov-dot--income' : esA ? 'mov-dot--saving' : 'mov-dot--expense';
+          const amtCls = esI ? 'mov-amount--income' : esA ? 'mov-amount--saving' : 'mov-amount--expense';
+          const signo  = esI ? '+' : esA ? '↗' : '−';
+          const label  = esI ? 'Ingreso' : esA ? 'Ahorro' : 'Egreso';
           const montoF = '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(m.monto)));
           return `
             <div class="mov-row" data-tipo="${m.tipo}">
@@ -686,7 +666,7 @@ requestAnimationFrame(() => {
                 <div class="mov-dot ${dotCls}"></div>
                 <div style="min-width:0;">
                   <p class="mov-desc">${m.descripcion}</p>
-                  <p class="mov-type">${esI ? 'Ingreso' : 'Egreso'}</p>
+                  <p class="mov-type">${label}</p>
                 </div>
               </div>
               <div class="mov-cat">${m.categoria}</div>
@@ -695,28 +675,18 @@ requestAnimationFrame(() => {
             </div>`;
         }).join('');
 
-        /* Link ver todos al pie */
-        const verTodos = `
-          <div style="padding:10px 10px 0;border-top:1px solid #f1f5f9;margin-top:4px;
-                      display:flex;justify-content:flex-end;">
-            <a href="/egresos/"
-               style="font-size:11px;font-weight:600;color:#64748b;text-decoration:none;
-                      display:flex;align-items:center;gap:4px;transition:color .15s;"
-               onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#64748b'">
-              Ver todos <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
-            </a>
-          </div>`;
-
-        movTabla.innerHTML = header + rows + verTodos;
+        movTabla.innerHTML = header + rows;
       }
     }
 
-    /* ── Top categorías de egresos ── */
-    actualizarTopCategorias(
-      data.top_categorias_egresos || [],
-      mesNombre,
-      data.total_egresos,
-    );
+    /* ── Actualizar URLs de botones de exportación ── */
+    const btnExcelA = document.getElementById('btn-export-excel');
+    const btnPdfA   = document.getElementById('btn-export-pdf');
+    if (btnExcelA) btnExcelA.href = `/dashboard/exportar/excel/?mes=${data.mes}&anio=${data.anio}`;
+    if (btnPdfA)   btnPdfA.href   = `/dashboard/exportar/pdf/?mes=${data.mes}&anio=${data.anio}`;
+
+    /* ── Metas de ahorro ── */
+    actualizarMetasAhorro(data.metas_ahorro_activas || []);
 
     /* ── Pie chart ── */
     renderPie(data.pie_data);

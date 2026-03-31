@@ -12,7 +12,7 @@ from django.shortcuts import render
 from dashboard.models import ResumenMensual
 from movimientos.models import Movimiento
 from notificaciones.models import Notificacion
-from ahorros.models import AporteAhorro
+from ahorros.models import AporteAhorro, AhorroMeta
 
 
 MESES_ES = {
@@ -123,23 +123,31 @@ def _build_context(user, mes, anio):
         'colores': PIE_COLORES[:len(pie_labels)],
     }
 
-    # Top categorias de egresos — para la card de progreso (max 5)
-    top_categorias_egresos = []
-    total_egresos_float = float(total_egresos) if total_egresos else 0
-    for i, item in enumerate(egresos_cat[:5]):
-        nombre = item['categoria__nombre'] or 'Sin categoria'
-        monto  = float(item['total'])
-        pct    = round(monto / total_egresos_float * 100, 1) if total_egresos_float > 0 else 0
-        top_categorias_egresos.append({
-            'nombre':    nombre,
-            'monto':     monto,
-            'monto_fmt': f"${monto:,.0f}",
-            'pct':       pct,
-            'color':     PIE_COLORES[i],
+    # Metas de ahorro activas — reemplaza Top Gastos (redundante con pie)
+    metas_raw = (
+        AhorroMeta.objects
+        .filter(usuario=user, estado='ACTIVO')
+        .select_related('categoria')
+        .order_by('-fecha_creacion')[:5]
+    )
+    metas_ahorro_activas = []
+    for m in metas_raw:
+        meta_monto = float(m.monto_meta) if m.monto_meta else 1
+        acumulado  = float(m.total_acumulado) if m.total_acumulado else 0
+        pct = min(round(acumulado / meta_monto * 100, 1), 100) if meta_monto > 0 else 0
+        metas_ahorro_activas.append({
+            'descripcion':  m.descripcion or m.categoria.nombre,
+            'categoria':    m.categoria.nombre if m.categoria else 'Sin categoría',
+            'acumulado':    acumulado,
+            'acumulado_fmt': f"${acumulado:,.0f}",
+            'meta':         meta_monto,
+            'meta_fmt':     f"${meta_monto:,.0f}",
+            'pct':          pct,
+            'frecuencia':   m.get_frecuencia_display(),
         })
 
-    # Movimientos del mes visto
-    ultimos_movimientos = (
+    # Movimientos unificados: Ingresos + Egresos + Ahorros
+    movs_raw = list(
         Movimiento.objects
         .filter(
             usuario=user, activo=True,
@@ -147,8 +155,49 @@ def _build_context(user, mes, anio):
             fecha_registro__year=anio,
         )
         .select_related('categoria')
-        .order_by('-fecha_registro')[:10]
+        .order_by('-fecha_registro')[:15]
     )
+    ahorros_raw = list(
+        AporteAhorro.objects
+        .filter(
+            ahorro__usuario=user,
+            estado_ap='APORTADO',
+            fecha_registro__month=mes,
+            fecha_registro__year=anio,
+        )
+        .select_related('ahorro', 'ahorro__categoria')
+        .order_by('-fecha_registro')[:15]
+    )
+
+    # Normalizar a diccionarios con formato común
+    movs_norm = [
+        {
+            'tipo':        m.tipo,
+            'descripcion': m.descripcion or 'Sin descripción',
+            'categoria':   m.categoria.nombre if m.categoria else 'Sin categoría',
+            'fecha':       m.fecha_registro,
+            'fecha_fmt':   m.fecha_registro.strftime('%d/%m/%Y'),
+            'monto':       float(m.monto),
+        }
+        for m in movs_raw
+    ]
+    ahor_norm = [
+        {
+            'tipo':        'AHORRO',
+            'descripcion': a.ahorro.descripcion or 'Aporte de ahorro',
+            'categoria':   a.ahorro.categoria.nombre if a.ahorro.categoria else 'Sin categoría',
+            'fecha':       a.fecha_registro,
+            'fecha_fmt':   a.fecha_registro.strftime('%d/%m/%Y'),
+            'monto':       float(a.aporte),
+        }
+        for a in ahorros_raw
+    ]
+
+    ultimos_movimientos = sorted(
+        movs_norm + ahor_norm,
+        key=lambda x: str(x['fecha']),
+        reverse=True,
+    )[:10]
 
     # Notificaciones — siempre las mas recientes, no dependen del mes
     notificaciones_count = Notificacion.objects.filter(
@@ -177,7 +226,7 @@ def _build_context(user, mes, anio):
         'hay_deficit':               hay_deficit,
         'pie_data':                  pie_data,
         'pie_json':                  json.dumps(pie_data),
-        'top_categorias_egresos':    top_categorias_egresos,
+        'metas_ahorro_activas':      metas_ahorro_activas,
         'ultimos_movimientos':       ultimos_movimientos,
         'notificaciones_count':      notificaciones_count,
         'ultimas_notificaciones':    ultimas_notificaciones,
@@ -228,13 +277,14 @@ def home_view(request):
 
     # Respuesta JSON para requests AJAX (navegacion sin recarga)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # ultimos_movimientos ya son dicts normalizados desde _build_context
         mov_list = [
             {
-                'tipo':        m.tipo,
-                'descripcion': m.descripcion or 'Sin descripcion',
-                'categoria':   m.categoria.nombre if m.categoria else 'Sin categoria',
-                'fecha':       m.fecha_registro.strftime('%d/%m/%Y'),
-                'monto':       str(m.monto),
+                'tipo':        m['tipo'],
+                'descripcion': m['descripcion'],
+                'categoria':   m['categoria'],
+                'fecha':       m['fecha_fmt'],
+                'monto':       str(m['monto']),
             }
             for m in ctx['ultimos_movimientos']
         ]
@@ -264,7 +314,7 @@ def home_view(request):
             'ahorros_mes':              str(ctx['ahorros_mes']),
             'hay_deficit':              ctx['hay_deficit'],
             'pie_data':                 ctx['pie_data'],
-            'top_categorias_egresos':   ctx['top_categorias_egresos'],
+            'metas_ahorro_activas':     ctx['metas_ahorro_activas'],
             'ultimos_movimientos':      mov_list,
             'notificaciones_count':     ctx['notificaciones_count'],
             'ultimas_notificaciones':   notif_list,
@@ -410,3 +460,214 @@ def tendencia_mes(request):
         'detalle_ahor': detalle_ahor,
         'total_dias':   len(rango),
     })
+
+
+# ═══════════════════════════════════════════════════════════════
+#  EXPORTAR REPORTE EXCEL
+# ═══════════════════════════════════════════════════════════════
+@login_required
+def exportar_excel(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from django.http import HttpResponse
+
+    hoy  = date.today()
+    user = request.user
+    mes  = int(request.GET.get('mes', hoy.month))
+    anio = int(request.GET.get('anio', hoy.year))
+
+    ctx = _build_context(user, mes, anio)
+    movimientos = ctx['ultimos_movimientos']
+
+    # Traer TODOS los movimientos del mes (no solo los 10 del dashboard)
+    movs_all = list(
+        Movimiento.objects.filter(
+            usuario=user, activo=True,
+            fecha_registro__month=mes, fecha_registro__year=anio,
+        ).select_related('categoria').order_by('-fecha_registro')
+    )
+    ahor_all = list(
+        AporteAhorro.objects.filter(
+            ahorro__usuario=user, estado_ap='APORTADO',
+            fecha_registro__month=mes, fecha_registro__year=anio,
+        ).select_related('ahorro', 'ahorro__categoria').order_by('-fecha_registro')
+    )
+
+    all_items = sorted(
+        [
+            {
+                'tipo': m.tipo, 'descripcion': m.descripcion or 'Sin descripción',
+                'categoria': m.categoria.nombre if m.categoria else '—',
+                'fecha': m.fecha_registro.strftime('%d/%m/%Y'),
+                'sort_key': str(m.fecha_registro),
+                'monto': float(m.monto),
+            } for m in movs_all
+        ] + [
+            {
+                'tipo': 'AHORRO', 'descripcion': a.ahorro.descripcion or 'Aporte',
+                'categoria': a.ahorro.categoria.nombre if a.ahorro.categoria else '—',
+                'fecha': a.fecha_registro.strftime('%d/%m/%Y'),
+                'sort_key': str(a.fecha_registro),
+                'monto': float(a.aporte),
+            } for a in ahor_all
+        ],
+        key=lambda x: x['sort_key'],
+        reverse=True,
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f'{MESES_ES[mes]} {anio}'
+
+    # Estilos
+    header_font = Font(name='Calibri', bold=True, size=11, color='FFFFFF')
+    header_fill = PatternFill(start_color='0F172A', end_color='0F172A', fill_type='solid')
+    header_align = Alignment(horizontal='center', vertical='center')
+    thin_border = Border(
+        left=Side(style='thin', color='E2E8F0'),
+        right=Side(style='thin', color='E2E8F0'),
+        bottom=Side(style='thin', color='E2E8F0'),
+    )
+
+    # Título
+    ws.merge_cells('A1:E1')
+    title_cell = ws['A1']
+    title_cell.value = f'Gastu — Reporte {MESES_ES[mes]} {anio}'
+    title_cell.font = Font(name='Calibri', bold=True, size=14, color='0F172A')
+    title_cell.alignment = Alignment(horizontal='center')
+
+    # Resumen
+    ws['A3'] = 'Ingresos'
+    ws['B3'] = float(ctx['total_ingresos'])
+    ws['B3'].number_format = '$#,##0'
+    ws['C3'] = 'Egresos'
+    ws['D3'] = float(ctx['total_egresos'])
+    ws['D3'].number_format = '$#,##0'
+    ws['A4'] = 'Ahorros'
+    ws['B4'] = float(ctx['ahorros_mes'])
+    ws['B4'].number_format = '$#,##0'
+    ws['C4'] = 'Utilidad'
+    ws['D4'] = float(ctx['utilidad'])
+    ws['D4'].number_format = '$#,##0'
+    for cell in ['A3', 'C3', 'A4', 'C4']:
+        ws[cell].font = Font(bold=True, size=10, color='64748B')
+
+    # Cabeceras de tabla
+    headers = ['Tipo', 'Descripción', 'Categoría', 'Fecha', 'Monto']
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=6, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
+        cell.border = thin_border
+
+    # Datos
+    for i, item in enumerate(all_items, 7):
+        ws.cell(row=i, column=1, value=item['tipo']).border = thin_border
+        ws.cell(row=i, column=2, value=item['descripcion']).border = thin_border
+        ws.cell(row=i, column=3, value=item['categoria']).border = thin_border
+        ws.cell(row=i, column=4, value=item['fecha']).border = thin_border
+        c = ws.cell(row=i, column=5, value=item['monto'])
+        c.number_format = '$#,##0'
+        c.border = thin_border
+        # Color por tipo
+        if item['tipo'] == 'INGRESO':
+            c.font = Font(color='059669', bold=True)
+        elif item['tipo'] == 'EGRESO':
+            c.font = Font(color='E11D48', bold=True)
+        else:
+            c.font = Font(color='D97706', bold=True)
+
+    # Anchos
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 30
+    ws.column_dimensions['C'].width = 18
+    ws.column_dimensions['D'].width = 14
+    ws.column_dimensions['E'].width = 16
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="Gastu_Reporte_{MESES_ES[mes]}_{anio}.xlsx"'
+    wb.save(response)
+    return response
+
+
+# ═══════════════════════════════════════════════════════════════
+#  EXPORTAR REPORTE PDF
+# ═══════════════════════════════════════════════════════════════
+@login_required
+def exportar_pdf(request):
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    from django.http import HttpResponse
+    import io
+
+    hoy  = date.today()
+    user = request.user
+    mes  = int(request.GET.get('mes', hoy.month))
+    anio = int(request.GET.get('anio', hoy.year))
+
+    ctx = _build_context(user, mes, anio)
+
+    # Traer TODOS los movimientos del mes
+    movs_all = list(
+        Movimiento.objects.filter(
+            usuario=user, activo=True,
+            fecha_registro__month=mes, fecha_registro__year=anio,
+        ).select_related('categoria').order_by('-fecha_registro')
+    )
+    ahor_all = list(
+        AporteAhorro.objects.filter(
+            ahorro__usuario=user, estado_ap='APORTADO',
+            fecha_registro__month=mes, fecha_registro__year=anio,
+        ).select_related('ahorro', 'ahorro__categoria').order_by('-fecha_registro')
+    )
+
+    all_items = sorted(
+        [
+            {
+                'tipo': m.tipo, 'descripcion': m.descripcion or 'Sin descripción',
+                'categoria': m.categoria.nombre if m.categoria else '—',
+                'fecha': m.fecha_registro.strftime('%d/%m/%Y'),
+                'sort_key': str(m.fecha_registro),
+                'monto': float(m.monto),
+            } for m in movs_all
+        ] + [
+            {
+                'tipo': 'AHORRO', 'descripcion': a.ahorro.descripcion or 'Aporte',
+                'categoria': a.ahorro.categoria.nombre if a.ahorro.categoria else '—',
+                'fecha': a.fecha_registro.strftime('%d/%m/%Y'),
+                'sort_key': str(a.fecha_registro),
+                'monto': float(a.aporte),
+            } for a in ahor_all
+        ],
+        key=lambda x: x['sort_key'],
+        reverse=True,
+    )
+
+    pdf_ctx = {
+        'mes_nombre':      MESES_ES[mes],
+        'anio':            anio,
+        'total_ingresos':  float(ctx['total_ingresos']),
+        'total_egresos':   float(ctx['total_egresos']),
+        'ahorros_mes':     float(ctx['ahorros_mes']),
+        'utilidad':        float(ctx['utilidad']),
+        'disponible':      float(ctx['disponible']),
+        'movimientos':     all_items,
+        'usuario':         user.username,
+        'fecha_generacion': hoy.strftime('%d/%m/%Y %H:%M'),
+    }
+
+    html_string = render_to_string('dashboard/reporte_pdf.html', pdf_ctx)
+
+    buffer = io.BytesIO()
+    pisa_status = pisa.CreatePDF(html_string, dest=buffer, encoding='utf-8')
+
+    if pisa_status.err:
+        return HttpResponse('Error generando el PDF', status=500)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer.read(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Gastu_Reporte_{MESES_ES[mes]}_{anio}.pdf"'
+    return response

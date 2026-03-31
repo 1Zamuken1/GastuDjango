@@ -265,10 +265,10 @@
 </div>
 
 
-{# ── Movimientos + Top Categorías ────────────────────────── #}
+{# ── Movimientos + Metas de Ahorro ────────────────────────── #}
 <div class="bottom-grid">
 
-  {# Últimos movimientos — mejorado #}
+  {# Movimientos unificados (Ingresos + Egresos + Ahorros) #}
   <div class="app-card" style="padding:22px 24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;
                 margin-bottom:16px;flex-wrap:wrap;gap:.5rem;">
@@ -276,22 +276,34 @@
         <p class="chart-card__title">Movimientos del mes</p>
         <p class="chart-card__subtitle" id="mov-subtitulo">{{ mes_nombre }} {{ anio }}</p>
       </div>
-      <div style="display:flex;align-items:center;gap:.75rem;">
+      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
         <div class="mov-filter-group">
           <button class="mov-filter-btn active" data-filtro="todos">Todos</button>
           <button class="mov-filter-btn" data-filtro="INGRESO">Ingresos</button>
           <button class="mov-filter-btn" data-filtro="EGRESO">Egresos</button>
+          <button class="mov-filter-btn mov-filter-btn--ahorro" data-filtro="AHORRO">Ahorros</button>
         </div>
-        <div id="mov-quick-add" class="{% if es_mes_actual %}mov-quick-add--visible{% endif %}">
-          <a href="{% url 'movimientos:ingresos' %}"
-             style="font-size:11px;font-weight:600;color:#059669;text-decoration:none;
-                    display:flex;align-items:center;gap:4px;">
-            <i data-lucide="plus" style="width:12px;height:12px;"></i> Ingreso
+        {# Botones de exportación #}
+        <div style="display:flex;align-items:center;gap:.35rem;">
+          <a id="btn-export-excel"
+             href="{% url 'dashboard:exportar_excel' %}?mes={{ mes }}&anio={{ anio }}"
+             title="Descargar Excel"
+             style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
+                    background:#fff;color:#059669;cursor:pointer;display:grid;place-items:center;
+                    transition:background .13s,color .13s,border-color .13s;text-decoration:none;"
+             onmouseover="this.style.background='#ecfdf5';this.style.borderColor='#a7f3d0'"
+             onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">
+            <i data-lucide="file-spreadsheet" style="width:14px;height:14px;"></i>
           </a>
-          <a href="{% url 'movimientos:egresos' %}"
-             style="font-size:11px;font-weight:600;color:#e11d48;text-decoration:none;
-                    display:flex;align-items:center;gap:4px;">
-            <i data-lucide="minus" style="width:12px;height:12px;"></i> Egreso
+          <a id="btn-export-pdf"
+             href="{% url 'dashboard:exportar_pdf' %}?mes={{ mes }}&anio={{ anio }}"
+             title="Descargar PDF"
+             style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
+                    background:#fff;color:#e11d48;cursor:pointer;display:grid;place-items:center;
+                    transition:background .13s,color .13s,border-color .13s;text-decoration:none;"
+             onmouseover="this.style.background='#fef2f2';this.style.borderColor='#fecaca'"
+             onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">
+            <i data-lucide="file-text" style="width:14px;height:14px;"></i>
           </a>
         </div>
       </div>
@@ -308,30 +320,19 @@
         {% for mov in ultimos_movimientos %}
         <div class="mov-row" data-tipo="{{ mov.tipo }}">
           <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
-            <div class="mov-dot {% if mov.tipo == 'INGRESO' %}mov-dot--income{% else %}mov-dot--expense{% endif %}"></div>
+            <div class="mov-dot {% if mov.tipo == 'INGRESO' %}mov-dot--income{% elif mov.tipo == 'EGRESO' %}mov-dot--expense{% else %}mov-dot--saving{% endif %}"></div>
             <div style="min-width:0;">
-              <p class="mov-desc">{{ mov.descripcion|default:"Sin descripción" }}</p>
-              <p class="mov-type">{{ mov.tipo|capfirst }}</p>
+              <p class="mov-desc">{{ mov.descripcion }}</p>
+              <p class="mov-type">{% if mov.tipo == 'INGRESO' %}Ingreso{% elif mov.tipo == 'EGRESO' %}Egreso{% else %}Ahorro{% endif %}</p>
             </div>
           </div>
-          <div class="mov-cat">{{ mov.categoria.nombre|default:"—" }}</div>
-          <div class="mov-date">{{ mov.fecha_registro|date:"d/m/Y" }}</div>
-          <div class="mov-amount {% if mov.tipo == 'INGRESO' %}mov-amount--income{% else %}mov-amount--expense{% endif %}">
-            {% if mov.tipo == 'INGRESO' %}+{% else %}−{% endif %}${{ mov.monto|floatformat:0 }}
+          <div class="mov-cat">{{ mov.categoria }}</div>
+          <div class="mov-date">{{ mov.fecha_fmt }}</div>
+          <div class="mov-amount {% if mov.tipo == 'INGRESO' %}mov-amount--income{% elif mov.tipo == 'EGRESO' %}mov-amount--expense{% else %}mov-amount--saving{% endif %}">
+            {% if mov.tipo == 'INGRESO' %}+{% elif mov.tipo == 'EGRESO' %}−{% else %}↗{% endif %}${{ mov.monto|floatformat:0 }}
           </div>
         </div>
         {% endfor %}
-
-        {# Link ver todos — ancla al pie de la tabla #}
-        <div style="padding:10px 10px 0;border-top:1px solid #f1f5f9;margin-top:4px;
-                    display:flex;justify-content:flex-end;">
-          <a href="{% url 'movimientos:egresos' %}"
-             style="font-size:11px;font-weight:600;color:#64748b;text-decoration:none;
-                    display:flex;align-items:center;gap:4px;transition:color .15s;"
-             onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#64748b'">
-            Ver todos <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
-          </a>
-        </div>
 
       {% else %}
         <div class="mov-empty">
@@ -343,73 +344,57 @@
   </div>
 
 
-  {# Top categorías de egresos — reemplaza el panel de alertas #}
-  <div class="app-card" style="padding:22px 24px;" id="top-categorias-card">
+  {# Metas de ahorro activas — reemplaza Top Gastos #}
+  <div class="app-card" style="padding:22px 24px;" id="metas-ahorro-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div>
-        <p class="chart-card__title">Top gastos</p>
-        <p class="chart-card__subtitle" id="top-cat-subtitulo">
-          Categorías del mes — {{ mes_nombre }}
-        </p>
+        <p class="chart-card__title">Metas de ahorro</p>
+        <p class="chart-card__subtitle" id="metas-subtitulo">Progreso de metas activas</p>
       </div>
-      <div class="icon-box icon-box--orange">
-        <i data-lucide="trending-down"></i>
+      <div class="icon-box icon-box--amber">
+        <i data-lucide="target"></i>
       </div>
     </div>
 
-    <div id="top-categorias-lista">
-    {% if top_categorias_egresos %}
-        {% for cat in top_categorias_egresos %}
-        <div class="top-cat-row">
-            <div class="top-cat-header">
+    <div id="metas-ahorro-lista">
+    {% if metas_ahorro_activas %}
+        {% for meta in metas_ahorro_activas %}
+        <div class="meta-row">
+            <div class="meta-header">
                 <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-                    <span class="top-cat-dot" data-color="{{ cat.color|default:'#ccc' }}"></span>
-                    <span class="top-cat-nombre">{{ cat.nombre }}</span>
+                    <span class="meta-dot"></span>
+                    <div style="min-width:0;">
+                      <span class="meta-nombre">{{ meta.descripcion }}</span>
+                      <span class="meta-frecuencia">{{ meta.frecuencia }}</span>
+                    </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                    <span class="top-cat-pct">{{ cat.pct }}%</span>
-                    <span class="top-cat-monto">{{ cat.monto_fmt }}</span>
+                    <span class="meta-pct">{{ meta.pct }}%</span>
+                    <span class="meta-monto">{{ meta.acumulado_fmt }}</span>
                 </div>
             </div>
-            <div class="top-cat-bar-track">
-                <div class="top-cat-bar-fill"
-                     style="--fill-width: {{ cat.pct }}%; --fill-color: {{ cat.color }}; width: var(--fill-width); background-color: var(--fill-color);"
-                     data-pct="{{ cat.pct }}">
+            <div class="meta-bar-track">
+                <div class="meta-bar-fill"
+                     style="width:0%;"
+                     data-pct="{{ meta.pct }}">
                 </div>
+            </div>
+            <div class="meta-footer">
+                <span class="meta-detail">{{ meta.categoria }}</span>
+                <span class="meta-detail">Meta: {{ meta.meta_fmt }}</span>
             </div>
         </div>
         {% endfor %}
 
-        {# Footer con total de egresos #}
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;
-                    display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;
-                       letter-spacing:.07em;">Total egresos</span>
-          <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;
-                       font-size:1rem;color:#e11d48;letter-spacing:-.02em;"
-                id="top-cat-total">${{ total_egresos|floatformat:0 }}</span>
-        </div>
-
-        <a href="{% url 'movimientos:egresos' %}"
-           style="display:flex;align-items:center;justify-content:center;gap:5px;
-                  margin-top:12px;padding:8px;border-radius:10px;
-                  font-size:11px;font-weight:600;color:#64748b;text-decoration:none;
-                  background:#f8fafc;border:1px solid #e2e8f0;transition:all .15s;"
-           onmouseover="this.style.background='#f1f5f9';this.style.color='#0f172a'"
-           onmouseout="this.style.background='#f8fafc';this.style.color='#64748b'">
-          Ver detalle de egresos
-          <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
-        </a>
-
       {% else %}
-        <div class="top-cat-empty">
-          <i data-lucide="pie-chart" style="width:36px;height:36px;color:#e2e8f0;"></i>
-          <p>Sin egresos registrados este mes</p>
-          <a href="{% url 'movimientos:egresos' %}"
+        <div class="meta-empty">
+          <i data-lucide="piggy-bank" style="width:36px;height:36px;color:#e2e8f0;"></i>
+          <p>Sin metas de ahorro activas</p>
+          <a href="{% url 'ahorros:ahorros' %}"
              style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;
-                    font-size:11px;font-weight:600;color:#e11d48;text-decoration:none;">
+                    font-size:11px;font-weight:600;color:#d97706;text-decoration:none;">
             <i data-lucide="plus" style="width:11px;height:11px;"></i>
-            Registrar egreso
+            Crear meta de ahorro
           </a>
         </div>
       {% endif %}

@@ -88,21 +88,25 @@
 .mov-amount { display: flex; align-items: center; justify-content: flex-end; font-size: 13px; font-weight: 700; }
 .mov-amount--income  { color: #10b981; }
 .mov-amount--expense { color: #e11d48; }
+.mov-amount--saving  { color: #d97706; }
+.mov-dot--saving     { background: #d97706; }
 .mov-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0; gap: 10px; text-align: center; }
 .mov-empty p { font-size: 13px; font-weight: 500; color: #94a3b8; }
 
+/* ── Filtro Ahorros ── */
+.mov-filter-btn.active[data-filtro="AHORRO"] { border-color: #d97706; color: #d97706; }
 
 /* ══════════════════════════════════════════════════════
-   TOP CATEGORÍAS DE EGRESOS
+   METAS DE AHORRO
 ══════════════════════════════════════════════════════ */
-.top-cat-row {
+.meta-row {
   margin-bottom: 14px;
 }
-.top-cat-row:last-of-type {
+.meta-row:last-of-type {
   margin-bottom: 0;
 }
 
-.top-cat-header {
+.meta-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -110,32 +114,41 @@
   margin-bottom: 6px;
 }
 
-.top-cat-dot {
+.meta-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: #d97706;
 }
 
-.top-cat-nombre {
+.meta-nombre {
   font-size: 12px;
   font-weight: 600;
   color: #334155;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px;
+  max-width: 130px;
+  display: block;
 }
 
-.top-cat-pct {
+.meta-frecuencia {
+  font-size: 9px;
+  color: #94a3b8;
+  display: block;
+  margin-top: 1px;
+}
+
+.meta-pct {
   font-size: 10px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #d97706;
   letter-spacing: .03em;
   flex-shrink: 0;
 }
 
-.top-cat-monto {
+.meta-monto {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
   font-weight: 800;
@@ -146,21 +159,34 @@
   text-align: right;
 }
 
-.top-cat-bar-track {
+.meta-bar-track {
   height: 6px;
   background: #f1f5f9;
   border-radius: 99px;
   overflow: hidden;
 }
 
-.top-cat-bar-fill {
+.meta-bar-fill {
   height: 100%;
   border-radius: 99px;
   width: 0%;
+  background: linear-gradient(90deg, #fbbf24, #d97706);
   transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.top-cat-empty {
+.meta-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.meta-detail {
+  font-size: 9px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.meta-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -169,7 +195,7 @@
   gap: 8px;
   text-align: center;
 }
-.top-cat-empty p {
+.meta-empty p {
   font-size: 12px;
   font-weight: 500;
   color: #94a3b8;
