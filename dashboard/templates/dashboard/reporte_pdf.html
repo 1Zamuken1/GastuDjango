@@ -24,8 +24,8 @@
     }
 
     /* ── Cabecera con marca ── */
-    .header {
-      text-align: center;
+    .header-table {
+      width: 100%;
       margin-bottom: 24px;
       padding-bottom: 16px;
       border-bottom: 2px solid #10b981;
@@ -176,13 +176,20 @@
 <body>
 
   <!-- Cabecera corporativa -->
-  <div class="header">
-    <p class="brand">Gastu<span class="brand-accent">.</span></p>
-    <p class="report-title">Reporte Financiero — {{ mes_nombre }} {{ anio }}</p>
-    <p class="report-meta">
-      Generado por {{ usuario }} el {{ fecha_generacion }}
-    </p>
-  </div>
+  <table class="header-table">
+    <tr>
+      <td style="width: 180px; vertical-align: middle; text-align: center;">
+        <img src="{{ logo_path }}" width="160">
+      </td>
+      <td style="vertical-align: middle; text-align: left; padding-left: 15px;">
+        <p class="brand" style="margin-bottom: 5px;">Gastu<span class="brand-accent">.</span></p>
+        <p class="report-title">Reporte Financiero — {{ mes_nombre }} {{ anio }}</p>
+        <p class="report-meta">
+          Generado por {{ usuario }} el {{ fecha_generacion }}
+        </p>
+      </td>
+    </tr>
+  </table>
 
   <!-- Resumen del mes -->
   <table class="summary-table">

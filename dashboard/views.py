@@ -646,6 +646,11 @@ def exportar_pdf(request):
         reverse=True,
     )
 
+    from django.conf import settings
+    import os
+
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'gastu_grafica_pdf.jpg').replace('\\', '/')
+
     pdf_ctx = {
         'mes_nombre':      MESES_ES[mes],
         'anio':            anio,
@@ -657,6 +662,7 @@ def exportar_pdf(request):
         'movimientos':     all_items,
         'usuario':         user.username,
         'fecha_generacion': hoy.strftime('%d/%m/%Y %H:%M'),
+        'logo_path':       logo_path,
     }
 
     html_string = render_to_string('dashboard/reporte_pdf.html', pdf_ctx)
