@@ -39,7 +39,7 @@ def _build_qs(request):
     Construye el queryset de movimientos filtrado según los parámetros GET.
     Siempre filtra por request.user.
     """
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     tipo        = request.GET.get('tipo', 'AMBOS').upper()
     fecha_desde = _parse_fecha(request.GET.get('fecha_desde'), date(hoy.year, hoy.month, 1))
     fecha_hasta = _parse_fecha(request.GET.get('fecha_hasta'), hoy)

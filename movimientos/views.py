@@ -108,7 +108,7 @@ def _build_categorias_con_totales(usuario, tipo, mes, anio):
 @login_required
 def lista_ingresos(request):
     """Lista de ingresos del mes actual agrupados por categoría."""
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     mes, anio = hoy.month, hoy.year
 
     categorias_con_totales, total_mes = _build_categorias_con_totales(
@@ -137,7 +137,7 @@ def lista_ingresos(request):
 @login_required
 def lista_egresos(request):
     """Lista de egresos del mes actual agrupados por categoría."""
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     mes, anio = hoy.month, hoy.year
 
     categorias_con_totales, total_mes = _build_categorias_con_totales(
@@ -190,7 +190,7 @@ def guardar_movimiento(request, pk=None):
 
     disponible = None
     if tipo_movimiento == 'EGRESO':
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()
         mes, anio = hoy.month, hoy.year
         monto_original = instancia.monto if instancia and instancia.tipo == 'EGRESO' else None
         disponible = _disponible_del_mes(request.user, mes, anio, monto_original=monto_original)
@@ -289,7 +289,7 @@ def resumen_movimientos(request):
     if tipo not in ('INGRESO', 'EGRESO'):
         return JsonResponse({'ok': False, 'error': 'tipo inválido'}, status=400)
 
-    hoy = timezone.now().date()
+    hoy = timezone.localdate()
     mes, anio = hoy.month, hoy.year
 
     categorias_con_totales, total_mes = _build_categorias_con_totales(
