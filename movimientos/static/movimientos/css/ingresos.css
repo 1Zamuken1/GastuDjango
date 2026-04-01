@@ -250,3 +250,35 @@
 .picker-cat-card.selected .picker-cat-nombre {
   color: #0f172a;
 }
+
+/* ── Responsive: pantallas grandes (≥ 1280px) ────── */
+@media (min-width: 1280px) {
+  /* Cards de categorías: más anchas, menos columnas -> menos altura */
+  .categorias-grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+
+  /* Modal formulario: más ancho + form en 2 columnas */
+  .modal {
+    width: min(620px, 92vw);
+  }
+
+  /* Fila de 2 columnas: Descripción (izq) | Monto (der) */
+  .form-row-xl {
+    display: grid;
+    grid-template-columns: 1fr 180px;
+    gap: 1rem;
+    align-items: start;
+  }
+  .form-row-xl .form-group {
+    margin-bottom: 0;
+  }
+
+  /* Modal picker de categorías: más ancho en desktop */
+  #modal-picker-cat .modal {
+    width: min(800px, 92vw);
+  }
+  #modal-picker-cat #picker-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+}
