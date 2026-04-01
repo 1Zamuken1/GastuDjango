@@ -13,7 +13,7 @@ Sistema de gestión financiera personal desarrollado como proyecto formativo en 
 | ORM | Django ORM nativo |
 | Frontend | Django Templates + Tailwind CDN + Lucide Icons |
 | Fuentes | Plus Jakarta Sans (display) + DM Sans (cuerpo) |
-| Auth | Sistema nativo de Django con vistas propias |
+| Auth | Email + Contraseña (vistas propias) / Google OAuth via `django-allauth` |
 | Exportación | openpyxl (Excel) + reportlab (PDF) + csv stdlib |
 | IA / Agente | Gemini Flash (Google AI Studio) — Groq como fallback |
 | Python | 3.14 |
@@ -60,9 +60,18 @@ USE_SQLITE=True
 # DATABASE_URL=postgresql://postgres.<proyecto>:<PASSWORD>@aws-1-sa-east-1.pooler.supabase.com:6543/postgres
 ```
 
-### 5. Aplicar migraciones
+### 🚨 IMPORTANTE: Reset de Base de Datos y Migraciones (01 Abril)
+
+Para instalar los últimos cambios relacionados al login por email e importación CSV, **todos los desarrolladores** deben limpiar sus bases de datos locales y carpetas de migraciones antes de ejecutar los próximos comandos. 
+
+Si tienes archivos residuales, elimínalos:
+1. Elimina tu archivo `db.sqlite3` actual.
+2. Elimina todos los archivos `.py` dentro de las carpetas `migrations/` de todas las aplicaciones (excepto los archivos `__init__.py`).
+
+### 5. Aplicar nuevas migraciones
 
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 
@@ -78,11 +87,10 @@ python manage.py createsuperuser
 ### 7. Cargar categorías iniciales
 
 ```bash
-python manage.py loaddata categorias_iniciales
+python manage.py loaddata categorias.json
 ```
 
-Carga 26 categorías predefinidas: 10 de ingresos, 10 de egresos y 6 de ahorros.
-Solo es necesario correrlo una vez por máquina, después del `migrate`.
+Carga categorías de prueba base en el sistema limpio. También es posible cargar categorías masivamente mediante la nueva interfaz de **Importar CSV** utilizando el panel de administrador.
 
 ### 8. Ejecutar el servidor
 

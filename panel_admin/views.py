@@ -305,4 +305,57 @@ def admin_toggle_categoria(request, categoria_id):
     cat.activo = not cat.activo
     cat.save()
     estado = 'activada' if cat.activo else 'desactivada'
-    return JsonResponse({'ok': True, 'activo': cat.activo, 'msg': f'Categoría {estado}.'})
+    return JsonResponse({'ok': True, 'activo': cat.activo, 'msg': f'Categoria {estado}.'})
+
+
+# ──────────────────────────────────────────────────────────────
+#  IMPORTACION MASIVA DE CATEGORIAS (CSV)
+# ──────────────────────────────────────────────────────────────
+
+@admin_required
+def importar_categorias_csv(request):
+    """
+    Permite al administrador subir un archivo CSV para importar categorias
+    de forma masiva. Las categorias duplicadas (mismo nombre + tipo) se omiten.
+
+    GET:  muestra el formulario de subida con instrucciones.
+    POST: procesa el archivo CSV y muestra el resumen de la importacion.
+    """
+    from .services import procesar_csv_categorias
+
+    if request.method == 'POST':
+        archivo = request.FILES.get('archivo_csv')
+
+        if not archivo:
+            messages.error(request, 'No se selecciono ningun archivo.')
+            return redirect('panel_admin:importar_categorias_csv')
+
+        if not archivo.name.lower().endswith('.csv'):
+            messages.error(request, 'El archivo debe tener extension .csv')
+            return redirect('panel_admin:importar_categorias_csv')
+
+        if archivo.size > 2 * 1024 * 1024:  # 2 MB maximo
+            messages.error(request, 'El archivo no puede superar los 2 MB.')
+            return redirect('panel_admin:importar_categorias_csv')
+
+        resultado = procesar_csv_categorias(archivo)
+
+        if resultado['errores'] and resultado['creadas'] == 0 and resultado['omitidas'] == 0:
+            # Solo errores criticos (ej: columnas faltantes)
+            for err in resultado['errores']:
+                messages.error(request, err)
+        else:
+            resumen = (
+                f"Importacion completada: "
+                f"{resultado['creadas']} categoria(s) creada(s), "
+                f"{resultado['omitidas']} omitida(s) por duplicado."
+            )
+            messages.success(request, resumen)
+            if resultado['errores']:
+                for err in resultado['errores']:
+                    messages.warning(request, err)
+
+        return redirect('panel_admin:importar_categorias_csv')
+
+    context = {'seccion': 'categorias'}
+    return render(request, 'panel_admin/importar_categorias.html', context)

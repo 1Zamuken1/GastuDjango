@@ -51,6 +51,12 @@
       <i data-lucide="tag" class="nav-icon"></i>
       <span>Categorías</span>
     </a>
+
+    <a href="{% url 'panel_admin:importar_categorias_csv' %}"
+       class="nav-item {% block nav_importar_csv %}{% endblock %}">
+      <i data-lucide="upload-cloud" class="nav-icon"></i>
+      <span>Importar CSV</span>
+    </a>
   </nav>
 
   <div class="sidebar-footer">

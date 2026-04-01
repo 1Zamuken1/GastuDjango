@@ -29,4 +29,7 @@ urlpatterns = [
     path('categorias/<int:categoria_id>/detalle/', views.admin_categoria_detalle, name='categoria_detalle'),
     path('categorias/<int:categoria_id>/editar/', views.admin_editar_categoria_ajax, name='editar_categoria'),
     path('categorias/<int:categoria_id>/toggle/', views.admin_toggle_categoria, name='toggle_categoria'),
-]
+
+    # Categorías — Importacion masiva CSV
+    path('categorias/importar/', views.importar_categorias_csv, name='importar_categorias_csv'),
+]

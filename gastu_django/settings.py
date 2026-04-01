@@ -20,6 +20,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    # ── django-allauth ───────────────────────────────────────────
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    # ── Apps del proyecto ────────────────────────────────────────
     'landing',
     'usuarios',
     'movimientos',
@@ -42,6 +48,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Requerido por django-allauth
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'gastu_django.urls'
@@ -56,6 +64,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # Requerido por django-allauth
+                'django.template.context_processors.request',
             ],
         },
     },
@@ -117,3 +127,43 @@ AUTH_USER_MODEL = 'usuarios.Usuario'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
+
+# ──────────────────────────────────────────────────────────────
+# AUTHENTICATION BACKENDS
+# ModelBackend: login nativo por email (nuestro flujo propio)
+# allauth:      login social (Google OAuth, futuro)
+# ──────────────────────────────────────────────────────────────
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# ──────────────────────────────────────────────────────────────
+# DJANGO-ALLAUTH — Configuracion
+# ──────────────────────────────────────────────────────────────
+SITE_ID = 1
+
+# Configuracion de cuenta
+ACCOUNT_EMAIL_REQUIRED        = True
+ACCOUNT_UNIQUE_EMAIL          = True
+ACCOUNT_USERNAME_REQUIRED     = False     # username no requerido en flujo allauth
+ACCOUNT_AUTHENTICATION_METHOD = 'email'   # autenticar solo por email
+ACCOUNT_EMAIL_VERIFICATION    = 'none'    # sin verificacion por ahora (desarrollo)
+ACCOUNT_LOGIN_REDIRECT_URL    = '/dashboard/'
+ACCOUNT_LOGOUT_REDIRECT_URL   = '/'
+
+# Configuracion de redes sociales — Google OAuth
+# client_id y secret se obtienen de Google Cloud Console
+# Dejar vacios en desarrollo; completar al activar OAuth en produccion
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': '',
+            'secret':    '',
+            'key':       '',
+        },
+        'SCOPE':       ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'EMAIL_AUTHENTICATION': True,
+    }
+}
