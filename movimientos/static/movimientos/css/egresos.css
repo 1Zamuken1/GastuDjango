@@ -189,7 +189,7 @@
 
 /* ── Toast ───────────────────────────────────────── */
 .toast { padding: .75rem 1.1rem; border-radius: .625rem; font-size: .875rem; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,.12); animation: toast-in .2s ease; max-width: 320px; }
-.toast--ok { background: #fff1f2; color: #065f46; border: 1px solid #a7f3d0; }
+.toast--ok { background: #fef2f2; color: #9f1239; border: 1px solid #fca5a5; }
 .toast--error { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
 @keyframes toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 
@@ -279,9 +279,9 @@
 
   /* Modal picker de categorías: más ancho en desktop */
   #modal-picker-cat .modal {
-    width: min(800px, 92vw);
+    width: min(860px, 92vw);
   }
   #modal-picker-cat #picker-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 }
