@@ -472,3 +472,14 @@
 /* ── Quick-add movimientos (solo mes actual) ─────────────── */
 #mov-quick-add { display: none; gap: 8px; }
 #mov-quick-add.mov-quick-add--visible { display: flex; }
+
+/* ── Responsive: pantallas grandes (≥ 1280px) ────── */
+@media (min-width: 1280px) {
+  /* Mostrar 4 tarjetas en el carrusel en desktop */
+  .carousel-slide { flex: 0 0 calc((100% - 42px) / 4); }
+}
+
+@media (min-width: 1536px) {
+  /* Mostrar 5 tarjetas en el carrusel en pantallas ultra anchas */
+  .carousel-slide { flex: 0 0 calc((100% - 56px) / 5); }
+}
