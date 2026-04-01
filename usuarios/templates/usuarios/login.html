@@ -59,7 +59,10 @@
 
         <!-- Contraseña -->
         <div>
-          <label class="auth-label" for="id_password">Contraseña</label>
+          <div class="flex justify-between items-center mb-1">
+            <label class="auth-label" style="margin-bottom:0;" for="id_password">Contraseña</label>
+            <a href="{% url 'account_reset_password' %}" tabindex="-1" class="text-xs text-emerald-500 hover:text-emerald-600 font-medium transition-colors">¿Olvidaste tu contraseña?</a>
+          </div>
           <div class="relative">
             <input type="password"
                    id="id_password"
