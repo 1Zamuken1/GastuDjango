@@ -236,7 +236,7 @@ def exportar_pdf(request):
     tipo_str = {'INGRESO': 'Ingresos', 'EGRESO': 'Egresos', 'AMBOS': 'Ingresos y Egresos'}.get(tipo, tipo)
 
     # Ruta absoluta del logo para xhtml2pdf (requiere path del sistema de archivos)
-    logo_path = finders.find('img/gastu_logo_rostro.png')
+    logo_path = finders.find('img/gastu_grafica_pdf.jpg')
     if logo_path:
         logo_path = logo_path.replace('\\', '/')
 
