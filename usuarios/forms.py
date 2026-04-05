@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
-from .models import Usuario
+from .models import Usuario, Preferencias
 
 
 # ──────────────────────────────────────────────────────────────
@@ -14,8 +14,6 @@ class UsuarioCreationForm(UserCreationForm):
     """
     Formulario de registro con validaciones personalizadas.
     Extiende UserCreationForm usando el modelo personalizado Usuario.
-    El nombre de usuario (username) es libre y puede repetirse.
-    El correo electronico es unico y es el identificador de la cuenta.
     """
 
     email = forms.EmailField(
@@ -40,7 +38,6 @@ class UsuarioCreationForm(UserCreationForm):
         model = Usuario
         fields = ('username', 'email', 'telefono')
 
-    # ── Username — solo longitud y caracteres, sin unicidad ─────
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
 
@@ -58,7 +55,6 @@ class UsuarioCreationForm(UserCreationForm):
 
         return username
 
-    # ── Email — unico en el sistema ─────────────────────────────
     def clean_email(self):
         email = self.cleaned_data.get('email', '').strip().lower()
 
@@ -70,12 +66,11 @@ class UsuarioCreationForm(UserCreationForm):
 
         return email
 
-    # ── Telefono ─────────────────────────────────────────────────
     def clean_telefono(self):
         telefono = (self.cleaned_data.get('telefono') or '').strip()
 
         if not telefono:
-            return telefono  # campo opcional
+            return telefono
 
         digits = re.sub(r'[\s\-\+]', '', telefono)
         if not digits.isdigit():
@@ -86,7 +81,6 @@ class UsuarioCreationForm(UserCreationForm):
 
         return telefono
 
-    # ── Contrasena ───────────────────────────────────────────────
     def clean_password1(self):
         password = self.cleaned_data.get('password1', '')
 
@@ -121,7 +115,6 @@ class UsuarioCreationForm(UserCreationForm):
 class LoginForm(forms.Form):
     """
     Formulario de login personalizado que autentica con EMAIL + contrasena.
-    No extiende AuthenticationForm porque ese usa username como campo fijo.
     """
 
     email = forms.EmailField(
@@ -168,3 +161,149 @@ class LoginForm(forms.Form):
     def get_user(self):
         """Devuelve el usuario autenticado tras validar el formulario."""
         return self._usuario_cache
+
+
+# ──────────────────────────────────────────────────────────────
+#  PERFIL — datos personales (username + telefono)
+# ──────────────────────────────────────────────────────────────
+
+class PerfilForm(forms.ModelForm):
+    """
+    Formulario simple para editar datos basicos del perfil.
+    """
+
+    class Meta:
+        model = Usuario
+        fields = ('username', 'telefono')
+        labels = {
+            'username': 'Nombre de usuario',
+            'telefono': 'Telefono',
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username', '').strip()
+
+        if len(username) < 3:
+            raise ValidationError('El nombre de usuario debe tener al menos 3 caracteres.')
+
+        if len(username) > 150:
+            raise ValidationError('El nombre de usuario no puede superar los 150 caracteres.')
+
+        if not re.match(r'^[a-zA-Z0-9_ .\-]+$', username):
+            raise ValidationError(
+                'Solo se permiten letras, numeros, espacios, guiones bajos (_), '
+                'puntos (.) y guiones (-).'
+            )
+
+        return username
+
+    def clean_telefono(self):
+        telefono = (self.cleaned_data.get('telefono') or '').strip()
+
+        if not telefono:
+            return ''
+
+        digits = re.sub(r'[\s\-\+]', '', telefono)
+        if not digits.isdigit():
+            raise ValidationError('El telefono solo puede contener numeros, + y -.')
+
+        if len(digits) < 7 or len(digits) > 15:
+            raise ValidationError('El telefono debe tener entre 7 y 15 digitos.')
+
+        return telefono
+
+
+# ──────────────────────────────────────────────────────────────
+#  PREFERENCIAS DE NOTIFICACIONES (editable)
+# ──────────────────────────────────────────────────────────────
+
+class PreferenciasForm(forms.ModelForm):
+    """
+    Formulario para configurar alertas de notificacion.
+    El modelo Preferencias tiene campos genericos, pero aqui los exponemos
+    como toggles individuales para cada tipo de alerta.
+    """
+
+    umbral_advertencia_porcentaje = forms.IntegerField(
+        min_value=20, max_value=100,
+        label='Umbral de gastos (%)',
+        help_text='Alerta al superar este porcentaje de tus ingresos',
+        widget=forms.NumberInput(attrs={
+            'min': '20', 'max': '100', 'step': '5',
+        }),
+    )
+
+    egreso_grande_porcentaje = forms.IntegerField(
+        min_value=5, max_value=80,
+        label='Egreso grande (%)',
+        help_text='Alerta si un solo gasto supera este porcentaje de ingresos',
+        widget=forms.NumberInput(attrs={
+            'min': '5', 'max': '80', 'step': '5',
+        }),
+    )
+
+    alerta_egreso_grande = forms.BooleanField(
+        required=False, label='Egreso grande',
+        help_text='Cuando un solo gasto es muy grande respecto a tus ingresos',
+    )
+    alerta_deficit = forms.BooleanField(
+        required=False, label='Balance en deficit',
+        help_text='Cuando tus egresos superan tus ingresos',
+    )
+    alerta_patron_inusual = forms.BooleanField(
+        required=False, label='Patron inusual',
+        help_text='Cuando detecta comportamiento de gasto extrano',
+    )
+    alerta_presupuesto = forms.BooleanField(
+        required=False, label='Umbral mensual',
+        help_text='Cuando llevas un alto porcentaje gastado del mes',
+    )
+    alerta_aporte_proximo = forms.BooleanField(
+        required=False, label='Aproximacion de pago',
+        help_text='Recordatorios de pagos proximos',
+    )
+    alerta_proyeccion = forms.BooleanField(
+        required=False, label='Proyeccion de sobregasto',
+        help_text='Cuando la proyeccion indica que gastarás mas de lo ganado',
+    )
+    alerta_velocidad = forms.BooleanField(
+        required=False, label='Velocidad de gasto',
+        help_text='Cuando gastas muy rapido en los primeros dias del mes',
+    )
+    alerta_gastos_hormiga = forms.BooleanField(
+        required=False, label='Gastos hormiga',
+        help_text='Cuando acumulas muchos pequenos gastos que suman mucho',
+    )
+
+    alerta_dia_critico = forms.BooleanField(
+        required=False, label='Dia critico',
+        help_text='Cuando llevas mucho gastado respecto al dia del mes',
+    )
+
+    class Meta:
+        model = Preferencias
+        fields = (
+            'umbral_advertencia_porcentaje',
+            'egreso_grande_porcentaje',
+            'alerta_egreso_grande',
+            'alerta_deficit',
+            'alerta_patron_inusual',
+            'alerta_presupuesto',
+            'alerta_aporte_proximo',
+            'alerta_aporte_dias_anticipacion',
+        )
+        labels = {
+            'alerta_aporte_dias_anticipacion': 'Dias de anticipacion',
+        }
+        widgets = {
+            'umbral_advertencia_porcentaje': forms.NumberInput(attrs={
+                'class': 'perfil-input',
+            }),
+            'egreso_grande_porcentaje': forms.NumberInput(attrs={
+                'class': 'perfil-input',
+            }),
+            'alerta_aporte_dias_anticipacion': forms.NumberInput(attrs={
+                'min': '1', 'max': '14', 'step': '1',
+                'class': 'perfil-input',
+            }),
+        }

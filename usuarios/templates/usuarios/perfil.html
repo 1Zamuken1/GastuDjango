@@ -1,0 +1,320 @@
+{% extends 'base_app.html' %}
+{% load static %}
+
+{% block title %}Mi perfil — GastuApp{% endblock %}
+{% block page_title %}Mi perfil{% endblock %}
+{% block page_subtitle %}Configuracion de tu cuenta{% endblock %}
+{% block nav_perfil %}active{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'usuarios/css/perfil.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{# ── Toast container (toast flotante estilo ingresos) ─── #}
+<div id="toast-container"></div>
+
+{# ── Tab navigation ──────────────────────────────────────── #}
+<div class="perfil-tabs" role="tablist">
+  <button class="perfil-tab {% if tab_activo == 'datos' %}active{% endif %}"
+          role="tab" data-tab="datos" aria-selected="true">
+    <i data-lucide="user" style="width:14px;height:14px;"></i>
+    <span>Datos personales</span>
+  </button>
+  <button class="perfil-tab {% if tab_activo == 'contrasena' %}active{% endif %}"
+          role="tab" data-tab="contrasena" aria-selected="false">
+    <i data-lucide="lock" style="width:14px;height:14px;"></i>
+    <span>Contrasena</span>
+  </button>
+  <button class="perfil-tab {% if tab_activo == 'preferencias' %}active{% endif %}"
+          role="tab" data-tab="preferencias" aria-selected="false">
+    <i data-lucide="bell" style="width:14px;height:14px;"></i>
+    <span>Preferencias</span>
+  </button>
+  <button class="perfil-tab {% if tab_activo == 'notificaciones' %}active{% endif %}"
+          role="tab" data-tab="notificaciones" aria-selected="false">
+    <i data-lucide="mail" style="width:14px;height:14px;"></i>
+    <span>Notificaciones</span>
+    {% if total_no_leidas %}
+    <span class="perfil-tab-badge">{{ total_no_leidas }}</span>
+    {% endif %}
+  </button>
+</div>
+
+{# ── Tab panels ──────────────────────────────────────────── #}
+
+<!-- TAB 1: Datos personales -->
+<div class="perfil-panel {% if tab_activo == 'datos' %}active{% endif %}" data-panel="datos">
+  <div class="perfil-card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+      <div class="info-block">
+        <p style="font-size:0.68rem;font-weight:700;color:var(--perfil-blue);text-transform:uppercase;letter-spacing:0.1em;">Correo</p>
+        <p style="font-size:0.88rem;font-weight:600;color:var(--slate-700);margin-top:4px;word-break:break-all;">{{ request.user.email }}</p>
+      </div>
+      <div class="info-block">
+        <p style="font-size:0.68rem;font-weight:700;color:var(--perfil-blue);text-transform:uppercase;letter-spacing:0.1em;">Miembro desde</p>
+        <p style="font-size:0.88rem;font-weight:600;color:var(--slate-700);margin-top:4px;">{{ request.user.date_joined|date:"d M Y" }}</p>
+      </div>
+    </div>
+
+    <h3 class="font-display font-bold tab-section-title">Datos personales</h3>
+    <p style="color:var(--slate-400);font-size:0.78rem;margin-bottom:16px;">
+      Informacion basica de tu cuenta
+    </p>
+
+    <form method="post" id="perfil-form" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="actualizar_datos" value="1" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="id_username" class="form-label">Nombre de usuario</label>
+          <input type="text" name="username" id="id_username"
+                 value="{{ perfil_form.username.value|default:'' }}"
+                 class="perfil-input" maxlength="150" />
+          <p class="form-error" id="error-username"></p>
+        </div>
+        <div class="form-group">
+          <label for="id_telefono" class="form-label">
+            Telefono <span style="color:var(--slate-400);font-weight:400;">(opcional)</span>
+          </label>
+          <input type="text" name="telefono" id="id_telefono"
+                 value="{{ perfil_form.telefono.value|default:'' }}"
+                 class="perfil-input" maxlength="20"
+                 placeholder="+57 300 123 4567" />
+          <p class="form-error" id="error-telefono"></p>
+        </div>
+      </div>
+      <button type="submit" class="btn-perfil btn-sm" id="btn-datos">
+        <i data-lucide="save" style="width:14px;height:14px;"></i>
+        Guardar cambios
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- TAB 2: Cambiar contrasena -->
+<div class="perfil-panel {% if tab_activo == 'contrasena' %}active{% endif %}" data-panel="contrasena">
+  <div class="perfil-card">
+    <div class="tab-header-row">
+      <div style="width:32px;height:32px;border-radius:9px;background:var(--perfil-blue-light);display:grid;place-items:center;">
+        <i data-lucide="lock" style="width:15px;height:15px;color:var(--perfil-blue);"></i>
+      </div>
+      <div>
+        <h3 class="font-display font-bold tab-section-title" style="margin-bottom:0;">Cambiar contrasena</h3>
+        <p style="color:var(--slate-400);font-size:0.78rem;">Elige una contrasena segura y unica</p>
+      </div>
+    </div>
+
+    <form method="post" id="password-form" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="cambiar_password" value="1" />
+      <div class="form-stacked">
+        <div class="form-group">
+          <label for="id_old_password" class="form-label">Contrasena actual</label>
+          <div class="input-with-toggle">
+            <input type="password" name="old_password" id="id_old_password"
+                   class="perfil-input" autocomplete="current-password" />
+            <button type="button" class="toggle-pass" data-target="id_old_password" aria-label="Mostrar contrasena">
+              <i data-lucide="eye" style="width:15px;height:15px;"></i>
+            </button>
+          </div>
+          <p class="form-error" id="error-old_password"></p>
+        </div>
+        <div class="form-group">
+          <label for="id_new_password1" class="form-label">Nueva contrasena</label>
+          <div class="input-with-toggle">
+            <input type="password" name="new_password1" id="id_new_password1"
+                   class="perfil-input" autocomplete="new-password" />
+            <button type="button" class="toggle-pass" data-target="id_new_password1" aria-label="Mostrar contrasena">
+              <i data-lucide="eye" style="width:15px;height:15px;"></i>
+            </button>
+          </div>
+          {% if password_form.new_password2.help_text %}
+          <p class="form-hint">{{ password_form.new_password2.help_text }}</p>
+          {% endif %}
+          <p class="form-error" id="error-new_password1"></p>
+        </div>
+        <div class="form-group">
+          <label for="id_new_password2" class="form-label">Confirmar nueva contrasena</label>
+          <div class="input-with-toggle">
+            <input type="password" name="new_password2" id="id_new_password2"
+                   class="perfil-input" autocomplete="new-password" />
+            <button type="button" class="toggle-pass" data-target="id_new_password2" aria-label="Mostrar contrasena">
+              <i data-lucide="eye" style="width:15px;height:15px;"></i>
+            </button>
+          </div>
+          <p class="form-error" id="error-new_password2"></p>
+        </div>
+      </div>
+      <button type="submit" class="btn-perfil btn-sm" id="btn-password">
+        <i data-lucide="shield-check" style="width:14px;height:14px;"></i>
+        Actualizar contrasena
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- TAB 3: Preferencias -->
+<div class="perfil-panel {% if tab_activo == 'preferencias' %}active{% endif %}" data-panel="preferencias">
+  <div class="perfil-card">
+    <div class="tab-header-row">
+      <div style="width:32px;height:32px;border-radius:9px;background:var(--perfil-blue-light);display:grid;place-items:center;">
+        <i data-lucide="settings-2" style="width:15px;height:15px;color:var(--perfil-blue);"></i>
+      </div>
+      <div>
+        <h3 class="font-display font-bold tab-section-title" style="margin-bottom:0;">Preferencias de alertas</h3>
+        <p style="color:var(--slate-400);font-size:0.78rem;">Configura cuando y como queremos que te alertemos</p>
+      </div>
+    </div>
+
+    <form method="post" id="preferencias-form" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="guardar_preferencias" value="1" />
+      <h4 class="tab-subsection-title">Umbrales de alerta</h4>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="id_umbral_advertencia_porcentaje" class="form-label">Umbral de gastos (%)</label>
+          <input type="number" name="umbral_advertencia_porcentaje" id="id_umbral_advertencia_porcentaje"
+                 value="{{ preferencias_form.umbral_advertencia_porcentaje.value|default:80 }}"
+                 class="perfil-input" min="20" max="100" step="5" />
+          <p class="form-hint">Alerta al superar este porcentaje de tus ingresos mensuales</p>
+        </div>
+        <div class="form-group">
+          <label for="id_egreso_grande_porcentaje" class="form-label">Egreso grande (%)</label>
+          <input type="number" name="egreso_grande_porcentaje" id="id_egreso_grande_porcentaje"
+                 value="{{ preferencias_form.egreso_grande_porcentaje.value|default:30 }}"
+                 class="perfil-input" min="5" max="80" step="5" />
+          <p class="form-hint">Alerta si un solo gasto supera este porcentaje de tus ingresos</p>
+        </div>
+      </div>
+
+      <h4 class="tab-subsection-title">Notificaciones individuales</h4>
+      <p style="color:var(--slate-400);font-size:0.78rem;margin-bottom:12px;">Activa o desactiva cada tipo de alerta</p>
+
+      <div class="alert-toggles">
+        <label class="alert-toggle">
+          <input type="checkbox" name="alerta_egreso_grande"
+                 {% if preferencias_form.alerta_egreso_grande.value %}checked{% endif %} />
+          <div>
+            <span class="alert-toggle-label">Egreso grande</span>
+            <span class="alert-toggle-help">Cuando un solo gasto es muy grande</span>
+          </div>
+        </label>
+        <label class="alert-toggle">
+          <input type="checkbox" name="alerta_deficit"
+                 {% if preferencias_form.alerta_deficit.value %}checked{% endif %} />
+          <div>
+            <span class="alert-toggle-label">Balance en deficit</span>
+            <span class="alert-toggle-help">Cuando tus egresos superan tus ingresos</span>
+          </div>
+        </label>
+        <label class="alert-toggle">
+          <input type="checkbox" name="alerta_patron_inusual"
+                 {% if preferencias_form.alerta_patron_inusual.value %}checked{% endif %} />
+          <div>
+            <span class="alert-toggle-label">Patron inusual</span>
+            <span class="alert-toggle-help">Cuando detecta comportamiento de gasto extrano</span>
+          </div>
+        </label>
+        <label class="alert-toggle">
+          <input type="checkbox" name="alerta_presupuesto"
+                 {% if preferencias_form.alerta_presupuesto.value %}checked{% endif %} />
+          <div>
+            <span class="alert-toggle-label">Umbral mensual</span>
+            <span class="alert-toggle-help">Cuando llevas un alto porcentaje gastado del mes</span>
+          </div>
+        </label>
+        <label class="alert-toggle">
+          <input type="checkbox" name="alerta_aporte_proximo"
+                 {% if preferencias_form.alerta_aporte_proximo.value %}checked{% endif %} />
+          <div>
+            <span class="alert-toggle-label">Proximo pago</span>
+            <span class="alert-toggle-help">Recordatorios de pagos que se acercan</span>
+          </div>
+        </label>
+      </div>
+
+      <div style="margin-top:20px;">
+        <button type="submit" class="btn-perfil btn-sm" id="btn-preferencias">
+          <i data-lucide="save" style="width:14px;height:14px;"></i>
+          Guardar preferencias
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- TAB 4: Notificaciones -->
+<div class="perfil-panel {% if tab_activo == 'notificaciones' %}active{% endif %}" data-panel="notificaciones">
+  <div class="perfil-card notif-card">
+    <div class="notif-header">
+      <div class="tab-header-row">
+        <div style="width:32px;height:32px;border-radius:9px;background:var(--perfil-blue-light);display:grid;place-items:center;">
+          <i data-lucide="bell" style="width:15px;height:15px;color:var(--perfil-blue);"></i>
+        </div>
+        <div>
+          <h3 class="font-display font-bold tab-section-title" style="margin-bottom:0;">Centro de notificaciones</h3>
+          <p style="color:var(--slate-400);font-size:0.78rem;">Todas tus alertas en un solo lugar</p>
+        </div>
+      </div>
+      <button class="notif-mark-btn" id="btn-marcar-todas">
+        <i data-lucide="check-check" style="width:14px;height:14px;"></i>
+        Marcar todas como leidas
+      </button>
+    </div>
+
+    <div class="notif-filters" id="notif-filters" data-csrf="{{ csrf_token }}">
+      <button class="notif-pill active" data-modulo="TODOS">
+        <span>Todos</span>
+        {% if total_no_leidas %}<span class="notif-pill-count">{{ total_no_leidas }}</span>{% endif %}
+      </button>
+      <button class="notif-pill" data-modulo="INGRESOS">
+        <i data-lucide="trending-up" style="width:12px;height:12px;"></i>
+        <span>Ingresos</span>
+        {% if recuentos_modulos.INGRESOS %}<span class="notif-pill-count">{{ recuentos_modulos.INGRESOS }}</span>{% endif %}
+      </button>
+      <button class="notif-pill" data-modulo="EGRESOS">
+        <i data-lucide="trending-down" style="width:12px;height:12px;"></i>
+        <span>Egresos</span>
+        {% if recuentos_modulos.EGRESOS %}<span class="notif-pill-count">{{ recuentos_modulos.EGRESOS }}</span>{% endif %}
+      </button>
+      <button class="notif-pill" data-modulo="AHORROS">
+        <i data-lucide="piggy-bank" style="width:12px;height:12px;"></i>
+        <span>Ahorros</span>
+        {% if recuentos_modulos.AHORROS %}<span class="notif-pill-count">{{ recuentos_modulos.AHORROS }}</span>{% endif %}
+      </button>
+      <button class="notif-pill" data-modulo="PRESUPUESTOS">
+        <i data-lucide="target" style="width:12px;height:12px;"></i>
+        <span>Presupuestos</span>
+        {% if recuentos_modulos.PRESUPUESTOS %}<span class="notif-pill-count">{{ recuentos_modulos.PRESUPUESTOS }}</span>{% endif %}
+      </button>
+      <button class="notif-pill" data-modulo="PLANIFICACION">
+        <i data-lucide="calendar-range" style="width:12px;height:12px;"></i>
+        <span>Planificacion</span>
+        {% if recuentos_modulos.PLANIFICACION %}<span class="notif-pill-count">{{ recuentos_modulos.PLANIFICACION }}</span>{% endif %}
+      </button>
+      <button class="notif-pill" data-modulo="GENERAL">
+        <i data-lucide="info" style="width:12px;height:12px;"></i>
+        <span>General</span>
+        {% if recuentos_modulos.GENERAL %}<span class="notif-pill-count">{{ recuentos_modulos.GENERAL }}</span>{% endif %}
+      </button>
+    </div>
+
+    <div id="perfil-notif-lista" class="notif-lista">
+      <div class="notif-loading">
+        <i data-lucide="loader" style="width:28px;height:28px;animation:spin 1s linear infinite;"></i>
+        <span>Cargando notificaciones...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var CSRF_TOKEN = '{{ csrf_token }}';
+</script>
+<script src="{% static 'usuarios/js/perfil.js' %}"></script>
+{% endblock %}

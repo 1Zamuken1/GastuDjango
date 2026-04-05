@@ -63,11 +63,13 @@ def _crear_notificacion(usuario, tipo, titulo, descripcion):
     ).exists()
 
     if not ya_existe:
+        modulo = Notificacion.modulo_por_tipo(tipo)
         Notificacion.objects.create(
             usuario=usuario,
             tipo=tipo,
             titulo=titulo,
             descripcion=descripcion,
+            modulo=modulo,
         )
 
 

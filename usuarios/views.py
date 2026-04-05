@@ -1,9 +1,13 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.conf import settings
 
-from .forms import UsuarioCreationForm, LoginForm
+from .forms import UsuarioCreationForm, LoginForm, PerfilForm, PreferenciasForm
+from .models import Preferencias
 
 
 # ──────────────────────────────────────────────────────────────
@@ -69,3 +73,90 @@ def logout_view(request):
     """
     logout(request)
     return redirect(settings.LOGOUT_REDIRECT_URL)
+
+
+# ──────────────────────────────────────────────────────────────
+#  PERFIL
+# ──────────────────────────────────────────────────────────────
+
+@login_required
+def perfil_view(request):
+    """
+    Vista de perfil con 4 tabs.
+    Para AJAX (X-Requested-With: XMLHttpRequest) responde JSON.
+    Para navegacion normal responde HTML.
+    """
+    perfil_form = PerfilForm(instance=request.user)
+    password_form = PasswordChangeForm(request.user)
+
+    preferencias, _ = Preferencias.objects.get_or_create(
+        usuario=request.user,
+    )
+    preferencias_form = PreferenciasForm(instance=preferencias)
+
+    tab_activo = request.GET.get('tab', 'datos')
+    tabs_validas = {'datos', 'contrasena', 'preferencias', 'notificaciones'}
+    if tab_activo not in tabs_validas:
+        tab_activo = 'datos'
+
+    # AJAX POST — devuelve JSON en lugar de redirect
+    if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        if 'actualizar_datos' in request.POST:
+            perfil_form = PerfilForm(request.POST, instance=request.user)
+            if perfil_form.is_valid():
+                perfil_form.save()
+                if is_ajax:
+                    return JsonResponse({'ok': True, 'mensaje': 'Datos personales actualizados.'})
+                messages.success(request, 'Datos personales actualizados correctamente.')
+                return redirect('perfil')
+            if is_ajax:
+                return JsonResponse({'ok': False, 'errors': perfil_form.errors})
+
+        elif 'cambiar_password' in request.POST:
+            password_form = PasswordChangeForm(request.user, request.POST)
+            if password_form.is_valid():
+                password_form.save()
+                update_session_auth_hash(request, request.user)
+                if is_ajax:
+                    return JsonResponse({'ok': True, 'mensaje': 'Contrasena actualizada.'})
+                messages.success(request, 'Contrasena actualizada correctamente.')
+                return redirect('perfil')
+            if is_ajax:
+                return JsonResponse({'ok': False, 'errors': password_form.errors})
+
+        elif 'guardar_preferencias' in request.POST:
+            preferencias_form = PreferenciasForm(request.POST, instance=preferencias)
+            if preferencias_form.is_valid():
+                pref = preferencias_form.save(commit=False)
+                pref.usuario = request.user
+                pref.save()
+                if is_ajax:
+                    return JsonResponse({'ok': True, 'mensaje': 'Preferencias de alertas actualizadas.'})
+                messages.success(request, 'Preferencias de alertas actualizadas.')
+                return redirect('perfil')
+            if is_ajax:
+                return JsonResponse({'ok': False, 'errors': preferencias_form.errors})
+
+    # Conteos de notificaciones
+    from notificaciones.models import Notificacion
+
+    total_no_leidas = Notificacion.objects.filter(
+        usuario=request.user, leida=False
+    ).count()
+    recuentos_modulos = {}
+    for choice in Notificacion.Modulo.choices:
+        recuentos_modulos[choice[0]] = Notificacion.objects.filter(
+            usuario=request.user, leida=False, modulo=choice[0]
+        ).count()
+
+    return render(request, 'usuarios/perfil.html', {
+        'perfil_form': perfil_form,
+        'password_form': password_form,
+        'preferencias_form': preferencias_form,
+        'tab_activo': tab_activo,
+        'total_no_leidas': total_no_leidas,
+        'recuentos_modulos': recuentos_modulos,
+        'notificaciones_modulo_choices': Notificacion.Modulo.choices,
+    })

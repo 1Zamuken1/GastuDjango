@@ -582,6 +582,13 @@
         border-left-color: #a855f7;
         font-weight: 600;
       }
+      .nav-item--perfil:hover,
+      .nav-item--perfil.active {
+        background: rgba(13, 148, 136, 0.15);
+        color: #5eead4;
+        border-left-color: #0d9488;
+        font-weight: 600;
+      }
 
       .nav-icon {
         width: 18px;
@@ -990,7 +997,7 @@
               <p>{{ request.user.username }}</p>
               <p>{{ request.user.email|default:"Sin email" }}</p>
             </div>
-            <a href="#" class="dropdown-item">
+            <a href="{% url 'perfil' %}" class="dropdown-item">
               <i data-lucide="user" style="width: 14px; height: 14px"></i>
               Mi perfil
             </a>
@@ -1136,8 +1143,8 @@
         <p class="nav-section-label" style="margin-top: 12px">Cuenta</p>
 
         <a
-          href="#"
-          class="nav-item nav-item--dashboard {% block nav_perfil %}{% endblock %}"
+          href="{% url 'perfil' %}"
+          class="nav-item nav-item--perfil {% block nav_perfil %}{% endblock %}"
           data-tooltip="Mi perfil"
         >
           <i data-lucide="user-circle" class="nav-icon"></i>

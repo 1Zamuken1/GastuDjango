@@ -42,6 +42,15 @@ class Notificacion(models.Model):
         EGRESO_SIN_CONCEPTO   = 'EGRESO_SIN_CONCEPTO',   'Egresos sin categorizar'
         INGRESO_INUSUAL       = 'INGRESO_INUSUAL',       'Ingreso inusualmente alto'
 
+    class Modulo(models.TextChoices):
+        """Clasificacion de notificaciones por modulo que las genera."""
+        INGRESOS      = 'INGRESOS',      'Ingresos'
+        EGRESOS       = 'EGRESOS',       'Egresos'
+        AHORROS       = 'AHORROS',       'Ahorros'
+        PRESUPUESTOS  = 'PRESUPUESTOS',  'Presupuestos'
+        PLANIFICACION = 'PLANIFICACION', 'Planificacion'
+        GENERAL       = 'GENERAL',       'General'
+
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -52,6 +61,47 @@ class Notificacion(models.Model):
     descripcion = models.TextField()
     leida       = models.BooleanField(default=False)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    modulo      = models.CharField(
+        max_length=20,
+        choices=Modulo.choices,
+        default=Modulo.GENERAL,
+    )
+
+    @classmethod
+    def modulo_por_tipo(cls, tipo):
+        """
+        Devuelve el modulo correspondiente a un tipo de notificacion.
+        Usado por _crear_notificacion para clasificar automaticamente.
+        """
+        tipos_ingreso = {
+            cls.Tipo.REDUCCION_INGRESOS,
+            cls.Tipo.INACTIVIDAD_INGRESOS,
+            cls.Tipo.CONCEPTO_SIN_USO,
+            cls.Tipo.INGRESO_INUSUAL,
+        }
+        if tipo in tipos_ingreso:
+            return cls.Modulo.INGRESOS
+
+        tipos_egreso = {
+            cls.Tipo.DEFICIT,
+            cls.Tipo.EGRESO_GRANDE,
+            cls.Tipo.UMBRAL_MENSUAL,
+            cls.Tipo.GASTO_INCREMENTAL,
+            cls.Tipo.CONCENTRACION_GASTO,
+            cls.Tipo.VELOCIDAD_GASTO,
+            cls.Tipo.PATRON_INUSUAL,
+            cls.Tipo.PROYECCION_SOBREGASTO,
+            cls.Tipo.COMPARACION_PERIODO,
+            cls.Tipo.MICRO_GASTOS,
+            cls.Tipo.GASTOS_HORMIGA,
+            cls.Tipo.EGRESOS_AGRUPADOS,
+            cls.Tipo.DIA_MES_CRITICO,
+            cls.Tipo.EGRESO_SIN_CONCEPTO,
+        }
+        if tipo in tipos_egreso:
+            return cls.Modulo.EGRESOS
+
+        return cls.Modulo.GENERAL
 
     class Meta:
         verbose_name        = 'Notificación'

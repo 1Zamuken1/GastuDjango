@@ -186,7 +186,7 @@ Todas las vistas de la aplicación (post-login) extienden este archivo. **No cre
 | Planificaciones | `nav-item--planificaciones` | Blue `#1d4ed8` |
 | Presupuestos | `nav-item--presupuestos` | Violet `#7c3aed` |
 | Agente | `nav-item--agente` | Sky `#0ea5e9` |
-| Mi perfil | `nav-item--dashboard` | (mismo que Dashboard) |
+| Mi perfil | `nav-item--perfil` | Teal `#0d9488` |
 | Categorías (admin) | `nav-item--categorias` | Purple `#a855f7` |
 
 ### Toggle del sidebar
