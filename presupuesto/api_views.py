@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from .serializer import PresupuestoSerializer
 from .models import Presupuesto
-from .services import obtener_estado_presupuesto
+from .services import obtener_estado_presupuesto,desactivar_presupuestos_vencidos
 
 
 class PresupuestoViewSet(viewsets.ModelViewSet):
@@ -31,4 +31,11 @@ class PresupuestoViewSet(viewsets.ModelViewSet):
         return Response({
             "ok": True,
             "alertas": data
+        })
+    @action(detail=False, methods=['post'])
+    def verificar_vencidos(self, request):
+        desactivados = desactivar_presupuestos_vencidos(request.user)
+        return Response({
+            "ok": True,
+            "desactivados": desactivados
         })

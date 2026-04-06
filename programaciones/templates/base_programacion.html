@@ -1,0 +1,25 @@
+{% extends "base_app.html" %}
+{% load static %}
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="{% static 'css/programaciones.css' %}">
+{% endblock %}
+{% block title %}Programaciones — GastuApp{% endblock %}
+{% block page_title %}Programaciones{% endblock %}
+{% block page_subtitle %}Gestiona tus ingresos y gastos recurrentes{% endblock %}
+
+{% block nav_programaciones %}active{% endblock %}
+
+{% block content %}
+    <div class="programaciones-header">
+        <h1 class="font-display programaciones-titulo">Mis Programaciones</h1>
+        <button onclick="abrirModalHistorial()" class="btn-historial">Ver historial</button>
+        <button onclick="abrirModalCrear()" class="btn-crear">Nueva programación</button>
+    </div>
+  {% block programaciones_content %}{% endblock %}
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  {% block programaciones_scripts %}{% endblock %}
+{% endblock %}

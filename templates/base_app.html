@@ -1110,13 +1110,12 @@
         </a>
 
         <a
-          href="#"
-          class="nav-item nav-item--planificaciones disabled"
+          href="{% url 'base_programaciones' %}"
+         class="nav-item nav-item--planificaciones {% block nav_programaciones %}{% endblock %}"
           data-tooltip="Planificaciones (pronto)"
         >
           <i data-lucide="calendar-range" class="nav-icon"></i>
-          <span class="nav-label">Planificaciones</span>
-          <span class="nav-soon">Pronto</span>
+          <span class="nav-label">Programaciones</span>
         </a>
 
         <a
@@ -1131,13 +1130,12 @@
         <p class="nav-section-label" style="margin-top: 12px">Herramientas</p>
 
         <a
-          href="#"
-          class="nav-item nav-item--agente disabled"
+          href="{% url 'agente_financiero' %}"
+          class="nav-item nav-item--agente {% block nav_agente %}{% endblock %}"
           data-tooltip="Agente IA (pronto)"
         >
           <i data-lucide="bot" class="nav-icon"></i>
           <span class="nav-label">Agente Financiero</span>
-          <span class="nav-soon">Pronto</span>
         </a>
 
         <p class="nav-section-label" style="margin-top: 12px">Cuenta</p>

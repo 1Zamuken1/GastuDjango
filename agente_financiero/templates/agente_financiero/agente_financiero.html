@@ -1,0 +1,95 @@
+{% extends "base_app.html" %}
+{% load static %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/agente_financiero.css' %}">
+{% endblock %}
+
+{% block title %}Agente Financiero — GastuApp{% endblock %}
+{% block page_title %}Agente Financiero{% endblock %}
+{% block page_subtitle %}Tu asistente inteligente de finanzas personales{% endblock %}
+
+{% block nav_agente %}active{% endblock %}
+
+{% block content %}
+<div class="agente-wrapper">
+
+  <!-- Header -->
+  <div class="agente-header">
+    <div class="agente-header__info">
+      <div class="agente-avatar">
+        <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA" class="agente-avatar__img">
+        <span class="agente-avatar__status"></span>
+      </div>
+      <div class="agente-header__text">
+        <h2 class="agente-header__nombre">Gastu</h2>
+        <p class="agente-header__desc">Basado en tus datos financieros reales</p>
+      </div>
+    </div>
+    <button class="agente-btn-limpiar" id="btnLimpiarChat" title="Limpiar conversación">
+      <i data-lucide="trash-2"></i>
+      <span>Limpiar</span>
+    </button>
+  </div>
+
+  <!-- Chat -->
+  <div class="agente-chat" id="agenteChat">
+
+    <div class="agente-mensaje agente-mensaje--bot" id="mensajeBienvenida">
+      <div class="agente-mensaje__avatar">
+        <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA">
+      </div>
+      <div class="agente-mensaje__burbuja">
+        <p>Hola, <strong>{{ user.first_name|default:user.username }}</strong>. Soy tu asistente financiero personal.</p>
+        <p>Puedo ayudarte a analizar tus movimientos, revisar presupuestos, consultar metas de ahorro y mucho más. Pregúntame lo que necesites.</p>
+        <div class="agente-sugerencias">
+          <button class="agente-sugerencia" data-pregunta="¿Cuál es mi resumen financiero de este mes?">Resumen del mes</button>
+          <button class="agente-sugerencia" data-pregunta="¿Cómo van mis metas de ahorro?">Metas de ahorro</button>
+          <button class="agente-sugerencia" data-pregunta="¿Qué movimientos recientes tengo?">Últimos movimientos</button>
+          <button class="agente-sugerencia" data-pregunta="¿En qué categorías gasto más?">Gastos por categoría</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Typing -->
+  <div class="agente-typing" id="agenteTyping" aria-hidden="true">
+    <div class="agente-mensaje__avatar">
+      <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA">
+    </div>
+    <div class="agente-typing__burbuja">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="agente-input-wrapper">
+    <form class="agente-input-form" id="agenteForm" autocomplete="off">
+      {% csrf_token %}
+      <textarea
+        class="agente-input"
+        id="agenteInput"
+        placeholder="Escribe tu pregunta..."
+        rows="1"
+        maxlength="1000"
+        aria-label="Escribe tu mensaje"
+      ></textarea>
+      <button type="submit" class="agente-btn-enviar" id="agenteBtnEnviar" disabled>
+        <i data-lucide="send"></i>
+      </button>
+    </form>
+    <p class="agente-disclaimer">Gastu solo consulta tus datos, nunca los modifica.</p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script>
+    // Exponer inicial del usuario para el avatar
+    window.GASTU_USER_INICIAL = "{{ user.first_name|default:user.username|first|upper }}";
+  </script>
+  <script src="{% static 'js/agente_financiero.js' %}"></script>
+{% endblock %}

@@ -10,14 +10,22 @@ urlpatterns = [
     path('categorias/', include('categorias.urls', namespace='categorias')),
     path('admin-panel/', include('panel_admin.urls', namespace='panel_admin')),
     path('ahorros/', include('ahorros.urls', namespace='ahorros')),
-    # categoria api
+
+    # APIs
     path('api/', include('categorias.api_urls')),
-    # presupuestos
     path('api/', include('presupuesto.api_urls')),
+    path('api/', include('programaciones.api_urls')),
+    path('api/', include('agente_financiero.api_urls')),
+
+    # Módulos
     path('presupuesto/', include('presupuesto.urls')),
-    # notificaciones
+    path('programaciones/', include('programaciones.urls')),
+    path('agente_financiero/', include('agente_financiero.urls')),
+
+    # Otros
     path('notificaciones/', include('notificaciones.urls')),
     path('historial/', include('historial.urls', namespace='historial')),
-    # django-allauth — OAuth social (Google). Nuestro login propio sigue en /login/
+
+    # OAuth
     path('auth/', include('allauth.urls')),
-]
+]
