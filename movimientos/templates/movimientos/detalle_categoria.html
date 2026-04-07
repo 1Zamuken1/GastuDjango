@@ -147,6 +147,7 @@
     transition: background 0.14s;
     align-items: center;
   }
+  .mov-row > div:first-child { min-width: 0; }
   .mov-row:last-child { border-bottom: none; }
   .mov-row:hover { background: var(--slate-50); }
 
@@ -309,7 +310,7 @@
     flex-direction: column;
     gap: 4px;
   }
-  .del-preview p { font-size: 13px; color: var(--slate-700); }
+  .del-preview p { font-size: 13px; color: var(--slate-700); word-break: break-word; }
   .del-preview strong { font-weight: 600; color: #dc2626; }
   .del-preview small { font-size: 11px; color: var(--slate-400); }
 
@@ -453,8 +454,9 @@
         <i data-lucide="x"></i>
       </button>
     </div>
-    <form id="form-create" method="post" action="{% if tipo == 'INGRESO' %}{% url 'movimientos:crear_ingreso' %}{% else %}{% url 'movimientos:crear_egreso' %}{% endif %}">
+    <form id="form-create" method="post" action="{% url 'movimientos:guardar_movimiento' %}">
       {% csrf_token %}
+      <input type="hidden" name="tipo" value="{{ tipo }}">
       <div class="modal-body">
         <div class="field-group">
           <label class="field-label" for="c-categoria">Categoría</label>
@@ -495,6 +497,7 @@
     </div>
     <form id="form-edit" method="post">
       {% csrf_token %}
+      <input type="hidden" name="tipo" value="{{ tipo }}">
       <div class="modal-body">
         <div class="field-group">
           <label class="field-label" for="e-categoria">Categoría</label>
@@ -639,7 +642,8 @@ function openEdit(id, desc, monto, catId) {
   if (catSel) catSel.value = catId;
 
   // Apuntar el form action al endpoint correcto
-  document.getElementById('form-edit').action = `/editar/${id}/`;
+  const urlBase = "{% url 'movimientos:editar_movimiento' pk=0 %}";
+  document.getElementById('form-edit').action = urlBase.replace('0', id);
 
   openModal('modal-edit');
 }
