@@ -151,6 +151,8 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'   # autenticar solo por email
 ACCOUNT_EMAIL_VERIFICATION    = 'none'    # sin verificacion por ahora (desarrollo)
 ACCOUNT_LOGIN_REDIRECT_URL    = '/dashboard/'
 ACCOUNT_LOGOUT_REDIRECT_URL   = '/'
+ACCOUNT_EMAIL_SUBJECT_PREFIX  = ''        # Quita el sufijo [ejemplo.com] de los correos
+
 
 # Configuracion de redes sociales — Google OAuth
 # client_id y secret se obtienen de Google Cloud Console
