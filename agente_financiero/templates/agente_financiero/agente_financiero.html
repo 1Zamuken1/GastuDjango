@@ -40,7 +40,7 @@
         <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA">
       </div>
       <div class="agente-mensaje__burbuja">
-        <p>Hola, <strong>{{ user.first_name|default:user.username }}</strong>. Soy tu asistente financiero personal.</p>
+        <p>Hola, <strong class="name-user">{{ user.first_name|default:user.username }}</strong>. Soy tu asistente financiero personal.</p>
         <p>Puedo ayudarte a analizar tus movimientos, revisar presupuestos, consultar metas de ahorro y mucho más. Pregúntame lo que necesites.</p>
         <div class="agente-sugerencias">
           <button class="agente-sugerencia" data-pregunta="¿Cuál es mi resumen financiero de este mes?">Resumen del mes</button>

@@ -1,6 +1,40 @@
 {% extends "base_presupuesto.html" %}
 
 {% block presupuestos_content %}
+<div class="stats-hero">
+
+  <div class="stat-card stat-card-primary">
+    <span class="stat-label">Presupuestos activos</span>
+    <p class="stat-number" id="stat-activos">0</p>
+    <span class="stat-badge" id="stat-total-badge">de 0 registrados</span>
+  </div>
+
+  <div class="app-card stats-grid">
+    <div class="stat-item">
+      <span class="stat-item-label">Total límites</span>
+      <span class="stat-item-value purple" id="stat-total-limite">$0</span>
+      <span class="stat-item-sub">suma activos</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-item-label">Total gastado</span>
+      <span class="stat-item-value danger" id="stat-total-gastado">$0</span>
+      <span class="stat-item-sub">en activos</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-item-label">En alerta</span>
+      <span class="stat-item-value amber" id="stat-en-alerta">0</span>
+      <span class="stat-item-sub">≥ 80% consumido</span>
+    </div>
+  </div>
+
+</div>
+<!-- div BOTON CREAR PRESUPUESTO -->
+<div class="presupuesto-header">
+
+    <button onclick="abrirModalCrear()" class="btn-crear"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus"
+       aria-hidden="true" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Nuevo presupuesto</button>
+  </div>
+  <!-- DIV TARJETAS PRESUPUESTOS -->
     <div id="cards-presupuesto"></div>
 
     <!-- MODAL CREAR PRESUPUESTO -->
@@ -72,6 +106,9 @@
     <div id="modal-categorias" class="modal-overlay" style="display:none;">
       <div class="modal-container modal-categorias-container">
         <h3 class="modal-title">Seleccionar categoría</h3>
+        <input type="text" id="buscador-categorias" class="form-input"
+          placeholder="Buscar categoría..." oninput="filtrarCategorias()"
+          style="margin-bottom: 12px;">
         <div id="lista-categorias" class="categorias-grid"></div>
         <div class="modal-actions" style="margin-top:18px;">
           <button onclick="cerrarModal('modal-categorias')" class="btn-cancelar btn-categoria">Cerrar</button>
@@ -152,6 +189,29 @@
     .then(([presupuestos, alertasData]) => {
       const alertas    = alertasData.alertas
       const contenedor = document.getElementById('cards-presupuesto')
+      // Stats
+      const activos = presupuestos.filter(p => p.isActivo)
+      const totalLimite  = activos.reduce((s, p) => s + parseFloat(p.limite), 0)
+      const totalGastado = activos.reduce((s, p) => {
+        const a = alertasData.alertas.find(a =>
+          a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
+        )
+        return s + (a ? parseFloat(a.gastado) : 0)
+      }, 0)
+      const enAlerta = activos.filter(p => {
+        const a = alertasData.alertas.find(a =>
+          a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
+        )
+        return a && a.porcentaje >= 80
+      }).length
+
+      const fmt = v => parseFloat(v).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+
+      document.getElementById('stat-activos').textContent      = activos.length
+      document.getElementById('stat-total-badge').textContent  = `de ${presupuestos.length} registrados`
+      document.getElementById('stat-total-limite').textContent = fmt(totalLimite)
+      document.getElementById('stat-total-gastado').textContent = fmt(totalGastado)
+      document.getElementById('stat-en-alerta').textContent    = enAlerta
       contenedor.innerHTML = ''
 
       if (!presupuestos.length) {
@@ -294,26 +354,43 @@
 
   // ── Modal categorías ──────────────────────────────────────────────────────────
   let modalContexto = 'crear'
+  let todasLasCategorias = []
 
-  function abrirModalCategorias(contexto) {
-    modalContexto = contexto
-    document.getElementById('modal-categorias').style.display = 'flex'
+    function abrirModalCategorias(contexto) {
+      modalContexto = contexto
+      document.getElementById('buscador-categorias').value = ''
+      document.getElementById('modal-categorias').style.display = 'flex'
 
-    fetch('/api/categorias-egreso/')
-      .then(res => res.json())
-      .then(data => {
-        const contenedor = document.getElementById('lista-categorias')
-        contenedor.innerHTML = ''
-        data.forEach(cat => {
-          const div = document.createElement('div')
-          div.className = 'categoria-card'
-          div.textContent = cat.nombre
-          div.onclick = () => seleccionarCategoria(cat)
-          contenedor.appendChild(div)
+      fetch('/api/categorias-egreso/')
+        .then(res => res.json())
+        .then(data => {
+          todasLasCategorias = data
+          renderCategorias(data)
         })
+        .catch(err => console.error('Error cargando categorías:', err))
+    }
+
+    function filtrarCategorias() {
+      const query = document.getElementById('buscador-categorias').value.toLowerCase()
+      const filtradas = todasLasCategorias.filter(c => c.nombre.toLowerCase().includes(query))
+      renderCategorias(filtradas)
+    }
+
+    function renderCategorias(lista) {
+      const contenedor = document.getElementById('lista-categorias')
+      contenedor.innerHTML = ''
+      if (!lista.length) {
+        contenedor.innerHTML = '<p style="color:#888; font-size:0.9rem;">Sin resultados.</p>'
+        return
+      }
+      lista.forEach(cat => {
+        const div = document.createElement('div')
+        div.className = 'categoria-card'
+        div.textContent = cat.nombre
+        div.onclick = () => seleccionarCategoria(cat)
+        contenedor.appendChild(div)
       })
-      .catch(err => console.error('Error cargando categorías:', err))
-  }
+    }
 
   function seleccionarCategoria(cat) {
     if (modalContexto === 'editar') {

@@ -1,11 +1,45 @@
 {% extends "base_programacion.html" %}
 
 {% block programaciones_content %}
+  <div class="stats-hero">
+
+  <div class="stat-card stat-card-primary">
+    <span class="stat-label">Programaciones activas</span>
+    <p class="stat-number" id="stat-activas">0</p>
+    <span class="stat-badge" id="stat-total-badge">de 0 registradas</span>
+  </div>
+
+  <div class="app-card stats-grid">
+    <div class="stat-item">
+      <span class="stat-item-label">Ingresos prog.</span>
+      <span class="stat-item-value green" id="stat-monto-ingresos">$0</span>
+      <span class="stat-item-sub">mensual estimado</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-item-label">Egresos prog.</span>
+      <span class="stat-item-value danger" id="stat-monto-egresos">$0</span>
+      <span class="stat-item-sub">mensual estimado</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-item-label">Próxima alerta</span>
+      <span class="stat-item-value amber" id="stat-proxima-nombre">—</span>
+      <span class="stat-item-sub" id="stat-proxima-fecha">—</span>
+    </div>
+  </div>
+
+</div>
+<!-- BOTONES CREAR Y HISTORIAL -->
+  <div class="programaciones-header">
+        <button onclick="abrirModalHistorial()" class="btn-historial">Ver historial</button>
+        <button onclick="abrirModalCrear()" class="btn-crear"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+          data-lucide="plus" aria-hidden="true" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Nueva programación</button>
+    </div>
+    <!-- DIV DE LAS TARJETAS DE LAS PROGRAMACIONES  -->
   <div id="cards-programacion-wrap" class="cards-scroll-wrap">
     <div id="cards-programacion" class="cards-grid">
     </div>
   </div>
-
+  
   <!-- MODAL HISTORIAL -->
   <div id="modal-historial" class="modal-overlay" style="display:none;">
     <div class="modal-container" style="width:90%; max-width:820px; max-height:80vh; overflow-y:auto;">
@@ -25,8 +59,8 @@
           <tbody id="historial-body"></tbody>
         </table>
       </div>
-      <div class="modal-actions" style="margin-top:16px;">
-        <button onclick="cerrarModal('modal-historial')" class="btn-cancelar">Cerrar</button>
+      <div class="modal-actions historial" style="margin-top:16px;">
+        <button onclick="cerrarModal('modal-historial')" class="btn-cancelar historial">Cerrar</button>
       </div>
     </div>
   </div>
@@ -138,6 +172,9 @@
   <div id="modal-categorias" class="modal-overlay" style="display:none;">
     <div class="modal-container modal-categorias-container">
       <h3 class="modal-title">Seleccionar categoría</h3>
+      <input type="text" id="buscador-categorias" class="form-input"
+        placeholder="Buscar categoría..." oninput="filtrarCategorias()"
+        style="margin-bottom: 12px;">
       <div id="lista-categorias" class="categorias-grid"></div>
       <div class="modal-actions modal-actions-categoria" style="margin-top:18px;">
         <button onclick="cerrarModal('modal-categorias')" class="btn-cancelar btn-cancelar-categoria">Cerrar</button>
@@ -182,6 +219,33 @@
         contenedor.innerHTML = ''
         const lista = Array.isArray(data) ? data : (data.results || [])
 
+        // 1. Stats
+        const activas = lista.filter(p => p.activo)
+        const totalIngresos = activas
+          .filter(p => p.tipo === 'INGRESO')
+          .reduce((s, p) => s + parseFloat(p.monto_programado), 0)
+        const totalEgresos = activas
+          .filter(p => p.tipo === 'EGRESO')
+          .reduce((s, p) => s + parseFloat(p.monto_programado), 0)
+
+        // Próxima alerta: la más cercana a hoy entre las activas
+        const hoy = new Date(); hoy.setHours(0,0,0,0)
+        const conFecha = activas
+          .map(p => ({ ...p, _fecha: new Date(p.proxima_ejecucion || p.fecha_inicio) }))
+          .filter(p => p._fecha >= hoy)
+          .sort((a, b) => a._fecha - b._fecha)
+        const proxima = conFecha[0] || null
+
+        document.getElementById('stat-activas').textContent      = activas.length
+        document.getElementById('stat-total-badge').textContent  = `de ${lista.length} registradas`
+        document.getElementById('stat-monto-ingresos').textContent = formatMonto(totalIngresos)
+        document.getElementById('stat-monto-egresos').textContent  = formatMonto(totalEgresos)
+        document.getElementById('stat-proxima-nombre').textContent = proxima
+          ? (proxima.descripcion || proxima.categoria_nombre || '—') : '—'
+        document.getElementById('stat-proxima-fecha').textContent  = proxima
+          ? formatFecha(proxima.proxima_ejecucion || proxima.fecha_inicio) : '—'
+
+
         if (lista.length === 0) {
           contenedor.innerHTML = '<p class="sin-resultados">No tienes programaciones registradas.</p>'
           return
@@ -197,6 +261,7 @@
           const proximaLabel = formatFecha(proximaRaw)
 
           const card = document.createElement('div')
+          
           card.className = 'app-card card-programacion'
           card.innerHTML = `
             <div class="card-header">
@@ -331,34 +396,49 @@
 
   let modalContexto = 'crear'
 
-  function abrirModalCategorias(contexto) {
-    modalContexto = contexto
-    document.getElementById('modal-categorias').style.display = 'flex'
+  let todasLasCategorias = []
 
-    fetch('/api/categorias/', { credentials: 'same-origin' })
-      .then(res => res.json())
-      .then(data => {
-        const contenedor = document.getElementById('lista-categorias')
-        contenedor.innerHTML = ''
-        const categorias = Array.isArray(data) ? data : (data.categorias || data.results || [])
-        categorias
-          .filter(cat => cat.tipo === 'INGRESO' || cat.tipo === 'EGRESO')
-          .forEach(cat => {
-            const div = document.createElement('div')
-            div.className = 'categoria-card'
-            // Badge de tipo dentro de la tarjeta
-            const tipoClass = cat.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
-            const tipoLabel = cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
-            div.innerHTML = `
-              <span class="cat-nombre">${cat.nombre}</span>
-              <span class="card-badge ${tipoClass}">${tipoLabel}</span>
-            `
-            div.onclick = () => seleccionarCategoria(cat)
-            contenedor.appendChild(div)
-          })
-      })
-      .catch(err => console.error('Error cargando categorías:', err))
+function abrirModalCategorias(contexto) {
+  modalContexto = contexto
+  document.getElementById('buscador-categorias').value = ''
+  document.getElementById('modal-categorias').style.display = 'flex'
+
+  fetch('/api/categorias/', { credentials: 'same-origin' })
+    .then(res => res.json())
+    .then(data => {
+      const categorias = Array.isArray(data) ? data : (data.categorias || data.results || [])
+      todasLasCategorias = categorias.filter(cat => cat.tipo === 'INGRESO' || cat.tipo === 'EGRESO')
+      renderCategorias(todasLasCategorias)
+    })
+    .catch(err => console.error('Error cargando categorías:', err))
+}
+
+function filtrarCategorias() {
+  const query = document.getElementById('buscador-categorias').value.toLowerCase()
+  const filtradas = todasLasCategorias.filter(c => c.nombre.toLowerCase().includes(query))
+  renderCategorias(filtradas)
+}
+
+function renderCategorias(lista) {
+  const contenedor = document.getElementById('lista-categorias')
+  contenedor.innerHTML = ''
+  if (!lista.length) {
+    contenedor.innerHTML = '<p style="color:#888; font-size:0.9rem;">Sin resultados.</p>'
+    return
   }
+  lista.forEach(cat => {
+    const div = document.createElement('div')
+    div.className = 'categoria-card'
+    const tipoClass = cat.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
+    const tipoLabel = cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
+    div.innerHTML = `
+      <span class="cat-nombre">${cat.nombre}</span>
+      <span class="card-badge ${tipoClass}">${tipoLabel}</span>
+    `
+    div.onclick = () => seleccionarCategoria(cat)
+    contenedor.appendChild(div)
+  })
+}
 
   function seleccionarCategoria(cat) {
     if (modalContexto === 'editar') {
