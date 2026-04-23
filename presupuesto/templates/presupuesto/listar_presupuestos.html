@@ -12,12 +12,12 @@
   <div class="app-card stats-grid">
     <div class="stat-item">
       <span class="stat-item-label">Total límites</span>
-      <span class="stat-item-value purple" id="stat-total-limite">$0</span>
+      <span class="stat-item-value purple" id="stat-total-limite">0</span>
       <span class="stat-item-sub">suma activos</span>
     </div>
     <div class="stat-item">
       <span class="stat-item-label">Total gastado</span>
-      <span class="stat-item-value danger" id="stat-total-gastado">$0</span>
+      <span class="stat-item-value danger" id="stat-total-gastado">0</span>
       <span class="stat-item-sub">en activos</span>
     </div>
     <div class="stat-item">
@@ -119,429 +119,429 @@
 
 {% block presupuestos_scripts %}
 <script>
-  const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+      const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
 
-  // ── Helpers de modal ──────────────────────────────────────────────────────────
-  function abrirModal(id) { document.getElementById(id).style.display = 'flex' }
-  function cerrarModal(id) { document.getElementById(id).style.display = 'none' }
+      // ── Helpers de modal ──────────────────────────────────────────────────────────
+      function abrirModal(id) { document.getElementById(id).style.display = 'flex' }
+      function cerrarModal(id) { document.getElementById(id).style.display = 'none' }
 
-  document.addEventListener('click', function(e) {
-    ['modal-crear', 'modal-editar', 'modal-categorias'].forEach(id => {
-      const overlay = document.getElementById(id)
-      if (e.target === overlay) cerrarModal(id)
-    })
-  })
+      document.addEventListener('click', function(e) {
+        ['modal-crear', 'modal-editar', 'modal-categorias'].forEach(id => {
+          const overlay = document.getElementById(id)
+          if (e.target === overlay) cerrarModal(id)
+        })
+      })
 
-  // ── Helpers de alerta (localStorage) ─────────────────────────────────────────
-  function alertaYaVista(presupuestoId, nivel) {
-    return !!localStorage.getItem(`presup_vista_${presupuestoId}_${nivel}`)
-  }
-  function marcarAlertaVista(presupuestoId, nivel) {
-    ['baja','nivel_50','nivel_55','nivel_60','nivel_65','nivel_70',
-     'nivel_75','nivel_80','nivel_85','nivel_90','nivel_95','critica'].forEach(n => {
-      localStorage.removeItem(`presup_vista_${presupuestoId}_${n}`)
-    })
-    localStorage.setItem(`presup_vista_${presupuestoId}_${nivel}`, '1')
-  }
+      // ── Helpers de alerta (localStorage) ─────────────────────────────────────────
+      function alertaYaVista(presupuestoId, nivel) {
+        return !!localStorage.getItem(`presup_vista_${presupuestoId}_${nivel}`)
+      }
+      function marcarAlertaVista(presupuestoId, nivel) {
+        ['baja','nivel_50','nivel_55','nivel_60','nivel_65','nivel_70',
+        'nivel_75','nivel_80','nivel_85','nivel_90','nivel_95','critica'].forEach(n => {
+          localStorage.removeItem(`presup_vista_${presupuestoId}_${n}`)
+        })
+        localStorage.setItem(`presup_vista_${presupuestoId}_${nivel}`, '1')
+      }
 
-  // ── Mapeo porcentaje → clase de borde superior ────────────────────────────────
-  function claseEstado(alerta, isActivo) {
-    if (!isActivo) return 'estado-inactivo'
-    const mapa = {
-      nivel_50: 'estado-cuidado', nivel_55: 'estado-cuidado',
-      nivel_60: 'estado-alerta',  nivel_65: 'estado-alerta',
-      nivel_70: 'estado-alerta',  nivel_75: 'estado-alerta',
-      nivel_80: 'estado-alerta',
-      nivel_85: 'estado-peligro', nivel_90: 'estado-peligro', nivel_95: 'estado-peligro',
-      critica:  'estado-critico',
-    }
-    return mapa[alerta] || 'estado-normal'
-  }
+      // ── Mapeo porcentaje → clase de borde superior ────────────────────────────────
+      function claseEstado(alerta, isActivo) {
+        if (!isActivo) return 'estado-inactivo'
+        const mapa = {
+          nivel_50: 'estado-cuidado', nivel_55: 'estado-cuidado',
+          nivel_60: 'estado-alerta',  nivel_65: 'estado-alerta',
+          nivel_70: 'estado-alerta',  nivel_75: 'estado-alerta',
+          nivel_80: 'estado-alerta',
+          nivel_85: 'estado-peligro', nivel_90: 'estado-peligro', nivel_95: 'estado-peligro',
+          critica:  'estado-critico',
+        }
+        return mapa[alerta] || 'estado-normal'
+      }
 
-  // ── Cargar presupuestos ───────────────────────────────────────────────────────
-  function cargarPresupuestos() {
-    // Verificar vencidos primero
-    fetch('/api/presupuestos/verificar_vencidos/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-      credentials: 'same-origin'
-    })
-    .then(r => r.json())
-    .then(resultado => {
-      resultado.desactivados.forEach(p => {
-        const key = `alerta_vista_${p.id}_vencido`
-        if (!localStorage.getItem(key)) {
-          localStorage.setItem(key, '1')
-          Swal.fire({
-            icon: 'info',
-            title: 'Presupuesto completado',
-            text: `El presupuesto de "${p.categoria__nombre}" venció el ${p.fecha_fin} y fue desactivado automáticamente.`,
-            confirmButtonColor: '#7c5cbf'
+      // ── Cargar presupuestos ───────────────────────────────────────────────────────
+      function cargarPresupuestos() {
+        // Verificar vencidos primero
+        fetch('/api/presupuestos/verificar_vencidos/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(resultado => {
+          resultado.desactivados.forEach(p => {
+            const key = `alerta_vista_${p.id}_vencido`
+            if (!localStorage.getItem(key)) {
+              localStorage.setItem(key, '1')
+              Swal.fire({
+                icon: 'info',
+                title: 'Presupuesto completado',
+                text: `El presupuesto de "${p.categoria__nombre}" venció el ${p.fecha_fin} y fue desactivado automáticamente.`,
+                confirmButtonColor: '#7c5cbf'
+              })
+            }
+          })
+        })
+
+        Promise.all([
+          fetch('/api/presupuestos/', { credentials: 'same-origin' }).then(r => r.json()),
+          fetch('/api/presupuestos/alertas/', { credentials: 'same-origin' }).then(r => r.json())
+        ])
+        .then(([presupuestos, alertasData]) => {
+          const alertas    = alertasData.alertas
+          const contenedor = document.getElementById('cards-presupuesto')
+          // Stats
+          const activos = presupuestos.filter(p => p.isActivo)
+          const totalLimite  = activos.reduce((s, p) => s + parseFloat(p.limite), 0)
+          const totalGastado = activos.reduce((s, p) => {
+            const a = alertasData.alertas.find(a =>
+              a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
+            )
+            return s + (a ? parseFloat(a.gastado) : 0)
+          }, 0)
+          const enAlerta = activos.filter(p => {
+            const a = alertasData.alertas.find(a =>
+              a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
+            )
+            return a && a.porcentaje >= 80
+          }).length
+
+          const fmt = v => parseFloat(v).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+
+          document.getElementById('stat-activos').textContent      = activos.length
+          document.getElementById('stat-total-badge').textContent  = `de ${presupuestos.length} registrados`
+          document.getElementById('stat-total-limite').textContent = fmt(totalLimite)
+          document.getElementById('stat-total-gastado').textContent = fmt(totalGastado)
+          document.getElementById('stat-en-alerta').textContent    = enAlerta
+          contenedor.innerHTML = ''
+
+          if (!presupuestos.length) {
+            contenedor.innerHTML = '<p class="sin-resultados">No tienes presupuestos registrados.</p>'
+            return
+          }
+
+          presupuestos.forEach(p => {
+            const alerta = alertas.find(a =>
+              a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
+            )
+
+            // Valores por defecto
+            let color      = '#1ba74e'
+            let textoEstado = 'Normal'
+            let mensaje    = ''
+            let porcentaje = 0
+            let gastado    = '0'
+
+            const configs = {
+              nivel_50: { color: '#daa508', texto: 'Cuidado',     msg: `Llevas el 50% del límite en "${p.categoria_nombre}". Vigila tus gastos.` },
+              nivel_55: { color: '#daa508', texto: 'Cuidado',     msg: `Llevas el 55% del límite en "${p.categoria_nombre}". Vigila tus gastos.` },
+              nivel_60: { color: '#f97316', texto: 'Advertencia', msg: `Ya consumiste el 60% en "${p.categoria_nombre}". Modera tus gastos.` },
+              nivel_65: { color: '#f97316', texto: 'Advertencia', msg: `Ya consumiste el 65% en "${p.categoria_nombre}". Modera tus gastos.` },
+              nivel_70: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 70% en "${p.categoria_nombre}". Reduce tus gastos.` },
+              nivel_75: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 75% en "${p.categoria_nombre}". Reduce tus gastos.` },
+              nivel_80: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 80% en "${p.categoria_nombre}". Reduce tus gastos.` },
+              nivel_85: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 85% consumido en "${p.categoria_nombre}".` },
+              nivel_90: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 90% consumido en "${p.categoria_nombre}".` },
+              nivel_95: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 95% consumido en "${p.categoria_nombre}".` },
+              critica:  { color: '#b91c1c', texto: 'Crítico',     msg: `Superaste el límite de "${p.categoria_nombre}". Revisa tus gastos.` },
+            }
+
+            if (alerta) {
+              porcentaje = alerta.porcentaje
+              gastado    = alerta.gastado.toLocaleString('es-CO')
+              if (configs[alerta.alerta]) {
+                const cfg   = configs[alerta.alerta]
+                color       = cfg.color
+                textoEstado = cfg.texto
+                mensaje     = cfg.msg
+              }
+              if (mensaje && p.isActivo && !alertaYaVista(alerta.id, alerta.alerta)) {
+                Swal.fire({
+                  icon: 'warning',
+                  title: `${p.categoria_nombre}`,
+                  text: mensaje,
+                  confirmButtonColor: color
+                })
+                marcarAlertaVista(alerta.id, alerta.alerta)
+              }
+            }
+
+            const limite = parseFloat(p.limite).toLocaleString('es-CO', {
+              style: 'currency', currency: 'COP', maximumFractionDigits: 0
+            })
+
+            const estadoClase = claseEstado(alerta?.alerta, p.isActivo)
+
+            const card = document.createElement('div')
+            card.className = `card-presupuesto ${estadoClase}`
+            card.innerHTML = `
+              <div class="card-header">
+                <div>
+                  <div class="card-limite">${limite}</div>
+                  <div class="card-categoria">${p.categoria_nombre}</div>
+                </div>
+                <span class="card-badge ${p.isActivo ? 'activo' : 'inactivo'}">
+                  ${p.isActivo ? 'Activo' : 'Inactivo'}
+                </span>
+              </div>
+              <div class="card-body">
+                <div class="progreso-wrap">
+                  <span class="progreso-label">${porcentaje}% usado</span>
+                  <div class="progreso-track">
+                    <div class="progreso-fill" style="width:${Math.min(porcentaje,100)}%; background:${color};"></div>
+                  </div>
+                </div>
+                <div class="card-row">
+                  <span class="card-label">Gastado</span>
+                  <span class="card-value">$${gastado}</span>
+                </div>
+                <div class="card-row">
+                  <span class="card-label">Estado</span>
+                  <span class="card-value" style="color:${color}; font-weight:700;">${textoEstado}</span>
+                </div>
+                <div class="card-row">
+                  <span class="card-label">Inicio</span>
+                  <span class="card-value">${p.fecha_inicio}</span>
+                </div>
+                <div class="card-row">
+                  <span class="card-label">Fin</span>
+                  <span class="card-value">${p.fecha_fin}</span>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button onclick="togglePresupuesto(${p.id}, ${p.isActivo})" class="card-btn toggle">
+                  ${p.isActivo ? 'Desactivar' : 'Activar'}
+                </button>
+                <button onclick="editarPresupuesto(${p.id})" class="card-btn">Editar</button>
+                <button onclick="eliminarPresupuesto(${p.id})" class="card-btn danger">Eliminar</button>
+              </div>
+            `
+            contenedor.appendChild(card)
+          })
+        })
+        .catch(err => console.error('cargarPresupuestos error:', err))
+      }
+
+      // ── Toggle activo/inactivo ────────────────────────────────────────────────────
+      function togglePresupuesto(id, isActivo) {
+        Swal.fire({
+          title: isActivo ? 'Desactivar presupuesto' : 'Activar presupuesto',
+          text: isActivo ? 'El presupuesto dejará de estar vigente.' : 'El presupuesto volvera a estar activo.',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Confirmar',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: isActivo ? '#ef4444' : '#22c55e',
+        }).then(result => {
+          if (!result.isConfirmed) return
+          fetch(`/api/presupuestos/${id}/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
+            body: JSON.stringify({ isActivo: !isActivo })
+          })
+          .then(async r => {
+            const data = await r.json()
+            if (!r.ok) throw new Error(Object.values(data).flat().join('\n'))
+            return data
+          })
+          .then(() => {
+            Swal.fire({ icon: 'success', title: isActivo ? 'Desactivado' : 'Activado', timer: 1400, showConfirmButton: false })
+            cargarPresupuestos()
+          })
+          .catch(err => Swal.fire({ icon: 'error', title: 'No se pudo actualizar', text: err.message }))
+        })
+      }
+
+      // ── Modal categorías ──────────────────────────────────────────────────────────
+      let modalContexto = 'crear'
+      let todasLasCategorias = []
+
+        function abrirModalCategorias(contexto) {
+          modalContexto = contexto
+          document.getElementById('buscador-categorias').value = ''
+          document.getElementById('modal-categorias').style.display = 'flex'
+
+          fetch('/api/categorias-egreso/')
+            .then(res => res.json())
+            .then(data => {
+              todasLasCategorias = data
+              renderCategorias(data)
+            })
+            .catch(err => console.error('Error cargando categorías:', err))
+        }
+
+        function filtrarCategorias() {
+          const query = document.getElementById('buscador-categorias').value.toLowerCase()
+          const filtradas = todasLasCategorias.filter(c => c.nombre.toLowerCase().includes(query))
+          renderCategorias(filtradas)
+        }
+
+        function renderCategorias(lista) {
+          const contenedor = document.getElementById('lista-categorias')
+          contenedor.innerHTML = ''
+          if (!lista.length) {
+            contenedor.innerHTML = '<p style="color:#888; font-size:0.9rem;">Sin resultados.</p>'
+            return
+          }
+          lista.forEach(cat => {
+            const div = document.createElement('div')
+            div.className = 'categoria-card'
+            div.textContent = cat.nombre
+            div.onclick = () => seleccionarCategoria(cat)
+            contenedor.appendChild(div)
           })
         }
-      })
-    })
 
-    Promise.all([
-      fetch('/api/presupuestos/', { credentials: 'same-origin' }).then(r => r.json()),
-      fetch('/api/presupuestos/alertas/', { credentials: 'same-origin' }).then(r => r.json())
-    ])
-    .then(([presupuestos, alertasData]) => {
-      const alertas    = alertasData.alertas
-      const contenedor = document.getElementById('cards-presupuesto')
-      // Stats
-      const activos = presupuestos.filter(p => p.isActivo)
-      const totalLimite  = activos.reduce((s, p) => s + parseFloat(p.limite), 0)
-      const totalGastado = activos.reduce((s, p) => {
-        const a = alertasData.alertas.find(a =>
-          a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
-        )
-        return s + (a ? parseFloat(a.gastado) : 0)
-      }, 0)
-      const enAlerta = activos.filter(p => {
-        const a = alertasData.alertas.find(a =>
-          a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
-        )
-        return a && a.porcentaje >= 80
-      }).length
-
-      const fmt = v => parseFloat(v).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
-
-      document.getElementById('stat-activos').textContent      = activos.length
-      document.getElementById('stat-total-badge').textContent  = `de ${presupuestos.length} registrados`
-      document.getElementById('stat-total-limite').textContent = fmt(totalLimite)
-      document.getElementById('stat-total-gastado').textContent = fmt(totalGastado)
-      document.getElementById('stat-en-alerta').textContent    = enAlerta
-      contenedor.innerHTML = ''
-
-      if (!presupuestos.length) {
-        contenedor.innerHTML = '<p class="sin-resultados">No tienes presupuestos registrados.</p>'
-        return
+      function seleccionarCategoria(cat) {
+        if (modalContexto === 'editar') {
+          document.getElementById('editar-categoria').value       = cat.id
+          document.getElementById('editar-categoria_nombre').value = cat.nombre
+        } else {
+          document.getElementById('categoria').value       = cat.id
+          document.getElementById('categoria_nombre').value = cat.nombre
+        }
+        cerrarModal('modal-categorias')
       }
 
-      presupuestos.forEach(p => {
-        const alerta = alertas.find(a =>
-          a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
-        )
+      // ── Crear presupuesto ─────────────────────────────────────────────────────────
+      function abrirModalCrear() {
+        document.getElementById('form-crear').reset()
+        abrirModal('modal-crear')
+      }
 
-        // Valores por defecto
-        let color      = '#1ba74e'
-        let textoEstado = 'Normal'
-        let mensaje    = ''
-        let porcentaje = 0
-        let gastado    = '0'
+      document.getElementById('form-crear').addEventListener('submit', function(e) {
+        e.preventDefault()
 
-        const configs = {
-          nivel_50: { color: '#daa508', texto: 'Cuidado',     msg: `Llevas el 50% del límite en "${p.categoria_nombre}". Vigila tus gastos.` },
-          nivel_55: { color: '#daa508', texto: 'Cuidado',     msg: `Llevas el 55% del límite en "${p.categoria_nombre}". Vigila tus gastos.` },
-          nivel_60: { color: '#f97316', texto: 'Advertencia', msg: `Ya consumiste el 60% en "${p.categoria_nombre}". Modera tus gastos.` },
-          nivel_65: { color: '#f97316', texto: 'Advertencia', msg: `Ya consumiste el 65% en "${p.categoria_nombre}". Modera tus gastos.` },
-          nivel_70: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 70% en "${p.categoria_nombre}". Reduce tus gastos.` },
-          nivel_75: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 75% en "${p.categoria_nombre}". Reduce tus gastos.` },
-          nivel_80: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 80% en "${p.categoria_nombre}". Reduce tus gastos.` },
-          nivel_85: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 85% consumido en "${p.categoria_nombre}".` },
-          nivel_90: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 90% consumido en "${p.categoria_nombre}".` },
-          nivel_95: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 95% consumido en "${p.categoria_nombre}".` },
-          critica:  { color: '#b91c1c', texto: 'Crítico',     msg: `Superaste el límite de "${p.categoria_nombre}". Revisa tus gastos.` },
+        const categoria  = document.getElementById('categoria').value
+        const limiteVal  = parseFloat(document.getElementById('limite').value)
+        const fechaIni   = document.getElementById('fecha_inicio').value
+        const fechaFin   = document.getElementById('fecha_fin').value
+
+        if (!limiteVal || limiteVal <= 0)
+          return Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El límite debe ser mayor a 0.' })
+        if (!categoria)
+          return Swal.fire({ icon: 'warning', title: 'Falta la categoría', text: 'Selecciona una categoría para continuar.' })
+        if (!fechaIni)
+          return Swal.fire({ icon: 'warning', title: 'Falta fecha de inicio', text: 'Debes indicar la fecha de inicio.' })
+        if (!fechaFin)
+          return Swal.fire({ icon: 'warning', title: 'Falta fecha de fin', text: 'Debes indicar la fecha de fin.' })
+
+        const body = {
+          limite: limiteVal,
+          categoria,
+          fecha_inicio: fechaIni,
+          fecha_fin:    fechaFin,
+          isActivo:     true
         }
-
-        if (alerta) {
-          porcentaje = alerta.porcentaje
-          gastado    = alerta.gastado.toLocaleString('es-CO')
-          if (configs[alerta.alerta]) {
-            const cfg   = configs[alerta.alerta]
-            color       = cfg.color
-            textoEstado = cfg.texto
-            mensaje     = cfg.msg
+        fetch('/api/presupuestos/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          credentials: 'same-origin',
+          body: JSON.stringify(body)
+        })
+        .then(async r => {
+          const data = await r.json()
+          if (!r.ok) {
+            // Extrae solo los mensajes, sin los nombres de campo
+            const mensajes = Object.values(data).flat().join('\n')
+            throw new Error(mensajes)
           }
-          if (mensaje && p.isActivo && !alertaYaVista(alerta.id, alerta.alerta)) {
-            Swal.fire({
-              icon: 'warning',
-              title: `${p.categoria_nombre}`,
-              text: mensaje,
-              confirmButtonColor: color
+          return data
+        })
+        .then(() => {
+          cerrarModal('modal-crear')
+          Swal.fire({ icon: 'success', title: 'Presupuesto creado', timer: 1400, showConfirmButton: false })
+          cargarPresupuestos()
+        })
+        .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.' }))
+      })
+
+      // ── Editar presupuesto ────────────────────────────────────────────────────────
+      function editarPresupuesto(id) {
+        fetch(`/api/presupuestos/${id}/`, { credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(p => {
+            document.getElementById('editar-id').value               = p.id
+            document.getElementById('editar-limite').value           = p.limite
+            document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
+            document.getElementById('editar-fecha_fin').value        = p.fecha_fin
+            document.getElementById('editar-categoria').value        = p.categoria
+            document.getElementById('editar-categoria_nombre').value = p.categoria_nombre
+            abrirModal('modal-editar')
+          })
+          .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar el presupuesto.' }))
+      }
+
+      document.getElementById('form-editar').addEventListener('submit', function(e) {
+        e.preventDefault()
+
+        const id         = document.getElementById('editar-id').value
+        const categoria  = document.getElementById('editar-categoria').value
+        const limiteVal  = parseFloat(document.getElementById('editar-limite').value)
+        const fechaIni   = document.getElementById('editar-fecha_inicio').value
+        const fechaFin   = document.getElementById('editar-fecha_fin').value
+
+        if (!limiteVal || limiteVal <= 0)
+          return Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El límite debe ser mayor a 0.' })
+        if (!categoria)
+          return Swal.fire({ icon: 'warning', title: 'Falta la categoría', text: 'Selecciona una categoría para continuar.' })
+        if (!fechaIni)
+          return Swal.fire({ icon: 'warning', title: 'Falta fecha de inicio', text: 'Debes indicar la fecha de inicio.' })
+        if (!fechaFin)
+          return Swal.fire({ icon: 'warning', title: 'Falta fecha de fin', text: 'Debes indicar la fecha de fin.' })
+
+        const body = { limite: limiteVal, categoria, fecha_inicio: fechaIni, fecha_fin: fechaFin }
+        fetch(`/api/presupuestos/${id}/`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          credentials: 'same-origin',
+          body: JSON.stringify(body)
+        })
+        .then(async r => {
+          const data = await r.json()
+          if (!r.ok) {
+            const mensajes = Object.values(data).flat().join('\n')
+            throw new Error(mensajes)
+          }
+          return data
+        })
+        .then(() => {
+          cerrarModal('modal-editar')
+          Swal.fire({ icon: 'success', title: 'Cambios guardados', timer: 1400, showConfirmButton: false })
+          cargarPresupuestos()
+        })
+        .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo actualizar.' }))
+      })
+      // ── Eliminar presupuesto ──────────────────────────────────────────────────────
+      function eliminarPresupuesto(id) {
+        Swal.fire({
+          title: 'Eliminar presupuesto',
+          text: 'Esta acción no se puede deshacer.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#ef4444',
+        }).then(result => {
+          if (!result.isConfirmed) return
+          fetch(`/api/presupuestos/${id}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
+          })
+          .then(r => {
+            if (!r.ok) throw new Error()
+            ['baja','media','alta_media','alta','critica','vencido'].forEach(n => {
+              localStorage.removeItem(`alerta_vista_${id}_${n}`)
             })
-            marcarAlertaVista(alerta.id, alerta.alerta)
-          }
-        }
-
-        const limite = parseFloat(p.limite).toLocaleString('es-CO', {
-          style: 'currency', currency: 'COP', maximumFractionDigits: 0
+            Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1400, showConfirmButton: false })
+            cargarPresupuestos()
+          })
+          .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el presupuesto.' }))
         })
-
-        const estadoClase = claseEstado(alerta?.alerta, p.isActivo)
-
-        const card = document.createElement('div')
-        card.className = `card-presupuesto ${estadoClase}`
-        card.innerHTML = `
-          <div class="card-header">
-            <div>
-              <div class="card-limite">${limite}</div>
-              <div class="card-categoria">${p.categoria_nombre}</div>
-            </div>
-            <span class="card-badge ${p.isActivo ? 'activo' : 'inactivo'}">
-              ${p.isActivo ? 'Activo' : 'Inactivo'}
-            </span>
-          </div>
-          <div class="card-body">
-            <div class="progreso-wrap">
-              <span class="progreso-label">${porcentaje}% usado</span>
-              <div class="progreso-track">
-                <div class="progreso-fill" style="width:${Math.min(porcentaje,100)}%; background:${color};"></div>
-              </div>
-            </div>
-            <div class="card-row">
-              <span class="card-label">Gastado</span>
-              <span class="card-value">$${gastado}</span>
-            </div>
-            <div class="card-row">
-              <span class="card-label">Estado</span>
-              <span class="card-value" style="color:${color}; font-weight:700;">${textoEstado}</span>
-            </div>
-            <div class="card-row">
-              <span class="card-label">Inicio</span>
-              <span class="card-value">${p.fecha_inicio}</span>
-            </div>
-            <div class="card-row">
-              <span class="card-label">Fin</span>
-              <span class="card-value">${p.fecha_fin}</span>
-            </div>
-          </div>
-          <div class="card-footer">
-            <button onclick="togglePresupuesto(${p.id}, ${p.isActivo})" class="card-btn toggle">
-              ${p.isActivo ? 'Desactivar' : 'Activar'}
-            </button>
-            <button onclick="editarPresupuesto(${p.id})" class="card-btn">Editar</button>
-            <button onclick="eliminarPresupuesto(${p.id})" class="card-btn danger">Eliminar</button>
-          </div>
-        `
-        contenedor.appendChild(card)
-      })
-    })
-    .catch(err => console.error('cargarPresupuestos error:', err))
-  }
-
-  // ── Toggle activo/inactivo ────────────────────────────────────────────────────
-  function togglePresupuesto(id, isActivo) {
-    Swal.fire({
-      title: isActivo ? 'Desactivar presupuesto' : 'Activar presupuesto',
-      text: isActivo ? 'El presupuesto dejará de estar vigente.' : 'El presupuesto volvera a estar activo.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Confirmar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: isActivo ? '#ef4444' : '#22c55e',
-    }).then(result => {
-      if (!result.isConfirmed) return
-      fetch(`/api/presupuestos/${id}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-        credentials: 'same-origin',
-        body: JSON.stringify({ isActivo: !isActivo })
-      })
-      .then(async r => {
-        const data = await r.json()
-        if (!r.ok) throw new Error(Object.values(data).flat().join('\n'))
-        return data
-      })
-      .then(() => {
-        Swal.fire({ icon: 'success', title: isActivo ? 'Desactivado' : 'Activado', timer: 1400, showConfirmButton: false })
-        cargarPresupuestos()
-      })
-      .catch(err => Swal.fire({ icon: 'error', title: 'No se pudo actualizar', text: err.message }))
-    })
-  }
-
-  // ── Modal categorías ──────────────────────────────────────────────────────────
-  let modalContexto = 'crear'
-  let todasLasCategorias = []
-
-    function abrirModalCategorias(contexto) {
-      modalContexto = contexto
-      document.getElementById('buscador-categorias').value = ''
-      document.getElementById('modal-categorias').style.display = 'flex'
-
-      fetch('/api/categorias-egreso/')
-        .then(res => res.json())
-        .then(data => {
-          todasLasCategorias = data
-          renderCategorias(data)
-        })
-        .catch(err => console.error('Error cargando categorías:', err))
-    }
-
-    function filtrarCategorias() {
-      const query = document.getElementById('buscador-categorias').value.toLowerCase()
-      const filtradas = todasLasCategorias.filter(c => c.nombre.toLowerCase().includes(query))
-      renderCategorias(filtradas)
-    }
-
-    function renderCategorias(lista) {
-      const contenedor = document.getElementById('lista-categorias')
-      contenedor.innerHTML = ''
-      if (!lista.length) {
-        contenedor.innerHTML = '<p style="color:#888; font-size:0.9rem;">Sin resultados.</p>'
-        return
       }
-      lista.forEach(cat => {
-        const div = document.createElement('div')
-        div.className = 'categoria-card'
-        div.textContent = cat.nombre
-        div.onclick = () => seleccionarCategoria(cat)
-        contenedor.appendChild(div)
-      })
-    }
 
-  function seleccionarCategoria(cat) {
-    if (modalContexto === 'editar') {
-      document.getElementById('editar-categoria').value       = cat.id
-      document.getElementById('editar-categoria_nombre').value = cat.nombre
-    } else {
-      document.getElementById('categoria').value       = cat.id
-      document.getElementById('categoria_nombre').value = cat.nombre
-    }
-    cerrarModal('modal-categorias')
-  }
-
-  // ── Crear presupuesto ─────────────────────────────────────────────────────────
-  function abrirModalCrear() {
-    document.getElementById('form-crear').reset()
-    abrirModal('modal-crear')
-  }
-
-  document.getElementById('form-crear').addEventListener('submit', function(e) {
-    e.preventDefault()
-
-    const categoria  = document.getElementById('categoria').value
-    const limiteVal  = parseFloat(document.getElementById('limite').value)
-    const fechaIni   = document.getElementById('fecha_inicio').value
-    const fechaFin   = document.getElementById('fecha_fin').value
-
-    if (!limiteVal || limiteVal <= 0)
-      return Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El límite debe ser mayor a 0.' })
-    if (!categoria)
-      return Swal.fire({ icon: 'warning', title: 'Falta la categoría', text: 'Selecciona una categoría para continuar.' })
-    if (!fechaIni)
-      return Swal.fire({ icon: 'warning', title: 'Falta fecha de inicio', text: 'Debes indicar la fecha de inicio.' })
-    if (!fechaFin)
-      return Swal.fire({ icon: 'warning', title: 'Falta fecha de fin', text: 'Debes indicar la fecha de fin.' })
-
-    const body = {
-      limite: limiteVal,
-      categoria,
-      fecha_inicio: fechaIni,
-      fecha_fin:    fechaFin,
-      isActivo:     true
-    }
-    fetch('/api/presupuestos/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-      credentials: 'same-origin',
-      body: JSON.stringify(body)
-    })
-    .then(async r => {
-      const data = await r.json()
-      if (!r.ok) {
-        // Extrae solo los mensajes, sin los nombres de campo
-        const mensajes = Object.values(data).flat().join('\n')
-        throw new Error(mensajes)
-      }
-      return data
-    })
-    .then(() => {
-      cerrarModal('modal-crear')
-      Swal.fire({ icon: 'success', title: 'Presupuesto creado', timer: 1400, showConfirmButton: false })
-      cargarPresupuestos()
-    })
-    .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.' }))
-  })
-
-  // ── Editar presupuesto ────────────────────────────────────────────────────────
-  function editarPresupuesto(id) {
-    fetch(`/api/presupuestos/${id}/`, { credentials: 'same-origin' })
-      .then(r => r.json())
-      .then(p => {
-        document.getElementById('editar-id').value               = p.id
-        document.getElementById('editar-limite').value           = p.limite
-        document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
-        document.getElementById('editar-fecha_fin').value        = p.fecha_fin
-        document.getElementById('editar-categoria').value        = p.categoria
-        document.getElementById('editar-categoria_nombre').value = p.categoria_nombre
-        abrirModal('modal-editar')
-      })
-      .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar el presupuesto.' }))
-  }
-
-  document.getElementById('form-editar').addEventListener('submit', function(e) {
-    e.preventDefault()
-
-    const id         = document.getElementById('editar-id').value
-    const categoria  = document.getElementById('editar-categoria').value
-    const limiteVal  = parseFloat(document.getElementById('editar-limite').value)
-    const fechaIni   = document.getElementById('editar-fecha_inicio').value
-    const fechaFin   = document.getElementById('editar-fecha_fin').value
-
-    if (!limiteVal || limiteVal <= 0)
-      return Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El límite debe ser mayor a 0.' })
-    if (!categoria)
-      return Swal.fire({ icon: 'warning', title: 'Falta la categoría', text: 'Selecciona una categoría para continuar.' })
-    if (!fechaIni)
-      return Swal.fire({ icon: 'warning', title: 'Falta fecha de inicio', text: 'Debes indicar la fecha de inicio.' })
-    if (!fechaFin)
-      return Swal.fire({ icon: 'warning', title: 'Falta fecha de fin', text: 'Debes indicar la fecha de fin.' })
-
-    const body = { limite: limiteVal, categoria, fecha_inicio: fechaIni, fecha_fin: fechaFin }
-    fetch(`/api/presupuestos/${id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-      credentials: 'same-origin',
-      body: JSON.stringify(body)
-    })
-    .then(async r => {
-      const data = await r.json()
-      if (!r.ok) {
-        const mensajes = Object.values(data).flat().join('\n')
-        throw new Error(mensajes)
-      }
-      return data
-    })
-    .then(() => {
-      cerrarModal('modal-editar')
-      Swal.fire({ icon: 'success', title: 'Cambios guardados', timer: 1400, showConfirmButton: false })
-      cargarPresupuestos()
-    })
-    .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo actualizar.' }))
-  })
-  // ── Eliminar presupuesto ──────────────────────────────────────────────────────
-  function eliminarPresupuesto(id) {
-    Swal.fire({
-      title: 'Eliminar presupuesto',
-      text: 'Esta acción no se puede deshacer.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-    }).then(result => {
-      if (!result.isConfirmed) return
-      fetch(`/api/presupuestos/${id}/`, {
-        method: 'DELETE',
-        headers: { 'X-CSRFToken': csrfToken },
-        credentials: 'same-origin',
-      })
-      .then(r => {
-        if (!r.ok) throw new Error()
-        ['baja','media','alta_media','alta','critica','vencido'].forEach(n => {
-          localStorage.removeItem(`alerta_vista_${id}_${n}`)
-        })
-        Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1400, showConfirmButton: false })
-        cargarPresupuestos()
-      })
-      .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el presupuesto.' }))
-    })
-  }
-
-  // ── Init ──────────────────────────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', () => cargarPresupuestos())
-</script>
+      // ── Init ──────────────────────────────────────────────────────────────────────
+      document.addEventListener('DOMContentLoaded', () => cargarPresupuestos())
+    </script>
 {% endblock %}

@@ -14,6 +14,25 @@
 
 {% block content %}
 
+<style>
+  .categoria-btn{
+    display: flex !important;
+    justify-content: center !important;
+  }
+  .btn-ghost.cancelar{
+    border: solid 1px #5e5e5e;
+    color: #353535;
+    transition: all 0.3s ease;
+    padding: 10px 15px;
+
+  }
+  .btn-ghost.cancelar:hover{
+    color: #000000;
+    background-color: #d3d3d3;
+    transform: translateY(-2px);
+
+  }
+</style>
 {# ── STAT CARDS ─────────────────────────────────────────────────────────────── #}
 <div class="stats-hero">
   <div class="hero-total">
@@ -419,10 +438,10 @@
       {% endfor %}
     </div>
 
-    <div style="padding:.875rem 1.25rem;border-top:1px solid #f1f5f9;
+    <div class="categoria-btn" style="padding:.875rem 1.25rem;border-top:1px solid #f1f5f9;
                 background:#fff;display:flex;justify-content:space-between;align-items:center;">
       <span id="picker-seleccionado-label" style="font-size:.78rem;color:#64748b;font-style:italic;"></span>
-      <button type="button" class="btn-ghost" id="btn-cancelar-picker">Cancelar</button>
+      <button type="button" class="btn-ghost cancelar" id="btn-cancelar-picker">Cancelar</button>
     </div>
   </div>
 </div>

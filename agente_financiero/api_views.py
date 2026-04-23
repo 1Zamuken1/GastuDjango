@@ -1,11 +1,4 @@
-"""
-agente_financiero/api_views.py
 
-Endpoints del agente financiero:
-  GET  /api/agente/chat/    → retorna el historial del usuario
-  POST /api/agente/chat/    → envía un mensaje, guarda pregunta y respuesta
-  POST /api/agente/limpiar/ → borra el historial del usuario
-"""
 
 import json
 import logging
@@ -23,7 +16,7 @@ from .models import MensajeChat
 
 logger = logging.getLogger(__name__)
 
-MAX_HISTORIAL_CONTEXTO = 10  # Cuántos mensajes previos se pasan al LLM
+MAX_HISTORIAL_CONTEXTO = 10
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -51,7 +44,6 @@ class ChatView(View):
         })
 
     def post(self, request, *args, **kwargs):
-        """Recibe un mensaje, llama al agente y guarda ambos en BD."""
         if not request.user.is_authenticated:
             return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
 

@@ -1,0 +1,594 @@
+{# agente_financiero/templates/agente_financiero/partials/alertas_modal.html #}
+
+<div
+  id="gastu-modal-overlay"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="gastu-modal-titulo"
+>
+  <div class="gastu-modal">
+    <div class="gastu-modal__header">
+      <div>
+        <h2 id="gastu-modal-titulo" class="gastu-modal__title">
+          Novedades de hoy
+        </h2>
+        <p class="gastu-modal__subtitle">Tu resumen financiero personalizado</p>
+      </div>
+      <div class="gastu-modal__header-right">
+        <span id="gastu-badge-count" class="gastu-modal__badge"></span>
+        <button
+          class="gastu-modal__close"
+          id="gastu-cerrar-btn"
+          aria-label="Cerrar alertas"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="gastu-modal__body" id="gastu-alertas-lista">
+      <div class="gastu-skeleton" id="gastu-skeleton">
+        <div class="gastu-skeleton__card"></div>
+        <div class="gastu-skeleton__card"></div>
+        <div class="gastu-skeleton__card"></div>
+      </div>
+    </div>
+
+    <div class="gastu-modal__footer">
+      <button class="gastu-btn-primary" id="gastu-confirmar-btn">
+        Entendido
+      </button>
+    </div>
+  </div>
+</div>
+
+<button
+  id="gastu-campana-btn"
+  class="gastu-campana"
+  aria-label="Ver alertas financieras"
+  style="display: none"
+>
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+  >
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+  <span class="gastu-campana__dot" id="gastu-campana-dot"></span>
+</button>
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Instrument+Sans:wght@400;500;600&display=swap");
+
+  /* ── Variables propias del módulo ── */
+  #gastu-modal-overlay,
+  #gastu-modal-overlay * {
+    --gm-blue: #4da6ff;
+    --gm-blue-dark: #1a85f5;
+    --gm-blue-tint: #f0f5ff;
+    --gm-border: #e2eaf5;
+    --gm-border-mid: #c8d8ef;
+    --gm-text-1: #0f172a;
+    --gm-text-2: #334155;
+    --gm-text-3: #94a3b8;
+    --gm-bg: #ffffff;
+    --gm-bg-surface: #f8faff;
+    --gm-shadow-md:
+      0 8px 28px rgba(15, 23, 42, 0.11), 0 3px 10px rgba(15, 23, 42, 0.07);
+    --gm-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Overlay ── */
+  #gastu-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  #gastu-modal-overlay.gastu--visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── Contenedor modal ── */
+  .gastu-modal {
+    background: var(--gm-bg);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    border: 1.5px solid var(--gm-border);
+    box-shadow: var(--gm-shadow-md);
+    overflow: hidden;
+    font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  }
+
+  /* ── Header ── */
+  .gastu-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.5rem 0.9rem;
+    border-bottom: 1.5px solid var(--gm-border);
+  }
+  .gastu-modal__header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .gastu-modal__title {
+    font-family: "DM Sans", sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--gm-text-1);
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+  .gastu-modal__subtitle {
+    font-family: "Instrument Sans", sans-serif;
+    font-size: 12px;
+    color: var(--gm-text-3);
+    margin: 3px 0 0;
+    font-weight: 400;
+  }
+  .gastu-modal__badge {
+    font-family: "DM Sans", sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--gm-text-2);
+    background: var(--gm-blue-tint);
+    border: 1px solid var(--gm-border-mid);
+    padding: 3px 11px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .gastu-modal__close {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1.5px solid var(--gm-border);
+    background: var(--gm-bg);
+    color: var(--gm-text-3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background var(--gm-transition),
+      border-color var(--gm-transition),
+      color var(--gm-transition);
+  }
+  .gastu-modal__close:hover {
+    background: var(--gm-blue-tint);
+    border-color: var(--gm-blue);
+    color: var(--gm-blue-dark);
+  }
+
+  /* ── Body / lista ── */
+  .gastu-modal__body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: 440px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gm-border-mid) transparent;
+  }
+  .gastu-modal__body::-webkit-scrollbar {
+    width: 5px;
+  }
+  .gastu-modal__body::-webkit-scrollbar-thumb {
+    background: var(--gm-border-mid);
+    border-radius: 999px;
+  }
+
+  /* ── Cards ── */
+  .gastu-alerta-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--gm-border);
+    transition: background var(--gm-transition);
+    cursor: default;
+  }
+  .gastu-alerta-card:last-child {
+    border-bottom: none;
+  }
+
+  .gastu-alerta-card--critica:hover {
+    background: rgba(239, 68, 68, 0.03);
+  }
+  .gastu-alerta-card--advertencia:hover {
+    background: rgba(245, 158, 11, 0.04);
+  }
+  .gastu-alerta-card--info:hover {
+    background: rgba(77, 166, 255, 0.04);
+  }
+  .gastu-alerta-card--logro:hover {
+    background: rgba(34, 197, 94, 0.04);
+  }
+  .gastu-alerta-card--consejo:hover {
+    background: rgba(34, 197, 94, 0.04);
+  }
+
+  /* Acento lateral de color */
+  .gastu-alerta-card__accent {
+    width: 3px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    align-self: stretch;
+    min-height: 50px;
+  }
+  .gastu-alerta-card--critica .gastu-alerta-card__accent {
+    background: #ef4444;
+  }
+  .gastu-alerta-card--advertencia .gastu-alerta-card__accent {
+    background: #f59e0b;
+  }
+  .gastu-alerta-card--info .gastu-alerta-card__accent {
+    background: #4da6ff;
+  }
+  .gastu-alerta-card--logro .gastu-alerta-card__accent {
+    background: #22c55e;
+  }
+  .gastu-alerta-card--consejo .gastu-alerta-card__accent {
+    background: #22c55e;
+  }
+
+  .gastu-alerta-card__content {
+    flex: 1;
+  }
+
+  .gastu-alerta-card__tipo {
+    font-family: "DM Sans", sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 4px;
+  }
+  .gastu-alerta-card--critica .gastu-alerta-card__tipo {
+    color: #ef4444;
+  }
+  .gastu-alerta-card--advertencia .gastu-alerta-card__tipo {
+    color: #f59e0b;
+  }
+  .gastu-alerta-card--info .gastu-alerta-card__tipo {
+    color: #1a85f5;
+  }
+  .gastu-alerta-card--logro .gastu-alerta-card__tipo {
+    color: #16a34a;
+  }
+  .gastu-alerta-card--consejo .gastu-alerta-card__tipo {
+    color: #16a34a;
+  }
+
+  .gastu-alerta-card__titulo {
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gm-text-1);
+    margin: 0 0 5px;
+    letter-spacing: -0.1px;
+  }
+  .gastu-alerta-card__mensaje {
+    font-family: "Instrument Sans", sans-serif;
+    font-size: 13px;
+    color: var(--gm-text-2);
+    margin: 0;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  /* ── Skeleton ── */
+  .gastu-skeleton {
+    display: flex;
+    flex-direction: column;
+  }
+  .gastu-skeleton__card {
+    height: 82px;
+    margin: 0;
+    border-bottom: 1px solid var(--gm-border);
+    background: linear-gradient(90deg, #f3f4f6 25%, #e9eaeb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: gastu-shimmer 1.4s infinite;
+  }
+  .gastu-skeleton__card:last-child {
+    border-bottom: none;
+  }
+  @keyframes gastu-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* ── Empty ── */
+  .gastu-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--gm-text-3);
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* ── Footer ── */
+  .gastu-modal__footer {
+    padding: 0.9rem 1.5rem;
+    border-top: 1.5px solid var(--gm-border);
+    display: flex;
+    justify-content: center;
+    background: var(--gm-bg-surface);
+  }
+  .gastu-btn-primary {
+    font-family: "DM Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 0.55rem 2.4rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--gm-blue);
+    background: var(--gm-bg);
+    color: var(--gm-text-2);
+    cursor: pointer;
+    letter-spacing: 0.2px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    transition:
+      background var(--gm-transition),
+      border-color var(--gm-transition),
+      color var(--gm-transition),
+      transform 150ms ease;
+  }
+  .gastu-btn-primary:hover {
+    background: var(--gm-blue-dark);
+    border-color: var(--gm-bg);
+    color: var(--gm-bg);
+    transform: translateY(-1px);
+  }
+  .gastu-btn-primary:active {
+    transform: translateY(0);
+  }
+
+  /* ── Campana ── */
+  .gastu-campana {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #1a1a2e;
+    color: #e8c468;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    z-index: 9998;
+    transition: transform 0.2s ease;
+  }
+  .gastu-campana:hover {
+    transform: scale(1.07);
+  }
+  .gastu-campana__dot {
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    border: 2px solid #1a1a2e;
+    display: none;
+  }
+  .gastu-campana__dot--visible {
+    display: block;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 560px) {
+    .gastu-modal {
+      border-radius: 14px;
+      max-height: 92vh;
+    }
+    .gastu-modal__title {
+      font-size: 15px;
+    }
+    .gastu-modal__header {
+      padding: 0.9rem 1rem 0.75rem;
+    }
+    .gastu-modal__body {
+      max-height: 60vh;
+    }
+    .gastu-alerta-card {
+      padding: 0.85rem 1rem;
+      gap: 10px;
+    }
+    .gastu-modal__footer {
+      padding: 0.75rem 1rem;
+    }
+    .gastu-modal__badge {
+      display: none;
+    }
+    .gastu-campana {
+      bottom: 1.25rem;
+      right: 1.25rem;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    "use strict";
+
+    const API_URL = "/api/agente/alertas/";
+
+    const overlay = document.getElementById("gastu-modal-overlay");
+    const lista = document.getElementById("gastu-alertas-lista");
+    const skeleton = document.getElementById("gastu-skeleton");
+    const badge = document.getElementById("gastu-badge-count");
+    const btnCerrar = document.getElementById("gastu-cerrar-btn");
+    const btnConfirmar = document.getElementById("gastu-confirmar-btn");
+    const campana = document.getElementById("gastu-campana-btn");
+    const campanaDot = document.getElementById("gastu-campana-dot");
+
+    let registroId = null;
+
+    function abrirModal() {
+      overlay.classList.add("gastu--visible");
+      overlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      campana.style.display = "none";
+    }
+
+    function cerrarModal() {
+      overlay.classList.remove("gastu--visible");
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      campana.style.display = "flex";
+      if (registroId) {
+        marcarVisto(registroId);
+        registroId = null;
+      }
+    }
+
+    function marcarVisto(id) {
+      fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify({ registro_id: id }),
+      }).catch(() => {});
+    }
+
+    function renderizarAlertas(alertas) {
+      if (skeleton) skeleton.remove();
+
+      if (!alertas || alertas.length === 0) {
+        lista.innerHTML =
+          '<div class="gastu-empty">Todo en orden, sin alertas por ahora.</div>';
+        badge.textContent = "Sin alertas";
+        return;
+      }
+
+      badge.textContent =
+        alertas.length + " alerta" + (alertas.length > 1 ? "s" : "");
+      lista.innerHTML = "";
+
+      alertas.forEach(function (alerta) {
+        var card = document.createElement("div");
+        card.className = "gastu-alerta-card gastu-alerta-card--" + alerta.tipo;
+        card.innerHTML =
+          '<div class="gastu-alerta-card__accent"></div>' +
+          '<div class="gastu-alerta-card__content">' +
+          '<p class="gastu-alerta-card__tipo">' +
+          esc(alerta.tipo) +
+          "</p>" +
+          '<p class="gastu-alerta-card__titulo">' +
+          esc(alerta.titulo) +
+          "</p>" +
+          '<p class="gastu-alerta-card__mensaje">' +
+          esc(alerta.mensaje) +
+          "</p>" +
+          "</div>";
+        lista.appendChild(card);
+      });
+    }
+
+    async function cargarAlertas() {
+      try {
+        var res = await fetch(API_URL, {
+          method: "GET",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var data = await res.json();
+
+        if (!data.ok || !data.mostrar) return;
+
+        registroId = data.registro_id;
+        var SESSION_KEY = "gastu_modal_visto_" + data.registro_id;
+
+        if (sessionStorage.getItem(SESSION_KEY)) {
+          if (skeleton) skeleton.remove();
+          renderizarAlertas(data.alertas);
+          campana.style.display = "flex";
+          return;
+        }
+
+        renderizarAlertas(data.alertas);
+        abrirModal();
+        campanaDot.classList.add("gastu-campana__dot--visible");
+        sessionStorage.setItem(SESSION_KEY, "1");
+      } catch (err) {
+        console.warn("[GASTU] Error cargando alertas:", err);
+        if (skeleton) skeleton.remove();
+      }
+    }
+
+    function esc(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+    function getCookie(name) {
+      var v = document.cookie.match("(^|;) ?" + name + "=([^;]*)(;|$)");
+      return v ? v[2] : "";
+    }
+
+    btnCerrar.addEventListener("click", cerrarModal);
+    btnConfirmar.addEventListener("click", cerrarModal);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && overlay.classList.contains("gastu--visible"))
+        cerrarModal();
+    });
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) cerrarModal();
+    });
+    campana.addEventListener("click", function () {
+      abrirModal();
+      campanaDot.classList.remove("gastu-campana__dot--visible");
+    });
+
+    setTimeout(cargarAlertas, 800);
+  })();
+</script>

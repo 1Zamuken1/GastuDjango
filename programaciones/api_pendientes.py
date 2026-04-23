@@ -24,11 +24,6 @@ DELTA_MAP = {
 
 
 def calcular_proxima_fecha(programacion: Programacion, hoy: date) -> date | None:
-    """
-    Retorna la fecha pendiente si la programación debe ejecutarse HOY O ANTES.
-    Usa proxima_ejecucion como punto de referencia principal.
-    Solo retorna fecha si proxima_ejecucion <= hoy (es decir, ya tocó ejecutar).
-    """
     if not programacion.activo:
         return None
 
@@ -39,7 +34,6 @@ def calcular_proxima_fecha(programacion: Programacion, hoy: date) -> date | None
     if not delta:
         return None
 
-    # Usar proxima_ejecucion si existe, sino fecha_inicio
     cursor = programacion.proxima_ejecucion or programacion.fecha_inicio
 
     # La ejecución es pendiente cuando cursor <= hoy (incluye hoy mismo)
@@ -50,10 +44,6 @@ def calcular_proxima_fecha(programacion: Programacion, hoy: date) -> date | None
 
 
 def desactivar_si_vencida(prog: Programacion, hoy: date) -> bool:
-    """
-    Desactiva la programación si su fecha_fin ya pasó, o si proxima_ejecucion
-    supera fecha_fin (se agotó el rango). Retorna True si fue desactivada.
-    """
     if not prog.activo:
         return False
 
@@ -84,7 +74,7 @@ def serializar_pendiente(prog: Programacion, fecha_pendiente: date) -> dict:
     }
 
 
-# ── Endpoint 1: listar pendientes ─────────────────────────────────────────────
+# listar pendientes
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -113,7 +103,7 @@ def programaciones_pendientes(request):
     return Response({'pendientes': pendientes})
 
 
-# ── Endpoint 2: ejecutar (aceptar / rechazar) ─────────────────────────────────
+# ejecutar (aceptar / rechazar) 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -160,7 +150,7 @@ def ejecutar_programacion(request, pk):
 
     movimiento_data = None
 
-    # ── ACEPTAR ─────────────────────────────────────────
+    # ACETAR
     if accion == 'aceptar':
 
         resumen = ResumenMensual.objects.filter(usuario=request.user).first()
@@ -208,7 +198,7 @@ def ejecutar_programacion(request, pk):
             frecuencia_snapshot=prog.frecuencia,
         )
 
-    # ── Avanzar programación (tanto aceptar como rechazar) ──────────
+    #  Avanzar programación
     prog.proxima_ejecucion = proxima
     prog.save(update_fields=['proxima_ejecucion'])
 
@@ -225,7 +215,7 @@ def ejecutar_programacion(request, pk):
     })
 
 
-# ── Endpoint 3: historial ─────────────────────────────────────────
+# historial
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

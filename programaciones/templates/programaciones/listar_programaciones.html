@@ -12,12 +12,12 @@
   <div class="app-card stats-grid">
     <div class="stat-item">
       <span class="stat-item-label">Ingresos prog.</span>
-      <span class="stat-item-value green" id="stat-monto-ingresos">$0</span>
+      <span class="stat-item-value green" id="stat-monto-ingresos">0</span>
       <span class="stat-item-sub">mensual estimado</span>
     </div>
     <div class="stat-item">
       <span class="stat-item-label">Egresos prog.</span>
-      <span class="stat-item-value danger" id="stat-monto-egresos">$0</span>
+      <span class="stat-item-value danger" id="stat-monto-egresos">0</span>
       <span class="stat-item-sub">mensual estimado</span>
     </div>
     <div class="stat-item">
@@ -187,415 +187,415 @@
 
 {% block programaciones_scripts %}
 <script>
-  const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+      const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
 
-  function abrirModal(id)  { document.getElementById(id).style.display = 'flex' }
-  function cerrarModal(id) { document.getElementById(id).style.display = 'none' }
+      function abrirModal(id)  { document.getElementById(id).style.display = 'flex' }
+      function cerrarModal(id) { document.getElementById(id).style.display = 'none' }
 
-  document.addEventListener('click', function(e) {
-    ['modal-crear', 'modal-editar', 'modal-historial','modal-categorias'].forEach(id => {
-      const overlay = document.getElementById(id)
-      if (e.target === overlay) cerrarModal(id)
-    })
-  })
+      document.addEventListener('click', function(e) {
+        ['modal-crear', 'modal-editar', 'modal-historial','modal-categorias'].forEach(id => {
+          const overlay = document.getElementById(id)
+          if (e.target === overlay) cerrarModal(id)
+        })
+      })
 
-  function formatMonto(valor) {
-    return parseFloat(valor).toLocaleString('es-CO', {
-      style: 'currency', currency: 'COP', maximumFractionDigits: 0
-    })
-  }
+      function formatMonto(valor) {
+        return parseFloat(valor).toLocaleString('es-CO', {
+          style: 'currency', currency: 'COP', maximumFractionDigits: 0
+        })
+      }
 
-  function formatFecha(iso) {
-    if (!iso || iso === '—') return '—'
-    const [y, m, d] = iso.split('-')
-    return `${d}/${m}/${y}`
-  }
+      function formatFecha(iso) {
+        if (!iso || iso === '—') return '—'
+        const [y, m, d] = iso.split('-')
+        return `${d}/${m}/${y}`
+      }
 
-  function cargarProgramaciones() {
-    fetch('/api/programaciones/', { credentials: 'same-origin' })
-      .then(r => r.json())
-      .then(data => {
-        const contenedor = document.getElementById('cards-programacion')
-        contenedor.innerHTML = ''
-        const lista = Array.isArray(data) ? data : (data.results || [])
+      function cargarProgramaciones() {
+        fetch('/api/programaciones/', { credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(data => {
+            const contenedor = document.getElementById('cards-programacion')
+            contenedor.innerHTML = ''
+            const lista = Array.isArray(data) ? data : (data.results || [])
 
-        // 1. Stats
-        const activas = lista.filter(p => p.activo)
-        const totalIngresos = activas
-          .filter(p => p.tipo === 'INGRESO')
-          .reduce((s, p) => s + parseFloat(p.monto_programado), 0)
-        const totalEgresos = activas
-          .filter(p => p.tipo === 'EGRESO')
-          .reduce((s, p) => s + parseFloat(p.monto_programado), 0)
+            // 1. Stats
+            const activas = lista.filter(p => p.activo)
+            const totalIngresos = activas
+              .filter(p => p.tipo === 'INGRESO')
+              .reduce((s, p) => s + parseFloat(p.monto_programado), 0)
+            const totalEgresos = activas
+              .filter(p => p.tipo === 'EGRESO')
+              .reduce((s, p) => s + parseFloat(p.monto_programado), 0)
 
-        // Próxima alerta: la más cercana a hoy entre las activas
-        const hoy = new Date(); hoy.setHours(0,0,0,0)
-        const conFecha = activas
-          .map(p => ({ ...p, _fecha: new Date(p.proxima_ejecucion || p.fecha_inicio) }))
-          .filter(p => p._fecha >= hoy)
-          .sort((a, b) => a._fecha - b._fecha)
-        const proxima = conFecha[0] || null
+            // Próxima alerta: la más cercana a hoy entre las activas
+            const hoy = new Date(); hoy.setHours(0,0,0,0)
+            const conFecha = activas
+              .map(p => ({ ...p, _fecha: new Date(p.proxima_ejecucion || p.fecha_inicio) }))
+              .filter(p => p._fecha >= hoy)
+              .sort((a, b) => a._fecha - b._fecha)
+            const proxima = conFecha[0] || null
 
-        document.getElementById('stat-activas').textContent      = activas.length
-        document.getElementById('stat-total-badge').textContent  = `de ${lista.length} registradas`
-        document.getElementById('stat-monto-ingresos').textContent = formatMonto(totalIngresos)
-        document.getElementById('stat-monto-egresos').textContent  = formatMonto(totalEgresos)
-        document.getElementById('stat-proxima-nombre').textContent = proxima
-          ? (proxima.descripcion || proxima.categoria_nombre || '—') : '—'
-        document.getElementById('stat-proxima-fecha').textContent  = proxima
-          ? formatFecha(proxima.proxima_ejecucion || proxima.fecha_inicio) : '—'
+            document.getElementById('stat-activas').textContent      = activas.length
+            document.getElementById('stat-total-badge').textContent  = `de ${lista.length} registradas`
+            document.getElementById('stat-monto-ingresos').textContent = formatMonto(totalIngresos)
+            document.getElementById('stat-monto-egresos').textContent  = formatMonto(totalEgresos)
+            document.getElementById('stat-proxima-nombre').textContent = proxima
+              ? (proxima.descripcion || proxima.categoria_nombre || '—') : '—'
+            document.getElementById('stat-proxima-fecha').textContent  = proxima
+              ? formatFecha(proxima.proxima_ejecucion || proxima.fecha_inicio) : '—'
 
 
-        if (lista.length === 0) {
-          contenedor.innerHTML = '<p class="sin-resultados">No tienes programaciones registradas.</p>'
-          return
+            if (lista.length === 0) {
+              contenedor.innerHTML = '<p class="sin-resultados">No tienes programaciones registradas.</p>'
+              return
+            }
+
+            lista.forEach(p => {
+              const tipoClass   = p.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
+              const tipoLabel   = p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
+              const activoClass = p.activo ? 'badge-activo' : 'badge-inactivo'
+              const activoLabel = p.activo ? 'Activo' : 'Inactivo'
+              const fechaFin    = p.fecha_fin ? formatFecha(p.fecha_fin) : '—'
+              const proximaRaw  = p.proxima_ejecucion || p.fecha_inicio
+              const proximaLabel = formatFecha(proximaRaw)
+
+              const card = document.createElement('div')
+              
+              card.className = 'app-card card-programacion'
+              card.innerHTML = `
+                <div class="card-header">
+                  <div class="card-header-info">
+                    <div class="card-monto">${formatMonto(p.monto_programado)}</div>
+                    <div class="card-categoria">${p.categoria_nombre || '—'}</div>
+                  </div>
+                  <div class="card-badges">
+                    <span class="card-badge ${tipoClass}">${tipoLabel}</span>
+                    <span class="card-badge ${activoClass}">${activoLabel}</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="card-row">
+                    <span class="card-label">Frecuencia</span>
+                    <span class="card-value">${p.frecuencia}</span>
+                  </div>
+                  <div class="card-row">
+                    <span class="card-label">Descripción</span>
+                    <span class="card-value">${p.descripcion || '—'}</span>
+                  </div>
+                  <div class="card-row">
+                    <span class="card-label">Fecha inicio</span>
+                    <span class="card-value">${formatFecha(p.fecha_inicio)}</span>
+                  </div>
+                  <div class="card-row">
+                    <span class="card-label">Fecha fin</span>
+                    <span class="card-value">${fechaFin}</span>
+                  </div>
+                  <div class="card-row">
+                    <span class="card-label">Próxima alerta</span>
+                    <span class="card-value card-proxima">${proximaLabel}</span>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button onclick="toggleProgramacion(${p.id}, ${p.activo})" class="card-btn toggle">
+                    ${p.activo ? 'Desactivar' : 'Activar'}
+                  </button>
+                  <button onclick="editarProgramacion(${p.id})" class="card-btn">Editar</button>
+                  <button onclick="eliminarProgramacion(${p.id})" class="card-btn danger">Eliminar</button>
+                </div>
+              `
+              contenedor.appendChild(card)
+            })
+          })
+          .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las programaciones.' }))
+      }
+
+      function verificarPendientes() {
+        fetch('/api/programaciones/pendientes/', { credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(data => {
+            const pendientes = data.pendientes || []
+            if (pendientes.length === 0) return
+            procesarPendiente(pendientes, 0)
+          })
+          .catch(() => {})
+      }
+
+      function procesarPendiente(lista, indice) {
+        if (indice >= lista.length) { cargarProgramaciones(); return }
+        const p = lista[indice]
+        const tipoLabel = p.tipo === 'INGRESO' ? 'ingreso' : 'egreso'
+        const siguiente = () => procesarPendiente(lista, indice + 1)
+
+        Swal.fire({
+          title: 'Programación disponible',
+          html: `
+            <div style="text-align:left; font-size:14px; line-height:1.9;">
+              <div><strong>Categoría:</strong> ${p.categoria_nombre}</div>
+              <div><strong>Tipo:</strong> ${p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'}</div>
+              <div><strong>Monto:</strong> ${formatMonto(p.monto_programado)}</div>
+              <div><strong>Frecuencia:</strong> ${p.frecuencia}</div>
+              ${p.descripcion ? `<div><strong>Descripción:</strong> ${p.descripcion}</div>` : ''}
+              <div><strong>Fecha programada:</strong> ${formatFecha(p.fecha_pendiente)}</div>
+            </div>
+            <p style="margin-top:12px; font-size:13px; color:#4d7a68;">
+              ¿Deseas registrar este ${tipoLabel} ahora?
+            </p>
+          `,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Aceptar',
+          cancelButtonText: 'Rechazar',
+          confirmButtonColor: '#1a85f5',
+          cancelButtonColor: '#f05252',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+        }).then(result => {
+          const accion = result.isConfirmed ? 'aceptar' : 'rechazar'
+          fetch(`/api/programaciones/${p.id}/ejecutar/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
+            body: JSON.stringify({ accion })
+          })
+            .then(r => r.json())
+            .then(res => {
+              if (!res.ok) { Swal.fire({ icon: 'error', title: 'Error', text: res.error || 'No se pudo procesar.' }); return }
+              if (accion === 'aceptar') {
+                Swal.fire({ icon: 'success', title: 'Registrado', text: `Se registró el ${tipoLabel} de ${formatMonto(p.monto_programado)}.`, timer: 1800, showConfirmButton: false }).then(siguiente)
+              } else { siguiente() }
+            })
+            .catch(() => { Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar.' }); siguiente() })
+        })
+      }
+
+      function toggleProgramacion(id, activo) {
+        Swal.fire({
+          title: activo ? '¿Desactivar programación?' : '¿Activar programación?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: activo ? '#f05252' : '#1db87a'
+        }).then(result => {
+          if (!result.isConfirmed) return
+          fetch(`/api/programaciones/${id}/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
+            body: JSON.stringify({ activo: !activo })
+          })
+            .then(r => r.json())
+            .then(() => {
+              Swal.fire({ icon: 'success', title: activo ? 'Desactivada' : 'Activada', timer: 1500, showConfirmButton: false })
+              cargarProgramaciones()
+            })
+            .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar.' }))
+        })
+      }
+
+      let modalContexto = 'crear'
+
+      let todasLasCategorias = []
+
+    function abrirModalCategorias(contexto) {
+      modalContexto = contexto
+      document.getElementById('buscador-categorias').value = ''
+      document.getElementById('modal-categorias').style.display = 'flex'
+
+      fetch('/api/categorias/', { credentials: 'same-origin' })
+        .then(res => res.json())
+        .then(data => {
+          const categorias = Array.isArray(data) ? data : (data.categorias || data.results || [])
+          todasLasCategorias = categorias.filter(cat => cat.tipo === 'INGRESO' || cat.tipo === 'EGRESO')
+          renderCategorias(todasLasCategorias)
+        })
+        .catch(err => console.error('Error cargando categorías:', err))
+    }
+
+    function filtrarCategorias() {
+      const query = document.getElementById('buscador-categorias').value.toLowerCase()
+      const filtradas = todasLasCategorias.filter(c => c.nombre.toLowerCase().includes(query))
+      renderCategorias(filtradas)
+    }
+
+    function renderCategorias(lista) {
+      const contenedor = document.getElementById('lista-categorias')
+      contenedor.innerHTML = ''
+      if (!lista.length) {
+        contenedor.innerHTML = '<p style="color:#888; font-size:0.9rem;">Sin resultados.</p>'
+        return
+      }
+      lista.forEach(cat => {
+        const div = document.createElement('div')
+        div.className = 'categoria-card'
+        const tipoClass = cat.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
+        const tipoLabel = cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
+        div.innerHTML = `
+          <span class="cat-nombre">${cat.nombre}</span>
+          <span class="card-badge ${tipoClass}">${tipoLabel}</span>
+        `
+        div.onclick = () => seleccionarCategoria(cat)
+        contenedor.appendChild(div)
+      })
+    }
+
+      function seleccionarCategoria(cat) {
+        if (modalContexto === 'editar') {
+          document.getElementById('editar-categoria').value        = cat.id
+          document.getElementById('editar-categoria_nombre').value = `${cat.nombre} (${cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
+        } else {
+          document.getElementById('categoria').value        = cat.id
+          document.getElementById('categoria_nombre').value = `${cat.nombre} (${cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
         }
-
-        lista.forEach(p => {
-          const tipoClass   = p.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
-          const tipoLabel   = p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
-          const activoClass = p.activo ? 'badge-activo' : 'badge-inactivo'
-          const activoLabel = p.activo ? 'Activo' : 'Inactivo'
-          const fechaFin    = p.fecha_fin ? formatFecha(p.fecha_fin) : '—'
-          const proximaRaw  = p.proxima_ejecucion || p.fecha_inicio
-          const proximaLabel = formatFecha(proximaRaw)
-
-          const card = document.createElement('div')
-          
-          card.className = 'app-card card-programacion'
-          card.innerHTML = `
-            <div class="card-header">
-              <div class="card-header-info">
-                <div class="card-monto">${formatMonto(p.monto_programado)}</div>
-                <div class="card-categoria">${p.categoria_nombre || '—'}</div>
-              </div>
-              <div class="card-badges">
-                <span class="card-badge ${tipoClass}">${tipoLabel}</span>
-                <span class="card-badge ${activoClass}">${activoLabel}</span>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="card-row">
-                <span class="card-label">Frecuencia</span>
-                <span class="card-value">${p.frecuencia}</span>
-              </div>
-              <div class="card-row">
-                <span class="card-label">Descripción</span>
-                <span class="card-value">${p.descripcion || '—'}</span>
-              </div>
-              <div class="card-row">
-                <span class="card-label">Fecha inicio</span>
-                <span class="card-value">${formatFecha(p.fecha_inicio)}</span>
-              </div>
-              <div class="card-row">
-                <span class="card-label">Fecha fin</span>
-                <span class="card-value">${fechaFin}</span>
-              </div>
-              <div class="card-row">
-                <span class="card-label">Próxima alerta</span>
-                <span class="card-value card-proxima">${proximaLabel}</span>
-              </div>
-            </div>
-            <div class="card-footer">
-              <button onclick="toggleProgramacion(${p.id}, ${p.activo})" class="card-btn toggle">
-                ${p.activo ? 'Desactivar' : 'Activar'}
-              </button>
-              <button onclick="editarProgramacion(${p.id})" class="card-btn">Editar</button>
-              <button onclick="eliminarProgramacion(${p.id})" class="card-btn danger">Eliminar</button>
-            </div>
-          `
-          contenedor.appendChild(card)
-        })
-      })
-      .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las programaciones.' }))
-  }
-
-  function verificarPendientes() {
-    fetch('/api/programaciones/pendientes/', { credentials: 'same-origin' })
-      .then(r => r.json())
-      .then(data => {
-        const pendientes = data.pendientes || []
-        if (pendientes.length === 0) return
-        procesarPendiente(pendientes, 0)
-      })
-      .catch(() => {})
-  }
-
-  function procesarPendiente(lista, indice) {
-    if (indice >= lista.length) { cargarProgramaciones(); return }
-    const p = lista[indice]
-    const tipoLabel = p.tipo === 'INGRESO' ? 'ingreso' : 'egreso'
-    const siguiente = () => procesarPendiente(lista, indice + 1)
-
-    Swal.fire({
-      title: 'Programación disponible',
-      html: `
-        <div style="text-align:left; font-size:14px; line-height:1.9;">
-          <div><strong>Categoría:</strong> ${p.categoria_nombre}</div>
-          <div><strong>Tipo:</strong> ${p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'}</div>
-          <div><strong>Monto:</strong> ${formatMonto(p.monto_programado)}</div>
-          <div><strong>Frecuencia:</strong> ${p.frecuencia}</div>
-          ${p.descripcion ? `<div><strong>Descripción:</strong> ${p.descripcion}</div>` : ''}
-          <div><strong>Fecha programada:</strong> ${formatFecha(p.fecha_pendiente)}</div>
-        </div>
-        <p style="margin-top:12px; font-size:13px; color:#4d7a68;">
-          ¿Deseas registrar este ${tipoLabel} ahora?
-        </p>
-      `,
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: 'Aceptar',
-      cancelButtonText: 'Rechazar',
-      confirmButtonColor: '#1a85f5',
-      cancelButtonColor: '#f05252',
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-    }).then(result => {
-      const accion = result.isConfirmed ? 'aceptar' : 'rechazar'
-      fetch(`/api/programaciones/${p.id}/ejecutar/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-        credentials: 'same-origin',
-        body: JSON.stringify({ accion })
-      })
-        .then(r => r.json())
-        .then(res => {
-          if (!res.ok) { Swal.fire({ icon: 'error', title: 'Error', text: res.error || 'No se pudo procesar.' }); return }
-          if (accion === 'aceptar') {
-            Swal.fire({ icon: 'success', title: 'Registrado', text: `Se registró el ${tipoLabel} de ${formatMonto(p.monto_programado)}.`, timer: 1800, showConfirmButton: false }).then(siguiente)
-          } else { siguiente() }
-        })
-        .catch(() => { Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar.' }); siguiente() })
-    })
-  }
-
-  function toggleProgramacion(id, activo) {
-    Swal.fire({
-      title: activo ? '¿Desactivar programación?' : '¿Activar programación?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: activo ? '#f05252' : '#1db87a'
-    }).then(result => {
-      if (!result.isConfirmed) return
-      fetch(`/api/programaciones/${id}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-        credentials: 'same-origin',
-        body: JSON.stringify({ activo: !activo })
-      })
-        .then(r => r.json())
-        .then(() => {
-          Swal.fire({ icon: 'success', title: activo ? 'Desactivada' : 'Activada', timer: 1500, showConfirmButton: false })
-          cargarProgramaciones()
-        })
-        .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar.' }))
-    })
-  }
-
-  let modalContexto = 'crear'
-
-  let todasLasCategorias = []
-
-function abrirModalCategorias(contexto) {
-  modalContexto = contexto
-  document.getElementById('buscador-categorias').value = ''
-  document.getElementById('modal-categorias').style.display = 'flex'
-
-  fetch('/api/categorias/', { credentials: 'same-origin' })
-    .then(res => res.json())
-    .then(data => {
-      const categorias = Array.isArray(data) ? data : (data.categorias || data.results || [])
-      todasLasCategorias = categorias.filter(cat => cat.tipo === 'INGRESO' || cat.tipo === 'EGRESO')
-      renderCategorias(todasLasCategorias)
-    })
-    .catch(err => console.error('Error cargando categorías:', err))
-}
-
-function filtrarCategorias() {
-  const query = document.getElementById('buscador-categorias').value.toLowerCase()
-  const filtradas = todasLasCategorias.filter(c => c.nombre.toLowerCase().includes(query))
-  renderCategorias(filtradas)
-}
-
-function renderCategorias(lista) {
-  const contenedor = document.getElementById('lista-categorias')
-  contenedor.innerHTML = ''
-  if (!lista.length) {
-    contenedor.innerHTML = '<p style="color:#888; font-size:0.9rem;">Sin resultados.</p>'
-    return
-  }
-  lista.forEach(cat => {
-    const div = document.createElement('div')
-    div.className = 'categoria-card'
-    const tipoClass = cat.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
-    const tipoLabel = cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
-    div.innerHTML = `
-      <span class="cat-nombre">${cat.nombre}</span>
-      <span class="card-badge ${tipoClass}">${tipoLabel}</span>
-    `
-    div.onclick = () => seleccionarCategoria(cat)
-    contenedor.appendChild(div)
-  })
-}
-
-  function seleccionarCategoria(cat) {
-    if (modalContexto === 'editar') {
-      document.getElementById('editar-categoria').value        = cat.id
-      document.getElementById('editar-categoria_nombre').value = `${cat.nombre} (${cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
-    } else {
-      document.getElementById('categoria').value        = cat.id
-      document.getElementById('categoria_nombre').value = `${cat.nombre} (${cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
-    }
-    cerrarModal('modal-categorias')
-  }
+        cerrarModal('modal-categorias')
+      }
 
 
-  function abrirModalCrear() {
-    document.getElementById('form-crear').reset()
-    abrirModal('modal-crear')
-  }
+      function abrirModalCrear() {
+        document.getElementById('form-crear').reset()
+        abrirModal('modal-crear')
+      }
 
-  document.getElementById('form-crear').addEventListener('submit', function(e) {
-    e.preventDefault()
-    const categoria = document.getElementById('categoria').value
-    const monto        = document.getElementById('monto_programado').value
-    const frecuencia   = document.getElementById('frecuencia').value
-    const fecha_inicio = document.getElementById('fecha_inicio').value
+      document.getElementById('form-crear').addEventListener('submit', function(e) {
+        e.preventDefault()
+        const categoria = document.getElementById('categoria').value
+        const monto        = document.getElementById('monto_programado').value
+        const frecuencia   = document.getElementById('frecuencia').value
+        const fecha_inicio = document.getElementById('fecha_inicio').value
 
-    if (!monto || parseFloat(monto) <= 0) return Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' })
-    if (!categoria) return Swal.fire({ icon: 'warning', title: 'Falta categoría', text: 'Debes seleccionar una categoría.' })
-    if (!frecuencia)   return Swal.fire({ icon: 'warning', title: 'Falta frecuencia', text: 'Debes seleccionar una frecuencia.' })
-    if (!fecha_inicio) return Swal.fire({ icon: 'warning', title: 'Falta fecha', text: 'Debes indicar la fecha de inicio.' })
+        if (!monto || parseFloat(monto) <= 0) return Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' })
+        if (!categoria) return Swal.fire({ icon: 'warning', title: 'Falta categoría', text: 'Debes seleccionar una categoría.' })
+        if (!frecuencia)   return Swal.fire({ icon: 'warning', title: 'Falta frecuencia', text: 'Debes seleccionar una frecuencia.' })
+        if (!fecha_inicio) return Swal.fire({ icon: 'warning', title: 'Falta fecha', text: 'Debes indicar la fecha de inicio.' })
 
-    const body = {
-      monto_programado: monto,
-      categoria, frecuencia,
-      descripcion:  document.getElementById('descripcion').value || null,
-      fecha_inicio,
-      fecha_fin:    document.getElementById('fecha_fin').value || null,
-      activo:       true
-    }
-    fetch('/api/programaciones/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-      credentials: 'same-origin',
-      body: JSON.stringify(body)
-    })
-      .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(Object.values(d).flat().join('\n')); return d })
-      .then(() => {
-        cerrarModal('modal-crear')
-        Swal.fire({ icon: 'success', title: 'Programación creada', timer: 1500, showConfirmButton: false })
-        cargarProgramaciones()
-      })
-      .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.' }))
-  })
-
-  function editarProgramacion(id) {
-  fetch(`/api/programaciones/${id}/`, { credentials: 'same-origin' })
-    .then(r => r.json())
-    .then(p => {
-      document.getElementById('editar-id').value               = p.id
-      document.getElementById('editar-monto_programado').value = p.monto_programado
-      document.getElementById('editar-frecuencia').value       = p.frecuencia
-      document.getElementById('editar-descripcion').value      = p.descripcion || ''
-      document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
-      document.getElementById('editar-fecha_fin').value        = p.fecha_fin || ''
-      document.getElementById('editar-categoria').value        = p.categoria
-      document.getElementById('editar-categoria_nombre').value = `${p.categoria_nombre} (${p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
-      abrirModal('modal-editar')
-    })
-    .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la programación.' }))
-}
-
-  document.getElementById('form-editar').addEventListener('submit', function(e) {
-    e.preventDefault()
-    const id   = document.getElementById('editar-id').value
-    const body = {
-      monto_programado: document.getElementById('editar-monto_programado').value,
-      categoria:        document.getElementById('editar-categoria').value,
-      frecuencia:       document.getElementById('editar-frecuencia').value,
-      descripcion:      document.getElementById('editar-descripcion').value || null,
-      fecha_inicio:     document.getElementById('editar-fecha_inicio').value,
-      fecha_fin:        document.getElementById('editar-fecha_fin').value || null
-    }
-    fetch(`/api/programaciones/${id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-      credentials: 'same-origin',
-      body: JSON.stringify(body)
-    })
-      .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(Object.values(d).flat().join('\n')); return d })
-      .then(() => {
-        cerrarModal('modal-editar')
-        Swal.fire({ icon: 'success', title: 'Cambios guardados', timer: 1500, showConfirmButton: false })
-        cargarProgramaciones()
-      })
-      .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo actualizar.' }))
-  })
-
-  function eliminarProgramacion(id) {
-    Swal.fire({
-      title: '¿Eliminar programación?',
-      text: 'Esta acción no se puede deshacer.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#f05252'
-    }).then(result => {
-      if (!result.isConfirmed) return
-      fetch(`/api/programaciones/${id}/`, {
-        method: 'DELETE',
-        headers: { 'X-CSRFToken': csrfToken },
-        credentials: 'same-origin'
-      })
-        .then(r => {
-          if (!r.ok) throw new Error()
-          Swal.fire({ icon: 'success', title: 'Eliminada', timer: 1500, showConfirmButton: false })
-          cargarProgramaciones()
-        })
-        .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar.' }))
-    })
-  }
-
-  function abrirModalHistorial() {
-    cargarHistorial()
-    abrirModal('modal-historial')
-  }
-
-  function cargarHistorial() {
-    fetch('/api/programaciones/historial/', { credentials: 'same-origin' })
-      .then(r => r.json())
-      .then(data => {
-        const tbody = document.getElementById('historial-body')
-        const lista = data.ejecuciones || []
-        if (lista.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#4d7a68; padding:24px; font-style:italic;">Sin ejecuciones registradas</td></tr>'
-          return
+        const body = {
+          monto_programado: monto,
+          categoria, frecuencia,
+          descripcion:  document.getElementById('descripcion').value || null,
+          fecha_inicio,
+          fecha_fin:    document.getElementById('fecha_fin').value || null,
+          activo:       true
         }
-        tbody.innerHTML = ''
-        lista.forEach(e => {
-          const tr = document.createElement('tr')
-          const tipoClass = e.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
-          tr.innerHTML = `
-            <td class="td-descripcion">${e.descripcion || '—'}</td>
-            <td>${e.categoria_nombre}</td>
-            <td><span class="card-badge ${tipoClass}">${e.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'}</span></td>
-            <td>${e.frecuencia || '—'}</td>
-            <td>${formatMonto(e.monto)}</td>
-            <td>${formatFecha(e.fecha_ejecutada)}</td>
-          `
-          tbody.appendChild(tr)
+        fetch('/api/programaciones/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          credentials: 'same-origin',
+          body: JSON.stringify(body)
         })
+          .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(Object.values(d).flat().join('\n')); return d })
+          .then(() => {
+            cerrarModal('modal-crear')
+            Swal.fire({ icon: 'success', title: 'Programación creada', timer: 1500, showConfirmButton: false })
+            cargarProgramaciones()
+          })
+          .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.' }))
       })
-      .catch(() => {})
-  }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    cargarProgramaciones()
-    verificarPendientes()
-  })
+      function editarProgramacion(id) {
+      fetch(`/api/programaciones/${id}/`, { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(p => {
+          document.getElementById('editar-id').value               = p.id
+          document.getElementById('editar-monto_programado').value = p.monto_programado
+          document.getElementById('editar-frecuencia').value       = p.frecuencia
+          document.getElementById('editar-descripcion').value      = p.descripcion || ''
+          document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
+          document.getElementById('editar-fecha_fin').value        = p.fecha_fin || ''
+          document.getElementById('editar-categoria').value        = p.categoria
+          document.getElementById('editar-categoria_nombre').value = `${p.categoria_nombre} (${p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
+          abrirModal('modal-editar')
+        })
+        .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la programación.' }))
+    }
+
+      document.getElementById('form-editar').addEventListener('submit', function(e) {
+        e.preventDefault()
+        const id   = document.getElementById('editar-id').value
+        const body = {
+          monto_programado: document.getElementById('editar-monto_programado').value,
+          categoria:        document.getElementById('editar-categoria').value,
+          frecuencia:       document.getElementById('editar-frecuencia').value,
+          descripcion:      document.getElementById('editar-descripcion').value || null,
+          fecha_inicio:     document.getElementById('editar-fecha_inicio').value,
+          fecha_fin:        document.getElementById('editar-fecha_fin').value || null
+        }
+        fetch(`/api/programaciones/${id}/`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          credentials: 'same-origin',
+          body: JSON.stringify(body)
+        })
+          .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(Object.values(d).flat().join('\n')); return d })
+          .then(() => {
+            cerrarModal('modal-editar')
+            Swal.fire({ icon: 'success', title: 'Cambios guardados', timer: 1500, showConfirmButton: false })
+            cargarProgramaciones()
+          })
+          .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo actualizar.' }))
+      })
+
+      function eliminarProgramacion(id) {
+        Swal.fire({
+          title: '¿Eliminar programación?',
+          text: 'Esta acción no se puede deshacer.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#f05252'
+        }).then(result => {
+          if (!result.isConfirmed) return
+          fetch(`/api/programaciones/${id}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin'
+          })
+            .then(r => {
+              if (!r.ok) throw new Error()
+              Swal.fire({ icon: 'success', title: 'Eliminada', timer: 1500, showConfirmButton: false })
+              cargarProgramaciones()
+            })
+            .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar.' }))
+        })
+      }
+
+      function abrirModalHistorial() {
+        cargarHistorial()
+        abrirModal('modal-historial')
+      }
+
+      function cargarHistorial() {
+        fetch('/api/programaciones/historial/', { credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(data => {
+            const tbody = document.getElementById('historial-body')
+            const lista = data.ejecuciones || []
+            if (lista.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#4d7a68; padding:24px; font-style:italic;">Sin ejecuciones registradas</td></tr>'
+              return
+            }
+            tbody.innerHTML = ''
+            lista.forEach(e => {
+              const tr = document.createElement('tr')
+              const tipoClass = e.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
+              tr.innerHTML = `
+                <td class="td-descripcion">${e.descripcion || '—'}</td>
+                <td>${e.categoria_nombre}</td>
+                <td><span class="card-badge ${tipoClass}">${e.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'}</span></td>
+                <td>${e.frecuencia || '—'}</td>
+                <td>${formatMonto(e.monto)}</td>
+                <td>${formatFecha(e.fecha_ejecutada)}</td>
+              `
+              tbody.appendChild(tr)
+            })
+          })
+          .catch(() => {})
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        cargarProgramaciones()
+        verificarPendientes()
+      })
 </script>
 {% endblock %}
