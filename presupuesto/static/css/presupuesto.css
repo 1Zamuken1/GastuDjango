@@ -379,7 +379,7 @@
   gap: 8px;
   padding: 12px 14px;
   border-top: 1px solid var(--border);
-  background: var(--bg-footer);
+  background: var(--bg-base);
 }
 
 .card-btn {

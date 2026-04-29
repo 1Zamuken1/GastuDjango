@@ -1,6 +1,4 @@
 """
-agente_financiero/groq_client.py
-
 Cliente HTTP para GroqCloud con soporte de tool calling (function calling).
 El modelo puede invocar herramientas para consultar datos reales del usuario.
 """
@@ -15,11 +13,7 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 class GroqError(Exception):
     pass
-
-
-# ---------------------------------------------------------------------------
 # Definición de herramientas que el modelo puede invocar
-# ---------------------------------------------------------------------------
 
 TOOLS = [
     {
@@ -111,26 +105,10 @@ TOOLS = [
     },
 ]
 
-
-# ---------------------------------------------------------------------------
-# Función principal
-# ---------------------------------------------------------------------------
+# Función principal enviar mensaje a groq
 
 def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 1024) -> str:
-    """
-    Envía mensajes a GroqCloud con soporte de tool calling.
-
-    Si el modelo decide invocar una herramienta, ejecuta ejecutar_herramienta_fn,
-    adjunta el resultado y hace una segunda llamada para obtener la respuesta final.
-
-    Args:
-        mensajes: Lista de mensajes [{"role": ..., "content": ...}]
-        ejecutar_herramienta_fn: Callable(nombre, argumentos) -> str (JSON string con resultados)
-        max_tokens: Límite de tokens en la respuesta
-
-    Returns:
-        str: Respuesta final del modelo en lenguaje natural
-    """
+   
     api_key = getattr(settings, "GROQ_API_KEY", None)
     if not api_key:
         raise GroqError(
@@ -143,7 +121,7 @@ def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 
         "Content-Type": "application/json",
     }
 
-    # --- Primera llamada: puede responder directo o invocar una herramienta ---
+    # primera llamada valida si necesita las herramientas o no
     payload = {
         "model": GROQ_MODEL,
         "messages": mensajes,
@@ -165,8 +143,8 @@ def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 
     if finish_reason != "tool_calls" or not mensaje_asistente.get("tool_calls"):
         return (mensaje_asistente.get("content") or "").strip()
 
-    # --- El modelo invocó una o más herramientas ---
-    # Agregamos el mensaje del asistente (con tool_calls) al historial
+    # el modelo utiliza las herramientas
+    # Agregamos el mensaje del asistente con el llamado a la herramineta al historial
     mensajes_con_tool = list(mensajes) + [mensaje_asistente]
 
     for tool_call in mensaje_asistente["tool_calls"]:
@@ -186,7 +164,7 @@ def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 
             "content": resultado_json,
         })
 
-    # --- Segunda llamada: el modelo recibe los resultados y genera la respuesta ---
+    # segunda llamada recibe los resultados de la herramienta y da la respuesta
     payload2 = {
         "model": GROQ_MODEL,
         "messages": mensajes_con_tool,
@@ -203,7 +181,7 @@ def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 
 
 
 def _hacer_request(headers: dict, payload: dict) -> requests.Response:
-    """Hace el request HTTP y lanza GroqError si algo falla."""
+    # Hace la peticion HTTP y lanza GroqError si algo falla
     try:
         response = requests.post(
             GROQ_API_URL,
@@ -212,7 +190,7 @@ def _hacer_request(headers: dict, payload: dict) -> requests.Response:
             timeout=30,
         )
     except requests.exceptions.Timeout:
-        raise GroqError("La solicitud a GroqCloud tardó demasiado. Intenta de nuevo.")
+        raise GroqError("La solicitud a GroqCloud tardo demasiado. Intenta de nuevo.")
     except requests.exceptions.ConnectionError:
         raise GroqError("No se pudo conectar a GroqCloud. Verifica tu conexión a internet.")
 

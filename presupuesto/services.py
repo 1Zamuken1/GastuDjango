@@ -59,7 +59,7 @@ def nivel_alerta(porcentaje):
     else:
         return "baja"
 
-
+# obtener el estado del Presupuesto
 def obtener_estado_presupuesto(presupuesto):
     total_gastado, porcentaje = calcular_alerta_presupuesto(presupuesto)
     alerta = nivel_alerta(porcentaje)

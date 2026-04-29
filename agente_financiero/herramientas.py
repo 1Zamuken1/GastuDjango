@@ -59,7 +59,7 @@ class EjecutorHerramientas:
             return json.dumps({"error": f"Error al ejecutar la consulta: {str(e)}"})
 
     # -------------------------------------------------------------------------
-    # Herramienta 1: obtener_movimientos
+    # Herramienta obtener_movimientos
     # -------------------------------------------------------------------------
 
     def _obtener_movimientos(
@@ -122,7 +122,7 @@ class EjecutorHerramientas:
         }
 
     # -------------------------------------------------------------------------
-    # Herramienta 2: obtener_resumen_periodo
+    # Herramienta obtener_resumen_periodo
     # -------------------------------------------------------------------------
 
     def _obtener_resumen_periodo(self, mes: int, anio: int) -> dict:
@@ -153,7 +153,7 @@ class EjecutorHerramientas:
         }
 
     # -------------------------------------------------------------------------
-    # Herramienta 3: obtener_gastos_por_categoria
+    # Herramienta obtener_gastos_por_categoria
     # -------------------------------------------------------------------------
 
     def _obtener_gastos_por_categoria(self, anio: int, mes: int = None) -> dict:

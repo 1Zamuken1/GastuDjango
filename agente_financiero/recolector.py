@@ -14,7 +14,6 @@ from ahorros.models import AhorroMeta, AporteAhorro
 from presupuesto.models import Presupuesto
 from programaciones.models import Programacion
 
-# Importa ResumenMensual desde la app dashboard si existe
 try:
     from dashboard.models import ResumenMensual
     TIENE_RESUMEN_MENSUAL = True
@@ -23,14 +22,7 @@ except ImportError:
 
 
 class RecolectorDatos:
-    """
-    Clase que recolecta toda la información financiera del usuario
-    haciendo queries directas al ORM (sin pasar por HTTP).
-
-    Uso:
-        recolector = RecolectorDatos(request.user)
-        datos = recolector.recolectar_todo()
-    """
+    # Clase que recolecta toda la información financiera del usuario.
 
     def __init__(self, usuario):
         self.usuario = usuario
@@ -40,7 +32,6 @@ class RecolectorDatos:
 
     def recolectar_todo(self) -> dict:
         """
-        Punto de entrada principal.
         Retorna un dict con todos los datos del usuario listos para el prompt.
         """
         return {
@@ -63,10 +54,8 @@ class RecolectorDatos:
             "nombre": self.usuario.get_full_name() or self.usuario.username,
             "email": self.usuario.email,
         }
+    #  ====================== Resumen mensual  ====================== 
 
-    # -------------------------------------------------------------------------
-    # Resumen mensual
-    # -------------------------------------------------------------------------
 
     def _resumen_mensual(self) -> dict:
         """
@@ -89,7 +78,7 @@ class RecolectorDatos:
             except ResumenMensual.DoesNotExist:
                 pass  # Calcula manualmente si no hay registro
 
-        # Cálculo manual desde Movimiento
+        #  ======================  Cálculo manual desde Movimiento  ===========================
         movimientos_mes = Movimiento.objects.filter(
             usuario=self.usuario,
             fecha_registro__month=self.mes_actual,
@@ -112,9 +101,9 @@ class RecolectorDatos:
             "total_ahorrado": 0,  # No calculado si no hay ResumenMensual
         }
 
-    # -------------------------------------------------------------------------
-    # Últimos movimientos
-    # -------------------------------------------------------------------------
+   
+    #  ======================  Últimos movimientos  ====================== 
+
 
     def _ultimos_movimientos(self, cantidad: int = 10) -> list:
         movimientos = (
@@ -134,9 +123,8 @@ class RecolectorDatos:
             for m in movimientos
         ]
 
-    # -------------------------------------------------------------------------
-    # Metas de ahorro
-    # -------------------------------------------------------------------------
+    # ======================  Metas de ahorro  ====================== 
+
 
     def _metas_ahorro(self) -> list:
         metas = (
@@ -169,10 +157,8 @@ class RecolectorDatos:
             })
 
         return resultado
+    #  ====================== Presupuestos activos  ====================== 
 
-    # -------------------------------------------------------------------------
-    # Presupuestos activos
-    # -------------------------------------------------------------------------
 
     def _presupuestos_activos(self) -> list:
         # Intenta con isActivo o activo según el modelo
@@ -201,10 +187,7 @@ class RecolectorDatos:
             })
 
         return resultado
-
-    # -------------------------------------------------------------------------
-    # Programaciones activas
-    # -------------------------------------------------------------------------
+    # ======================  Programaciones activas  ====================== 
 
     def _programaciones_activas(self) -> list:
         try:
