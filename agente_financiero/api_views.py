@@ -12,8 +12,8 @@ import logging
 
 from django.http import JsonResponse
 from django.views import View
+from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 
 from .recolector import RecolectorDatos
 from .prompt_builder import construir_prompt
@@ -26,14 +26,11 @@ logger = logging.getLogger(__name__)
 MAX_HISTORIAL_CONTEXTO = 10  # Cuántos mensajes previos se pasan al LLM
 
 
-@method_decorator(csrf_exempt, name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class ChatView(View):
 
     def get(self, request, *args, **kwargs):
         """Retorna el historial completo del usuario."""
-        if not request.user.is_authenticated:
-            return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
-
         mensajes = MensajeChat.objects.filter(usuario=request.user).values(
             "rol", "contenido", "creado_en"
         )
@@ -52,9 +49,6 @@ class ChatView(View):
 
     def post(self, request, *args, **kwargs):
         """Recibe un mensaje, llama al agente y guarda ambos en BD."""
-        if not request.user.is_authenticated:
-            return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
-
         try:
             body = json.loads(request.body)
         except json.JSONDecodeError:
@@ -103,14 +97,11 @@ class ChatView(View):
         return JsonResponse({"ok": True, "respuesta": respuesta})
 
 
-@method_decorator(csrf_exempt, name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class LimpiarChatView(View):
 
     def post(self, request, *args, **kwargs):
         """Borra todo el historial del usuario."""
-        if not request.user.is_authenticated:
-            return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
-
         eliminados, _ = MensajeChat.objects.filter(usuario=request.user).delete()
         return JsonResponse({"ok": True, "eliminados": eliminados})
 

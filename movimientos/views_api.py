@@ -25,16 +25,12 @@ from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from categorias.models import Categoria
+from dashboard.services import obtener_disponible
+from gastu_django.constants import MESES_ES
 from .models import Movimiento
-
-MESES_ES = [
-    '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-]
 
 
 # ── Helpers internos ──────────────────────────────────────────────────────────
@@ -67,45 +63,6 @@ def _serializar_movimiento(mov):
         'fecha_iso': mov.fecha_registro.date().isoformat(),
     }
 
-
-def _calcular_disponible(usuario, mes, anio, monto_original=Decimal('0')):
-    """
-    Devuelve el saldo disponible del usuario para un mes dado.
-
-    Lee desde ResumenMensual (cache pre-calculado por signals) para evitar
-    queries brutas a la tabla Movimiento en cada validacion de egreso.
-    Si no existe el resumen (usuario nuevo), cae en fallback con queries directas.
-
-    monto_original: en edicion de un egreso, se suma al disponible base para
-    evitar que la validacion bloquee falsamente el propio egreso editado.
-    """
-    from dashboard.models import ResumenMensual
-
-    ZERO = Decimal('0')
-
-    resumen = ResumenMensual.objects.filter(
-        usuario=usuario, mes=mes, anio=anio
-    ).first()
-
-    if resumen:
-        disponible_base = resumen.disponible
-    else:
-        # Fallback: primer movimiento del usuario, aun no hay ResumenMensual
-        total_ingresos = (
-            Movimiento.objects
-            .filter(usuario=usuario, tipo='INGRESO',
-                    fecha_registro__month=mes, fecha_registro__year=anio)
-            .aggregate(t=Sum('monto'))['t'] or ZERO
-        )
-        total_egresos = (
-            Movimiento.objects
-            .filter(usuario=usuario, tipo='EGRESO',
-                    fecha_registro__month=mes, fecha_registro__year=anio)
-            .aggregate(t=Sum('monto'))['t'] or ZERO
-        )
-        disponible_base = total_ingresos - total_egresos
-
-    return disponible_base + monto_original
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -243,7 +200,6 @@ def api_listar_categorias(request):
     })
 
 
-@csrf_exempt
 @login_required
 @require_http_methods(['POST'])
 def api_crear_movimiento(request):
@@ -304,7 +260,7 @@ def api_crear_movimiento(request):
     # Validar disponible para egresos
     if not errores and tipo == 'EGRESO':
         hoy = timezone.now().date()
-        disponible = _calcular_disponible(request.user, hoy.month, hoy.year)
+        disponible = obtener_disponible(request.user, hoy.month, hoy.year)
         if monto > disponible:
             errores['monto'] = (
                 f'El monto (${monto:,.0f}) supera el saldo disponible del mes '
@@ -325,7 +281,6 @@ def api_crear_movimiento(request):
     return JsonResponse({'ok': True, 'movimiento': _serializar_movimiento(mov)}, status=201)
 
 
-@csrf_exempt
 @login_required
 @require_http_methods(['POST'])
 def api_editar_movimiento(request, pk):
@@ -380,7 +335,7 @@ def api_editar_movimiento(request, pk):
     # Validar disponible para egresos solo si el monto cambia
     if not errores and mov.tipo == 'EGRESO' and 'monto' in data:
         hoy = timezone.now().date()
-        disponible = _calcular_disponible(
+        disponible = obtener_disponible(
             request.user, hoy.month, hoy.year,
             monto_original=mov.monto,
         )
@@ -408,7 +363,6 @@ def api_editar_movimiento(request, pk):
     return JsonResponse({'ok': True, 'movimiento': _serializar_movimiento(mov)})
 
 
-@csrf_exempt
 @login_required
 @require_http_methods(['POST'])
 def api_eliminar_movimiento(request, pk):
