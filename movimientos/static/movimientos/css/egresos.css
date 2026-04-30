@@ -49,10 +49,10 @@
   gap: .75rem;
   padding: .875rem 1.25rem;
   margin-bottom: 1.25rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
-.toolbar__search { flex: 1; min-width: 160px; max-width: 420px; position: relative; }
-.toolbar__actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; flex-shrink: 0; flex-wrap: nowrap; }
+.toolbar__search { width: min(380px, 100%); position: relative; }
+.toolbar__actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; flex-wrap: wrap; }
 .btn-export { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .85rem; border-radius: .5rem; font-size: .8rem; font-weight: 600; cursor: pointer; border: 1.5px solid; transition: background .15s, transform .1s; white-space: nowrap; }
 .btn-export:hover { transform: translateY(-1px); }
 .btn-export--pdf   { border-color: #fca5a5; color: #dc2626; background: #fff; }
@@ -77,30 +77,6 @@
 .toolbar__search-icon {
   position: absolute; left: .65rem; top: 50%; transform: translateY(-50%);
   color: var(--slate-500); pointer-events: none; width: 1rem; height: 1rem;
-}
-
-/* Toolbar — pantallas medianas (portátiles con sidebar abierto) */
-@media (max-width: 1180px) {
-  .toolbar__actions { gap: .35rem; }
-  .btn-export { padding: .4rem .55rem; font-size: .75rem; gap: .2rem; }
-  .btn-ghost { padding: 8px 10px; font-size: .8rem; gap: 4px; }
-}
-
-/* Toolbar — tablet: apila buscador encima de acciones */
-@media (max-width: 860px) {
-  .toolbar { flex-wrap: wrap; padding: .875rem 1rem; }
-  .toolbar__search { flex: unset; width: 100%; max-width: none; min-width: unset; }
-  .toolbar__actions {
-    width: 100%;
-    justify-content: flex-start;
-    margin-left: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  .toolbar__actions::-webkit-scrollbar { display: none; }
 }
 
 /* Toolbar — mobile */
