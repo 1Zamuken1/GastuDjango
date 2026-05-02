@@ -91,6 +91,28 @@
       </button>
     </form>
   </div>
+
+  {# ── Zona de peligro ─────────────────────────────────── #}
+  <div class="danger-zone">
+    <div class="danger-zone-header">
+      <div class="danger-zone-icon">
+        <i data-lucide="alert-triangle"></i>
+      </div>
+      <span class="danger-zone-title font-display">Zona de peligro</span>
+    </div>
+    <div class="danger-zone-body">
+      <div class="danger-zone-info">
+        <p class="danger-zone-desc">
+          Eliminar tu cuenta es una accion permanente. Se borraran todos tus movimientos, ahorros, preferencias y datos asociados.
+        </p>
+        <p class="danger-zone-subdesc">Esta accion no se puede deshacer.</p>
+      </div>
+      <button type="button" class="btn-danger" id="btn-abrir-eliminar">
+        <i data-lucide="trash-2"></i>
+        Eliminar cuenta
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- TAB 2: Cambiar contrasena -->
@@ -307,6 +329,62 @@
         <span>Cargando notificaciones...</span>
       </div>
     </div>
+  </div>
+</div>
+
+{# ── Modal eliminar cuenta ────────────────────────────── #}
+<div class="modal-delete-overlay" id="modal-eliminar">
+  <div class="modal-delete">
+    <div class="modal-delete-header">
+      <div class="modal-delete-header-left">
+        <div class="modal-delete-icon">
+          <i data-lucide="user-x"></i>
+        </div>
+        <div>
+          <h3 class="modal-delete-title font-display">Eliminar cuenta</h3>
+          <p class="modal-delete-subtitle">Esta accion es permanente e irreversible</p>
+        </div>
+      </div>
+      <button type="button" class="modal-delete-close" id="btn-cerrar-eliminar">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="modal-delete-body">
+      <div class="modal-delete-warning">
+        <p><strong>Se eliminaran permanentemente:</strong> todos tus movimientos, resumenes mensuales, preferencias de alertas, notificaciones y cualquier dato asociado a tu cuenta.</p>
+      </div>
+
+      <div class="modal-delete-field">
+        <label for="delete-password">Ingresa tu contrasena para confirmar</label>
+        <div class="input-with-toggle">
+          <input type="password" id="delete-password" class="perfil-input" autocomplete="current-password" placeholder="Tu contrasena actual" />
+          <button type="button" class="toggle-pass" data-target="delete-password" aria-label="Mostrar contrasena">
+            <i data-lucide="eye" style="width:15px;height:15px;"></i>
+          </button>
+        </div>
+        <p class="modal-delete-error" id="delete-error"></p>
+      </div>
+    </div>
+
+    <div class="modal-delete-footer">
+      <div class="slide-container" id="slide-container">
+        <span class="slide-label">Desliza para eliminar tu cuenta</span>
+        <div class="slide-track" id="slide-track">
+          <div class="slide-progress" id="slide-progress"></div>
+          <span class="slide-track-text" id="slide-text">Desliza para confirmar</span>
+          <div class="slide-thumb" id="slide-thumb">
+            <i data-lucide="chevrons-right"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" id="form-eliminar-cuenta" style="display:none;">
+      {% csrf_token %}
+      <input type="hidden" name="eliminar_cuenta" value="1" />
+      <input type="hidden" name="password_confirmacion" id="delete-password-hidden" value="" />
+    </form>
   </div>
 </div>
 

@@ -309,4 +309,207 @@ document.addEventListener('DOMContentLoaded', function () {
     cargarNotificaciones();
   }
 
+  // ══════════════════════════════════════════════════════════
+  //  ELIMINAR CUENTA — Modal + Slide to Confirm
+  // ══════════════════════════════════════════════════════════
+
+  var modalOverlay   = document.getElementById('modal-eliminar');
+  var btnAbrir       = document.getElementById('btn-abrir-eliminar');
+  var btnCerrar      = document.getElementById('btn-cerrar-eliminar');
+  var deletePassword = document.getElementById('delete-password');
+  var deleteError    = document.getElementById('delete-error');
+  var slideCont      = document.getElementById('slide-container');
+  var slideTrack     = document.getElementById('slide-track');
+  var slideThumb     = document.getElementById('slide-thumb');
+  var slideProgress  = document.getElementById('slide-progress');
+  var slideText      = document.getElementById('slide-text');
+  var hiddenPw       = document.getElementById('delete-password-hidden');
+  var formEliminar   = document.getElementById('form-eliminar-cuenta');
+
+  function abrirModal() {
+    if (!modalOverlay) return;
+    modalOverlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+    if (deletePassword) deletePassword.value = '';
+    if (deleteError) deleteError.textContent = '';
+    resetSlider();
+    actualizarSlider();
+    lucide.createIcons();
+  }
+
+  function cerrarModal() {
+    if (!modalOverlay) return;
+    modalOverlay.classList.remove('visible');
+    document.body.style.overflow = '';
+    resetSlider();
+  }
+
+  if (btnAbrir) btnAbrir.addEventListener('click', abrirModal);
+  if (btnCerrar) btnCerrar.addEventListener('click', cerrarModal);
+
+  if (modalOverlay) {
+    modalOverlay.addEventListener('mousedown', function (e) {
+      if (e.target === modalOverlay && !isDragging) cerrarModal();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modalOverlay.classList.contains('visible')) {
+        cerrarModal();
+      }
+    });
+  }
+
+  // Toggle visibility del password del modal
+  if (modalOverlay) {
+    modalOverlay.querySelectorAll('.toggle-pass').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.getAttribute('data-target'));
+        var icon = btn.querySelector('i');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.setAttribute('data-lucide', 'eye-off');
+        } else {
+          input.type = 'password';
+          icon.setAttribute('data-lucide', 'eye');
+        }
+        lucide.createIcons();
+      });
+    });
+  }
+
+  // Habilitar/deshabilitar slider segun el password
+  function actualizarSlider() {
+    if (!slideCont || !deletePassword) return;
+    var tiene = deletePassword.value.trim().length > 0;
+    if (tiene) {
+      slideCont.classList.add('enabled');
+    } else {
+      slideCont.classList.remove('enabled');
+    }
+  }
+
+  if (deletePassword) {
+    deletePassword.addEventListener('input', function () {
+      actualizarSlider();
+      if (deleteError) deleteError.textContent = '';
+    });
+  }
+
+  // ── Slide to Confirm ──────────────────────────────────
+
+  var isDragging  = false;
+  var startX      = 0;
+  var thumbStartX = 3; // initial left offset
+  var maxTravel   = 0;
+  var completed   = false;
+
+  function resetSlider() {
+    completed = false;
+    isDragging = false;
+    if (slideThumb) {
+      slideThumb.style.left = '3px';
+      slideThumb.classList.remove('returning');
+    }
+    if (slideProgress) slideProgress.style.width = '0';
+    if (slideTrack) slideTrack.classList.remove('completed', 'shake');
+    if (slideText) slideText.textContent = 'Desliza para confirmar';
+  }
+
+  function getMaxTravel() {
+    if (!slideTrack || !slideThumb) return 0;
+    return slideTrack.offsetWidth - slideThumb.offsetWidth - 6;
+  }
+
+  function onDragStart(clientX) {
+    if (completed) return;
+    isDragging = true;
+    maxTravel = getMaxTravel();
+    startX = clientX;
+    thumbStartX = parseInt(slideThumb.style.left, 10) || 3;
+    slideThumb.classList.remove('returning');
+  }
+
+  function onDragMove(clientX) {
+    if (!isDragging || completed) return;
+    var dx = clientX - startX;
+    var newLeft = Math.max(3, Math.min(thumbStartX + dx, maxTravel));
+    slideThumb.style.left = newLeft + 'px';
+    slideProgress.style.width = newLeft + 'px';
+
+    var pct = newLeft / maxTravel;
+    slideText.style.opacity = String(1 - pct * 1.5);
+  }
+
+  function onDragEnd() {
+    if (!isDragging || completed) return;
+    isDragging = false;
+    var currentLeft = parseInt(slideThumb.style.left, 10) || 3;
+    maxTravel = getMaxTravel();
+
+    if (currentLeft >= maxTravel * 0.92) {
+      completed = true;
+      slideThumb.style.left = maxTravel + 'px';
+      slideTrack.classList.add('completed');
+      slideText.textContent = 'Eliminando cuenta...';
+      slideText.style.opacity = '1';
+      enviarEliminacion();
+    } else {
+      slideThumb.classList.add('returning');
+      slideThumb.style.left = '3px';
+      slideProgress.style.width = '0';
+      slideText.style.opacity = '1';
+    }
+  }
+
+  if (slideThumb) {
+    slideThumb.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      onDragStart(e.clientX);
+    });
+    slideThumb.addEventListener('touchstart', function (e) {
+      onDragStart(e.touches[0].clientX);
+    }, { passive: true });
+  }
+
+  document.addEventListener('mousemove', function (e) {
+    if (isDragging) onDragMove(e.clientX);
+  });
+  document.addEventListener('touchmove', function (e) {
+    if (isDragging) onDragMove(e.touches[0].clientX);
+  }, { passive: true });
+  document.addEventListener('mouseup', onDragEnd);
+  document.addEventListener('touchend', onDragEnd);
+
+  function enviarEliminacion() {
+    var pw = deletePassword ? deletePassword.value.trim() : '';
+    if (hiddenPw) hiddenPw.value = pw;
+
+    var formData = new FormData(formEliminar);
+
+    fetch('/perfil/', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData,
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          slideText.textContent = 'Cuenta eliminada';
+          setTimeout(function () {
+            window.location.href = data.redirect || '/';
+          }, 800);
+        } else {
+          if (deleteError) deleteError.textContent = data.msg || 'Error al eliminar.';
+          resetSlider();
+          slideTrack.classList.add('shake');
+          setTimeout(function () {
+            slideTrack.classList.remove('shake');
+          }, 400);
+        }
+      })
+      .catch(function () {
+        if (deleteError) deleteError.textContent = 'Error de conexion.';
+        resetSlider();
+      });
+  }
+
 })

@@ -103,6 +103,38 @@ def perfil_view(request):
     if request.method == 'POST':
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
+        if 'eliminar_cuenta' in request.POST:
+            password = request.POST.get('password_confirmacion', '')
+            if not request.user.check_password(password):
+                if is_ajax:
+                    return JsonResponse({'ok': False, 'msg': 'La contrasena es incorrecta.'})
+                messages.error(request, 'La contrasena es incorrecta.')
+                return redirect('perfil')
+
+            # Desconectar signals de movimientos para evitar errores
+            # durante el CASCADE delete del usuario
+            from django.db.models.signals import post_save, post_delete
+            from movimientos.models import Movimiento
+            from movimientos.signals import (
+                actualizar_resumen_al_guardar,
+                actualizar_resumen_al_eliminar,
+            )
+            post_save.disconnect(actualizar_resumen_al_guardar, sender=Movimiento)
+            post_delete.disconnect(actualizar_resumen_al_eliminar, sender=Movimiento)
+
+            try:
+                request.user.delete()
+            finally:
+                post_save.connect(actualizar_resumen_al_guardar, sender=Movimiento)
+                post_delete.connect(actualizar_resumen_al_eliminar, sender=Movimiento)
+
+            logout(request)
+            if is_ajax:
+                return JsonResponse({'ok': True, 'redirect': '/'})
+            messages.success(request, 'Tu cuenta ha sido eliminada permanentemente.')
+            return redirect('/')
+
+
         if 'actualizar_datos' in request.POST:
             perfil_form = PerfilForm(request.POST, instance=request.user)
             if perfil_form.is_valid():
