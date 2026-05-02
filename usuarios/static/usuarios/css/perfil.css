@@ -222,10 +222,17 @@
   letter-spacing: 0.06em;
 }
 
+/* ── Content Wrapper ─────────────────────────────────────── */
+.perfil-content-wrapper {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 10px 0 40px 0;
+}
+
 /* ── Two-column layout ─────────────────────────────────── */
 .perfil-columns {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 1fr 340px;
   gap: 20px;
   margin-bottom: 20px;
 }

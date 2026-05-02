@@ -95,7 +95,7 @@ def perfil_view(request):
     preferencias_form = PreferenciasForm(instance=preferencias)
 
     tab_activo = request.GET.get('tab', 'datos')
-    tabs_validas = {'datos', 'contrasena', 'preferencias', 'notificaciones'}
+    tabs_validas = {'datos', 'preferencias', 'notificaciones'}
     if tab_activo not in tabs_validas:
         tab_activo = 'datos'
 
