@@ -20,6 +20,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    # ── Tailwind CSS ─────────────────────────────────────────────
+    'tailwind',
+    'theme',
+    'django_browser_reload',
     # ── django-allauth ───────────────────────────────────────────
     'allauth',
     'allauth.account',
@@ -50,6 +54,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Requerido por django-allauth
     'allauth.account.middleware.AccountMiddleware',
+    # Tailwind hot reload (solo en DEBUG)
+    'django_browser_reload.middleware.BrowserReloadMiddleware',
 ]
 
 ROOT_URLCONF = 'gastu_django.urls'
@@ -121,6 +127,13 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ──────────────────────────────────────────────────────────────
+# TAILWIND CSS
+# ──────────────────────────────────────────────────────────────
+TAILWIND_APP_NAME = 'theme'
+NPM_BIN_PATH = r'C:\Program Files\nodejs\npm.cmd'
+INTERNAL_IPS = ['127.0.0.1']
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
 

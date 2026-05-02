@@ -7,19 +7,8 @@
     <title>{% block title %}GastuApp{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'img/gastu_logo_rostro.png' %}" />
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              display: ['"Plus Jakarta Sans"', "sans-serif"],
-              sans: ['"DM Sans"', "system-ui", "sans-serif"],
-            },
-          },
-        },
-      };
-    </script>
+    <!-- Tailwind CSS (compilado localmente via django-tailwind) -->
+    <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

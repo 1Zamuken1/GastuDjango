@@ -46,50 +46,109 @@
 
 <!-- TAB 1: Datos personales -->
 <div class="perfil-panel {% if tab_activo == 'datos' %}active{% endif %}" data-panel="datos">
-  <div class="perfil-card">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
-      <div class="info-block">
-        <p style="font-size:0.68rem;font-weight:700;color:var(--perfil-blue);text-transform:uppercase;letter-spacing:0.1em;">Correo</p>
-        <p style="font-size:0.88rem;font-weight:600;color:var(--slate-700);margin-top:4px;word-break:break-all;">{{ request.user.email }}</p>
+
+  {# ── Hero de perfil ──────────────────────────────────── #}
+  <div class="perfil-hero">
+    <div class="perfil-hero-avatar">
+      <span>{{ request.user.username|first|upper }}</span>
+    </div>
+    <div class="perfil-hero-info">
+      <h2 class="perfil-hero-name font-display">{{ request.user.username }}</h2>
+      <div class="perfil-hero-meta">
+        <span class="perfil-hero-meta-item">
+          <i data-lucide="mail" class="perfil-hero-meta-icon"></i>
+          {{ request.user.email }}
+        </span>
+        <span class="perfil-hero-meta-item">
+          <i data-lucide="calendar" class="perfil-hero-meta-icon"></i>
+          Miembro desde {{ request.user.date_joined|date:"d M Y" }}
+        </span>
       </div>
-      <div class="info-block">
-        <p style="font-size:0.68rem;font-weight:700;color:var(--perfil-blue);text-transform:uppercase;letter-spacing:0.1em;">Miembro desde</p>
-        <p style="font-size:0.88rem;font-weight:600;color:var(--slate-700);margin-top:4px;">{{ request.user.date_joined|date:"d M Y" }}</p>
+    </div>
+    <span class="perfil-hero-badge">{{ request.user.get_rol_display }}</span>
+  </div>
+
+  {# ── Contenido en dos columnas ───────────────────────── #}
+  <div class="perfil-columns">
+
+    {# ── Columna principal: formulario ─────────────────── #}
+    <div class="perfil-col-main">
+      <div class="perfil-card">
+        <div class="tab-header-row">
+          <div class="tab-header-icon">
+            <i data-lucide="user-pen" class="tab-header-icon-svg"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-bold tab-section-title">Editar datos</h3>
+            <p class="tab-section-desc">Actualiza tu nombre de usuario y telefono</p>
+          </div>
+        </div>
+
+        <form method="post" id="perfil-form" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="actualizar_datos" value="1" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="id_username" class="form-label">Nombre de usuario</label>
+              <input type="text" name="username" id="id_username"
+                     value="{{ perfil_form.username.value|default:'' }}"
+                     class="perfil-input" maxlength="150" />
+              <p class="form-error" id="error-username"></p>
+            </div>
+            <div class="form-group">
+              <label for="id_telefono" class="form-label">
+                Telefono <span class="form-label-optional">(opcional)</span>
+              </label>
+              <input type="text" name="telefono" id="id_telefono"
+                     value="{{ perfil_form.telefono.value|default:'' }}"
+                     class="perfil-input" maxlength="20"
+                     placeholder="+57 300 123 4567" />
+              <p class="form-error" id="error-telefono"></p>
+            </div>
+          </div>
+          <button type="submit" class="btn-perfil btn-sm" id="btn-datos">
+            <i data-lucide="save" class="btn-icon"></i>
+            Guardar cambios
+          </button>
+        </form>
       </div>
     </div>
 
-    <h3 class="font-display font-bold tab-section-title">Datos personales</h3>
-    <p style="color:var(--slate-400);font-size:0.78rem;margin-bottom:16px;">
-      Informacion basica de tu cuenta
-    </p>
-
-    <form method="post" id="perfil-form" novalidate>
-      {% csrf_token %}
-      <input type="hidden" name="actualizar_datos" value="1" />
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="id_username" class="form-label">Nombre de usuario</label>
-          <input type="text" name="username" id="id_username"
-                 value="{{ perfil_form.username.value|default:'' }}"
-                 class="perfil-input" maxlength="150" />
-          <p class="form-error" id="error-username"></p>
-        </div>
-        <div class="form-group">
-          <label for="id_telefono" class="form-label">
-            Telefono <span style="color:var(--slate-400);font-weight:400;">(opcional)</span>
-          </label>
-          <input type="text" name="telefono" id="id_telefono"
-                 value="{{ perfil_form.telefono.value|default:'' }}"
-                 class="perfil-input" maxlength="20"
-                 placeholder="+57 300 123 4567" />
-          <p class="form-error" id="error-telefono"></p>
+    {# ── Columna lateral: info de cuenta ───────────────── #}
+    <div class="perfil-col-side">
+      <div class="perfil-card">
+        <h4 class="side-card-title">Tu cuenta</h4>
+        <div class="side-info-list">
+          <div class="side-info-item">
+            <div class="side-info-icon">
+              <i data-lucide="at-sign" class="side-info-icon-svg"></i>
+            </div>
+            <div>
+              <p class="side-info-label">Correo electronico</p>
+              <p class="side-info-value">{{ request.user.email }}</p>
+            </div>
+          </div>
+          <div class="side-info-item">
+            <div class="side-info-icon">
+              <i data-lucide="clock" class="side-info-icon-svg"></i>
+            </div>
+            <div>
+              <p class="side-info-label">Fecha de registro</p>
+              <p class="side-info-value">{{ request.user.date_joined|date:"d M Y" }}</p>
+            </div>
+          </div>
+          <div class="side-info-item">
+            <div class="side-info-icon">
+              <i data-lucide="shield" class="side-info-icon-svg"></i>
+            </div>
+            <div>
+              <p class="side-info-label">Rol</p>
+              <p class="side-info-value">{{ request.user.get_rol_display }}</p>
+            </div>
+          </div>
         </div>
       </div>
-      <button type="submit" class="btn-perfil btn-sm" id="btn-datos">
-        <i data-lucide="save" style="width:14px;height:14px;"></i>
-        Guardar cambios
-      </button>
-    </form>
+    </div>
   </div>
 
   {# ── Zona de peligro ─────────────────────────────────── #}

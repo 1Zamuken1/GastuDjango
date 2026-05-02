@@ -28,4 +28,7 @@ urlpatterns = [
 
     # OAuth
     path('auth/', include('allauth.urls')),
+
+    # Tailwind hot reload (solo DEBUG)
+    path('__reload__/', include('django_browser_reload.urls')),
 ]
