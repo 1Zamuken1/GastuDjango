@@ -169,41 +169,6 @@
       </div>
     </div>
 
-    {# ── Columna lateral: info de cuenta ───────────────── #}
-    <div class="perfil-col-side">
-      <div class="perfil-card">
-        <h4 class="side-card-title">Tu cuenta</h4>
-        <div class="side-info-list">
-          <div class="side-info-item">
-            <div class="side-info-icon">
-              <i data-lucide="at-sign" class="side-info-icon-svg"></i>
-            </div>
-            <div>
-              <p class="side-info-label">Correo electronico</p>
-              <p class="side-info-value">{{ request.user.email }}</p>
-            </div>
-          </div>
-          <div class="side-info-item">
-            <div class="side-info-icon">
-              <i data-lucide="clock" class="side-info-icon-svg"></i>
-            </div>
-            <div>
-              <p class="side-info-label">Fecha de registro</p>
-              <p class="side-info-value">{{ request.user.date_joined|date:"d M Y" }}</p>
-            </div>
-          </div>
-          <div class="side-info-item">
-            <div class="side-info-icon">
-              <i data-lucide="shield" class="side-info-icon-svg"></i>
-            </div>
-            <div>
-              <p class="side-info-label">Rol</p>
-              <p class="side-info-value">{{ request.user.get_rol_display }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   {# ── Zona de peligro ─────────────────────────────────── #}
