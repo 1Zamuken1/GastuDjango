@@ -91,6 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeTimer = setTimeout(() => { if (current > maxIndex()) current = maxIndex(); goTo(current); }, 100);
   });
 
+  // Recalcular el carrusel cuando el sidebar termina su animación de colapsar/expandir
+  const appContent = document.getElementById('app-content');
+  if (appContent) {
+    appContent.addEventListener('transitionend', (e) => {
+      if (e.propertyName === 'margin-left') {
+        goTo(current);
+      }
+    });
+  }
+
   requestAnimationFrame(() => { goTo(0); startAuto(); });
 
 

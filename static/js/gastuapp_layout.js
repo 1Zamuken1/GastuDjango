@@ -21,6 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Remover la clase de preload para restaurar las transiciones CSS normales
+  requestAnimationFrame(() => {
+    document.documentElement.classList.remove('sidebar-mini-preload');
+  });
+
   // ── Toggle desktop (dentro del sidebar) ──────────────────
   toggleDesktop?.addEventListener("click", () => {
     if (isTablet()) {

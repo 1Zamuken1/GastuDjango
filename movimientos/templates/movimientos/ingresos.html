@@ -120,6 +120,12 @@
 
 {% block scripts %}
 <script>
+  window.CURRENT_MODULE = 'ingresos';
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+  });
+</script>
+<script>
   const URL_GUARDAR   = "{% url 'movimientos:guardar_movimiento' %}";
   const URL_EDITAR    = "{% url 'movimientos:editar_movimiento' pk=0 %}".replace('/0/', '/');
   const URL_ELIMINAR  = "{% url 'movimientos:eliminar_movimiento' pk=0 %}".replace('/0/', '/');

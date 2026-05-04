@@ -565,10 +565,11 @@ body.sidebar-mini .nav-section-label {
 }
 
 .nav-icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   color: currentColor;
+  transition: width 0.15s, height 0.15s;
 }
 
 .nav-label {
@@ -596,6 +597,14 @@ body.sidebar-mini .nav-label {
 }
 body.sidebar-mini .nav-soon {
   opacity: 0;
+}
+
+/* ── Bloqueo de interacción durante el tour ── */
+body.tour-active .sidebar-toggle-btn,
+body.tour-active .sidebar-toggle-mobile-btn,
+body.tour-active .logo-container,
+body.tour-active .nav-item {
+  cursor: not-allowed !important;
 }
 
 .nav-item.disabled {
@@ -862,5 +871,25 @@ body.sidebar-mini #app-content {
 @media (max-width: 1280px) and (min-width: 1024px) {
   #app-content {
     padding: 24px;
+  }
+}
+
+/* Sidebar más grande en pantallas de escritorio amplias */
+@media (min-width: 1280px) {
+  :root {
+    --sidebar-w: 260px;
+  }
+  .nav-icon {
+    width: 22px;
+    height: 22px;
+  }
+  .nav-item {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    gap: 12px;
+  }
+  .nav-section-label {
+    font-size: 10px;
+    padding: 8px 12px 4px;
   }
 }

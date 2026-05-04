@@ -594,6 +594,9 @@
       }
 
       document.addEventListener('DOMContentLoaded', () => {
+        window.CURRENT_MODULE = 'programaciones';
+        if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+        
         cargarProgramaciones()
         verificarPendientes()
       })

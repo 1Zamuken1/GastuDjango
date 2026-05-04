@@ -415,5 +415,11 @@
 
 
 {% block scripts %}
+  <script>
+    window.CURRENT_MODULE = 'dashboard';
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+    });
+  </script>
   <script src="{% static 'dashboard/js/dashboard.js' %}"></script>
 {% endblock %}

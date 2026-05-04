@@ -21,8 +21,124 @@
     <!-- Layout global (topbar, sidebar, cards, responsive) -->
     <link rel="stylesheet" href="{% static 'css/gastuapp_layout.css' %}" />
 
+    <!-- Driver.js para los Tours Guiados -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+    <style>
+      .gastu-driver-popover {
+        border-radius: 20px !important;
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0,0,0,0.03) !important;
+        font-family: 'DM Sans', sans-serif !important;
+        padding: 24px !important;
+        min-width: 320px !important;
+      }
+      .gastu-driver-popover .driver-popover-title {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-weight: 800 !important;
+        font-size: 1.25rem !important;
+        color: #0f172a !important;
+        margin-bottom: 16px !important;
+      }
+      .gastu-driver-popover .driver-popover-description {
+        font-size: 0.95rem !important;
+        color: #475569 !important;
+        line-height: 1.6 !important;
+      }
+      .gastu-driver-popover .driver-popover-footer {
+        margin-top: 24px !important;
+      }
+      .gastu-driver-popover .driver-popover-next-btn, 
+      .gastu-driver-popover .driver-popover-prev-btn,
+      .gastu-driver-popover .driver-popover-done-btn {
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        padding: 8px 16px !important;
+        text-shadow: none !important;
+        transition: all 0.2s ease !important;
+      }
+      .gastu-driver-popover .driver-popover-next-btn,
+      .gastu-driver-popover .driver-popover-done-btn {
+        background-color: #10b981 !important;
+        color: white !important;
+        border: none !important;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2) !important;
+      }
+      .gastu-driver-popover .driver-popover-next-btn:hover,
+      .gastu-driver-popover .driver-popover-done-btn:hover {
+        background-color: #059669 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3) !important;
+      }
+      .gastu-driver-popover .driver-popover-prev-btn {
+        background-color: #f8fafc !important;
+        color: #64748b !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+      .gastu-driver-popover .driver-popover-prev-btn:hover {
+        background-color: #f1f5f9 !important;
+        color: #334155 !important;
+      }
+      .gastu-driver-popover .driver-popover-close-btn {
+        color: #94a3b8 !important;
+      }
+      .gastu-driver-popover .driver-popover-close-btn:hover {
+        color: #ef4444 !important;
+      }
+
+      /* SweetAlert debe quedar POR ENCIMA del overlay de Driver.js (z-index 10002) */
+      .swal2-container {
+        z-index: 100000 !important;
+      }
+    </style>
+
     {% block extra_head %}{% endblock %}
     <link rel="stylesheet" href="{% static 'historial/css/historial.css' %}" />
+
+    {# Restaurar estado del sidebar ANTES de que el browser pinte — evita el flash de animación #}
+    <script>
+      (function() {
+        try {
+          var isMini = localStorage.getItem('sidebar-mini');
+          if (isMini === 'true' && window.innerWidth >= 1024) {
+            document.documentElement.classList.add('sidebar-mini-preload');
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <style>
+      /* Aplicar sidebar-mini SIN transición al cargar — evita animación de flash */
+      html.sidebar-mini-preload body #sidebar {
+        width: var(--sidebar-w-mini) !important;
+        transition: none !important;
+      }
+      html.sidebar-mini-preload body #topbar-left {
+        width: var(--sidebar-w-mini) !important;
+        min-width: var(--sidebar-w-mini) !important;
+        transition: none !important;
+      }
+      html.sidebar-mini-preload body #app-content {
+        margin-left: var(--sidebar-w-mini) !important;
+        transition: none !important;
+      }
+      html.sidebar-mini-preload body .logo-text {
+        opacity: 0 !important;
+        max-width: 0 !important;
+        margin-left: 0 !important;
+      }
+      html.sidebar-mini-preload body .nav-label {
+        opacity: 0 !important;
+        max-width: 0 !important;
+      }
+      html.sidebar-mini-preload body .sidebar-toggle-label {
+        opacity: 0 !important;
+        max-width: 0 !important;
+      }
+      html.sidebar-mini-preload body .nav-soon {
+        opacity: 0 !important;
+      }
+      html.sidebar-mini-preload body .nav-section-label {
+        opacity: 0 !important;
+      }
+    </style>
   </head>
 
   <body class="h-full">
@@ -75,6 +191,11 @@
       </div>
 
       <div id="topbar-right">
+        <!-- Botón para iniciar Tour manualmente -->
+        <button class="topbar-btn" id="tour-btn" title="Ver tutorial" onclick="if(window.GastuTours && window.CURRENT_MODULE) window.GastuTours.start(window.CURRENT_MODULE);">
+          <i data-lucide="help-circle" style="width: 18px; height: 18px; color: #10b981"></i>
+        </button>
+
         <button class="topbar-btn" id="notif-btn" title="Notificaciones">
           <i data-lucide="bell" style="width: 16px; height: 16px"></i>
           {% if notificaciones_count %}
@@ -362,7 +483,15 @@
     <!-- ══════════════════════════════════════════
      SCRIPTS
 ══════════════════════════════════════════ -->
+    <script>
+      // Definir URL estática global para los scripts JS
+      window.GASTU_STATIC_URL = "{% static '' %}";
+    </script>
     <script src="{% static 'js/gastuapp_layout.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{% static 'js/gastu_alerts.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <script src="{% static 'js/tours.js' %}"></script>
 
     {% block scripts %}{% endblock %}
     <!-- incluye alertas de agente_financiero -->
