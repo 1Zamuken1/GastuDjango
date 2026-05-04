@@ -2,7 +2,7 @@
 
 > Documento de referencia para agentes IA y colaboradores.
 > Mantener actualizado al final de cada sesión de trabajo significativa.
-> Última actualización: 2026-03-25
+> Última actualización: 2026-05-04
 
 ---
 
@@ -21,10 +21,10 @@
 | Capa | Tecnología |
 |---|---|
 | Backend | Django 5.2 |
-| Base de datos | PostgreSQL vía Supabase (Transaction pooler, puerto 6543) |
+| Base de datos | PostgreSQL vía Supabase o SQLite local (conmutables) |
 | ORM | Django ORM nativo |
-| Frontend | Django Templates + Tailwind CDN + ApexCharts + Lucide |
-| Íconos | Lucide (CDN unpkg) |
+| Frontend | Django Templates + django-tailwind (Tailwind CSS 4.0) + ApexCharts + Lucide |
+| Íconos | Lucide (CDN unpkg / local) |
 | Fuentes | Plus Jakarta Sans (display) + DM Sans (cuerpo) |
 | Auth | Sistema nativo de Django con vistas propias |
 | IA / Agente | Gemini Flash (Google AI Studio, free tier) — Groq como fallback |
@@ -39,20 +39,20 @@
 ```
 GastuDjango/
 ├── gastu_django/          # Configuración central (settings, urls, wsgi)
-├── usuarios/              # Modelo Usuario personalizado, login, register — 70%
-├── movimientos/           # Modelo Movimiento — CRUD completo (ingresos y egresos) — 95%
-├── categorias/            # Modelo Categoria — CRUD completo (extraída de movimientos) — 100%
-├── ahorros/               # Modelo definido, interfaces en progreso — 50%
-├── planificacion/         # Sin implementar — otro integrante
-├── presupuesto/           # Modelo Presupuesto — otro integrante del equipo
-├── notificaciones/        # Modelo Notificacion — lógica de alertas automáticas — 50%
-├── dashboard/             # Modelo ResumenMensual — vista principal post-login — 90%
-├── agente/                # Sin implementar — integración IA pendiente
-├── landing/               # Landing page pública (sin auth) — 100%
-└── templates/
-    ├── base_app.html      # Layout global con topbar + sidenav (TODAS las vistas app usan este)
-    └── registration/
-        └── login.html     # Redirige a usuarios/login.html
+├── usuarios/              # Modelo Usuario personalizado, login, register, perfil — 90%
+├── movimientos/           # Modelo Movimiento — CRUD completo — 100%
+├── categorias/            # Modelo Categoria — CRUD completo — 100%
+├── ahorros/               # Metas de ahorro y aportes — 70%
+├── programaciones/        # Movimientos recurrentes y programados — 90%
+├── presupuesto/           # Planificación de presupuestos mensuales — 80%
+├── notificaciones/        # Alertas automáticas y centro de notificaciones — 80%
+├── dashboard/             # Vista principal, estadísticas y navegación — 100%
+├── agente_financiero/     # Integración con IA (Gemini/Groq) para análisis y chat — 80%
+├── landing/               # Landing page pública — 100%
+├── panel_admin/           # Dashboard administrativo para gestión de datos — 90%
+├── historial/             # Sistema de auditoría y log de acciones — 100%
+├── theme/                 # Aplicación de Tailwind CSS (configuración y assets)
+└── templates/             # Layouts globales y plantillas compartidas
 ```
 
 ---
@@ -66,15 +66,28 @@ LOGIN_REDIRECT_URL  = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL           = '/login/'
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
-# Requerido para Transaction pooler de Supabase (deshabilita prepared statements)
-DATABASES['default']['OPTIONS'] = {'prepare_threshold': None}
+# ── SQLite vs PostgreSQL ──────────────────────────────────────
+# MODO ACTIVO: SQLite local (USE_SQLITE=True en .env)
+# Para volver a Supabase: cambiar USE_SQLITE=False en .env
+# ──────────────────────────────────────────────────────────────
+
+if os.getenv('USE_SQLITE', 'False') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+    # Requerido para Transaction pooler de Supabase
+    DATABASES['default']['OPTIONS'] = {'prepare_threshold': None}
 ```
 
 ### .env (no commitear — compartir por canal privado)
@@ -134,9 +147,13 @@ Todas las vistas de la aplicación (post-login) extienden este archivo. **No cre
 {% block nav_dashboard %}{% endblock %}
 {% block nav_ingresos %}{% endblock %}
 {% block nav_egresos %}{% endblock %}
+{% block nav_ahorros %}{% endblock %}
+{% block nav_programaciones %}{% endblock %}
 {% block nav_presupuestos %}{% endblock %}
 {% block nav_perfil %}{% endblock %}
 {% block nav_categorias %}{% endblock %}
+{% block nav_agente %}{% endblock %}
+{% block nav_panel_admin %}{% endblock %}
 ```
 
 ### Sistema de diseño — paleta principal
@@ -168,12 +185,16 @@ Todas las vistas de la aplicación (post-login) extienden este archivo. **No cre
 - `.btn-ghost` — botón secundario con borde
 - `.font-display` — aplica Plus Jakarta Sans
 
+- **Tailwind CSS**: Gestionado localmente vía la app `theme`. Requiere Node.js.
+- **Comando de desarrollo**: `python manage.py tailwind start` (compilador PostCSS en modo watch).
+- **Importante**: No usar Tailwind CDN en el layout base.
+
 ### Reglas anti-bugs de Django Templates
 
 - Nunca escribir `{% if %}`, `{{ }}` ni `{%` dentro de comentarios CSS (`/* */`) ni dentro de bloques `<style>` — Django los parsea y lanza `TemplateSyntaxError`.
 - Los condicionales Django solo van en atributos `class=""`, nunca en `style=""`.
 - Los datos para JavaScript se pasan via atributos `data-` en el HTML. Nunca embeber variables Django directamente en bloques `<script>`.
-- Separación estricta: HTML en `.html`, CSS en archivos `.css`, JS en archivos `.js`. No mezclar en el mismo template.
+- Separación estricta: HTML en `.html`, CSS fuente en `theme/static_src/src/styles.css`, JS en archivos `.js`.
 
 ### Colores de la sidenav por sección
 
@@ -412,13 +433,17 @@ Desarrollada por otro integrante del equipo. URL de lista: `listar_presupuestos`
 
 ---
 
-## 14. App agente — sin implementar
+## 14. App agente_financiero — Implementado (80%)
 
-Integración con Gemini Flash (Google AI Studio, free tier) — Groq como fallback. Dependencias ya en `requirements.txt`:
-- `google-generativeai==0.8.5`
-- `groq==0.23.1`
+Integración con Gemini Flash y Groq. Capacidad para analizar movimientos, responder dudas financieras y generar alertas personalizadas.
 
-Los endpoints REST de `movimientos/views_api.py` están diseñados para ser consumidos por este agente. Ver sección 8 para la documentación completa de la API.
+**Componentes principales:**
+- `groq_client.py`: Cliente para interacción con LLMs.
+- `prompt_builder.py`: Construcción de contextos para la IA.
+- `recolector.py`: Módulo para extraer datos relevantes del usuario.
+- `alertas_service.py`: Lógica de generación de alertas inteligentes.
+
+Los endpoints REST de `movimientos/views_api.py` y `programaciones/api_pendientes.py` son consumidos por este agente para obtener datos en tiempo real.
 
 ---
 
@@ -454,15 +479,10 @@ Todos los modelos nuevos deben heredar de `ModeloBase`. `ahorros/models.py` y `p
 
 | Archivo | Bug | Estado |
 |---|---|---|
-| `notificaciones/services.py` | `analizar_movimiento` definida dos veces — la segunda sobreescribe a la primera | Pendiente |
-| `presupuesto/views.py` | Ninguna vista tiene `@login_required` | Pendiente |
-| `presupuesto/views.py` | `Presupuesto.objects.get(id=id)` sin verificar propietario | Pendiente |
-| `presupuesto/views.py` | Validación manual con `request.POST` en lugar de `ModelForm` | Pendiente |
-| `presupuesto/templates/presupuesto/listar_presupuestos.html` | Extiende `base.html` legacy | Pendiente |
-| `presupuesto/models.py` | Campo `isActivo` en camelCase | Pendiente (con migración) |
-| `ahorros/models.py` | Campos en camelCase (`montoMeta`, `totalAcumulado`, etc.) | Pendiente (con migración) |
+| `notificaciones/services.py` | Código duplicado y comentado al final del archivo | Limpieza pendiente |
+| `presupuesto/` | Módulo en fase de reestructuración (vistas mínimas) | En progreso |
 | `usuarios/views.py` | Rate limiting en login no implementado | Pendiente |
-| `movimientos/views_api.py` | Endpoints POST con CSRF habilitado — el agente necesita `@csrf_exempt` o autenticación por token para operar sin sesión HTML previa | Pendiente (decidir approach con el equipo) |
+| `movimientos/views_api.py` | Decidir approach de seguridad para el Agente (CSRF vs Token) | En discusión |
 
 ---
 
