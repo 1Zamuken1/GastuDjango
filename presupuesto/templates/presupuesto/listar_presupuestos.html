@@ -119,6 +119,9 @@
 
 {% block presupuestos_scripts %}
 <script>
+      window.CURRENT_MODULE = 'presupuestos';
+      if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+
       const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
 
       // ── Helpers de modal ──────────────────────────────────────────────────────────

@@ -607,6 +607,15 @@ body.tour-active .nav-item {
   cursor: not-allowed !important;
 }
 
+body.tour-active #sidebar,
+body.tour-active .sidebar-toggle-btn,
+body.tour-active .sidebar-toggle-mobile-btn,
+body.tour-active .perfil-card form,
+body.tour-active .danger-zone,
+body.tour-active .perfil-tabs {
+  pointer-events: none !important;
+}
+
 .nav-item.disabled {
   opacity: 0.5;
   pointer-events: none;

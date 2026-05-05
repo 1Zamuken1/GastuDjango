@@ -95,15 +95,17 @@
             style="padding:9px 12px;">
       <i data-lucide="history"></i> Historial
     </button>
-    <button class="btn-export btn-export--pdf" type="button" id="btn-export-pdf">
-      <i data-lucide="file-text"></i> PDF
-    </button>
-    <button class="btn-export btn-export--excel" type="button" id="btn-export-excel">
-      <i data-lucide="table-2"></i> Excel
-    </button>
-    <button class="btn-export btn-export--csv" type="button" id="btn-export-csv">
-      <i data-lucide="file-spreadsheet"></i> CSV
-    </button>
+    <div class="export-group" style="display:flex; gap:0.35rem;">
+      <button class="btn-export btn-export--pdf" type="button" id="btn-export-pdf">
+        <i data-lucide="file-text"></i> PDF
+      </button>
+      <button class="btn-export btn-export--excel" type="button" id="btn-export-excel">
+        <i data-lucide="table-2"></i> Excel
+      </button>
+      <button class="btn-export btn-export--csv" type="button" id="btn-export-csv">
+        <i data-lucide="file-spreadsheet"></i> CSV
+      </button>
+    </div>
     <button class="btn-amber" type="button" id="btn-nueva-meta">
       <i data-lucide="plus" style="width:15px;height:15px;"></i>
       Nueva meta
@@ -504,6 +506,9 @@
 
 {% block scripts %}
 <script>
+  window.CURRENT_MODULE = 'ahorros';
+  if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+
   const URL_EXPORTAR_CSV   = "{% url 'ahorros:exportar_csv' %}";
   const URL_EXPORTAR_EXCEL = "{% url 'ahorros:exportar_excel' %}";
   const URL_EXPORTAR_PDF   = "{% url 'ahorros:exportar_pdf' %}";

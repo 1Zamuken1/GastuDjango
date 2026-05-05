@@ -412,6 +412,8 @@
 {% block scripts %}
 <script>
   var CSRF_TOKEN = '{{ csrf_token }}';
+  window.CURRENT_MODULE = 'perfil';
+  if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
 </script>
 <script src="{% static 'usuarios/js/perfil.js' %}"></script>
 {% endblock %}

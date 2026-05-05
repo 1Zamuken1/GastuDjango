@@ -88,6 +88,9 @@
 {% block scripts %}
   {{ block.super }}
   <script>
+    window.CURRENT_MODULE = 'agente';
+    if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+
     // Exponer inicial del usuario para el avatar
     window.GASTU_USER_INICIAL = "{{ user.first_name|default:user.username|first|upper }}";
   </script>

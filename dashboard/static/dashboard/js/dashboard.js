@@ -51,7 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function next() { goTo(current >= maxIndex() ? 0 : current + 1); }
-  function startAuto() { stopAuto(); autoTimer = setInterval(() => { if (!isPaused) next(); }, AUTO_DELAY); }
+  function startAuto() { 
+    stopAuto(); 
+    autoTimer = setInterval(() => { 
+      if (!isPaused && !document.body.classList.contains('tour-active')) next(); 
+    }, AUTO_DELAY); 
+  }
   function stopAuto()  { clearInterval(autoTimer); autoTimer = null; }
 
   btnPrev?.addEventListener('click', () => { goTo(current <= 0 ? maxIndex() : current - 1); startAuto(); });

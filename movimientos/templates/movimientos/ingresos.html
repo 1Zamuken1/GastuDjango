@@ -67,15 +67,17 @@
             style="padding: 9px 12px;">
       <i data-lucide="history"></i> Historial
     </button>
-    <button class="btn-export btn-export--pdf" type="button">
-      <i data-lucide="file-text"></i> PDF
-    </button>
-    <button class="btn-export btn-export--excel" type="button">
-      <i data-lucide="table-2"></i> Excel
-    </button>
-    <button class="btn-export btn-export--csv" type="button">
-      <i data-lucide="file-spreadsheet"></i> CSV
-    </button>
+    <div class="export-group" style="display:flex; gap:0.35rem;">
+      <button class="btn-export btn-export--pdf" type="button">
+        <i data-lucide="file-text"></i> PDF
+      </button>
+      <button class="btn-export btn-export--excel" type="button">
+        <i data-lucide="table-2"></i> Excel
+      </button>
+      <button class="btn-export btn-export--csv" type="button">
+        <i data-lucide="file-spreadsheet"></i> CSV
+      </button>
+    </div>
     <button class="btn-primary" id="btn-nuevo">
       <i data-lucide="plus"></i> Nuevo ingreso
     </button>
