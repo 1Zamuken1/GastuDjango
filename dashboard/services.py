@@ -50,7 +50,14 @@ def actualizar_resumen(usuario, mes, anio):
     total_egresos = movimientos_mes.filter(tipo='EGRESO').aggregate(
         total=Sum('monto'))['total'] or ZERO
 
-    total_ahorros = ZERO   # placeholder hasta modulo ahorros
+    from ahorros.models import AporteAhorro
+
+    total_ahorros = AporteAhorro.objects.filter(
+        ahorro__usuario=usuario,
+        estado_ap='APORTADO',
+        fecha_registro__month=mes,
+        fecha_registro__year=anio,
+    ).aggregate(total=Sum('aporte'))['total'] or ZERO
 
     ingreso_neto = total_ingresos - total_egresos - total_ahorros
     disponible   = ingreso_neto
@@ -82,6 +89,11 @@ def actualizar_resumen(usuario, mes, anio):
             'ahorro_total':       ahorro_total,
         }
     )
+
+    # Invalidar caché del dashboard
+    from django.core.cache import cache
+    cache.delete(f'dashboard_ctx_{usuario.id}_{mes}_{anio}')
+    cache.delete(f'tendencia_data_{usuario.id}_{mes}_{anio}')
 
 
 # ── Saldo disponible (fuente unica de verdad) ───────────────────────────────
@@ -173,6 +185,12 @@ def build_dashboard_context(user, mes, anio):
     from .models import ResumenMensual
     from ahorros.models import AporteAhorro, AhorroMeta
     from notificaciones.models import Notificacion
+    from django.core.cache import cache
+
+    cache_key = f'dashboard_ctx_{user.id}_{mes}_{anio}'
+    ctx = cache.get(cache_key)
+    if ctx:
+        return ctx
 
     hoy           = date.today()
     es_mes_actual = (mes == hoy.month and anio == hoy.year)
@@ -225,7 +243,7 @@ def build_dashboard_context(user, mes, anio):
     ultimos    = _build_ultimos_movimientos(user, mes, anio)
     notif_data = _build_notificaciones(user)
 
-    return {
+    ctx = {
         'mes':                       mes,
         'anio':                      anio,
         'mes_nombre':                MESES_ES[mes],
@@ -247,6 +265,9 @@ def build_dashboard_context(user, mes, anio):
         'ultimas_notificaciones':    notif_data['ultimas'],
         'hoy':                       date.today(),
     }
+    
+    cache.set(cache_key, ctx, timeout=60*60*24)
+    return ctx
 
 
 def _build_pie_data(user, mes, anio):
@@ -393,6 +414,12 @@ def build_tendencia_data(user, mes, anio):
     """
     from collections import defaultdict
     from ahorros.models import AporteAhorro
+    from django.core.cache import cache
+
+    cache_key = f'tendencia_data_{user.id}_{mes}_{anio}'
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return cached_data
 
     hoy           = date.today()
     es_mes_actual = (mes == hoy.month and anio == hoy.year)

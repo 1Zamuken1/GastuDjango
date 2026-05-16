@@ -556,6 +556,13 @@ body.sidebar-mini .nav-section-label {
   border-left-color: #a855f7;
   font-weight: 600;
 }
+.nav-item--panel-admin:hover,
+.nav-item--panel-admin.active {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border-left-color: #6366f1;
+  font-weight: 600;
+}
 .nav-item--perfil:hover,
 .nav-item--perfil.active {
   background: rgba(13, 148, 136, 0.15);

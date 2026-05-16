@@ -278,6 +278,8 @@ def admin_crear_categoria_ajax(request):
         return JsonResponse({'ok': False, 'msg': 'Nombre y tipo son obligatorios.'})
     if tipo not in ['INGRESO', 'EGRESO', 'AHORRO']:
         return JsonResponse({'ok': False, 'msg': 'Tipo inválido.'})
+    if Categoria.objects.filter(nombre__iexact=nombre, tipo=tipo).exists():
+        return JsonResponse({'ok': False, 'msg': f'Ya existe una categoría de tipo {tipo} con el nombre "{nombre}".'})
     cat = Categoria.objects.create(nombre=nombre, tipo=tipo, descripcion=desc)
     return JsonResponse({'ok': True, 'msg': f'Categoría "{nombre}" creada.', 'id': cat.pk})
 
@@ -292,6 +294,10 @@ def admin_editar_categoria_ajax(request, categoria_id):
     desc   = request.POST.get('descripcion', '').strip()
     if not nombre or not tipo:
         return JsonResponse({'ok': False, 'msg': 'Nombre y tipo son obligatorios.'})
+    if tipo not in ['INGRESO', 'EGRESO', 'AHORRO']:
+        return JsonResponse({'ok': False, 'msg': 'Tipo inválido.'})
+    if Categoria.objects.exclude(pk=categoria_id).filter(nombre__iexact=nombre, tipo=tipo).exists():
+        return JsonResponse({'ok': False, 'msg': f'Ya existe otra categoría de tipo {tipo} con el nombre "{nombre}".'})
     cat.nombre = nombre; cat.tipo = tipo; cat.descripcion = desc
     cat.save()
     return JsonResponse({'ok': True, 'msg': f'Categoría "{nombre}" actualizada.'})

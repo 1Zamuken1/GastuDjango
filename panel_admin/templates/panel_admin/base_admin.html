@@ -1,122 +1,131 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es" class="h-full">
+<html lang="es" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Panel Admin — GastuApp{% endblock %}</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="{% static 'panel_admin/css/admin.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}" />
+  <link rel="stylesheet" href="{% static 'panel_admin/css/admin.css' %}" />
   {% block extra_head %}{% endblock %}
+  <style>
+    body { font-family: 'DM Sans', system-ui, sans-serif; }
+    .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
 </head>
-<body class="h-full">
+<body class="h-full bg-slate-50 text-slate-700">
 
-<!-- ── Sidebar ──────────────────────────────────────────────── -->
-<aside id="admin-sidebar">
-  <div class="sidebar-brand">
-    <div class="brand-icon">
-      <i data-lucide="shield-check"></i>
-    </div>
-    <div class="brand-text">
-      <span class="brand-name">GastuApp</span>
-      <span class="brand-role">Panel Admin</span>
-    </div>
-  </div>
+<!-- ── Topbar de navegación ──────────────────────────────────── -->
+<header class="fixed top-0 inset-x-0 z-40 h-14 bg-slate-900 border-b border-slate-800 flex items-center px-4 gap-4 shadow-lg shadow-slate-950/20">
 
-  <nav class="sidebar-nav">
-    <p class="nav-label-section">General</p>
+  <!-- Brand -->
+  <a href="{% url 'panel_admin:home' %}" class="flex items-center gap-2.5 shrink-0 mr-2">
+    <span class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+      <i data-lucide="shield-check" class="w-4 h-4 text-white"></i>
+    </span>
+    <span class="font-display font-800 text-sm text-white hidden sm:block leading-tight">
+      GastuApp <span class="text-indigo-400 font-600">Admin</span>
+    </span>
+  </a>
 
+  <!-- Nav links -->
+  <nav class="flex items-center gap-1 flex-1">
     <a href="{% url 'panel_admin:home' %}"
-       class="nav-item {% block nav_home %}{% endblock %}">
-      <i data-lucide="layout-dashboard" class="nav-icon"></i>
-      <span>Dashboard</span>
+       class="admin-nav-link {% block nav_home %}{% endblock %}">
+      <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+      <span class="hidden md:block">Dashboard</span>
     </a>
-
-    <p class="nav-label-section">Gestión</p>
-
     <a href="{% url 'panel_admin:usuarios' %}"
-       class="nav-item {% block nav_usuarios %}{% endblock %}">
-      <i data-lucide="users" class="nav-icon"></i>
-      <span>Usuarios</span>
+       class="admin-nav-link {% block nav_usuarios %}{% endblock %}">
+      <i data-lucide="users" class="w-3.5 h-3.5"></i>
+      <span class="hidden md:block">Usuarios</span>
     </a>
-
     <a href="{% url 'panel_admin:categorias' %}"
-       class="nav-item {% block nav_categorias %}{% endblock %}">
-      <i data-lucide="tag" class="nav-icon"></i>
-      <span>Categorías</span>
+       class="admin-nav-link {% block nav_categorias %}{% endblock %}">
+      <i data-lucide="tag" class="w-3.5 h-3.5"></i>
+      <span class="hidden md:block">Categorías</span>
     </a>
-
     <a href="{% url 'panel_admin:importar_categorias_csv' %}"
-       class="nav-item {% block nav_importar_csv %}{% endblock %}">
-      <i data-lucide="upload-cloud" class="nav-icon"></i>
-      <span>Importar CSV</span>
+       class="admin-nav-link {% block nav_importar_csv %}{% endblock %}">
+      <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+      <span class="hidden md:block">Importar CSV</span>
     </a>
   </nav>
 
-  <div class="sidebar-footer">
-    <div class="user-info">
-      <div class="user-avatar">{{ request.user.username|first|upper }}</div>
-      <div class="user-meta">
-        <p class="user-name">{{ request.user.username }}</p>
-        <p class="user-badge">Administrador</p>
+  <!-- Derecha: volver + usuario -->
+  <div class="flex items-center gap-2 shrink-0">
+    <a href="{% url 'dashboard:home' %}"
+       class="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800">
+      <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+      Volver a la app
+    </a>
+
+    <div class="h-5 w-px bg-slate-700 mx-1"></div>
+
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white font-700 text-xs font-display shrink-0">
+        {{ request.user.username|first|upper }}
       </div>
+      <span class="hidden lg:block text-xs text-slate-300 font-500 max-w-[100px] truncate">
+        {{ request.user.username }}
+      </span>
     </div>
-    <a href="{% url 'logout' %}" class="logout-btn" title="Cerrar sesión">
-      <i data-lucide="log-out"></i>
+
+    <a href="{% url 'logout' %}"
+       class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+       title="Cerrar sesión">
+      <i data-lucide="log-out" class="w-4 h-4"></i>
     </a>
   </div>
-</aside>
+</header>
+
+<!-- ── Mensajes Django → toasts via GastuAlerts ──────────────── -->
+{% if messages %}
+<div id="django-messages" class="hidden">
+  {% for message in messages %}
+  <span data-tag="{{ message.tags }}" data-msg="{{ message }}"></span>
+  {% endfor %}
+</div>
+{% endif %}
 
 <!-- ── Contenido principal ───────────────────────────────────── -->
-<div id="admin-main">
+<main class="pt-14 min-h-screen">
+  <div class="px-4 sm:px-6 lg:px-8 py-8 max-w-screen-xl mx-auto">
 
-  <!-- Topbar -->
-  <header id="admin-topbar">
-    <div class="topbar-left">
-      <button id="sidebar-toggle" class="sidebar-toggle-btn">
-        <i data-lucide="panel-left"></i>
-      </button>
-      <div>
-        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
-        <p class="page-breadcrumb">{% block page_breadcrumb %}Admin{% endblock %}</p>
-      </div>
+    <!-- Page header -->
+    {% block page_header %}
+    <div class="mb-6">
+      <h1 class="font-display font-800 text-xl text-slate-900">{% block page_title %}{% endblock %}</h1>
+      <p class="text-sm text-slate-400 mt-0.5">{% block page_breadcrumb %}Panel Admin{% endblock %}</p>
     </div>
-    <div class="topbar-right">
-    </div>
-  </header>
+    {% endblock %}
 
-  <!-- Mensajes -->
-  {% if messages %}
-  <div class="messages-container">
-    {% for message in messages %}
-    <div class="message message--{{ message.tags }}">
-      {% if 'success' in message.tags %}
-        <i data-lucide="check-circle"></i>
-      {% else %}
-        <i data-lucide="alert-circle"></i>
-      {% endif %}
-      {{ message }}
-      <button class="message-close" onclick="this.parentElement.remove()">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <!-- Contenido -->
-  <main id="admin-content">
     {% block content %}{% endblock %}
-  </main>
-</div>
+  </div>
+</main>
 
+<script src="{% static 'js/lucide.min.js' %}"></script>
 <script src="{% static 'panel_admin/js/admin.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/gastu_alerts.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var container = document.getElementById('django-messages');
+    if (!container) return;
+    container.querySelectorAll('span[data-msg]').forEach(function(el) {
+      var tag = el.dataset.tag || '';
+      var msg = el.dataset.msg || '';
+      if (tag.indexOf('success') !== -1) window.GastuAlerts.toastSuccess(msg);
+      else if (tag.indexOf('error') !== -1) window.GastuAlerts.toastError(msg);
+      else window.GastuAlerts.toastInfo(msg);
+    });
+  });
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

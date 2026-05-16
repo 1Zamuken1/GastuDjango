@@ -471,6 +471,15 @@
           <i data-lucide="tag" class="nav-icon"></i>
           <span class="nav-label">Categorías</span>
         </a>
+
+        <a
+          href="{% url 'panel_admin:home' %}"
+          class="nav-item nav-item--panel-admin {% block nav_panel_admin %}{% endblock %}"
+          data-tooltip="Panel Admin"
+        >
+          <i data-lucide="shield-check" class="nav-icon"></i>
+          <span class="nav-label">Panel Admin</span>
+        </a>
         {% endif %}
       </nav>
     </aside>

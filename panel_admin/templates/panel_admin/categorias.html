@@ -1,149 +1,210 @@
 {% extends 'panel_admin/base_admin.html' %}
 {% load static %}
 {% block title %}Categorías — Admin GastuApp{% endblock %}
-{% block page_title %}Categorías{% endblock %}
-{% block page_breadcrumb %}Admin / Gestión de categorías{% endblock %}
+{% block page_title %}Gestión de Categorías{% endblock %}
+{% block page_breadcrumb %}Admin / Categorías{% endblock %}
 {% block nav_categorias %}active{% endblock %}
 
 {% block content %}
 
-<div class="section-header">
-  <div>
-    <p class="section-title">Gestión de categorías</p>
-    <p class="section-sub">{{ categorias|length }} categoría{{ categorias|length|pluralize }}</p>
-  </div>
-  <button class="btn btn--primary" id="btn-nueva-categoria">
-    <i data-lucide="plus"></i> Nueva categoría
+<!-- Header + acción -->
+<div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+  <p class="text-sm text-slate-500">
+    <span class="font-600 text-slate-700">{{ categorias|length }}</span>
+    categoría{{ categorias|length|pluralize }} encontrada{{ categorias|length|pluralize }}
+  </p>
+  <button id="btn-nueva-categoria"
+    class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-sm font-600 rounded-xl transition-all shadow-sm shadow-indigo-600/20">
+    <i data-lucide="plus" class="w-4 h-4"></i>
+    Nueva categoría
   </button>
 </div>
 
 <!-- Filtros -->
-<form method="get" class="filters-bar">
-  <div class="search-wrap">
-    <div class="search-icon"><i data-lucide="search"></i></div>
-    <input type="text" name="q" value="{{ q }}" placeholder="Buscar categoría..." id="search-cat" />
+<form method="get" class="flex items-center gap-2 flex-wrap mb-5">
+  <div class="relative flex-1 min-w-[200px] max-w-xs">
+    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar categoría..."
+      id="search-cat"
+      class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition" />
   </div>
-  <select name="tipo" class="filter-select" id="filter-tipo">
+  <select name="tipo" id="filter-tipo"
+    class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer transition">
     <option value="">Todos los tipos</option>
     <option value="INGRESO" {% if tipo_fil == 'INGRESO' %}selected{% endif %}>Ingreso</option>
     <option value="EGRESO"  {% if tipo_fil == 'EGRESO'  %}selected{% endif %}>Egreso</option>
     <option value="AHORRO"  {% if tipo_fil == 'AHORRO'  %}selected{% endif %}>Ahorro</option>
   </select>
-  <button type="submit" class="btn btn--ghost"><i data-lucide="filter"></i> Filtrar</button>
+  <button type="submit"
+    class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 hover:bg-slate-50 transition font-500">
+    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filtrar
+  </button>
   {% if q or tipo_fil %}
-  <a href="{% url 'panel_admin:categorias' %}" class="btn btn--ghost"><i data-lucide="x"></i> Limpiar</a>
+  <a href="{% url 'panel_admin:categorias' %}"
+    class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-500 hover:bg-slate-50 transition font-500">
+    <i data-lucide="x" class="w-3.5 h-3.5"></i> Limpiar
+  </a>
   {% endif %}
 </form>
 
 <!-- Tabla -->
-<div class="admin-table-wrap">
-  <table class="admin-table" id="tabla-categorias">
-    <thead>
-      <tr>
-        <th>Nombre</th><th>Tipo</th><th>Descripción</th>
-        <th>Creada</th><th>Estado</th><th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for cat in categorias %}
-      <tr data-nombre="{{ cat.nombre|lower }}" data-tipo="{{ cat.tipo }}">
-        <td style="font-weight:600;color:var(--slate-700);">{{ cat.nombre }}</td>
-        <td>
-          {% if cat.tipo == 'INGRESO' %}<span class="badge badge--green">Ingreso</span>
-          {% elif cat.tipo == 'EGRESO' %}<span class="badge badge--red">Egreso</span>
-          {% else %}<span class="badge badge--amber">Ahorro</span>{% endif %}
-        </td>
-        <td style="color:var(--slate-500);font-size:0.82rem;">{{ cat.descripcion|default:"—"|truncatechars:40 }}</td>
-        <td style="font-size:0.8rem;color:var(--slate-400);">{{ cat.fecha_creacion|date:"d/m/Y" }}</td>
-        <td>
-          <label class="toggle">
-            <input type="checkbox" class="js-toggle-categoria" data-id="{{ cat.id }}"
-                   {% if cat.activo %}checked{% endif %} />
-            <span class="toggle-slider"></span>
-          </label>
-        </td>
-        <td>
-          <button class="action-btn action-btn--edit js-btn-editar-categoria"
-                  data-id="{{ cat.id }}" title="Editar">
-            <i data-lucide="pencil"></i>
-          </button>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--slate-400);">No se encontraron categorías.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm" id="tabla-categorias">
+      <thead>
+        <tr class="bg-slate-50 border-b border-slate-200">
+          <th class="px-4 py-3 text-left text-xs font-700 uppercase tracking-wider text-slate-400">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-700 uppercase tracking-wider text-slate-400">Tipo</th>
+          <th class="px-4 py-3 text-left text-xs font-700 uppercase tracking-wider text-slate-400 hidden md:table-cell">Descripción</th>
+          <th class="px-4 py-3 text-left text-xs font-700 uppercase tracking-wider text-slate-400 hidden lg:table-cell">Movimientos</th>
+          <th class="px-4 py-3 text-left text-xs font-700 uppercase tracking-wider text-slate-400 hidden lg:table-cell">Creada</th>
+          <th class="px-4 py-3 text-left text-xs font-700 uppercase tracking-wider text-slate-400">Estado</th>
+          <th class="px-4 py-3 text-left text-xs font-700 uppercase tracking-wider text-slate-400">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for cat in categorias %}
+        <tr class="hover:bg-slate-50/60 transition-colors" data-nombre="{{ cat.nombre|lower }}" data-tipo="{{ cat.tipo }}">
+          <td class="px-4 py-3 font-600 text-slate-700">{{ cat.nombre }}</td>
+          <td class="px-4 py-3">
+            {% if cat.tipo == 'INGRESO' %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-700 bg-emerald-100 text-emerald-700">Ingreso</span>
+            {% elif cat.tipo == 'EGRESO' %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-700 bg-red-100 text-red-700">Egreso</span>
+            {% else %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-700 bg-amber-100 text-amber-700">Ahorro</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-500 text-xs hidden md:table-cell">{{ cat.descripcion|default:"—"|truncatechars:40 }}</td>
+          <td class="px-4 py-3 text-slate-500 text-xs hidden lg:table-cell">{{ cat.num_mov }}</td>
+          <td class="px-4 py-3 text-slate-400 text-xs hidden lg:table-cell">{{ cat.fecha_creacion|date:"d/m/Y" }}</td>
+          <td class="px-4 py-3">
+            <label class="toggle">
+              <input type="checkbox" class="js-toggle-categoria" data-id="{{ cat.id }}"
+                {% if cat.activo %}checked{% endif %} />
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td class="px-4 py-3">
+            <button class="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all js-btn-editar-categoria"
+              data-id="{{ cat.id }}" title="Editar">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-16 text-center text-slate-400">
+            <i data-lucide="tag" class="w-10 h-10 mx-auto mb-3 opacity-30"></i>
+            <p class="text-sm">No se encontraron categorías.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
-<!-- ── Modal crear categoría ──────────────────────────────── -->
+<!-- ── Modal crear categoría ─────────────────────────────────── -->
 <div class="modal-overlay" id="modal-crear-categoria">
   <div class="modal-box" style="max-width:440px;">
-    <div class="modal-header">
-      <p class="modal-title"><i data-lucide="plus" style="width:16px;height:16px;"></i> Nueva categoría</p>
-      <button class="modal-close js-close-modal" data-modal="modal-crear-categoria"><i data-lucide="x"></i></button>
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <span class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
+          <i data-lucide="plus" class="w-3.5 h-3.5 text-indigo-600"></i>
+        </span>
+        <p class="font-display font-700 text-slate-800 text-sm">Nueva categoría</p>
+      </div>
+      <button class="w-7 h-7 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition flex items-center justify-center js-close-modal" data-modal="modal-crear-categoria">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
     </div>
-    <div style="padding:0 24px 24px;">
-      <p id="msg-crear-cat" style="font-size:0.8rem;min-height:18px;margin-bottom:10px;"></p>
-      <form id="form-crear-categoria" class="admin-form">
+    <div class="px-6 pb-6 pt-4">
+      <p id="msg-crear-cat" class="text-xs min-h-[16px] mb-3"></p>
+      <form id="form-crear-categoria" class="space-y-4">
         {% csrf_token %}
-        <div class="form-group">
-          <label class="form-label">Nombre</label>
-          <input class="form-input" type="text" name="nombre" placeholder="Ej: Alimentación" required maxlength="100" />
+        <div>
+          <label class="block text-xs font-600 text-slate-600 mb-1">Nombre</label>
+          <input class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
+            type="text" name="nombre" placeholder="Ej: Alimentación" required maxlength="100" />
         </div>
-        <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-input" name="tipo" required>
+        <div>
+          <label class="block text-xs font-600 text-slate-600 mb-1">Tipo</label>
+          <select class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer transition"
+            name="tipo" required>
             <option value="">Selecciona un tipo...</option>
             <option value="INGRESO">Ingreso</option>
             <option value="EGRESO">Egreso</option>
             <option value="AHORRO">Ahorro</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Descripción <span style="color:var(--slate-400);font-weight:400;">(opcional)</span></label>
-          <input class="form-input" type="text" name="descripcion" placeholder="Descripción breve" maxlength="255" />
+        <div>
+          <label class="block text-xs font-600 text-slate-600 mb-1">Descripción <span class="text-slate-400 font-400">(opcional)</span></label>
+          <input class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
+            type="text" name="descripcion" placeholder="Descripción breve" maxlength="255" />
         </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
-          <button type="button" class="btn btn--ghost js-close-modal" data-modal="modal-crear-categoria">Cancelar</button>
-          <button type="submit" class="btn btn--primary"><i data-lucide="plus"></i> Crear</button>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button"
+            class="px-4 py-2 text-sm border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition js-close-modal" data-modal="modal-crear-categoria">
+            Cancelar
+          </button>
+          <button type="submit"
+            class="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-600 rounded-xl transition">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Crear
+          </button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- ── Modal editar categoría ─────────────────────────────── -->
+<!-- ── Modal editar categoría ─────────────────────────────────── -->
 <div class="modal-overlay" id="modal-editar-categoria">
   <div class="modal-box" style="max-width:440px;">
-    <div class="modal-header">
-      <p class="modal-title"><i data-lucide="pencil" style="width:16px;height:16px;"></i> Editar categoría</p>
-      <button class="modal-close js-close-modal" data-modal="modal-editar-categoria"><i data-lucide="x"></i></button>
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <span class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+          <i data-lucide="pencil" class="w-3.5 h-3.5 text-blue-600"></i>
+        </span>
+        <p class="font-display font-700 text-slate-800 text-sm">Editar categoría</p>
+      </div>
+      <button class="w-7 h-7 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition flex items-center justify-center js-close-modal" data-modal="modal-editar-categoria">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
     </div>
-    <div style="padding:0 24px 24px;">
-      <p id="msg-editar-cat" style="font-size:0.8rem;min-height:18px;margin-bottom:10px;"></p>
-      <form id="form-editar-categoria" class="admin-form">
+    <div class="px-6 pb-6 pt-4">
+      <p id="msg-editar-cat" class="text-xs min-h-[16px] mb-3"></p>
+      <form id="form-editar-categoria" class="space-y-4">
         {% csrf_token %}
         <input type="hidden" id="editar-cat-id" />
-        <div class="form-group">
-          <label class="form-label">Nombre</label>
-          <input class="form-input" type="text" name="nombre" id="editar-cat-nombre" required maxlength="100" />
+        <div>
+          <label class="block text-xs font-600 text-slate-600 mb-1">Nombre</label>
+          <input class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
+            type="text" name="nombre" id="editar-cat-nombre" required maxlength="100" />
         </div>
-        <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-input" name="tipo" id="editar-cat-tipo" required>
+        <div>
+          <label class="block text-xs font-600 text-slate-600 mb-1">Tipo</label>
+          <select class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer transition"
+            name="tipo" id="editar-cat-tipo" required>
             <option value="INGRESO">Ingreso</option>
             <option value="EGRESO">Egreso</option>
             <option value="AHORRO">Ahorro</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Descripción <span style="color:var(--slate-400);font-weight:400;">(opcional)</span></label>
-          <input class="form-input" type="text" name="descripcion" id="editar-cat-desc" maxlength="255" />
+        <div>
+          <label class="block text-xs font-600 text-slate-600 mb-1">Descripción <span class="text-slate-400 font-400">(opcional)</span></label>
+          <input class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
+            type="text" name="descripcion" id="editar-cat-desc" maxlength="255" />
         </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
-          <button type="button" class="btn btn--ghost js-close-modal" data-modal="modal-editar-categoria">Cancelar</button>
-          <button type="submit" class="btn btn--primary"><i data-lucide="save"></i> Guardar</button>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button"
+            class="px-4 py-2 text-sm border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition js-close-modal" data-modal="modal-editar-categoria">
+            Cancelar
+          </button>
+          <button type="submit"
+            class="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-600 rounded-xl transition">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> Guardar
+          </button>
         </div>
       </form>
     </div>

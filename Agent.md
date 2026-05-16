@@ -31,6 +31,7 @@
 | Driver DB | `psycopg[binary]==3.2.10` (psycopg2-binary incompatible con Python 3.14) |
 | Python | 3.14 |
 | Entorno | Windows, venv en `GastuDjango/venv/` |
+| Alertas JS | SweetAlert2 vía `static/js/gastu_alerts.js` (`window.GastuAlerts`) — disponible en TODAS las páginas (base_app.html y base_admin.html) |
 
 ---
 
@@ -438,7 +439,21 @@ Desarrollada por otro integrante del equipo. URL de lista: `listar_presupuestos`
 Integración con Gemini Flash y Groq. Capacidad para analizar movimientos, responder dudas financieras y generar alertas personalizadas.
 
 **Componentes principales:**
-- `groq_client.py`: Cliente para interacción con LLMs.
+- `gastu_agent_py_code`: 3,845 tokens
+- `gastu_agent_react_code`: 5,906 tokens
+- `gastu_agent_ux`: 4,008 tokens
+
+---
+
+## 19. App panel_admin — Estado actual (100%)
+
+App `panel_admin` con `namespace='panel_admin'`. Template principal: `panel_admin/templates/panel_admin/base_admin.html`.
+
+- Extiende el mismo layout que `base_app.html` (`static/css/gastuapp_layout.css`) para estandarizar sidebar y topbar.
+- Utiliza estilos propios (`panel_admin/static/panel_admin/css/admin.css`) cargados en `extra_head` para tablas, badges, modales y stat cards.
+- **Alertas**: Utiliza `GastuAlerts` (`static/js/gastu_alerts.js`) para notificaciones consistentes en toda la aplicación, reemplazando alertas y confirmaciones nativas de JavaScript, lo que soluciona problemas de bloqueo del navegador al cambiar roles o estados.
+- **Doble Binding Resuelto**: `admin.js` solo inicializa Lucide y gestiona el toggle de la sidebar. La lógica específica vive en `usuarios.js` y `categorias.js` para evitar múltiples event listeners.
+
 - `prompt_builder.py`: Construcción de contextos para la IA.
 - `recolector.py`: Módulo para extraer datos relevantes del usuario.
 - `alertas_service.py`: Lógica de generación de alertas inteligentes.

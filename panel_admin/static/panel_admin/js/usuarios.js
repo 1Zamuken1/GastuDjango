@@ -20,13 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showToast(msg, type = 'success') {
-    const t = document.createElement('div');
-    t.className = `message message--${type}`;
-    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;min-width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.12);';
-    t.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}"></i><span style="flex:1">${msg}</span>`;
-    document.body.appendChild(t);
-    lucide.createIcons();
-    setTimeout(() => t.remove(), 3000);
+    if (type === 'success') window.GastuAlerts.toastSuccess(msg);
+    else window.GastuAlerts.toastError(msg);
   }
 
   function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
@@ -135,8 +130,18 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ── Cambiar rol ─────────────────────────────────────────── */
   document.querySelectorAll('.js-cambiar-rol').forEach(btn => {
     btn.addEventListener('click', async function() {
-      if (!confirm('¿Cambiar el rol de este usuario?')) return;
-      const id  = this.dataset.id;
+      const id       = this.dataset.id;
+      const username = this.closest('tr')?.dataset.username || 'este usuario';
+      const esAdmin  = this.querySelector('[data-lucide="shield-off"]') !== null;
+      const accion   = esAdmin ? 'quitar permisos de administrador a' : 'hacer administrador a';
+
+      const confirmado = await window.GastuAlerts.confirmar(
+        'Cambiar rol de usuario',
+        `¿Deseas ${accion} "${username}"?`,
+        'Sí, cambiar rol'
+      );
+      if (!confirmado) return;
+
       const fd  = new FormData();
       const res = await postForm(`/admin-panel/usuarios/${id}/rol/`, fd);
       if (res.ok) {
@@ -146,6 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
           badge.textContent = res.rol === 'ADMIN' ? 'Admin' : 'Usuario';
           badge.className   = `badge ${res.rol === 'ADMIN' ? 'badge--indigo' : 'badge--slate'}`;
         }
+        /* Actualizar icono del botón sin recargar la página */
+        const nuevoIcono = res.rol === 'ADMIN' ? 'shield-off' : 'shield-check';
+        const nuevoTitle = res.rol === 'ADMIN' ? 'Quitar admin' : 'Hacer admin';
+        btn.title = nuevoTitle;
+        btn.innerHTML = `<i data-lucide="${nuevoIcono}"></i>`;
+        lucide.createIcons({ nodes: [btn] });
       } else {
         showToast(res.msg, 'error');
       }
@@ -168,7 +179,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!btn) return;
     const id       = btn.dataset.id;
     const username = btn.dataset.username;
-    if (!confirm(`¿Eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) return;
+
+    const confirmado = await window.GastuAlerts.confirmar(
+      'Eliminar usuario',
+      `¿Estás seguro de que quieres eliminar a "${username}"? Esta acción no se puede deshacer.`,
+      'Sí, eliminar'
+    );
+    if (!confirmado) return;
+
     const fd  = new FormData();
     const res = await postForm(`/admin-panel/usuarios/${id}/eliminar/`, fd);
     if (res.ok) {
@@ -178,5 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(res.msg, 'error');
     }
   });
+
 
 });

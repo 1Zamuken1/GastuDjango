@@ -14,13 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showToast(msg, type = 'success') {
-    const t = document.createElement('div');
-    t.className = `message message--${type}`;
-    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;min-width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.12);';
-    t.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}"></i><span style="flex:1">${msg}</span>`;
-    document.body.appendChild(t);
-    lucide.createIcons();
-    setTimeout(() => t.remove(), 3000);
+    if (type === 'success') window.GastuAlerts.toastSuccess(msg);
+    else window.GastuAlerts.toastError(msg);
   }
 
   function openModal(id)  { document.getElementById(id)?.classList.add('open'); }

@@ -22,6 +22,7 @@ class Categoria(models.Model):
         verbose_name        = 'Categoría'
         verbose_name_plural = 'Categorías'
         ordering            = ['nombre']
+        unique_together     = [['nombre', 'tipo']]
 
     def __str__(self):
         return f'{self.nombre} ({self.tipo})'
