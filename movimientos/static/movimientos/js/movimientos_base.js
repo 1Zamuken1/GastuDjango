@@ -298,7 +298,17 @@ class GestorMovimientos {
       this.tablaRegistrosBody.querySelectorAll('.btn-eliminar').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.abrirModalConfirmar(btn.dataset.id);
+          const id = btn.dataset.id;
+          if (window.GastuAlerts) {
+              window.GastuAlerts.confirmar(
+                  '¿Eliminar movimiento?',
+                  'Esta acción no se puede deshacer.',
+                  'Sí, eliminar',
+                  () => { this.ejecutarEliminar(id); }
+              );
+          } else {
+              this.abrirModalConfirmar(id);
+          }
         });
       });
     } catch (e) {
@@ -477,7 +487,12 @@ class GestorMovimientos {
     document.getElementById('btn-ninguna-cat').addEventListener('click', () => { document.querySelectorAll('.cat-check').forEach(c => c.checked = false); updateCount(); });
     document.getElementById('btn-descargar-reporte').addEventListener('click', () => {
       const desde = self.dpDesde ? self.dpDesde.getValor() : '', hasta = self.dpHasta ? self.dpHasta.getValor() : '';
-      const catIds = Array.from(document.querySelectorAll('.cat-check:checked')).map(c => c.value).join(',');
+      const checkedCats = document.querySelectorAll('.cat-check:checked');
+      if (checkedCats.length === 0) {
+          if (window.GastuAlerts) window.GastuAlerts.error('Sin datos', 'No hay movimientos para exportar.');
+          return;
+      }
+      const catIds = Array.from(checkedCats).map(c => c.value).join(',');
       const params = new URLSearchParams({ tipo: self.tipo, fecha_desde: desde, fecha_hasta: hasta });
       if (catIds) params.set('categorias', catIds);
       window.location.href = `${self.URL_EXPORTAR[self.formatoReporte]}?${params.toString()}`;

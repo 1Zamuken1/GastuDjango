@@ -79,5 +79,5 @@ def notificaciones_marcar_leidas(request):
     elif modulo:
         qs = qs.filter(modulo=modulo)
 
-    qs.update(leida=True)
-    return JsonResponse({'ok': True, 'afectadas': qs.count()})
+    afectadas = qs.update(leida=True)
+    return JsonResponse({'ok': True, 'afectadas': afectadas})

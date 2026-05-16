@@ -196,7 +196,7 @@
           <i data-lucide="help-circle" style="width: 18px; height: 18px; color: #10b981"></i>
         </button>
 
-        <button class="topbar-btn" id="notif-btn" title="Notificaciones">
+        <button class="topbar-btn" id="notif-btn" title="Notificaciones" onclick="window.location.href='/perfil/?tab=notificaciones'">
           <i data-lucide="bell" style="width: 16px; height: 16px"></i>
           {% if notificaciones_count %}
           <span class="notif-badge">{{ notificaciones_count }}</span>

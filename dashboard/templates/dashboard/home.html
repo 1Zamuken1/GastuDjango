@@ -287,6 +287,7 @@
         <div style="display:flex;align-items:center;gap:.35rem;">
           <a id="btn-export-excel"
              href="{% url 'dashboard:exportar_excel' %}?mes={{ mes }}&anio={{ anio }}"
+             onclick="if(!{{ ultimos_movimientos|yesno:'true,false' }}) { event.preventDefault(); window.GastuAlerts.error('Sin datos', 'No hay movimientos para exportar en este período.'); return false; }"
              title="Descargar Excel"
              style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
                     background:#fff;color:#059669;cursor:pointer;display:grid;place-items:center;
@@ -297,6 +298,7 @@
           </a>
           <a id="btn-export-pdf"
              href="{% url 'dashboard:exportar_pdf' %}?mes={{ mes }}&anio={{ anio }}"
+             onclick="if(!{{ ultimos_movimientos|yesno:'true,false' }}) { event.preventDefault(); window.GastuAlerts.error('Sin datos', 'No hay movimientos para exportar en este período.'); return false; }"
              title="Descargar PDF"
              style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
                     background:#fff;color:#e11d48;cursor:pointer;display:grid;place-items:center;
