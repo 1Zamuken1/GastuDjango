@@ -24,10 +24,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let current = 0, autoTimer = null, isPaused = false;
 
   function visibleCount() {
+    // Mapea exactamente los mismos breakpoints del CSS:
+    // ≥1536px → 5 slides, ≥1280px → 4, ≥1024px → 3, ≥768px → 2, <768px → 1
     const w = window.innerWidth;
     if (w < 768)  return 1;
     if (w < 1024) return 2;
-    return 3;
+    if (w < 1280) return 3;
+    if (w < 1536) return 4;
+    return 5;
   }
   function maxIndex()   { return Math.max(0, slides.length - visibleCount()); }
   function slideWidth() {
@@ -36,10 +40,19 @@ document.addEventListener('DOMContentLoaded', () => {
     return slides[0].getBoundingClientRect().width + gap;
   }
 
+  // Actualiza qué dots son visibles: solo los que corresponden a posiciones reales
+  function updateDots() {
+    const max = maxIndex();
+    dots.forEach((d, i) => {
+      d.style.display = i <= max ? '' : 'none';
+      d.classList.toggle('active', i === current);
+    });
+  }
+
   function goTo(index) {
     current = Math.max(0, Math.min(index, maxIndex()));
     track.style.transform = `translateX(-${current * slideWidth()}px)`;
-    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    updateDots();
     if (progBar) {
       progBar.style.transition = 'none';
       progBar.style.width = '0%';
@@ -96,12 +109,17 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeTimer = setTimeout(() => { if (current > maxIndex()) current = maxIndex(); goTo(current); }, 100);
   });
 
-  // Recalcular el carrusel cuando el sidebar termina su animación de colapsar/expandir
+  // Recalcular carrusel y gráficos cuando termina la animación del sidebar
   const appContent = document.getElementById('app-content');
   if (appContent) {
     appContent.addEventListener('transitionend', (e) => {
       if (e.propertyName === 'margin-left') {
+        // Reposicionar carrusel al nuevo ancho
+        if (current > maxIndex()) current = maxIndex();
         goTo(current);
+        // Disparar resize para que ApexCharts redimensione todos los gráficos
+        // (pie chart incluido). ApexCharts escucha window 'resize' nativo.
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
       }
     });
   }

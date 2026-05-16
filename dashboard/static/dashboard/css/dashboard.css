@@ -65,8 +65,8 @@
 .carousel-progress { height: 2px; background: #e2e8f0; border-radius: 99px; margin-top: 12px; overflow: hidden; }
 .carousel-progress__bar { height: 100%; background: #10b981; border-radius: 99px; width: 0%; }
 
-.charts-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; margin-bottom: 16px; }
-.chart-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.charts-grid { display: grid; grid-template-columns: 1fr min(360px, 32%); gap: 16px; margin-bottom: 16px; }
+.chart-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; }
 .chart-card__title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: #0f172a; }
 .chart-card__subtitle { font-size: 11px; color: #64748b; margin-top: 3px; }
 .chart-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 220px; gap: 10px; text-align: center; color: #94a3b8; font-size: 13px; font-weight: 500; }
@@ -336,6 +336,9 @@
 /* ── Alturas de gráficos responsive ─────────────────────── */
 .chart-tendencia-wrap { width: 100%; overflow: visible; }
 .chart-pie-wrap { width: 100%; overflow: hidden; }
+/* Fuerza que el canvas y SVG del pie nunca excedan su contenedor */
+.chart-pie-wrap .apexcharts-canvas,
+.chart-pie-wrap .apexcharts-canvas svg { max-width: 100%; }
 
 /* El tooltip sigue el cursor sin recortarse por el contenedor */
 .chart-tendencia-wrap .apexcharts-canvas,
