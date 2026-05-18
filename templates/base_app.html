@@ -489,6 +489,15 @@
 ══════════════════════════════════════════ -->
     <main id="app-content">{% block content %}{% endblock %}</main>
 
+    <!-- ── Mensajes Django → toasts via GastuAlerts ──────────────── -->
+    {% if messages %}
+    <div id="django-messages" class="hidden">
+      {% for message in messages %}
+      <span data-tag="{{ message.tags }}" data-msg="{{ message }}"></span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- ══════════════════════════════════════════
      SCRIPTS
 ══════════════════════════════════════════ -->
@@ -501,6 +510,19 @@
     <script src="{% static 'js/gastu_alerts.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
     <script src="{% static 'js/tours.js' %}"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var container = document.getElementById('django-messages');
+        if (!container) return;
+        container.querySelectorAll('span[data-msg]').forEach(function(el) {
+          var tag = el.dataset.tag || '';
+          var msg = el.dataset.msg || '';
+          if (tag.indexOf('success') !== -1) window.GastuAlerts.toastSuccess(msg);
+          else if (tag.indexOf('error') !== -1) window.GastuAlerts.toastError(msg);
+          else window.GastuAlerts.toastInfo(msg);
+        });
+      });
+    </script>
 
     {% block scripts %}{% endblock %}
     <!-- incluye alertas de agente_financiero -->

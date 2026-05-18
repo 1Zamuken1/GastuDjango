@@ -101,18 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── Búsqueda + filtro en tiempo real ────────────────────── */
   function filtrarCategorias() {
-    const term = document.getElementById('search-cat')?.value.toLowerCase() || '';
-    const tipo = document.getElementById('filter-tipo')?.value || '';
+    const term   = document.getElementById('search-cat')?.value.toLowerCase() || '';
+    const tipo   = document.getElementById('filter-tipo')?.value   || '';
+    const estado = document.getElementById('filter-estado')?.value || '';
     document.querySelectorAll('#tabla-categorias tbody tr').forEach(row => {
-      const nombre  = row.dataset.nombre || '';
-      const rowTipo = row.dataset.tipo   || '';
-      const matchQ  = nombre.includes(term);
-      const matchT  = !tipo || rowTipo === tipo;
-      row.style.display = (matchQ && matchT) ? '' : 'none';
+      const nombre   = row.dataset.nombre  || '';
+      const rowTipo  = row.dataset.tipo    || '';
+      const rowActivo = row.dataset.activo || '';
+      const matchQ = nombre.includes(term);
+      const matchT = !tipo   || rowTipo  === tipo;
+      const matchE = !estado || rowActivo === estado;
+      row.style.display = (matchQ && matchT && matchE) ? '' : 'none';
     });
   }
 
-  document.getElementById('search-cat')?.addEventListener('input', filtrarCategorias);
+  document.getElementById('search-cat')?.addEventListener('input',  filtrarCategorias);
   document.getElementById('filter-tipo')?.addEventListener('change', filtrarCategorias);
+  document.getElementById('filter-estado')?.addEventListener('change', filtrarCategorias);
 
 });

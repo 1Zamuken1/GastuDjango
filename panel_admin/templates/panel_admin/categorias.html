@@ -35,11 +35,17 @@
     <option value="EGRESO"  {% if tipo_fil == 'EGRESO'  %}selected{% endif %}>Egreso</option>
     <option value="AHORRO"  {% if tipo_fil == 'AHORRO'  %}selected{% endif %}>Ahorro</option>
   </select>
+  <select name="estado" id="filter-estado"
+    class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer transition">
+    <option value="">Todos los estados</option>
+    <option value="activo"   {% if estado_fil == 'activo'   %}selected{% endif %}>Activas</option>
+    <option value="inactivo" {% if estado_fil == 'inactivo' %}selected{% endif %}>Inactivas</option>
+  </select>
   <button type="submit"
     class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 hover:bg-slate-50 transition font-500">
     <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filtrar
   </button>
-  {% if q or tipo_fil %}
+  {% if q or tipo_fil or estado_fil %}
   <a href="{% url 'panel_admin:categorias' %}"
     class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-500 hover:bg-slate-50 transition font-500">
     <i data-lucide="x" class="w-3.5 h-3.5"></i> Limpiar
@@ -64,7 +70,7 @@
       </thead>
       <tbody class="divide-y divide-slate-100">
         {% for cat in categorias %}
-        <tr class="hover:bg-slate-50/60 transition-colors" data-nombre="{{ cat.nombre|lower }}" data-tipo="{{ cat.tipo }}">
+        <tr class="hover:bg-slate-50/60 transition-colors" data-nombre="{{ cat.nombre|lower }}" data-tipo="{{ cat.tipo }}" data-activo="{% if cat.activo %}activo{% else %}inactivo{% endif %}">
           <td class="px-4 py-3 font-600 text-slate-700">{{ cat.nombre }}</td>
           <td class="px-4 py-3">
             {% if cat.tipo == 'INGRESO' %}

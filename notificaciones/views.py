@@ -31,6 +31,13 @@ def notificaciones_json(request):
     else:
         total_no_leidas_modulo = total_no_leidas
 
+    # Calcular no leídas por módulo
+    recuentos_modulos = {}
+    for choice in Notificacion.Modulo.choices:
+        recuentos_modulos[choice[0]] = Notificacion.objects.filter(
+            usuario=request.user, leida=False, modulo=choice[0]
+        ).count()
+
     return JsonResponse({
         'ok': True,
         'notificaciones': [
@@ -38,6 +45,7 @@ def notificaciones_json(request):
         ],
         'total_no_leidas': total_no_leidas,
         'total_no_leidas_modulo': total_no_leidas_modulo,
+        'recuentos_modulos': recuentos_modulos,
     })
 
 

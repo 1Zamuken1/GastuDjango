@@ -60,9 +60,15 @@ def _build_categorias_con_totales(usuario, tipo, mes, anio):
 
 @login_required
 def lista_ingresos(request):
-    """Lista de ingresos del mes actual agrupados por categoría."""
+    """Lista de ingresos del mes actual u opcionalmente del mes seleccionado agrupados por categoría."""
     hoy = timezone.localdate()
-    mes, anio = hoy.month, hoy.year
+    try:
+        mes = int(request.GET.get('mes', hoy.month))
+        anio = int(request.GET.get('anio', hoy.year))
+        if mes < 1 or mes > 12:
+            mes = hoy.month
+    except (ValueError, TypeError):
+        mes, anio = hoy.month, hoy.year
 
     categorias_con_totales, total_mes = _build_categorias_con_totales(
         request.user, 'INGRESO', mes, anio
@@ -82,6 +88,7 @@ def lista_ingresos(request):
         'promedio_mes': promedio_mes,
         'categorias_disponibles': Categoria.objects.filter(activo=True, tipo='INGRESO').order_by('nombre'),
         'mes_nombre': MESES_ES[mes],
+        'mes_numero': mes,
         'anio': anio,
         'hoy': hoy,
     })
@@ -89,9 +96,15 @@ def lista_ingresos(request):
 
 @login_required
 def lista_egresos(request):
-    """Lista de egresos del mes actual agrupados por categoría."""
+    """Lista de egresos del mes actual u opcionalmente del mes seleccionado agrupados por categoría."""
     hoy = timezone.localdate()
-    mes, anio = hoy.month, hoy.year
+    try:
+        mes = int(request.GET.get('mes', hoy.month))
+        anio = int(request.GET.get('anio', hoy.year))
+        if mes < 1 or mes > 12:
+            mes = hoy.month
+    except (ValueError, TypeError):
+        mes, anio = hoy.month, hoy.year
 
     categorias_con_totales, total_mes = _build_categorias_con_totales(
         request.user, 'EGRESO', mes, anio
@@ -114,6 +127,7 @@ def lista_egresos(request):
         'disponible': disponible,
         'categorias_disponibles': Categoria.objects.filter(activo=True, tipo='EGRESO').order_by('nombre'),
         'mes_nombre': MESES_ES[mes],
+        'mes_numero': mes,
         'anio': anio,
         'hoy': hoy,
     })
@@ -174,7 +188,11 @@ def guardar_movimiento(request, pk=None):
 @require_POST
 def eliminar_movimiento(request, pk):
     """Elimina un movimiento. Solo el dueño puede eliminarlo."""
-    mov = get_object_or_404(Movimiento, pk=pk, usuario=request.user)
+    try:
+        mov = Movimiento.objects.get(pk=pk, usuario=request.user)
+    except Movimiento.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Movimiento no encontrado'}, status=404)
+    
     mov.delete()
     return JsonResponse({'ok': True, 'id': pk})
 

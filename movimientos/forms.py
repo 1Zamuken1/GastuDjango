@@ -32,6 +32,16 @@ class MovimientoForm(forms.ModelForm):
             'descripcion': 'Descripción',
             'categoria': 'Categoría',
         }
+        error_messages = {
+            'categoria': {
+                'required': 'La categoría es obligatoria.',
+                'invalid_choice': 'La categoría seleccionada no es válida.',
+            },
+            'monto': {
+                'required': 'El monto es obligatorio.',
+                'invalid': 'El monto debe ser un número válido.',
+            }
+        }
 
     def __init__(self, *args, tipo_movimiento=None, disponible=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -56,7 +66,7 @@ class MovimientoForm(forms.ModelForm):
         """
         monto = self.cleaned_data.get('monto')
         if monto is not None and monto <= 0:
-            raise forms.ValidationError('El monto debe ser mayor a cero.')
+            raise forms.ValidationError('El monto debe ser mayor que cero.')
 
         tipo = self.cleaned_data.get('tipo')
         if (

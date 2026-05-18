@@ -182,6 +182,38 @@ document.addEventListener('DOMContentLoaded', function () {
           return;
         }
 
+        // Actualizar contadores en los pills
+        var pills = document.querySelectorAll('.notif-pill');
+        pills.forEach(function (pill) {
+          var pillMod = pill.getAttribute('data-modulo');
+          var count = (pillMod === 'TODOS') ? data.total_no_leidas : ((data.recuentos_modulos && data.recuentos_modulos[pillMod]) || 0);
+          var countBadge = pill.querySelector('.notif-pill-count');
+          if (count > 0) {
+            if (!countBadge) {
+              countBadge = document.createElement('span');
+              countBadge.className = 'notif-pill-count';
+              pill.appendChild(countBadge);
+            }
+            countBadge.textContent = count;
+          } else {
+            if (countBadge) countBadge.remove();
+          }
+        });
+
+        // Actualizar campana en la topbar
+        var topbarBadge = document.querySelector('#notif-btn .notif-badge');
+        if (data.total_no_leidas > 0) {
+          if (!topbarBadge) {
+            topbarBadge = document.createElement('span');
+            topbarBadge.className = 'notif-badge';
+            var notifBtn = document.getElementById('notif-btn');
+            if (notifBtn) notifBtn.appendChild(topbarBadge);
+          }
+          if (topbarBadge) topbarBadge.textContent = data.total_no_leidas;
+        } else {
+          if (topbarBadge) topbarBadge.remove();
+        }
+
         var notifs = data.notificaciones;
         if (!notifs || notifs.length === 0) {
           lista.innerHTML = '<div class="notif-empty">' +

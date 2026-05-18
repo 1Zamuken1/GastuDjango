@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.sqlite3
 
 # Bytecode — evita conflictos en pull/merge del equipo
 **/__pycache__/
@@ -17,6 +16,9 @@ venv/
 # Archivos de entorno
 .env
 
+# Base de datos local
+*.sqlite3
+
 # Archivos de sistema
 .DS_Store
 Thumbs.db
@@ -24,3 +26,17 @@ Thumbs.db
 # Archivos de compilación
 dist/
 build/
+
+# Archivos binarios / documentos generados
+*.xlsx
+*.xls
+*.pdf
+*.png
+*.jpg
+*.jpeg
+
+# Capturas de pruebas automatizadas
+capturas_pruebas/
+
+# Scripts personales de prueba (no van al repo)
+seed_meses_anteriores.py

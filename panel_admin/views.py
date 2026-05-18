@@ -240,17 +240,28 @@ def admin_eliminar_usuario(request, usuario_id):
 
 @admin_required
 def admin_categorias(request):
-    q    = request.GET.get('q', '').strip()
-    tipo = request.GET.get('tipo', '')
+    q      = request.GET.get('q', '').strip()
+    tipo   = request.GET.get('tipo', '')
+    estado = request.GET.get('estado', '')  # 'activo' | 'inactivo' | ''
     categorias = Categoria.objects.all().order_by('tipo', 'nombre')
     if q:
         categorias = categorias.filter(nombre__icontains=q)
     if tipo:
         categorias = categorias.filter(tipo=tipo)
+    if estado == 'activo':
+        categorias = categorias.filter(activo=True)
+    elif estado == 'inactivo':
+        categorias = categorias.filter(activo=False)
     categorias = categorias.annotate(
         num_mov=Count('movimientos', filter=Q(movimientos__activo=True))
     )
-    context = {'categorias': categorias, 'q': q, 'tipo_fil': tipo, 'seccion': 'categorias'}
+    context = {
+        'categorias':  categorias,
+        'q':           q,
+        'tipo_fil':    tipo,
+        'estado_fil':  estado,
+        'seccion':     'categorias',
+    }
     return render(request, 'panel_admin/categorias.html', context)
 
 
@@ -296,8 +307,8 @@ def admin_editar_categoria_ajax(request, categoria_id):
         return JsonResponse({'ok': False, 'msg': 'Nombre y tipo son obligatorios.'})
     if tipo not in ['INGRESO', 'EGRESO', 'AHORRO']:
         return JsonResponse({'ok': False, 'msg': 'Tipo inválido.'})
-    if Categoria.objects.exclude(pk=categoria_id).filter(nombre__iexact=nombre, tipo=tipo).exists():
-        return JsonResponse({'ok': False, 'msg': f'Ya existe otra categoría de tipo {tipo} con el nombre "{nombre}".'})
+    if Categoria.objects.exclude(pk=categoria_id).filter(nombre__iexact=nombre).exists():
+        return JsonResponse({'ok': False, 'msg': f'Ya existe otra categoría con el nombre "{nombre}".'})
     cat.nombre = nombre; cat.tipo = tipo; cat.descripcion = desc
     cat.save()
     return JsonResponse({'ok': True, 'msg': f'Categoría "{nombre}" actualizada.'})

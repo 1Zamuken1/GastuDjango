@@ -220,7 +220,8 @@ class GestorMovimientos {
           this.cargarRegistros(this.categoriaActualId, this.paginaActual);
         }
       } else {
-        this.mostrarToast('No se pudo eliminar.', 'error');
+        const errorMsg = data.error || 'No se pudo eliminar.';
+        this.mostrarToast(errorMsg, 'error');
       }
     } catch (e) {
       this.mostrarToast('Error de conexión. Intenta de nuevo.', 'error');

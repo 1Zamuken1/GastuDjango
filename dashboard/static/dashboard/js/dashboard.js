@@ -606,6 +606,13 @@ requestAnimationFrame(() => {
     if (btnMesAnterior)  btnMesAnterior.disabled  = esPrimero;
     if (navMesLabel)     navMesLabel.textContent  = `${MESES_ES[mesVisto]} ${anioVisto}`;
 
+    const selectMes = document.getElementById('select-mes');
+    const selectAnio = document.getElementById('select-anio');
+    if (selectMes && selectAnio) {
+      selectMes.value = mesVisto;
+      selectAnio.value = anioVisto;
+    }
+
     const badge = document.getElementById('nav-mes-historico');
     if (badge) badge.classList.toggle('visible', !esActual);
   }
@@ -671,10 +678,14 @@ requestAnimationFrame(() => {
     const movTabla = document.getElementById('mov-tabla');
     if (movTabla) {
       if (data.ultimos_movimientos.length === 0) {
+        const esPasado = antesDelPrimero(data.mes, data.anio);
+        const mensajeEmpty = esPasado 
+          ? `Período anterior a la creación de tu cuenta. No hay movimientos registrados.`
+          : `Sin movimientos en ${mesNombre} ${anio}`;
         movTabla.innerHTML = `
           <div class="mov-empty">
             <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
-            <p>Sin movimientos en ${mesNombre} ${anio}</p>
+            <p>${mensajeEmpty}</p>
           </div>`;
       } else {
         const header = `
@@ -772,6 +783,24 @@ requestAnimationFrame(() => {
     if (!esMesActual(mesVisto, anioVisto)) {
       const { mes, anio } = mesSiguiente(mesVisto, anioVisto);
       navegar(mes, anio);
+    }
+  });
+
+  const selectMes = document.getElementById('select-mes');
+  const selectAnio = document.getElementById('select-anio');
+  const btnFiltrarPeriodo = document.getElementById('btn-filtrar-periodo');
+
+  btnFiltrarPeriodo?.addEventListener('click', () => {
+    if (selectMes && selectAnio) {
+      const mesVal = parseInt(selectMes.value);
+      const anioVal = parseInt(selectAnio.value);
+
+      if (antesDelPrimero(mesVal, anioVal)) {
+        if (window.GastuAlerts) {
+          window.GastuAlerts.info('Información', 'El período seleccionado es anterior a la creación de tu cuenta.');
+        }
+      }
+      navegar(mesVal, anioVal);
     }
   });
 

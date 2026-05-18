@@ -55,10 +55,7 @@ def home_view(request):
     except (ValueError, TypeError):
         mes, anio = hoy.month, hoy.year
 
-    # No permitir navegar al futuro
-    if (anio, mes) > (hoy.year, hoy.month):
-        mes, anio = hoy.month, hoy.year
-
+    # Permitir navegar a cualquier mes (los meses futuros o pasados sin datos se mostrarán vacíos)
     ctx = build_dashboard_context(user, mes, anio)
 
     # Respuesta JSON para requests AJAX (navegacion sin recarga)

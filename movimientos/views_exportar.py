@@ -86,6 +86,15 @@ def _resumen(qs):
 def exportar_csv(request):
     """Exporta movimientos a CSV."""
     qs, fecha_desde, fecha_hasta, tipo = _build_qs(request)
+    if not qs.exists():
+        from django.contrib import messages
+        from django.http import HttpResponseRedirect
+        messages.error(request, 'No hay movimientos para exportar en el período seleccionado.')
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            return HttpResponseRedirect(referer)
+        return HttpResponseRedirect('/')
+
     nombre = _nombre_archivo(tipo, fecha_desde, fecha_hasta, 'csv')
 
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
@@ -125,6 +134,15 @@ def exportar_excel(request):
         return HttpResponse('openpyxl no está instalado. Ejecuta: pip install openpyxl', status=500)
 
     qs, fecha_desde, fecha_hasta, tipo = _build_qs(request)
+    if not qs.exists():
+        from django.contrib import messages
+        from django.http import HttpResponseRedirect
+        messages.error(request, 'No hay movimientos para exportar en el período seleccionado.')
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            return HttpResponseRedirect(referer)
+        return HttpResponseRedirect('/')
+
     nombre = _nombre_archivo(tipo, fecha_desde, fecha_hasta, 'xlsx')
 
     wb = openpyxl.Workbook()
@@ -230,6 +248,15 @@ def exportar_pdf(request):
         return HttpResponse('xhtml2pdf no está instalado. Ejecuta: pip install xhtml2pdf', status=500)
 
     qs, fecha_desde, fecha_hasta, tipo = _build_qs(request)
+    if not qs.exists():
+        from django.contrib import messages
+        from django.http import HttpResponseRedirect
+        messages.error(request, 'No hay movimientos para exportar en el período seleccionado.')
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            return HttpResponseRedirect(referer)
+        return HttpResponseRedirect('/')
+
     nombre = _nombre_archivo(tipo, fecha_desde, fecha_hasta, 'pdf')
     total_ingresos, total_egresos, balance = _resumen(qs)
 

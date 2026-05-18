@@ -94,10 +94,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Notificaciones ────────────────────────────────────
   const notifBtn = document.getElementById("notif-btn");
-  notifBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    toggleNotifDropdown();
-  });
+  if (notifBtn) {
+    notifBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = "/perfil/?tab=notificaciones";
+    });
+  }
 
   document.addEventListener("click", () => {
     userDropdown.classList.remove("open");
