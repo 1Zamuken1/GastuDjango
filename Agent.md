@@ -600,3 +600,8 @@ GastuApp emplea un flujo de trabajo de pruebas guiado por el comportamiento visu
 **Directrices para el Agente:**
 - Asegurar siempre que los elementos de UI asíncronos (modales, overlays de tour `driver.js`) no bloqueen las interacciones de Playwright. Utilizar `force=True` en los clicks de ser necesario.
 - Los scripts de Playwright deben guardarse en `tests/playwright/` y los seeders en `tests/seeds/`.
+- **Limpieza del Workspace (Pre-Commit):** ANTES de realizar cualquier commit, el agente DEBE limpiar el entorno de trabajo. Esto incluye:
+  - Eliminar por completo la carpeta `capturas_pruebas/` (y su contenido) generada durante las pruebas.
+  - Eliminar archivos basura o temporales suministrados por el usuario (ej. `.xlsx`, `.pdf`, `.png` sueltos en la raíz).
+  - Eliminar scripts de depuración temporales (`debug_*.py`).
+  - Asegurar que `.gitignore` esté actualizado para ignorar estos artefactos de prueba si llegaran a recrearse.

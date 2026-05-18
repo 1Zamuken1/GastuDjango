@@ -30,6 +30,9 @@ groq==0.23.1
 # OAuth
 django-allauth==65.15.0
 
+# Pruebas E2E
+playwright==1.59.0
+
 # =========================================================
 # GUIA RAPIDA PARA EJECUTAR EL PROYECTO
 # =========================================================
