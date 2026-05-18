@@ -544,4 +544,86 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
+  // ══════════════════════════════════════════════════════════
+  //  AJAX FORM SUBMISSIONS (Perfil, Password, Preferencias)
+  // ══════════════════════════════════════════════════════════
+  
+  function handleFormSubmit(e, form) {
+    e.preventDefault();
+    var formData = new FormData(form);
+    
+    // Clear errors
+    form.querySelectorAll('.form-error').forEach(function(el) { el.textContent = ''; });
+
+    var btn = form.querySelector('button[type="submit"]');
+    var originalBtnContent = '';
+    if (btn) {
+      originalBtnContent = btn.innerHTML;
+      btn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Guardando...';
+      btn.disabled = true;
+      lucide.createIcons();
+    }
+
+    fetch('/perfil/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (btn) {
+        btn.innerHTML = originalBtnContent;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+
+      if (data.ok) {
+        if (window.GastuAlerts) {
+          window.GastuAlerts.toastSuccess(data.mensaje || 'Actualizado correctamente');
+        }
+        if (form.id === 'password-form') {
+          form.reset();
+        }
+      } else {
+        if (window.GastuAlerts) {
+          window.GastuAlerts.toastError('Por favor corrige los errores');
+        }
+        if (data.errors) {
+          for (var field in data.errors) {
+            var errorEl = document.getElementById('error-' + field);
+            if (errorEl) {
+              errorEl.textContent = data.errors[field][0];
+            }
+          }
+        }
+      }
+    })
+    .catch(function(err) {
+      if (btn) {
+        btn.innerHTML = originalBtnContent;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+      if (window.GastuAlerts) {
+        window.GastuAlerts.toastError('Error de conexion');
+      }
+    });
+  }
+
+  var formPerfil = document.getElementById('perfil-form');
+  var formPassword = document.getElementById('password-form');
+  var formPreferencias = document.getElementById('preferencias-form');
+
+  if (formPerfil) {
+    formPerfil.addEventListener('submit', function(e) { handleFormSubmit(e, formPerfil); });
+  }
+  if (formPassword) {
+    formPassword.addEventListener('submit', function(e) { handleFormSubmit(e, formPassword); });
+  }
+  if (formPreferencias) {
+    formPreferencias.addEventListener('submit', function(e) { handleFormSubmit(e, formPreferencias); });
+  }
+
 })
