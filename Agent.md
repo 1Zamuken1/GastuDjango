@@ -584,3 +584,19 @@ Implementado a nivel global (principalmente desde la app `dashboard`) para gener
 - Todos los recursos estáticos para reportes (logos y banners) se centralizan en la ruta global `static/img/` bajo configuración en `settings.py`. Use nombres como `gastu_logo_rostro.png` o `gastu_grafica.png`.
 
 **Importante:** Cuando se trabaje con templates de renderizado a PDF mediante xhtml2pdf, utilizar estrictamente estilos en línea o bloques `<style>` internos básicos. No usar Tailwind vía CDN porque el motor de PDF no resuelve correctamente utilidades complejas ni variables nativas CSS complejas. Tampoco soporta flexbox/grid. Se debe maquetar usando modelo de cajas tradicional y tablas `<table>`.
+
+---
+
+## 22. Metodología de Pruebas Automatizadas (TDD Visual con Playwright)
+
+GastuApp emplea un flujo de trabajo de pruebas guiado por el comportamiento visual y automatizado por la IA. El proceso para validar un Caso de Uso (CU) consta de los siguientes pasos:
+
+1. **Definición por el Usuario**: El usuario proporciona capturas de pantalla de una matriz de pruebas detallando los "Casos de Prueba" (éxito) y "Casos de Error" esperados para un CU específico.
+2. **Preparación de Datos (Seeders)**: El agente IA crea y ejecuta scripts de *seeding* (ej. `tests/seeds/seed_cu21.py`) utilizando el ORM de Django para preparar la base de datos con un estado limpio, predecible y determinista.
+3. **Automatización con Playwright**: El agente diseña un script asíncrono en Python usando Playwright (ej. `tests/playwright/take_screenshots_CU21.py`). Este script simula las interacciones exactas del usuario final descritas en la matriz (clicks, navegación, ingresos de texto, flujos de error).
+4. **Validación y Fixes (Iteración)**: Si el script encuentra un bug (ej. el sistema no redirige, una alerta no se muestra, o un botón falla), el agente diagnostica el problema, modifica el código fuente (backend o frontend) y re-ejecuta el test hasta que este pase satisfactoriamente.
+5. **Evidencia Visual**: Como resultado final, el script toma capturas de pantalla de cada escenario exitoso o fallido y las almacena en una carpeta local `capturas_pruebas/CU-XX/`. (Nota: Estas imágenes y la carpeta se omiten en el control de versiones vía `.gitignore`).
+
+**Directrices para el Agente:**
+- Asegurar siempre que los elementos de UI asíncronos (modales, overlays de tour `driver.js`) no bloqueen las interacciones de Playwright. Utilizar `force=True` en los clicks de ser necesario.
+- Los scripts de Playwright deben guardarse en `tests/playwright/` y los seeders en `tests/seeds/`.
