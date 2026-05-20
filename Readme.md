@@ -168,3 +168,18 @@ Formatos disponibles: **CSV**, **Excel (.xlsx)**, **PDF**
 - Tailwind se carga vía CDN — no requiere Node.js.
 - `openpyxl` y `reportlab` son necesarios para la exportación de reportes.
 - En producción con Railway/Render: cambiar `USE_SQLITE=False` y configurar `DATABASE_URL`.
+
+## Ejecutar tests
+
+El proyecto incluye tests unitarios que pueden ejecutarse con pytest:
+
+```bash
+# Instalar dependencias de testing (solo primera vez)
+pip install pytest pytest-django
+
+# Ejecutar todas las pruebas
+pytest
+
+# Ejecutar tests de una app específica
+pytest usuarios/tests.py
+```
