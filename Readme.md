@@ -92,6 +92,48 @@ python manage.py loaddata categorias.json
 
 Carga categorías de prueba base en el sistema limpio. También es posible cargar categorías masivamente mediante la nueva interfaz de **Importar CSV** utilizando el panel de administrador.
 
+## 🚀 Instalación y Configuración (Para Desarrolladores)
+
+Sigue estos pasos para levantar el entorno de desarrollo local:
+
+### 1. Entorno Virtual y Dependencias
+Clona el repositorio y crea tu entorno virtual:
+```bash
+python -m venv .venv
+# Activar entorno virtual:
+# Windows: .venv\Scripts\activate
+# Mac/Linux: source .venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+### 2. Base de Datos
+Cada desarrollador debe tener su propia base de datos SQLite local (la cual es ignorada por Git para evitar conflictos):
+```bash
+python manage.py migrate
+```
+
+### 3. Tailwind CSS (Admin Panel)
+El proyecto utiliza [Tailwind CSS](https://tailwindcss.com/) a través del paquete `django-tailwind` para estilizar el panel de administración.
+Hemos incluido el archivo CSS ya compilado (`theme/static/css/dist/styles.css`) en el repositorio para que no tengas que instalar Node.js ni compilar el CSS si solo vas a trabajar en el backend o en el frontend público de GastuApp.
+
+**Si necesitas modificar los estilos del panel de administración (clases de Tailwind):**
+Deberás regenerar el CSS. Para ello, asegúrate de tener [Node.js](https://nodejs.org/) instalado y ejecuta:
+```bash
+python manage.py tailwind install
+python manage.py tailwind start
+```
+Esto iniciará un proceso en segundo plano que vigilará tus cambios en los templates del admin y actualizará el archivo `styles.css`.
+
+### 4. Ejecutar el Servidor
+Finalmente, inicia el servidor de desarrollo de Django:
+```bash
+python manage.py runserver
+```
+
+¡Listo! Ya puedes acceder a `http://127.0.0.1:8000/`.
+
 ### 8. Ejecutar el servidor
 
 ```bash
