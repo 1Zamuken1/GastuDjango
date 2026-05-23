@@ -9,4 +9,5 @@ urlpatterns = [
     path('meses-disponibles/', views.meses_disponibles, name='meses_disponibles'),
     path('exportar/excel/', views.exportar_excel, name='exportar_excel'),
     path('exportar/pdf/', views.exportar_pdf, name='exportar_pdf'),
+    path('guardar-saldo-inicial/', views.guardar_saldo_inicial, name='guardar_saldo_inicial'),
 ]

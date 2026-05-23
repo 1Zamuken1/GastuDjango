@@ -107,27 +107,26 @@ function initOnboarding() {
       try {
         const formData = new FormData();
         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-        formData.append('tipo', 'INGRESO');
-        formData.append('descripcion', 'Saldo Inicial');
-        formData.append('categoria', '{{ onboarding_categoria_id }}');
         formData.append('monto', monto);
-        
-        const hoy = new Date();
-        const yyyy = hoy.getFullYear();
-        const mm = String(hoy.getMonth() + 1).padStart(2, '0');
-        const dd = String(hoy.getDate()).padStart(2, '0');
-        formData.append('fecha_registro', `${yyyy}-${mm}-${dd}`);
+        formData.append('categoria_id', '{{ onboarding_categoria_id }}');
 
-        const response = await fetch('{% url "movimientos:guardar_movimiento" %}', {
+        const response = await fetch('{% url "dashboard:guardar_saldo_inicial" %}', {
           method: 'POST',
           body: formData,
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        
-        if (!response.ok) throw new Error('Error al guardar saldo');
+
+        const data = await response.json();
+        if (!data.ok) {
+          const msg = data.error || 'No se pudo guardar el saldo inicial.';
+          if (window.GastuAlerts) window.GastuAlerts.toastError(msg);
+          else alert(msg);
+          return;
+        }
       } catch (error) {
         console.error(error);
-        if (window.GastuAlerts) window.GastuAlerts.error('Error', 'No se pudo guardar el saldo inicial.');
+        if (window.GastuAlerts) window.GastuAlerts.toastError('Error de conexion al guardar el saldo.');
+        else alert('Error al guardar el saldo.');
         return;
       }
     }

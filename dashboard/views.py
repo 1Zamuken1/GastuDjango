@@ -171,3 +171,51 @@ def exportar_pdf(request):
     all_items = obtener_items_completos_mes(user, mes, anio)
 
     return generar_pdf_dashboard(ctx, all_items, mes, anio, user)
+
+
+# ── Onboarding ────────────────────────────────────────────────────────────────
+
+@login_required
+def guardar_saldo_inicial(request):
+    """
+    Vista exclusiva del onboarding: crea el movimiento de Saldo Inicial
+    sin pasar por MovimientoForm (que excluye categorías de sistema).
+    Solo acepta POST con CSRF y AJAX.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido.'}, status=405)
+
+    from decimal import Decimal, InvalidOperation
+    from django.utils import timezone
+    from movimientos.models import Movimiento
+    from categorias.models import Categoria
+
+    # Validar que el usuario realmente no tenga movimientos (evita llamadas duplicadas)
+    if Movimiento.objects.filter(usuario=request.user).exists():
+        return JsonResponse({'ok': False, 'error': 'El saldo inicial ya fue registrado.'}, status=400)
+
+    # Validar monto
+    try:
+        monto = Decimal(request.POST.get('monto', '0'))
+        if monto <= 0:
+            return JsonResponse({'ok': False, 'error': 'El monto debe ser mayor que cero.'}, status=400)
+    except InvalidOperation:
+        return JsonResponse({'ok': False, 'error': 'Monto inválido.'}, status=400)
+
+    # Obtener o crear la categoría de sistema
+    cat, _ = Categoria.objects.get_or_create(
+        nombre='Saldo Inicial',
+        tipo='INGRESO',
+        defaults={'descripcion': 'Ajuste de saldo inicial', 'activo': True, 'es_sistema': True},
+    )
+
+    mov = Movimiento.objects.create(
+        usuario=request.user,
+        tipo='INGRESO',
+        descripcion='Saldo Inicial',
+        categoria=cat,
+        monto=monto,
+        fecha_registro=timezone.localdate(),
+    )
+
+    return JsonResponse({'ok': True, 'id': mov.id})
