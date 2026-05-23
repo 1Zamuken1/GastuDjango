@@ -13,30 +13,37 @@ __pycache__/
 .venv/
 venv/
 
+# Dependencias de Node (Tailwind build)
+node_modules/
+theme/static_src/node_modules/
+
 # Archivos de entorno
 .env
 
-# Base de datos local
+# Base de datos local (cada dev tiene la suya)
 *.sqlite3
 
 # Archivos de sistema
 .DS_Store
 Thumbs.db
 
-# Archivos de compilación
-dist/
-build/
+# CSS/JS compilados de node_modules (no del proyecto)
+# El CSS compilado de Tailwind (theme/static/css/dist/) SÍ se incluye en el repo
+# para que el equipo pueda levantar el proyecto sin necesidad de correr npm.
+# Si se modifica el CSS, regenerar con: cd theme/static_src && npm run build
 
-# Archivos binarios / documentos generados
+# Imágenes externas (librerías de terceros — como las de .venv)
+.venv/**/*.png
+.venv/**/*.jpg
+.venv/**/*.jpeg
+
+# Archivos binarios / documentos generados por el usuario
 *.xlsx
 *.xls
 *.pdf
-*.png
-*.jpg
-*.jpeg
 
 # Capturas de pruebas automatizadas
 capturas_pruebas/
 
 # Scripts personales de prueba (no van al repo)
-seed_meses_anteriores.py
+seed_meses_anteriores.py
