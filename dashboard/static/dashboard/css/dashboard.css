@@ -345,6 +345,22 @@
 .chart-tendencia-wrap .apexcharts-canvas svg { overflow: visible; }
 .chart-tendencia-wrap .apexcharts-tooltip {
   z-index: 9999 !important;
+  overflow: visible !important;
+}
+
+/* En mobile, el tooltip puede ser más largo que el card:
+   lo sacamos del clip con overflow visible en el card padre */
+@media (max-width: 767px) {
+  .chart-card--tendencia {
+    overflow: visible !important;
+  }
+  /* Limitar la altura del tooltip y hacerlo scrolleable si
+     el contenido es muy largo (muchas categorías en un día) */
+  .chart-tendencia-wrap .apexcharts-tooltip {
+    max-height: 55vw !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
 }
 
 @media (max-width: 767px) {

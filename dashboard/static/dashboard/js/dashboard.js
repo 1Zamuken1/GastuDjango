@@ -290,6 +290,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let desde = 0;
     let hasta = totalDias - 1;
+
+    // En pantallas de móvil, hacer "zoom" inicial centrado en el último día con datos
+    if (window.innerWidth <= 768 && totalDias > 10) {
+      // Buscar el último día con datos reales
+      let ultimoDiaConDatos = 0;
+      for (let i = totalDias - 1; i >= 0; i--) {
+        if (ingresosTotal[i] > 0 || egresosTotal[i] > 0 || (ahorrosTotal && ahorrosTotal[i] > 0)) {
+          ultimoDiaConDatos = i;
+          break;
+        }
+      }
+      // Ventana de 10 días que TERMINA en el último día con datos
+      hasta  = Math.min(totalDias - 1, ultimoDiaConDatos + 2); // +2 días de margen visual
+      desde  = Math.max(0, hasta - 9);
+    }
     let chart = null;
 
     function buildOpts(labels, ingresos, egresos, ahorros) {
@@ -500,6 +515,51 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       e.deltaY < 0 ? zoomIn() : zoomOut();
     }, { passive: false, signal: sig });
+
+    // ── Pan táctil (swipe) en móvil ──────────────────────────
+    let touchPanStartX = 0;
+    let touchPanDesde  = 0;
+    let isTouchPanning = false;
+
+    elTendencia.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      // Si el toque empezó dentro del tooltip, no iniciar pan
+      // para que el usuario pueda hacer scroll dentro del modal
+      const tooltip = elTendencia.querySelector('.apexcharts-tooltip');
+      if (tooltip && tooltip.contains(e.target)) {
+        isTouchPanning = false;
+        return;
+      }
+      touchPanStartX = e.touches[0].clientX;
+      touchPanDesde  = desde;
+      isTouchPanning = true;
+    }, { passive: true, signal: sig });
+
+    elTendencia.addEventListener('touchmove', (e) => {
+      if (!isTouchPanning || e.touches.length !== 1) return;
+      // Si el toque está ahora sobre el tooltip, cancelar el pan
+      const tooltip = elTendencia.querySelector('.apexcharts-tooltip');
+      if (tooltip && tooltip.contains(e.target)) {
+        isTouchPanning = false;
+        return;
+      }
+      const chartW   = elTendencia.getBoundingClientRect().width || 360;
+      const visible  = hasta - desde + 1;
+      const pxPorDia = chartW / Math.max(visible, 1);
+      const delta    = Math.round((touchPanStartX - e.touches[0].clientX) / pxPorDia);
+      if (delta === 0) return;
+      const newDesde = Math.max(0, Math.min(totalDias - visible, touchPanDesde + delta));
+      if (newDesde === desde) return;
+      desde = newDesde;
+      hasta = desde + visible - 1;
+      renderVista();
+    }, { passive: true, signal: sig });
+
+    elTendencia.addEventListener('touchend', () => {
+      isTouchPanning = false;
+    }, { passive: true, signal: sig });
+    // ─────────────────────────────────────────────────
+
 
     document.getElementById('btn-zoom-in')?.addEventListener('click',    zoomIn,    { signal: sig });
     document.getElementById('btn-zoom-out')?.addEventListener('click',   zoomOut,   { signal: sig });

@@ -526,8 +526,21 @@ window.GastuTours = {
         document.documentElement.style.setProperty('--tour-accent-color', activeColor.hex);
         document.documentElement.style.setProperty('--tour-accent-color-rgb', activeColor.rgb);
 
+        // ── Adaptación Dinámica de Elementos (Mobile vs Desktop) ──
+        const isMobile = window.innerWidth <= 768;
+        const adaptedSteps = toursConfig[moduleName].map(originalStep => {
+            const step = { ...originalStep, popover: { ...originalStep.popover } };
+            
+            if (isMobile && step.element === '#sidebar') {
+                step.element = '.sidebar-toggle-mobile-btn';
+                step.popover.side = 'bottom';
+                step.popover.align = 'start';
+            }
+            return step;
+        });
+
         // ── Filtrado Dinámico de Pasos (Responsive Seguro) ──
-        const validSteps = toursConfig[moduleName].filter(step => {
+        const validSteps = adaptedSteps.filter(step => {
             if (!step.element) return true; // Popover centrado siempre es válido
             const el = document.querySelector(step.element);
             if (!el) return false;
