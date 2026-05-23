@@ -202,7 +202,7 @@ function initOnboarding() {
     </button>
   </div>
 
-  <div class="nav-mes-selector-group" style="display:inline-flex;align-items:center;gap:.35rem;background:#fff;border:1px solid #e2e8f0;border-radius:.625rem;padding:2px 6px;height:36px;">
+  <div class="nav-mes-selector-group" style="display:none !important;align-items:center;gap:.35rem;background:#fff;border:1px solid #e2e8f0;border-radius:.625rem;padding:2px 6px;height:36px;">
     <select id="select-mes" class="gastu-nav-select" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-right:4px;height:100%;">
       <option value="1">Enero</option>
       <option value="2">Febrero</option>
@@ -274,7 +274,7 @@ function initOnboarding() {
           </div>
           <p id="val-disponible"
              class="stat-card__value{% if disponible < 0 %} stat-card__value--negative{% endif %}">
-            ${{ disponible|floatformat:0 }}
+            ${{ disponible|floatformat:'0g' }}
           </p>
           <p class="stat-card__note">Saldo acumulado + mes actual</p>
         </div>
@@ -289,7 +289,7 @@ function initOnboarding() {
           </div>
           <p id="val-utilidad"
              class="stat-card__value{% if utilidad < 0 %} stat-card__value--negative{% endif %}">
-            ${{ utilidad|floatformat:0 }}
+            ${{ utilidad|floatformat:'0g' }}
           </p>
           <p class="stat-card__note">Ingresos − egresos − ahorros</p>
         </div>
@@ -302,7 +302,7 @@ function initOnboarding() {
             <p class="stat-card__label">Ahorro total</p>
             <div class="icon-box icon-box--slate"><i data-lucide="landmark"></i></div>
           </div>
-          <p id="val-ahorro-total" class="stat-card__value">${{ ahorro_total|floatformat:0 }}</p>
+          <p id="val-ahorro-total" class="stat-card__value">${{ ahorro_total|floatformat:'0g' }}</p>
           <p class="stat-card__note">Acumulado hasta este mes</p>
         </div>
       </div>
@@ -315,7 +315,7 @@ function initOnboarding() {
             <div class="icon-box icon-box--emerald"><i data-lucide="arrow-down-left"></i></div>
           </div>
           <p id="val-ingresos" class="stat-card__value stat-card__value--positive">
-            ${{ total_ingresos|floatformat:0 }}
+            ${{ total_ingresos|floatformat:'0g' }}
           </p>
           <p class="stat-card__note">Total registrado este mes</p>
         </div>
@@ -328,7 +328,7 @@ function initOnboarding() {
             <p class="stat-card__label">Gastos del mes</p>
             <div class="icon-box icon-box--orange"><i data-lucide="arrow-up-right"></i></div>
           </div>
-          <p id="val-egresos" class="stat-card__value">${{ total_egresos|floatformat:0 }}</p>
+          <p id="val-egresos" class="stat-card__value">${{ total_egresos|floatformat:'0g' }}</p>
           <p class="stat-card__note">Total registrado este mes</p>
         </div>
       </div>
@@ -346,7 +346,7 @@ function initOnboarding() {
           </div>
           <p id="val-diferencia"
              class="stat-card__value{% if diferencia < 0 %} stat-card__value--negative{% endif %}">
-            ${{ diferencia|floatformat:0 }}
+            ${{ diferencia|floatformat:'0g' }}
           </p>
           <p class="stat-card__note">Ingresos − egresos</p>
         </div>
@@ -359,7 +359,7 @@ function initOnboarding() {
             <p class="stat-card__label">Ahorros del mes</p>
             <div class="icon-box icon-box--amber"><i data-lucide="piggy-bank"></i></div>
           </div>
-          <p id="val-ahorros-mes" class="stat-card__value">${{ ahorros_mes|floatformat:0 }}</p>
+          <p id="val-ahorros-mes" class="stat-card__value">${{ ahorros_mes|floatformat:'0g' }}</p>
           <p class="stat-card__note">Aportes registrados este mes</p>
         </div>
       </div>
@@ -491,7 +491,7 @@ function initOnboarding() {
           <div class="mov-cat">{{ mov.categoria }}</div>
           <div class="mov-date">{{ mov.fecha_fmt }}</div>
           <div class="mov-amount {% if mov.tipo == 'INGRESO' %}mov-amount--income{% elif mov.tipo == 'EGRESO' %}mov-amount--expense{% else %}mov-amount--saving{% endif %}">
-            {% if mov.tipo == 'INGRESO' %}+{% elif mov.tipo == 'EGRESO' %}−{% else %}↗{% endif %}${{ mov.monto|floatformat:0 }}
+            {% if mov.tipo == 'INGRESO' %}+{% elif mov.tipo == 'EGRESO' %}−{% else %}↗{% endif %}${{ mov.monto|floatformat:'0g' }}
           </div>
         </div>
         {% endfor %}

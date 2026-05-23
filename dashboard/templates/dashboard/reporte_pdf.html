@@ -196,19 +196,19 @@
     <tr>
       <td>
         <span class="summary-label">Ingresos</span>
-        <span class="summary-value income">${{ total_ingresos|floatformat:0 }}</span>
+        <span class="summary-value income">${{ total_ingresos|floatformat:'0g' }}</span>
       </td>
       <td>
         <span class="summary-label">Egresos</span>
-        <span class="summary-value expense">${{ total_egresos|floatformat:0 }}</span>
+        <span class="summary-value expense">${{ total_egresos|floatformat:'0g' }}</span>
       </td>
       <td>
         <span class="summary-label">Ahorros</span>
-        <span class="summary-value saving">${{ ahorros_mes|floatformat:0 }}</span>
+        <span class="summary-value saving">${{ ahorros_mes|floatformat:'0g' }}</span>
       </td>
       <td>
         <span class="summary-label">Utilidad</span>
-        <span class="summary-value">${{ utilidad|floatformat:0 }}</span>
+        <span class="summary-value">${{ utilidad|floatformat:'0g' }}</span>
       </td>
     </tr>
   </table>
@@ -239,7 +239,7 @@
         <td>{{ m.categoria }}</td>
         <td>{{ m.fecha }}</td>
         <td class="{% if m.tipo == 'INGRESO' %}monto-ingreso{% elif m.tipo == 'EGRESO' %}monto-egreso{% else %}monto-ahorro{% endif %}">
-          ${{ m.monto|floatformat:0 }}
+          ${{ m.monto|floatformat:'0g' }}
         </td>
       </tr>
       {% endfor %}

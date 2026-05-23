@@ -197,16 +197,16 @@
     <tr>
       <td>
         <span class="summary-label">Ingresos</span>
-        <span class="summary-value income">${{ total_ingresos|floatformat:0 }}</span>
+        <span class="summary-value income">${{ total_ingresos|floatformat:'0g' }}</span>
       </td>
       <td>
         <span class="summary-label">Egresos</span>
-        <span class="summary-value expense">${{ total_egresos|floatformat:0 }}</span>
+        <span class="summary-value expense">${{ total_egresos|floatformat:'0g' }}</span>
       </td>
       <td>
         <span class="summary-label">Balance</span>
         <span class="summary-value {% if balance >= 0 %}balance-pos{% else %}balance-neg{% endif %}">
-          ${{ balance|floatformat:0 }}
+          ${{ balance|floatformat:'0g' }}
         </span>
       </td>
       <td>
@@ -242,7 +242,7 @@
         <td>{{ m.categoria.nombre }}</td>
         <td>{{ m.descripcion|default:"—" }}</td>
         <td class="{% if m.tipo == 'INGRESO' %}monto-ingreso{% else %}monto-egreso{% endif %}">
-          ${{ m.monto|floatformat:0 }}
+          ${{ m.monto|floatformat:'0g' }}
         </td>
       </tr>
       {% endfor %}
@@ -253,11 +253,11 @@
   <table class="totals-table">
     <tr>
       <td class="label">Total ingresos</td>
-      <td class="val-income">${{ total_ingresos|floatformat:0 }}</td>
+      <td class="val-income">${{ total_ingresos|floatformat:'0g' }}</td>
       <td class="label">Total egresos</td>
-      <td class="val-expense">${{ total_egresos|floatformat:0 }}</td>
+      <td class="val-expense">${{ total_egresos|floatformat:'0g' }}</td>
       <td class="label">Balance</td>
-      <td class="val-balance">${{ balance|floatformat:0 }}</td>
+      <td class="val-balance">${{ balance|floatformat:'0g' }}</td>
     </tr>
   </table>
 

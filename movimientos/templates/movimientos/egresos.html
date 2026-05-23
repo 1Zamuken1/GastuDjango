@@ -20,7 +20,7 @@
   <!-- Card total -->
   <div class="hero-total">
     <p class="hero-total__label">Total egresos</p>
-    <p class="hero-total__value font-display">${{ total_mes|floatformat:0 }}</p>
+    <p class="hero-total__value font-display">${{ total_mes|floatformat:"0g" }}</p>
     <span class="hero-total__badge">{{ mes_nombre }} {{ anio }}</span>
   </div>
 
@@ -44,7 +44,7 @@
       <span class="hero-stat__label">
         <i data-lucide="bar-chart-2"></i> Promedio
       </span>
-      <span class="hero-stat__value font-display">${{ promedio_mes|floatformat:0 }}</span>
+      <span class="hero-stat__value font-display">${{ promedio_mes|floatformat:"0g" }}</span>
       <span class="hero-stat__sub">por registro</span>
     </div>
   </div>
@@ -135,7 +135,7 @@
         <i data-lucide="folder"></i>
       </div>
     </div>
-    <p class="categoria-card__monto font-display">${{ item.total|floatformat:0 }}</p>
+    <p class="categoria-card__monto font-display">${{ item.total|floatformat:"0g" }}</p>
     <div style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0 .25rem;">
       <div class="progress-bar" style="flex:1;margin:0;">
         <div class="progress-bar__fill" data-porcentaje="{{ item.porcentaje|stringformat:'g' }}"></div>

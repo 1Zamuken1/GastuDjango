@@ -380,7 +380,7 @@
 <div class="resumen-card">
   <div>
     <p class="resumen-label">Total {{ categoria.nombre }}</p>
-    <p class="resumen-total" id="total-display">${{ total|floatformat:0 }}</p>
+    <p class="resumen-total" id="total-display">${{ total|floatformat:'0g' }}</p>
     <p class="resumen-count" id="count-display">
       {{ movimientos|length }} registro{{ movimientos|length|pluralize }}
     </p>
@@ -409,7 +409,7 @@
     </div>
     <div class="mov-date">{{ mov.fecha_registro|date:"d/m/Y" }}</div>
     <div class="mov-amount">
-      {% if tipo == 'INGRESO' %}+{% else %}-{% endif %}${{ mov.monto|floatformat:0 }}
+      {% if tipo == 'INGRESO' %}+{% else %}-{% endif %}${{ mov.monto|floatformat:'0g' }}
     </div>
     <div class="action-btns">
       <button class="action-btn action-btn--edit js-btn-edit"
@@ -424,7 +424,7 @@
               title="Eliminar"
               data-id="{{ mov.id }}"
               data-desc="{{ mov.descripcion|default:'Sin descripción' }}"
-              data-monto-fmt="${{ mov.monto|floatformat:0 }}">
+              data-monto-fmt="${{ mov.monto|floatformat:'0g' }}">
         <i data-lucide="trash-2"></i>
       </button>
     </div>
