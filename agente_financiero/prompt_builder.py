@@ -1,10 +1,4 @@
-"""
-agente_financiero/prompt_builder.py
-
-Construye el prompt del sistema que se envía a GroqCloud.
-Incluye historial de mensajes previos para que el modelo tenga contexto
-de la conversación actual.
-"""
+"""Construye el prompt del sistema que se envía a GroqCloud (datos + historial + pregunta)."""
 
 from datetime import date
 

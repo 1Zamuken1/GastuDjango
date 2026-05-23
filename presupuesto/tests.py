@@ -27,7 +27,7 @@ def cat_egreso():
 
 @pytest.fixture
 def cat_ingreso():
-    return Categoria.objects.create(nombre="Salario", tipo="INGRESO")
+    return Categoria.objects.get_or_create(nombre="Salario", tipo="INGRESO")[0]
 
 @pytest.fixture
 def presupuesto_valido(usuario, cat_egreso):

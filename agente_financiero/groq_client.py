@@ -1,7 +1,4 @@
-"""
-Cliente HTTP para GroqCloud con soporte de tool calling (function calling).
-El modelo puede invocar herramientas para consultar datos reales del usuario.
-"""
+"""Cliente HTTP para GroqCloud con soporte de tool calling."""
 
 import json
 import requests
@@ -12,8 +9,9 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 class GroqError(Exception):
+    """Error de conexión o respuesta con GroqCloud."""
     pass
-# Definición de herramientas que el modelo puede invocar
+
 
 TOOLS = [
     {
@@ -105,9 +103,8 @@ TOOLS = [
     },
 ]
 
-# Función principal enviar mensaje a groq
-
 def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 1024) -> str:
+    """Envía mensajes a Groq, maneja tool calls y retorna la respuesta final del asistente."""
    
     api_key = getattr(settings, "GROQ_API_KEY", None)
     if not api_key:
@@ -181,7 +178,7 @@ def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 
 
 
 def _hacer_request(headers: dict, payload: dict) -> requests.Response:
-    # Hace la peticion HTTP y lanza GroqError si algo falla
+    """POST a GroqCloud. Lanza GroqError si hay timeout, conexión o error HTTP."""
     try:
         response = requests.post(
             GROQ_API_URL,

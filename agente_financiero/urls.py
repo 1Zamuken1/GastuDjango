@@ -1,7 +1,9 @@
+"""URLs de vistas HTML para agente_financiero."""
+
 from django.urls import path
 from . import views
 
 
 urlpatterns = [
-    path('', views.agente_financiero, name = 'agente_financiero')
+    path('', views.agente_financiero, name='agente_financiero'),
 ]

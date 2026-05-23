@@ -1,15 +1,11 @@
-"""
-agente_financiero/herramientas.py
-
-Ejecutor de herramientas (tools) que el LLM puede invocar.
-Cada herramienta hace queries reales al ORM filtradas por usuario.
-SOLO LECTURA — nunca crea, edita ni elimina registros.
-"""
+"""Ejecutor de herramientas que el LLM puede invocar (solo lectura)."""
 
 import json
 import logging
 from datetime import date
 from decimal import Decimal
+
+from django.db.models import Q, Sum
 
 from movimientos.models import Movimiento
 
@@ -126,30 +122,24 @@ class EjecutorHerramientas:
     # -------------------------------------------------------------------------
 
     def _obtener_resumen_periodo(self, mes: int, anio: int) -> dict:
-        """
-        Calcula ingresos, egresos y balance de un mes/año específico.
-        """
-        qs = Movimiento.objects.filter(
-            usuario=self.usuario,
-            activo=True,
+        """Ingresos, egresos y balance de un mes/año usando Sum directo en DB."""
+        aggs = Movimiento.objects.filter(
+            usuario=self.usuario, activo=True,
             fecha_registro__month=int(mes),
             fecha_registro__year=int(anio),
+        ).aggregate(
+            total_ingresos=Sum('monto', filter=Q(tipo='INGRESO')),
+            total_egresos=Sum('monto', filter=Q(tipo='EGRESO')),
+            cantidad_movimientos=Sum(1),
         )
-
-        total_ingresos = sum(
-            m.monto for m in qs if m.tipo == "INGRESO"
-        ) or Decimal("0")
-
-        total_egresos = sum(
-            m.monto for m in qs if m.tipo == "EGRESO"
-        ) or Decimal("0")
-
+        ti = float(aggs['total_ingresos'] or Decimal('0'))
+        te = float(aggs['total_egresos'] or Decimal('0'))
         return {
             "periodo": f"{MESES_ES.get(int(mes), mes)} {anio}",
-            "total_ingresos": float(total_ingresos),
-            "total_egresos": float(total_egresos),
-            "balance": float(total_ingresos - total_egresos),
-            "cantidad_movimientos": qs.count(),
+            "total_ingresos": ti,
+            "total_egresos": te,
+            "balance": round(ti - te, 2),
+            "cantidad_movimientos": aggs['cantidad_movimientos'] or 0,
         }
 
     # -------------------------------------------------------------------------
@@ -157,31 +147,25 @@ class EjecutorHerramientas:
     # -------------------------------------------------------------------------
 
     def _obtener_gastos_por_categoria(self, anio: int, mes: int = None) -> dict:
-        """
-        Agrupa egresos por categoría y los suma. Útil para ver en qué se gasta más.
-        """
+        """Egresos agrupados por categoría usando values().annotate(Sum) en DB."""
         qs = Movimiento.objects.filter(
-            usuario=self.usuario,
-            activo=True,
-            tipo="EGRESO",
+            usuario=self.usuario, activo=True, tipo="EGRESO",
             fecha_registro__year=int(anio),
-        ).select_related("categoria")
+        )
 
         if mes:
             qs = qs.filter(fecha_registro__month=int(mes))
 
-        # Agrupar manualmente (compatible con cualquier DB)
-        agrupado = {}
-        for m in qs:
-            cat = m.categoria.nombre if m.categoria else "Sin categoría"
-            agrupado[cat] = agrupado.get(cat, Decimal("0")) + m.monto
-
-        # Ordenar de mayor a menor
-        categorias = sorted(
-            [{"categoria": cat, "total": float(total)} for cat, total in agrupado.items()],
-            key=lambda x: x["total"],
-            reverse=True,
+        agrupado = (
+            qs.values('categoria__nombre')
+            .annotate(total=Sum('monto'))
+            .order_by('-total')
         )
+
+        categorias = [
+            {"categoria": item['categoria__nombre'] or "Sin categoría", "total": float(item['total'])}
+            for item in agrupado
+        ]
 
         periodo = f"{MESES_ES.get(int(mes), mes)} {anio}" if mes else str(anio)
 

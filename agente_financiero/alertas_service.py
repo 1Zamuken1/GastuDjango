@@ -1,51 +1,36 @@
-"""
-agente_financiero/alertas_service.py
- 
-Servicio que:
-1. Analiza los datos financieros del usuario y detecta situaciones relevantes
-2. Construye un prompt con esos datos y los manda a Groq
-3. Groq devuelve alertas personalizadas en JSON listo para mostrar en el frontend
- 
-Las alertas son generadas con IA pero basadas en datos reales del ORM.
-"""
- 
+"""Generación de alertas financieras personalizadas vía Groq (con fallback sin IA)."""
+
 import json
 import logging
 from datetime import date
-from decimal import Decimal
- 
+
 import requests
 from django.conf import settings
- 
+
 from .recolector import RecolectorDatos
- 
+
 logger = logging.getLogger(__name__)
- 
-GROQ_MODEL   = "llama-3.3-70b-versatile"
+
+GROQ_MODEL = "llama-3.3-70b-versatile"
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
- 
-# Tipos de alerta con su icono y color para el frontend
+
 TIPOS_ALERTA = {
-    "critica":   {"color": "#ef4444", "icono": "🚨"},
+    "critica": {"color": "#ef4444", "icono": "🚨"},
     "advertencia": {"color": "#f97316", "icono": "⚠️"},
-    "info":      {"color": "#3b82f6", "icono": "💡"},
-    "logro":     {"color": "#22c55e", "icono": "🏆"},
-    "consejo":   {"color": "#a855f7", "icono": "✨"},
+    "info": {"color": "#3b82f6", "icono": "💡"},
+    "logro": {"color": "#22c55e", "icono": "🏆"},
+    "consejo": {"color": "#a855f7", "icono": "✨"},
 }
- 
-MAX_ALERTAS = 5  # Máximo de alertas a mostrar por sesión
- 
- 
+
+MAX_ALERTAS = 5
+
+
 def _formatear_cop(monto: float) -> str:
     return f"${monto:,.0f}".replace(",", ".")
  
  
 def _detectar_situaciones(datos: dict) -> list[dict]:
-    """
-    Recorre los datos financieros del usuario y detecta situaciones
-    que merezcan una alerta. Retorna una lista de hechos concretos
-    que luego la IA convertirá en mensajes bonitos.
-    """
+    """Analiza datos financieros y retorna hechos que merecen alerta (balance, presupuestos, metas)."""
     situaciones = []
     resumen = datos["resumen_mensual"]
     hoy = date.today()
@@ -144,10 +129,7 @@ def _detectar_situaciones(datos: dict) -> list[dict]:
  
  
 def _construir_prompt_alertas(nombre: str, situaciones: list[dict], mes: int, anio: int) -> list:
-    """
-    Construye el prompt para que Groq convierta los hechos detectados
-    en mensajes de alerta bonitos, personalizados y en español.
-    """
+    """Prompt para que Groq convierta hechos en alertas personalizadas."""
     MESES_ES = {
         1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
         5: "mayo", 6: "junio", 7: "julio", 8: "agosto",
@@ -193,15 +175,7 @@ Convierte estos hechos en alertas personalizadas. Responde SOLO con el JSON."""
  
  
 def generar_alertas(usuario) -> list[dict]:
-    """
-    Función principal del servicio.
-    1. Recolecta datos del usuario
-    2. Detecta situaciones relevantes
-    3. Llama a Groq para generar mensajes personalizados
-    4. Combina los datos con metadatos de estilo para el frontend
- 
-    Retorna lista de alertas listas para enviar al frontend.
-    """
+    """Genera alertas financieras del usuario: recolecta datos, detecta situaciones, llama a Groq y combina con metadatos de estilo."""
     # 1. Recolectar datos
     recolector = RecolectorDatos(usuario)
     datos = recolector.recolectar_todo()
@@ -267,10 +241,7 @@ def generar_alertas(usuario) -> list[dict]:
  
  
 def _alertas_fallback(situaciones: list[dict]) -> list[dict]:
-    """
-    Genera alertas básicas sin IA en caso de fallo.
-    Convierte los hechos crudos en mensajes simples.
-    """
+    """Alertas sin IA (fallback para cuando Groq no responde)."""
     alertas = []
     for s in situaciones:
         tipo = s["tipo_sugerido"]
