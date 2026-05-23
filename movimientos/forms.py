@@ -46,7 +46,7 @@ class MovimientoForm(forms.ModelForm):
     def __init__(self, *args, tipo_movimiento=None, disponible=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._disponible = disponible
-        qs = Categoria.objects.filter(activo=True)
+        qs = Categoria.objects.filter(activo=True, es_sistema=False)
         if tipo_movimiento in ('INGRESO', 'EGRESO'):
             qs = qs.filter(tipo=tipo_movimiento)
         self.fields['categoria'].queryset = qs.order_by('nombre')

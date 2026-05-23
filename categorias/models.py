@@ -16,6 +16,7 @@ class Categoria(models.Model):
     tipo           = models.CharField(max_length=10, choices=TipoCategoria.choices)
     descripcion    = models.CharField(max_length=255, blank=True, null=True)
     activo         = models.BooleanField(default=True)
+    es_sistema     = models.BooleanField(default=False, help_text='Ocultar al usuario en listados de creación')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -67,7 +67,7 @@ def home_view(request):
         cat_ajuste, _ = Categoria.objects.get_or_create(
             nombre='Saldo Inicial',
             tipo='INGRESO',
-            defaults={'descripcion': 'Ajuste de saldo inicial', 'activo': True}
+            defaults={'descripcion': 'Ajuste de saldo inicial', 'activo': True, 'es_sistema': True}
         )
         ctx['onboarding_categoria_id'] = cat_ajuste.id
 
