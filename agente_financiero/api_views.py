@@ -17,17 +17,20 @@ from .models import MensajeChat
 logger = logging.getLogger(__name__)
 
 MAX_HISTORIAL_CONTEXTO = 10
+MAX_HISTORIAL_RESPUESTA = 50
 
 
 @method_decorator(login_required, name="dispatch")
 class ChatView(View):
+    """API del chat con el agente GASTU."""
 
     def get(self, request, *args, **kwargs):
-        """Retorna el historial completo del usuario."""
-        mensajes = MensajeChat.objects.filter(usuario=request.user).values(
-            "rol", "contenido", "creado_en"
+        """Últimos N mensajes del historial del usuario."""
+        mensajes = (
+            MensajeChat.objects.filter(usuario=request.user)
+            .order_by("-creado_en")
+            .values("rol", "contenido", "creado_en")[:MAX_HISTORIAL_RESPUESTA]
         )
-
         return JsonResponse({
             "ok": True,
             "mensajes": [
@@ -36,7 +39,7 @@ class ChatView(View):
                     "contenido": m["contenido"],
                     "hora": m["creado_en"].strftime("%H:%M"),
                 }
-                for m in mensajes
+                for m in reversed(mensajes)
             ],
         })
 
@@ -55,26 +58,26 @@ class ChatView(View):
         if len(pregunta) > 1000:
             return JsonResponse({"ok": False, "error": "Mensaje demasiado largo (máximo 1000 caracteres)."}, status=400)
 
-        # Recolectar datos financieros del usuario
+        # Guardar mensaje del usuario antes de llamar a Groq para que aparezca en contexto
+        MensajeChat.objects.create(usuario=request.user, rol="user", contenido=pregunta)
+
         try:
             datos = RecolectorDatos(request.user).recolectar_todo()
         except Exception as e:
             logger.error(f"[GASTU] Error recolectando datos usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error al obtener tus datos financieros."}, status=500)
 
-        # Construir prompt con los últimos N mensajes como contexto
         try:
             historial_previo = list(
                 MensajeChat.objects.filter(usuario=request.user)
                 .order_by("-creado_en")[:MAX_HISTORIAL_CONTEXTO]
             )
-            historial_previo.reverse()  # Cronológico
+            historial_previo.reverse()
             mensajes = construir_prompt(datos, pregunta, historial_previo)
         except Exception as e:
             logger.error(f"[GASTU] Error construyendo prompt usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error interno al preparar la consulta."}, status=500)
 
-        # Llamar a Groq con tool calling
         ejecutor = EjecutorHerramientas(request.user)
         try:
             respuesta = preguntar_a_groq(mensajes, ejecutor.ejecutar)
@@ -85,8 +88,6 @@ class ChatView(View):
             logger.error(f"[GASTU] Error inesperado Groq usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error al conectar con el asistente."}, status=500)
 
-        # Guardar ambos mensajes en BD
-        MensajeChat.objects.create(usuario=request.user, rol="user", contenido=pregunta)
         MensajeChat.objects.create(usuario=request.user, rol="bot", contenido=respuesta)
 
         return JsonResponse({"ok": True, "respuesta": respuesta})

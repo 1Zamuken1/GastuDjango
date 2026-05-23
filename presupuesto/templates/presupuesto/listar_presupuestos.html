@@ -163,7 +163,6 @@
 
       // ── Cargar presupuestos ───────────────────────────────────────────────────────
       function cargarPresupuestos() {
-        // Verificar vencidos primero
         fetch('/api/presupuestos/verificar_vencidos/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
@@ -185,28 +184,16 @@
           })
         })
 
-        Promise.all([
-          fetch('/api/presupuestos/', { credentials: 'same-origin' }).then(r => r.json()),
-          fetch('/api/presupuestos/alertas/', { credentials: 'same-origin' }).then(r => r.json())
-        ])
-        .then(([presupuestos, alertasData]) => {
-          const alertas    = alertasData.alertas
+        fetch('/api/presupuestos/con_estado/', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(response => {
+          const presupuestos = response.data
           const contenedor = document.getElementById('cards-presupuesto')
-          // Stats
+
           const activos = presupuestos.filter(p => p.isActivo)
           const totalLimite  = activos.reduce((s, p) => s + parseFloat(p.limite), 0)
-          const totalGastado = activos.reduce((s, p) => {
-            const a = alertasData.alertas.find(a =>
-              a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
-            )
-            return s + (a ? parseFloat(a.gastado) : 0)
-          }, 0)
-          const enAlerta = activos.filter(p => {
-            const a = alertasData.alertas.find(a =>
-              a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
-            )
-            return a && a.porcentaje >= 80
-          }).length
+          const totalGastado = activos.reduce((s, p) => s + (p.gastado || 0), 0)
+          const enAlerta = activos.filter(p => (p.porcentaje || 0) >= 80).length
 
           const fmt = v => parseFloat(v).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 
@@ -222,57 +209,52 @@
             return
           }
 
+          const configs = {
+            nivel_50: { color: '#daa508', texto: 'Cuidado',     msg: idx => `Llevas el 50% del límite en "${idx}". Vigila tus gastos.` },
+            nivel_55: { color: '#daa508', texto: 'Cuidado',     msg: idx => `Llevas el 55% del límite en "${idx}". Vigila tus gastos.` },
+            nivel_60: { color: '#f97316', texto: 'Advertencia', msg: idx => `Ya consumiste el 60% en "${idx}". Modera tus gastos.` },
+            nivel_65: { color: '#f97316', texto: 'Advertencia', msg: idx => `Ya consumiste el 65% en "${idx}". Modera tus gastos.` },
+            nivel_70: { color: '#f97316', texto: 'Alerta',      msg: idx => `Llevas el 70% en "${idx}". Reduce tus gastos.` },
+            nivel_75: { color: '#f97316', texto: 'Alerta',      msg: idx => `Llevas el 75% en "${idx}". Reduce tus gastos.` },
+            nivel_80: { color: '#f97316', texto: 'Alerta',      msg: idx => `Llevas el 80% en "${idx}". Reduce tus gastos.` },
+            nivel_85: { color: '#ef4444', texto: 'Peligro',     msg: idx => `Casi al límite. 85% consumido en "${idx}".` },
+            nivel_90: { color: '#ef4444', texto: 'Peligro',     msg: idx => `Casi al límite. 90% consumido en "${idx}".` },
+            nivel_95: { color: '#ef4444', texto: 'Peligro',     msg: idx => `Casi al límite. 95% consumido en "${idx}".` },
+            critica:  { color: '#b91c1c', texto: 'Crítico',     msg: idx => `Superaste el límite de "${idx}". Revisa tus gastos.` },
+          }
+
           presupuestos.forEach(p => {
-            const alerta = alertas.find(a =>
-              a.categoria.trim().toLowerCase() === p.categoria_nombre.trim().toLowerCase()
-            )
+            const alertaId = p.id
+            const alertaStr = p.alerta || 'baja'
+            const porcentaje = p.porcentaje || 0
+            const gastado = (p.gastado || 0).toLocaleString('es-CO')
 
-            // Valores por defecto
-            let color      = '#1ba74e'
+            let color = '#1ba74e'
             let textoEstado = 'Normal'
-            let mensaje    = ''
-            let porcentaje = 0
-            let gastado    = '0'
+            let mensaje = ''
 
-            const configs = {
-              nivel_50: { color: '#daa508', texto: 'Cuidado',     msg: `Llevas el 50% del límite en "${p.categoria_nombre}". Vigila tus gastos.` },
-              nivel_55: { color: '#daa508', texto: 'Cuidado',     msg: `Llevas el 55% del límite en "${p.categoria_nombre}". Vigila tus gastos.` },
-              nivel_60: { color: '#f97316', texto: 'Advertencia', msg: `Ya consumiste el 60% en "${p.categoria_nombre}". Modera tus gastos.` },
-              nivel_65: { color: '#f97316', texto: 'Advertencia', msg: `Ya consumiste el 65% en "${p.categoria_nombre}". Modera tus gastos.` },
-              nivel_70: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 70% en "${p.categoria_nombre}". Reduce tus gastos.` },
-              nivel_75: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 75% en "${p.categoria_nombre}". Reduce tus gastos.` },
-              nivel_80: { color: '#f97316', texto: 'Alerta',      msg: `Llevas el 80% en "${p.categoria_nombre}". Reduce tus gastos.` },
-              nivel_85: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 85% consumido en "${p.categoria_nombre}".` },
-              nivel_90: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 90% consumido en "${p.categoria_nombre}".` },
-              nivel_95: { color: '#ef4444', texto: 'Peligro',     msg: `Casi al límite. 95% consumido en "${p.categoria_nombre}".` },
-              critica:  { color: '#b91c1c', texto: 'Crítico',     msg: `Superaste el límite de "${p.categoria_nombre}". Revisa tus gastos.` },
+            if (configs[alertaStr]) {
+              const cfg = configs[alertaStr]
+              color = cfg.color
+              textoEstado = cfg.texto
+              mensaje = cfg.msg(p.categoria_nombre)
             }
 
-            if (alerta) {
-              porcentaje = alerta.porcentaje
-              gastado    = alerta.gastado.toLocaleString('es-CO')
-              if (configs[alerta.alerta]) {
-                const cfg   = configs[alerta.alerta]
-                color       = cfg.color
-                textoEstado = cfg.texto
-                mensaje     = cfg.msg
-              }
-              if (mensaje && p.isActivo && !alertaYaVista(alerta.id, alerta.alerta)) {
-                Swal.fire({
-                  icon: 'warning',
-                  title: `${p.categoria_nombre}`,
-                  text: mensaje,
-                  confirmButtonColor: color
-                })
-                marcarAlertaVista(alerta.id, alerta.alerta)
-              }
+            if (mensaje && p.isActivo && !alertaYaVista(alertaId, alertaStr)) {
+              Swal.fire({
+                icon: 'warning',
+                title: p.categoria_nombre,
+                text: mensaje,
+                confirmButtonColor: color
+              })
+              marcarAlertaVista(alertaId, alertaStr)
             }
 
             const limite = parseFloat(p.limite).toLocaleString('es-CO', {
               style: 'currency', currency: 'COP', maximumFractionDigits: 0
             })
 
-            const estadoClase = claseEstado(alerta?.alerta, p.isActivo)
+            const estadoClase = claseEstado(alertaStr, p.isActivo)
 
             const card = document.createElement('div')
             card.className = `card-presupuesto ${estadoClase}`

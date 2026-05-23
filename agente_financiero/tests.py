@@ -38,7 +38,7 @@ def cat_egreso():
 
 @pytest.fixture
 def cat_ingreso():
-    return Categoria.objects.create(nombre="Salario", tipo="INGRESO")
+    return Categoria.objects.get_or_create(nombre="Salario", tipo="INGRESO")[0]
 
 @pytest.fixture
 def cat_ahorro():
@@ -221,9 +221,10 @@ class TestEjecutorHerramientas:
         assert res["total_egresos"] == 300000.0
         assert res["balance"] == 700000.0
 
-    def test_obtener_gastos_por_categoria(self, usuario, cat_egreso):
-        cat2 = Categoria.objects.create(nombre="Transporte", tipo="EGRESO")
-        Movimiento.objects.create(usuario=usuario, categoria=cat_egreso, tipo="EGRESO",
+    def test_obtener_gastos_por_categoria(self, usuario):
+        cat1 = Categoria.objects.get_or_create(nombre="Comida", tipo="EGRESO")[0]
+        cat2 = Categoria.objects.get_or_create(nombre="Salud", tipo="EGRESO")[0]
+        Movimiento.objects.create(usuario=usuario, categoria=cat1, tipo="EGRESO",
             monto=Decimal("200000"), fecha_registro=timezone.now())
         Movimiento.objects.create(usuario=usuario, categoria=cat2, tipo="EGRESO",
             monto=Decimal("100000"), fecha_registro=timezone.now())

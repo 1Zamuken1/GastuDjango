@@ -11,7 +11,7 @@ from movimientos.models import Movimiento
 from dashboard.models import ResumenMensual
 from programaciones.models import Programacion, EjecucionProgramacion
 from programaciones.serializers import ProgramacionSerializer
-from programaciones.api_pendientes import (
+from programaciones.services import (
     calcular_proxima_fecha,
     desactivar_si_vencida,
     serializar_pendiente,
