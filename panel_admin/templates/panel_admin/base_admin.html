@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="{% static 'img/gastu_logo_rostro.png' %}" />
   <title>{% block title %}Panel Admin — GastuApp{% endblock %}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -83,6 +84,9 @@
     </a>
   </div>
 </header>
+
+<!-- ── CSRF token global para AJAX ─────────────────────────── -->
+<input type="hidden" id="csrf-token-global" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
 <!-- ── Mensajes Django → toasts via GastuAlerts ──────────────── -->
 {% if messages %}

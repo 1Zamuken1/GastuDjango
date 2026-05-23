@@ -92,40 +92,32 @@
   </div>
 </div>
 
-<!-- Últimos movimientos -->
-<div class="admin-card" style="padding:20px;">
-  <div class="section-header">
-    <div>
-      <p class="section-title">Movimientos recientes</p>
-      <p class="section-sub">Últimas transacciones de la plataforma</p>
+<!-- Gráficos de Actividad y Categorías -->
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px; margin-bottom:16px;">
+  <!-- Gráfico de Actividad -->
+  <div class="admin-card" style="padding:20px;">
+    <div class="section-header" style="margin-bottom:14px;">
+      <div>
+        <p class="section-title">Actividad Reciente</p>
+        <p class="section-sub">Nuevos movimientos registrados (últimos 7 días)</p>
+      </div>
+    </div>
+    <div style="position: relative; height: 300px; width: 100%;">
+      <canvas id="chartActivity"></canvas>
     </div>
   </div>
-  <div class="admin-table-wrap" style="border-radius:10px;">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Usuario</th><th>Tipo</th><th>Categoría</th>
-          <th>Descripción</th><th>Fecha</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for mov in ultimos_movimientos %}
-        <tr>
-          <td><span style="font-weight:600;color:var(--slate-700);">{{ mov.usuario.username }}</span></td>
-          <td>
-            <span class="badge {% if mov.tipo == 'INGRESO' %}badge--green{% else %}badge--red{% endif %}">
-              {{ mov.tipo|capfirst }}
-            </span>
-          </td>
-          <td>{{ mov.categoria.nombre }}</td>
-          <td style="color:var(--slate-500);">{{ mov.descripcion|default:"—"|truncatechars:30 }}</td>
-          <td style="color:var(--slate-400);font-size:0.8rem;">{{ mov.fecha_registro|date:"d/m/Y H:i" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--slate-400);">Sin movimientos aún.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+  <!-- Gráfico de Categorías -->
+  <div class="admin-card" style="padding:20px;">
+    <div class="section-header" style="margin-bottom:14px;">
+      <div>
+        <p class="section-title">Top Categorías</p>
+        <p class="section-sub">Global histórico (Top 5)</p>
+      </div>
+    </div>
+    <div style="position: relative; height: 300px; width: 100%; display: flex; justify-content: center;">
+      <canvas id="chartCategories"></canvas>
+    </div>
   </div>
 </div>
 
@@ -182,8 +174,76 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   window.PERFIL_URL = '{% url "panel_admin:perfil" %}';
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Inicializar Gráfico de Actividad
+    const activityCtx = document.getElementById('chartActivity').getContext('2d');
+    const activityLabels = {{ chart_activity_labels|safe }};
+    const activityData = {{ chart_activity_data|safe }};
+    
+    new Chart(activityCtx, {
+      type: 'line',
+      data: {
+        labels: activityLabels,
+        datasets: [{
+          label: 'Movimientos Creados',
+          data: activityData,
+          borderColor: '#4f46e5',
+          backgroundColor: 'rgba(79, 70, 229, 0.1)',
+          borderWidth: 2,
+          pointBackgroundColor: '#4f46e5',
+          pointRadius: 4,
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } }
+        }
+      }
+    });
+
+    // Inicializar Gráfico de Categorías Top
+    const catsCtx = document.getElementById('chartCategories').getContext('2d');
+    const catsLabels = {{ chart_cats_labels|safe }};
+    const catsData = {{ chart_cats_data|safe }};
+    
+    new Chart(catsCtx, {
+      type: 'doughnut',
+      data: {
+        labels: catsLabels,
+        datasets: [{
+          data: catsData,
+          backgroundColor: [
+            '#10b981', // emerald
+            '#3b82f6', // blue
+            '#8b5cf6', // violet
+            '#f59e0b', // amber
+            '#ef4444'  // red
+          ],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' }
+        },
+        cutout: '70%'
+      }
+    });
+  });
 </script>
 <script src="{% static 'panel_admin/js/home.js' %}"></script>
 {% endblock %}

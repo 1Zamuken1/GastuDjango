@@ -15,6 +15,129 @@
 
 
 {% block content %}
+{% if requiere_onboarding %}
+<!-- Modal Onboarding Saldo Inicial -->
+<div id="modal-onboarding" class="onboarding-overlay">
+  <div class="onboarding-modal">
+    <div class="onboarding-gastu">
+      <img src="{% static 'img/gastu_guia.png' %}" alt="Gastu" />
+    </div>
+    <div class="onboarding-content">
+      <h2 class="font-display">¡Bienvenido a GastuApp!</h2>
+      <p>Para empezar a hacer magia, ¿con cuánto dinero cuentas en este momento en tus bolsillos o cuentas?</p>
+      
+      <form id="form-saldo-inicial" class="onboarding-form">
+        {% csrf_token %}
+        <div class="input-group">
+          <span class="currency-symbol">$</span>
+          <input type="number" id="input-saldo" name="monto" min="0" step="1" required placeholder="0" autofocus>
+        </div>
+        
+        <div class="onboarding-actions">
+          <button type="submit" class="btn-primary">Guardar saldo inicial</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .onboarding-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    z-index: 999999;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    animation: fadeIn 0.4s ease;
+  }
+  .onboarding-modal {
+    background: #ffffff; border-radius: 24px; padding: 40px; max-width: 480px; width: 100%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    position: relative; overflow: hidden;
+    animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .onboarding-gastu { display: flex; justify-content: center; margin-bottom: 24px; }
+  .onboarding-gastu img {
+    width: 140px; height: 140px; object-fit: contain; border-radius: 50%;
+    background: #f8fafc; border: 4px solid #f1f5f9;
+  }
+  .onboarding-content h2 {
+    font-size: 1.75rem; font-weight: 800; color: #0f172a; text-align: center; margin-bottom: 12px;
+  }
+  .onboarding-content p {
+    color: #475569; font-size: 1.05rem; text-align: center; line-height: 1.6; margin-bottom: 32px;
+  }
+  .onboarding-form .input-group { position: relative; display: flex; align-items: center; margin-bottom: 32px; }
+  .onboarding-form .currency-symbol { position: absolute; left: 20px; font-size: 2rem; font-weight: 700; color: #94a3b8; }
+  .onboarding-form input {
+    width: 100%; height: 72px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 16px;
+    font-size: 2.5rem; font-weight: 700; color: #0f172a; padding: 0 20px 0 50px; transition: all 0.2s;
+    font-family: "DM Sans", sans-serif;
+  }
+  .onboarding-form input:focus { outline: none; border-color: #10b981; background: #ffffff; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
+  .onboarding-actions { display: flex; flex-direction: column; gap: 12px; }
+  .onboarding-actions button {
+    width: 100%; border-radius: 12px; font-weight: 700; font-family: "DM Sans", sans-serif; font-size: 1.05rem;
+    padding: 16px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: #10b981; color: white; border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+  .btn-primary:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4); }
+  .btn-secondary { background: transparent; color: #64748b; border: 2px solid #e2e8f0; }
+  .btn-secondary:hover { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+  @keyframes slideUp { 0% { opacity: 0; transform: translateY(40px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+</style>
+
+<script>
+function initOnboarding() {
+  const form = document.getElementById('form-saldo-inicial');
+  const modal = document.getElementById('modal-onboarding');
+
+  const procesarSaldo = async (monto) => {
+    if (monto > 0) {
+      try {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('tipo', 'INGRESO');
+        formData.append('descripcion', 'Saldo Inicial');
+        formData.append('categoria', '{{ onboarding_categoria_id }}');
+        formData.append('monto', monto);
+        
+        const hoy = new Date();
+        const yyyy = hoy.getFullYear();
+        const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dd = String(hoy.getDate()).padStart(2, '0');
+        formData.append('fecha_registro', `${yyyy}-${mm}-${dd}`);
+
+        const response = await fetch('{% url "movimientos:guardar_movimiento" %}', {
+          method: 'POST',
+          body: formData,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        
+        if (!response.ok) throw new Error('Error al guardar saldo');
+      } catch (error) {
+        console.error(error);
+        if (window.GastuAlerts) window.GastuAlerts.error('Error', 'No se pudo guardar el saldo inicial.');
+        return;
+      }
+    }
+    
+    modal.style.opacity = '0';
+    setTimeout(() => {
+      modal.remove();
+      window.location.reload(); 
+    }, 400);
+  };
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const monto = parseFloat(document.getElementById('input-saldo').value);
+    procesarSaldo(monto);
+  });
+}
+</script>
+{% endif %}
 
 {# ── Saludo + badge ──────────────────────────────────────── #}
 <div class="flex items-start justify-between mb-4 flex-wrap gap-3 dashboard-header">
@@ -448,7 +571,11 @@
   <script>
     window.CURRENT_MODULE = 'dashboard';
     document.addEventListener('DOMContentLoaded', () => {
-      if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+      {% if requiere_onboarding %}
+        if (typeof initOnboarding === 'function') initOnboarding();
+      {% else %}
+        if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+      {% endif %}
     });
   </script>
   <script src="{% static 'dashboard/js/dashboard.js' %}"></script>

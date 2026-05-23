@@ -4,16 +4,19 @@
 
 // Helper: genera el HTML con la imagen de Gastu + texto
 const getGastuHtml = (imgSrc, text) => `
-  <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-    <img src="${imgSrc}" alt="Gastu" style="width: 80px; height: 80px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); border-radius: 12px;" />
-    <div style="font-size: 0.95rem; color: #334155; font-weight: 500; line-height: 1.6;">${text}</div>
+  <div class="gastu-chat-bubble-container">
+    <div class="gastu-avatar-wrapper">
+      <img src="${imgSrc}" class="gastu-avatar-img" alt="Gastu" />
+      <div class="gastu-avatar-badge"></div>
+    </div>
+    <div class="gastu-chat-text">${text}</div>
   </div>
 `;
 
-// Imágenes del proyecto (sin fondo pixelado)
+// Imágenes del proyecto
 const gastuImgs = {
-  gastu_normal: window.GASTU_STATIC_URL + 'img/gastu_logo.png',
-  gastu_rostro: window.GASTU_STATIC_URL + 'img/gastu_logo_rostro.png'
+  gastu_normal: window.GASTU_STATIC_URL + 'img/gastu_guia.png',
+  gastu_rostro: window.GASTU_STATIC_URL + 'img/gastu_guia.png'
 };
 
 // Opciones comunes de Driver.js
@@ -25,6 +28,10 @@ const commonDriverOptions = {
     prevBtnText: '&larr; Anterior',
     doneBtnText: 'Entendido ✓',
     popoverClass: 'gastu-driver-popover',
+    overlayColor: '#0f172a',
+    overlayOpacity: 0.72,
+    stagePadding: 8,
+    stageRadius: 12
 };
 
 // ── Definición de Tours por módulo ──────────────────────────
@@ -460,6 +467,8 @@ const toursConfig = {
 let _skipDialogOpen = false;  // Guardia contra re-entrada
 
 window.GastuTours = {
+    activeDriver: null,
+
     init: function(moduleName) {
         if (!toursConfig[moduleName] || typeof window.driver === 'undefined') return;
 
@@ -467,7 +476,16 @@ window.GastuTours = {
         const hasSeen = localStorage.getItem(storageKey);
 
         if (!hasSeen) {
-            setTimeout(() => this.start(moduleName), 800);
+            if (moduleName === 'dashboard') {
+                // Solo auto-iniciamos el Dashboard
+                setTimeout(() => this.start(moduleName), 800);
+            } else {
+                // Fricción cero: sugerir sutilmente usando el botón del topbar
+                const tourBtn = document.getElementById('tour-btn');
+                if (tourBtn && !tourBtn.classList.contains('tour-pulse-hint')) {
+                    tourBtn.classList.add('tour-pulse-hint');
+                }
+            }
         }
     },
 
@@ -487,6 +505,37 @@ window.GastuTours = {
         _skipDialogOpen = false;
         document.body.classList.add('tour-active');
 
+        // Quitar la sugerencia si el usuario inició el tour manualmente
+        const tourBtn = document.getElementById('tour-btn');
+        if (tourBtn) tourBtn.classList.remove('tour-pulse-hint');
+
+        // ── Tematización Dinámica por Módulo ──
+        const moduleColors = {
+            dashboard: { hex: '#6366f1', rgb: '99, 102, 241' },
+            ingresos: { hex: '#10b981', rgb: '16, 185, 129' },
+            egresos: { hex: '#e11d48', rgb: '225, 29, 72' },
+            ahorros: { hex: '#d97706', rgb: '217, 119, 6' },
+            programaciones: { hex: '#1d4ed8', rgb: '29, 78, 216' },
+            presupuestos: { hex: '#7c3aed', rgb: '124, 58, 237' },
+            agente: { hex: '#0ea5e9', rgb: '14, 165, 243' },
+            perfil: { hex: '#0d9488', rgb: '13, 148, 136' },
+            categorias: { hex: '#a855f7', rgb: '168, 85, 247' },
+            historial: { hex: '#64748b', rgb: '100, 116, 139' }
+        };
+        const activeColor = moduleColors[moduleName] || { hex: '#10b981', rgb: '16, 185, 129' };
+        document.documentElement.style.setProperty('--tour-accent-color', activeColor.hex);
+        document.documentElement.style.setProperty('--tour-accent-color-rgb', activeColor.rgb);
+
+        // ── Filtrado Dinámico de Pasos (Responsive Seguro) ──
+        const validSteps = toursConfig[moduleName].filter(step => {
+            if (!step.element) return true; // Popover centrado siempre es válido
+            const el = document.querySelector(step.element);
+            if (!el) return false;
+            // Validar que el elemento sea visible
+            const style = window.getComputedStyle(el);
+            return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetWidth > 0 && el.offsetHeight > 0;
+        });
+
         // Función para bloquear clicks en el sidebar durante el tour
         const blockSidebarClicks = (e) => {
             if (document.body.classList.contains('tour-active')) {
@@ -504,37 +553,51 @@ window.GastuTours = {
         };
         document.addEventListener('click', blockSidebarClicks, true); // Captura temprana
 
-        // ── BOTÓN FLOTANTE "SALTAR TOUR" ──
+        // ── BOTÓN FLOTANTE "SALTAR TUTORIAL" (Premium Glassmorphism) ──
         let skipBtn = document.getElementById('btn-gastu-saltar-tour');
         if (!skipBtn) {
             skipBtn = document.createElement('button');
             skipBtn.id = 'btn-gastu-saltar-tour';
-            skipBtn.innerHTML = 'Saltar Tutorial &times;';
+            skipBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 2px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                Saltar Tutorial
+            `;
             skipBtn.style.cssText = `
                 position: fixed;
                 bottom: 25px;
                 right: 25px;
                 z-index: 2147483647;
-                background-color: #ef4444;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 10px;
-                font-family: inherit;
-                font-weight: 700;
-                font-size: 15px;
-                cursor: pointer;
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-                transition: transform 0.2s, background-color 0.2s;
+                background: rgba(15, 23, 42, 0.8) !important;
+                backdrop-filter: blur(8px) !important;
+                -webkit-backdrop-filter: blur(8px) !important;
+                color: #cbd5e1 !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                padding: 10px 18px !important;
+                border-radius: 99px !important;
+                font-family: 'DM Sans', sans-serif !important;
+                font-weight: 600 !important;
+                font-size: 14px !important;
+                cursor: pointer !important;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
                 pointer-events: auto !important;
             `;
             skipBtn.onmouseover = () => {
-                skipBtn.style.backgroundColor = '#dc2626';
-                skipBtn.style.transform = 'scale(1.05)';
+                skipBtn.style.background = 'rgba(15, 23, 42, 0.95) !important';
+                skipBtn.style.color = 'white !important';
+                skipBtn.style.transform = 'translateY(-2px) scale(1.02) !important';
+                skipBtn.style.borderColor = 'rgba(255, 255, 255, 0.2) !important';
+                skipBtn.style.boxShadow = '0 12px 30px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) !important';
             };
             skipBtn.onmouseout  = () => {
-                skipBtn.style.backgroundColor = '#ef4444';
-                skipBtn.style.transform = 'scale(1)';
+                skipBtn.style.background = 'rgba(15, 23, 42, 0.8) !important';
+                skipBtn.style.color = '#cbd5e1 !important';
+                skipBtn.style.transform = 'translateY(0) scale(1) !important';
+                skipBtn.style.borderColor = 'rgba(255, 255, 255, 0.1) !important';
+                skipBtn.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) !important';
             };
             skipBtn.onclick = (e) => {
                 e.preventDefault();
@@ -547,7 +610,7 @@ window.GastuTours = {
                         closeBtn.click();
                     } else {
                         // Si no hay botón, forzamos destrucción
-                        if (driverObj) driverObj.destroy();
+                        if (window.GastuTours.activeDriver) window.GastuTours.activeDriver.destroy();
                     }
                 }
             };
@@ -563,7 +626,7 @@ window.GastuTours = {
 
         const driverObj = window.driver.js.driver({
             ...commonDriverOptions,
-            steps: toursConfig[moduleName],
+            steps: validSteps,
             onDestroyStarted: async () => {
                 // Si ya no hay pasos, el tour terminó naturalmente
                 if (!driverObj.hasNextStep()) {
@@ -603,6 +666,8 @@ window.GastuTours = {
             },
         });
 
+        window.driverObj = driverObj; // Compatibilidad absoluta con Playwright
+        this.activeDriver = driverObj;
         driverObj.drive();
     }
 };

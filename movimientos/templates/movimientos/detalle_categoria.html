@@ -580,7 +580,8 @@ document.addEventListener('click', e => {
     document.getElementById('e-monto').value = monto;
     document.getElementById('e-descripcion').value = desc;
     document.getElementById('e-categoria').value = cat;
-    document.getElementById('form-edit').action = `/editar/${id}/`;
+    const urlEditBase = "{% url 'movimientos:editar_movimiento' pk=0 %}";
+    document.getElementById('form-edit').action = urlEditBase.replace('0', id);
     openModal('modal-edit');
   }
 
@@ -697,7 +698,8 @@ document.getElementById('d-submit').addEventListener('click', async function() {
   setLoading(btn, true, '');
 
   try {
-    const resp = await fetch(`/eliminar/${_delId}/`, {
+    const urlDelBase = "{% url 'movimientos:eliminar_movimiento' pk=0 %}";
+    const resp = await fetch(urlDelBase.replace('0', _delId), {
       method: 'POST',
       headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF },
     });

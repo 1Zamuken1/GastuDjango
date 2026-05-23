@@ -8,15 +8,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── Helpers ─────────────────────────────────────────────── */
   function getCsrf() {
-    return document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+    // 1. Try cookie first
+    const fromCookie = document.cookie
+      .split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith('csrftoken='));
+    if (fromCookie) return fromCookie.split('=')[1];
+    // 2. Fallback to hidden input in any form on the page
+    const input = document.querySelector('[name=csrfmiddlewaretoken]');
+    return input ? input.value : '';
   }
 
   async function postForm(url, fd) {
-    return fetch(url, {
+    const resp = await fetch(url, {
       method:  'POST',
-      headers: { 'X-CSRFToken': getCsrf() },
+      headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest' },
       body:    fd,
-    }).then(r => r.json());
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      return { ok: false, msg: `Error ${resp.status}: ${resp.statusText}` };
+    }
+    return resp.json();
   }
 
   function showToast(msg, type = 'success') {
@@ -182,18 +195,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const confirmado = await window.GastuAlerts.confirmar(
       'Eliminar usuario',
-      `¿Estás seguro de que quieres eliminar a "${username}"? Esta acción no se puede deshacer.`,
+      `¿Estás seguro de que quieres eliminar a "${username}" y todos sus datos? Esta acción no se puede deshacer.`,
       'Sí, eliminar'
     );
     if (!confirmado) return;
 
-    const fd  = new FormData();
-    const res = await postForm(`/admin-panel/usuarios/${id}/eliminar/`, fd);
-    if (res.ok) {
-      showToast(res.msg);
-      btn.closest('tr')?.remove();
-    } else {
-      showToast(res.msg, 'error');
+    btn.disabled = true;
+    try {
+      const fd  = new FormData();
+      const res = await postForm(`/admin-panel/usuarios/${id}/eliminar/`, fd);
+      if (res.ok) {
+        showToast(res.msg);
+        btn.closest('tr')?.remove();
+      } else {
+        showToast(res.msg || 'No se pudo eliminar el usuario.', 'error');
+        btn.disabled = false;
+      }
+    } catch(err) {
+      console.error('Error al eliminar usuario:', err);
+      showToast('Error de conexión al intentar eliminar.', 'error');
+      btn.disabled = false;
     }
   });
 

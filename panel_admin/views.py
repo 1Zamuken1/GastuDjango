@@ -55,11 +55,39 @@ def admin_home(request):
         .order_by('-num_mov')[:5]
     )
     ultimos_usuarios    = Usuario.objects.order_by('-date_joined')[:6]
-    ultimos_movimientos = (
-        Movimiento.objects.filter(activo=True)
-        .select_related('usuario', 'categoria')
-        .order_by('-fecha_registro')[:8]
+    
+    # ── Gráficos de Actividad (Últimos 7 días) ──
+    from django.db.models.functions import TruncDate
+    import datetime
+    
+    fecha_hoy = timezone.localdate()
+    hace_7_dias = fecha_hoy - datetime.timedelta(days=6)
+    
+    movimientos_por_dia = (
+        Movimiento.objects.filter(fecha_registro__date__gte=hace_7_dias, activo=True)
+        .annotate(dia=TruncDate('fecha_registro'))
+        .values('dia')
+        .annotate(total=Count('id'))
+        .order_by('dia')
     )
+    
+    chart_activity_labels = []
+    chart_activity_data = []
+    for i in range(7):
+        d = hace_7_dias + datetime.timedelta(days=i)
+        chart_activity_labels.append(d.strftime('%d %b'))
+        total = next((item['total'] for item in movimientos_por_dia if item['dia'] == d), 0)
+        chart_activity_data.append(total)
+        
+    # ── Gráficos de Categorías Populares (Global) ──
+    top_categorias_global = (
+        Movimiento.objects.filter(activo=True)
+        .values('categoria__nombre')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:5]
+    )
+    chart_cats_labels = [c['categoria__nombre'] for c in top_categorias_global]
+    chart_cats_data = [c['total'] for c in top_categorias_global]
 
     context = {
         'total_usuarios':      total_usuarios,
@@ -71,7 +99,13 @@ def admin_home(request):
         'total_categorias':    total_categorias,
         'top_usuarios':        top_usuarios,
         'ultimos_usuarios':    ultimos_usuarios,
-        'ultimos_movimientos': ultimos_movimientos,
+        
+        # Datos para los gráficos pasados como JSON strings
+        'chart_activity_labels': json.dumps(chart_activity_labels),
+        'chart_activity_data':   json.dumps(chart_activity_data),
+        'chart_cats_labels':     json.dumps(chart_cats_labels),
+        'chart_cats_data':       json.dumps(chart_cats_data),
+        
         'seccion':             'home',
     }
     return render(request, 'panel_admin/home.html', context)
@@ -229,9 +263,83 @@ def admin_eliminar_usuario(request, usuario_id):
         return JsonResponse({'ok': False, 'msg': 'No puedes eliminarte a ti mismo.'})
     if usuario.rol == 'ADMIN':
         return JsonResponse({'ok': False, 'msg': 'No puedes eliminar a otro administrador.'})
+
     username = usuario.username
-    usuario.delete()
-    return JsonResponse({'ok': True, 'msg': f'Usuario "{username}" eliminado correctamente.'})
+    try:
+        # Eliminación manual en orden para evitar FOREIGN KEY constraint
+        # en SQLite (que no siempre respeta CASCADE automáticamente)
+        from django.db import transaction
+
+        with transaction.atomic():
+            # 1. Notificaciones
+            try:
+                from notificaciones.models import Notificacion
+                Notificacion.objects.filter(usuario=usuario).delete()
+            except Exception:
+                pass
+
+            # 2. Historial
+            try:
+                from historial.models import AccionHistorial
+                AccionHistorial.objects.filter(usuario=usuario).delete()
+            except Exception:
+                pass
+
+            # 3. Agente financiero (mensajes y alertas)
+            try:
+                from agente_financiero.models import MensajeChat, AlertaDiaria
+                MensajeChat.objects.filter(usuario=usuario).delete()
+                AlertaDiaria.objects.filter(usuario=usuario).delete()
+            except Exception:
+                pass
+
+            # 4. Programaciones (y sus ejecuciones)
+            try:
+                from programaciones.models import Programacion, EjecucionProgramacion
+                EjecucionProgramacion.objects.filter(programacion__usuario=usuario).delete()
+                Programacion.objects.filter(usuario=usuario).delete()
+            except Exception:
+                pass
+
+            # 5. Presupuesto
+            try:
+                from presupuesto.models import Presupuesto
+                Presupuesto.objects.filter(usuario=usuario).delete()
+            except Exception:
+                pass
+
+            # 6. Ahorros
+            try:
+                from ahorros.models import AhorroMeta, AporteAhorro
+                AporteAhorro.objects.filter(ahorro__usuario=usuario).delete()
+                AhorroMeta.objects.filter(usuario=usuario).delete()
+            except Exception:
+                pass
+
+            # 7. Movimientos
+            Movimiento.objects.filter(usuario=usuario).delete()
+
+            # 8. Resumen mensual (dashboard)
+            try:
+                from dashboard.models import ResumenMensual
+                ResumenMensual.objects.filter(usuario=usuario).delete()
+            except Exception:
+                pass
+
+            # 9. Preferencias (OneToOne)
+            try:
+                from usuarios.models import Preferencias
+                Preferencias.objects.filter(usuario=usuario).delete()
+            except Exception:
+                pass
+
+            # 10. Finalmente el usuario
+            usuario.delete()
+
+        return JsonResponse({'ok': True, 'msg': f'Usuario "{username}" y todos sus datos han sido eliminados.'})
+
+    except Exception as e:
+        return JsonResponse({'ok': False, 'msg': f'Error al eliminar: {str(e)}'})
 
 
 # ──────────────────────────────────────────────────────────────

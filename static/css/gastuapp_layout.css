@@ -909,3 +909,27 @@ body.sidebar-mini #app-content {
     padding: 8px 12px 4px;
   }
 }
+
+/* ── Animación Tour "Fricción Cero" ── */
+@keyframes tourSubtlePulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.tour-pulse-hint {
+  animation: tourSubtlePulse 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 100;
+  border-radius: 50%;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+.tour-pulse-hint::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 10px; height: 10px;
+  background-color: #ef4444;
+  border: 2px solid white;
+  border-radius: 50%;
+}

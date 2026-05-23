@@ -24,12 +24,18 @@
     <!-- Driver.js para los Tours Guiados -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
     <style>
+      @keyframes popoverFadeIn {
+        0% { opacity: 0; transform: scale(0.96) translateY(8px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+      }
       .gastu-driver-popover {
         border-radius: 20px !important;
-        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0,0,0,0.03) !important;
+        box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.05) !important;
         font-family: 'DM Sans', sans-serif !important;
         padding: 24px !important;
-        min-width: 320px !important;
+        min-width: 330px !important;
+        border-top: 5px solid var(--tour-accent-color, #10b981) !important;
+        animation: popoverFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
       }
       .gastu-driver-popover .driver-popover-title {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -57,16 +63,16 @@
       }
       .gastu-driver-popover .driver-popover-next-btn,
       .gastu-driver-popover .driver-popover-done-btn {
-        background-color: #10b981 !important;
+        background-color: var(--tour-accent-color, #10b981) !important;
         color: white !important;
         border: none !important;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2) !important;
+        box-shadow: 0 4px 12px rgba(var(--tour-accent-color-rgb, 16, 185, 129), 0.25) !important;
       }
       .gastu-driver-popover .driver-popover-next-btn:hover,
       .gastu-driver-popover .driver-popover-done-btn:hover {
-        background-color: #059669 !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3) !important;
+        box-shadow: 0 6px 16px rgba(var(--tour-accent-color-rgb, 16, 185, 129), 0.35) !important;
+        filter: brightness(0.95);
       }
       .gastu-driver-popover .driver-popover-prev-btn {
         background-color: #f8fafc !important;
@@ -79,9 +85,75 @@
       }
       .gastu-driver-popover .driver-popover-close-btn {
         color: #94a3b8 !important;
+        top: 15px !important;
+        right: 15px !important;
+        border-radius: 6px;
+        transition: all 0.2s;
       }
       .gastu-driver-popover .driver-popover-close-btn:hover {
         color: #ef4444 !important;
+        background-color: #fef2f2 !important;
+      }
+      
+      /* Progress text badge */
+      .gastu-driver-popover .driver-popover-progress-text {
+        color: #64748b !important;
+        font-weight: 600 !important;
+        font-size: 0.8rem !important;
+        background: #f1f5f9 !important;
+        padding: 4px 10px !important;
+        border-radius: 99px !important;
+      }
+      
+      /* Active element glow */
+      .driver-active-element {
+        border-radius: 12px;
+        box-shadow: 0 0 0 4px rgba(var(--tour-accent-color-rgb, 16, 185, 129), 0.2) !important;
+        transition: box-shadow 0.3s ease;
+      }
+
+      /* Gastu Chat Bubble Styles */
+      .gastu-chat-bubble-container {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 8px;
+        padding: 14px 16px;
+        background: #f8fafc;
+        border-radius: 16px;
+        border: 1px solid #f1f5f9;
+        box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+      }
+      .gastu-avatar-wrapper {
+        position: relative;
+        flex-shrink: 0;
+      }
+      .gastu-avatar-img {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+        border-radius: 50%;
+        border: 2px solid var(--tour-accent-color, #10b981);
+        background: white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        padding: 4px;
+      }
+      .gastu-avatar-badge {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 12px;
+        height: 12px;
+        background-color: #10b981;
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+      }
+      .gastu-chat-text {
+        font-size: 0.92rem;
+        color: #334155;
+        font-weight: 500;
+        line-height: 1.5;
       }
 
       /* SweetAlert debe quedar POR ENCIMA del overlay de Driver.js (z-index 10002) */

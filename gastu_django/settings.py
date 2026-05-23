@@ -56,6 +56,8 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     # Tailwind hot reload (solo en DEBUG)
     'django_browser_reload.middleware.BrowserReloadMiddleware',
+    # ── Separación de contextos Admin / Usuario ───────────────
+    'gastu_django.middleware.AdminAreaMiddleware',
 ]
 
 ROOT_URLCONF = 'gastu_django.urls'

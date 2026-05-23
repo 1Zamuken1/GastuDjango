@@ -58,6 +58,19 @@ def home_view(request):
     # Permitir navegar a cualquier mes (los meses futuros o pasados sin datos se mostrarán vacíos)
     ctx = build_dashboard_context(user, mes, anio)
 
+    # Verificar Onboarding: Si el usuario no tiene movimientos, mostrar modal de saldo inicial
+    from movimientos.models import Movimiento
+    from categorias.models import Categoria
+    requiere_onboarding = not Movimiento.objects.filter(usuario=user).exists()
+    ctx['requiere_onboarding'] = requiere_onboarding
+    if requiere_onboarding:
+        cat_ajuste, _ = Categoria.objects.get_or_create(
+            nombre='Saldo Inicial',
+            tipo='INGRESO',
+            defaults={'descripcion': 'Ajuste de saldo inicial', 'activo': True}
+        )
+        ctx['onboarding_categoria_id'] = cat_ajuste.id
+
     # Respuesta JSON para requests AJAX (navegacion sin recarga)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         mov_list = [
