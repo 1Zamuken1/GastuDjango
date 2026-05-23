@@ -605,3 +605,32 @@ GastuApp emplea un flujo de trabajo de pruebas guiado por el comportamiento visu
   - Eliminar archivos basura o temporales suministrados por el usuario (ej. `.xlsx`, `.pdf`, `.png` sueltos en la raíz).
   - Eliminar scripts de depuración temporales (`debug_*.py`).
   - Asegurar que `.gitignore` esté actualizado para ignorar estos artefactos de prueba si llegaran a recrearse.
+
+## 23. Pruebas Unitarias con Pytest
+
+El proyecto también incluye pruebas unitarias tradicionales utilizando pytest y pytest-django para validar la lógica de backend y funcionalidades específicas de las aplicaciones.
+
+### Estructura de las pruebas
+Las pruebas unitarias se encuentran en cada aplicación en archivos llamados `tests.py` y siguen las convenciones de Django TestCase.
+
+### Ejecutar las pruebas
+```bash
+# Instalar dependencias de testing (solo primera vez)
+pip install pytest pytest-django
+
+# Ejecutar todas las pruebas
+pytest
+
+# Ejecutar tests de una app específica
+pytest usuarios/tests.py
+
+# Ejecutar tests con cobertura (opcional)
+pytest --cov=.
+```
+
+### Convenciones de pruebas
+- Los tests deben ser exhaustivos pero concisos
+- Cada método de prueba debe probar un único concepto
+- Utilizar nomes descriptivos para los tests que indiquen claramente qué se está probando
+- Los tests deben ser independientes y no depender del estado de otros tests
+- Utilizar el método `setUp()` para crear objetos comunes necesarios para múltiples tests

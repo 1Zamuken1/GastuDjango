@@ -33,6 +33,10 @@ django-allauth==65.15.0
 # Pruebas E2E
 playwright==1.59.0
 
+# Testing
+pytest==9.0.3
+pytest-django==4.12.0
+
 # =========================================================
 # GUIA RAPIDA PARA EJECUTAR EL PROYECTO
 # =========================================================

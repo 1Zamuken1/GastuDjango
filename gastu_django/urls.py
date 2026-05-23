@@ -23,7 +23,7 @@ urlpatterns = [
     path('agente_financiero/', include('agente_financiero.urls')),
 
     # Otros
-    path('notificaciones/', include('notificaciones.urls')),
+    path('notificaciones/', include('notificaciones.urls', namespace='notificaciones')),
     path('historial/', include('historial.urls', namespace='historial')),
 
     # OAuth
