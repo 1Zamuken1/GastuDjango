@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Count, Max, Sum
+from django.db.models import Count, Max, Sum, Min
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
@@ -81,6 +81,10 @@ def lista_ingresos(request):
         else Decimal('0')
     )
 
+    primer_registro = Movimiento.objects.filter(usuario=request.user).aggregate(Min('fecha_registro'))['fecha_registro__min']
+    mes_primer_registro = primer_registro.month if primer_registro else request.user.date_joined.month
+    anio_primer_registro = primer_registro.year if primer_registro else request.user.date_joined.year
+
     return render(request, 'movimientos/ingresos.html', {
         'categorias_con_totales': categorias_con_totales,
         'total_mes': total_mes,
@@ -91,6 +95,8 @@ def lista_ingresos(request):
         'mes_numero': mes,
         'anio': anio,
         'hoy': hoy,
+        'mes_primer_registro': mes_primer_registro,
+        'anio_primer_registro': anio_primer_registro,
     })
 
 
@@ -119,6 +125,10 @@ def lista_egresos(request):
 
     disponible = obtener_disponible(request.user, mes, anio)
 
+    primer_registro = Movimiento.objects.filter(usuario=request.user).aggregate(Min('fecha_registro'))['fecha_registro__min']
+    mes_primer_registro = primer_registro.month if primer_registro else request.user.date_joined.month
+    anio_primer_registro = primer_registro.year if primer_registro else request.user.date_joined.year
+
     return render(request, 'movimientos/egresos.html', {
         'categorias_con_totales': categorias_con_totales,
         'total_mes': total_mes,
@@ -130,6 +140,8 @@ def lista_egresos(request):
         'mes_numero': mes,
         'anio': anio,
         'hoy': hoy,
+        'mes_primer_registro': mes_primer_registro,
+        'anio_primer_registro': anio_primer_registro,
     })
 
 
