@@ -211,10 +211,15 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     ahorro = get_object_or_404(AhorroMeta, id=meta_id, usuario=usuario)
 
     if request.method == "GET":
-        cuotas = AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite')
-        pagadas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.APORTADO).count()
-        perdidas = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
-        pendientes = cuotas.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
+        
+        cuotas_qs = AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite')
+        pagadas = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.APORTADO).count()
+        perdidas = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
+        pendientes = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
+
+        cuotas = list(cuotas_qs)
+        for c in cuotas:
+            c.is_disponible_pago = cuota_disponible_pago(c, ahorro.frecuencia)
 
         return render(request, "ahorros/aporte.html", {
             "ahorro": ahorro,

@@ -6,9 +6,7 @@ recalcular aportes y gestionar estados de metas de ahorro.
 """
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
-
 from django.shortcuts import get_object_or_404
-
 from .models import AhorroMeta, AporteAhorro
 
 
@@ -261,11 +259,21 @@ def abandono_ahorro(ahorro):
 def cuota_disponible_pago(cuota, frecuencia):
     """
     Determina si una cuota pendiente esta dentro de la ventana
-    de pago segun la frecuencia de la meta.
+    de pago segun la frecuencia de la meta y es estrictamente
+    la proxima a pagar (la primera pendiente).
     """
     from dateutil.relativedelta import relativedelta
 
-    if cuota is None:
+    if cuota is None or cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE:
+        return False
+        
+    # Verificar que esta cuota sea la primera PENDIENTE de la meta
+    primera_pendiente = AporteAhorro.objects.filter(
+        ahorro=cuota.ahorro,
+        estado_ap=AporteAhorro.EstadoAp.PENDIENTE
+    ).order_by('fecha_limite').first()
+
+    if not primera_pendiente or primera_pendiente.id != cuota.id:
         return False
 
     hoy = date.today()

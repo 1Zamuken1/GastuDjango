@@ -58,6 +58,7 @@ USE_SQLITE=True
 
 # Solo necesario cuando USE_SQLITE=False
 # DATABASE_URL=postgresql://postgres.<proyecto>:<PASSWORD>@aws-1-sa-east-1.pooler.supabase.com:6543/postgres
+GROQ_API_KEY=
 ```
 
 ### 🚨 IMPORTANTE: Reset de Base de Datos y Migraciones (01 Abril)

@@ -94,6 +94,7 @@ function abrirModalAporte(url) {
     .then(html => {
       overlayAporte.innerHTML = html;
       lucide.createIcons();
+      calcularTiemposRestantes(overlayAporte);
       overlayAporte.querySelectorAll('.btn-cerrar-modal-aporte').forEach(btn => {
         btn.addEventListener('click', cerrarModalAporte);
       });
@@ -111,6 +112,46 @@ function cerrarModalAporte() {
   overlayAporte.setAttribute('hidden', '');
   overlayAporte.style.display = 'none';
   overlayAporte.innerHTML = '';
+}
+
+function calcularTiemposRestantes(container) {
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+
+  container.querySelectorAll('.cuotas-table__tiempo').forEach(celda => {
+    const estado = celda.dataset.estado;
+    if (estado === 'APORTADO') {
+      celda.textContent = '—';
+      return;
+    }
+    
+    const fechaStr = celda.dataset.fechaLimite;
+    if (!fechaStr) return;
+    
+    const partes = fechaStr.split('-');
+    const limite = new Date(partes[0], partes[1] - 1, partes[2]);
+    limite.setHours(0,0,0,0);
+    
+    const diffTime = limite - hoy;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      celda.textContent = 'Vencida';
+      celda.style.color = '#ef4444';
+    } else if (diffDays === 0) {
+      celda.textContent = 'Hoy';
+      celda.style.color = '#eab308';
+    } else if (diffDays === 1) {
+      celda.textContent = '1 día';
+    } else if (diffDays < 30) {
+      celda.textContent = `${diffDays} días`;
+    } else if (diffDays < 60) {
+      celda.textContent = '1 mes';
+    } else {
+      const meses = Math.floor(diffDays / 30);
+      celda.textContent = `${meses} meses`;
+    }
+  });
 }
 
 async function enviarAporte(e, url) {
@@ -132,6 +173,7 @@ async function enviarAporte(e, url) {
       const errMsg       = overlayAporte.querySelector('#modal-error-message');
       if (errContainer && errMsg) {
         errMsg.textContent = json.error || 'Error al registrar el aporte.';
+        errContainer.removeAttribute('hidden');
         errContainer.style.display = 'flex';
         errContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
@@ -218,6 +260,17 @@ function abrirModalCrear() {
   document.getElementById('crear-categoria').value = '';
   document.getElementById('crear-cat-label').textContent = 'Seleccionar categoría';
   document.getElementById('crear-cat-btn').classList.remove('selected');
+  
+  const fLabel = document.getElementById('crear-frecuencia-label');
+  if (fLabel) {
+    document.getElementById('crear-frecuencia').value = '';
+    fLabel.textContent = '-- Seleccionar --';
+    fLabel.style.color = 'var(--slate-500)';
+  }
+  if (typeof dpCrear !== 'undefined' && dpCrear) {
+    dpCrear.setValor('');
+  }
+
   ocultarErroresCrear();
   modalCrear.removeAttribute('hidden');
   lucide.createIcons();
@@ -326,8 +379,20 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
       const a = json.ahorro;
       document.getElementById('editar-ahorro-id').value = a.id;
       document.getElementById('editar-monto-meta').value = a.monto_meta;
+      
       document.getElementById('editar-frecuencia').value = a.frecuencia;
+      const fLabelEdit = document.getElementById('editar-frecuencia-label');
+      if (fLabelEdit) {
+        const freqMap = { 'DIARIA':'Diaria', 'SEMANAL':'Semanal', 'QUINCENAL':'Quincenal', 'MENSUAL':'Mensual', 'TRIMESTRAL':'Trimestral', 'SEMESTRAL':'Semestral', 'ANUAL':'Anual' };
+        fLabelEdit.textContent = freqMap[a.frecuencia] || '-- Seleccionar --';
+        fLabelEdit.style.color = a.frecuencia ? 'var(--slate-900)' : 'var(--slate-500)';
+      }
+
       document.getElementById('editar-fecha-meta').value = a.fecha_meta;
+      if (typeof dpEditar !== 'undefined' && dpEditar) {
+        dpEditar.setValor(a.fecha_meta || '');
+      }
+
       document.getElementById('editar-cuotas').value = a.cantidad_cuotas;
       document.getElementById('editar-descripcion').value = a.descripcion;
       document.getElementById('editar-categoria').value = a.categoria_id;
@@ -489,4 +554,88 @@ document.addEventListener('keydown', e => {
   if (!modalEditar.hasAttribute('hidden'))     { cerrarModalEditar();    return; }
   if (!modalCrear.hasAttribute('hidden'))      { cerrarModalCrear();     return; }
   if (!overlayAporte.hasAttribute('hidden'))   { cerrarModalAporte();    return; }
+});
+
+/* ══════════════════════════════════════════════════════════
+   11. DATEPICKER, FRECUENCIA Y FILTRO DE ESTADO
+   ══════════════════════════════════════════════════════════ */
+
+let dpCrear = null;
+let dpEditar = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof MiniDatepicker !== 'undefined') {
+    const inputCrear = document.getElementById('crear-fecha-meta');
+    if (inputCrear) {
+      dpCrear = new MiniDatepicker(inputCrear, { acento: 'ahorro' });
+      inputCrear.parentNode.appendChild(dpCrear.wrapper);
+    }
+    const inputEditar = document.getElementById('editar-fecha-meta');
+    if (inputEditar) {
+      dpEditar = new MiniDatepicker(inputEditar, { acento: 'ahorro' });
+      inputEditar.parentNode.appendChild(dpEditar.wrapper);
+    }
+  }
+
+  const btnFiltroEstado = document.getElementById('btn-filtro-estado');
+  const menuFiltroEstado = document.getElementById('menu-filtro-estado');
+  if (btnFiltroEstado && menuFiltroEstado) {
+    btnFiltroEstado.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menuFiltroEstado.toggleAttribute('hidden');
+    });
+    document.addEventListener('click', (e) => {
+      if (!menuFiltroEstado.contains(e.target) && e.target !== btnFiltroEstado) {
+        menuFiltroEstado.setAttribute('hidden', '');
+      }
+    });
+    
+    const params = new URLSearchParams(window.location.search);
+    const estadoActual = params.get('estado');
+    if (estadoActual) {
+      const estadoLabels = { 'SIN_INICIAR': 'Sin Iniciar', 'ACTIVO': 'Activo', 'COMPLETADO': 'Completado', 'ABANDONADO': 'Abandonado' };
+      if (estadoLabels[estadoActual]) {
+        btnFiltroEstado.innerHTML = `<i data-lucide="filter"></i> Estado: ${estadoLabels[estadoActual]} <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+    }
+  }
+
+  document.querySelectorAll('.picker-frecuencia-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = btn.id === 'crear-frecuencia-btn' ? 'crear' : 'editar';
+      const menu = document.getElementById(`${target}-frecuencia-menu`);
+      if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    });
+  });
+
+  document.querySelectorAll('.frecuencia-option').forEach(opt => {
+    opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const target = opt.dataset.target;
+      const val = opt.dataset.value;
+      const text = opt.textContent;
+      
+      document.getElementById(`${target}-frecuencia`).value = val;
+      const label = document.getElementById(`${target}-frecuencia-label`);
+      if (label) {
+        label.textContent = text;
+        label.style.color = 'var(--slate-900)';
+      }
+      const menu = document.getElementById(`${target}-frecuencia-menu`);
+      if (menu) menu.style.display = 'none';
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.frecuencia-menu').forEach(menu => {
+      const target = menu.id.replace('-frecuencia-menu', '');
+      const btn = document.getElementById(`${target}-frecuencia-btn`);
+      if (btn && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+        menu.style.display = 'none';
+      }
+    });
+  });
 });

@@ -145,3 +145,25 @@
 [data-acento="egreso"] .dp-btn-hoy:hover {
   background: #fff1f2;
 }
+
+/* ── Variante ahorros ────────────────────────────────── */
+[data-acento="ahorro"] .dp-display:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217,119,6,.12);
+}
+[data-acento="ahorro"] .dp-day--hoy {
+  border-color: #d97706;
+  color: #d97706;
+}
+[data-acento="ahorro"] .dp-day--sel {
+  background: #d97706 !important;
+}
+[data-acento="ahorro"] .dp-day--sel:hover {
+  background: #b45309 !important;
+}
+[data-acento="ahorro"] .dp-btn-hoy {
+  color: #d97706;
+}
+[data-acento="ahorro"] .dp-btn-hoy:hover {
+  background: #fffbeb;
+}

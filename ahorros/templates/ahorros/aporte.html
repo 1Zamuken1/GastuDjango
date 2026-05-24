@@ -2,17 +2,15 @@
 <div class="modal detalle-modal">
 
   <!-- Cabecera -->
-  <div class="modal__header" style="background:linear-gradient(135deg,#0f172a,#1e293b);">
+  <div class="modal__header">
     <div>
-      <h2 class="modal__title font-display" style="color:#f1f5f9;">Detalle de Meta</h2>
-      <span class="modal__subtitle" style="color:#64748b;">
+      <h2 class="modal__title font-display">Detalle de Meta</h2>
+      <span class="modal__subtitle">
         {{ ahorro.categoria.nombre|default:"Meta de Ahorro" }}
         {% if ahorro.descripcion %} — {{ ahorro.descripcion }}{% endif %}
       </span>
     </div>
-    <button type="button" class="modal__close btn-cerrar-modal-aporte"
-            style="border-color:rgba(255,255,255,.2);color:#cbd5e1;background:rgba(255,255,255,.08);"
-            aria-label="Cerrar">
+    <button type="button" class="modal__close btn-cerrar-modal-aporte" aria-label="Cerrar">
       <i data-lucide="x"></i>
     </button>
   </div>
@@ -21,142 +19,164 @@
   <div class="detalle-modal__body">
 
     <!-- Alerta de error (siempre presente, oculta por defecto) -->
-    <div class="form-ahorros__errors" id="modal-error-container"
-         style="margin:1.25rem 1.25rem 0;{% if not error %}display:none;{% endif %}">
-      <i data-lucide="alert-triangle" style="color:#ef4444;width:18px;height:18px;flex-shrink:0;margin-top:1px;"></i>
-      <div class="form-ahorros__errors-text" id="modal-error-message">{% if error %}{{ error }}{% endif %}</div>
-    </div>
+    {% if not error %}
+    <div class="form-ahorros__errors" id="modal-error-container" style="margin:1.25rem 1.25rem 0;" hidden>
+      {% else %}
+      <div class="form-ahorros__errors" id="modal-error-container" style="margin:1.25rem 1.25rem 0;">
+        {% endif %}
+        <i data-lucide="alert-triangle" style="color:#ef4444;width:18px;height:18px;flex-shrink:0;margin-top:1px;"></i>
+        <div class="form-ahorros__errors-text" id="modal-error-message">{% if error %}{{ error }}{% endif %}</div>
+      </div>
 
-    <div class="detalle-modal__content">
+      <div class="detalle-modal__content">
 
-      <!-- Especificaciones -->
-      <h3 class="field-label" style="margin-bottom:1rem;font-size:.7rem;">Especificaciones</h3>
+        <!-- Especificaciones -->
+        <h3 class="field-label" style="margin-bottom:1rem;font-size:.7rem;">Especificaciones</h3>
 
-      <div class="specs-grid">
-        <div>
-          <p class="field-label specs-grid__label">Concepto</p>
-          <p class="specs-grid__value">{{ ahorro.categoria.nombre|default:"Otro" }}</p>
-        </div>
-        <div>
-          <p class="field-label specs-grid__label">Descripcion</p>
-          <p class="specs-grid__value">{{ ahorro.descripcion|default:"Sin descripcion" }}</p>
-        </div>
-        <div>
-          <p class="field-label specs-grid__label">Monto Meta</p>
-          <p class="specs-grid__value">$ {{ ahorro.monto_meta|floatformat:2 }}</p>
-        </div>
-        <div>
-          <p class="field-label specs-grid__label">Total Acumulado</p>
-          <p class="specs-grid__value specs-grid__value--accent">$ {{ ahorro.total_acumulado|floatformat:2 }}</p>
-        </div>
-        <div>
-          <p class="field-label specs-grid__label">Frecuencia</p>
-          <p class="specs-grid__value" style="text-transform:uppercase;">{{ ahorro.frecuencia }}</p>
-        </div>
-        <div>
-          <p class="field-label specs-grid__label">Fecha Meta</p>
-          <p class="specs-grid__value">{{ ahorro.fecha_meta|date:"d/m/Y" }}</p>
-        </div>
-        <div>
-          <p class="field-label specs-grid__label">Cuotas totales</p>
-          <p class="specs-grid__value">{{ ahorro.cantidad_cuotas }}</p>
-        </div>
-        <div>
-          <p class="field-label specs-grid__label">Estado</p>
-          <span class="badge-estado-meta
+        <div class="specs-grid">
+          <div>
+            <p class="field-label specs-grid__label">Concepto</p>
+            <p class="specs-grid__value">{{ ahorro.categoria.nombre|default:"Otro" }}</p>
+          </div>
+          <div>
+            <p class="field-label specs-grid__label">Descripcion</p>
+            <p class="specs-grid__value">{{ ahorro.descripcion|default:"Sin descripcion" }}</p>
+          </div>
+          <div>
+            <p class="field-label specs-grid__label">Monto Meta</p>
+            <p class="specs-grid__value">$ {{ ahorro.monto_meta|floatformat:2 }}</p>
+          </div>
+          <div>
+            <p class="field-label specs-grid__label">Total Acumulado</p>
+            <p class="specs-grid__value specs-grid__value--accent">$ {{ ahorro.total_acumulado|floatformat:2 }}</p>
+          </div>
+          <div>
+            <p class="field-label specs-grid__label">Frecuencia</p>
+            <p class="specs-grid__value" style="text-transform:uppercase;">{{ ahorro.frecuencia }}</p>
+          </div>
+          <div>
+            <p class="field-label specs-grid__label">Fecha Meta</p>
+            <p class="specs-grid__value">{{ ahorro.fecha_meta|date:"d/m/Y" }}</p>
+          </div>
+          <div>
+            <p class="field-label specs-grid__label">Cuotas totales</p>
+            <p class="specs-grid__value">{{ ahorro.cantidad_cuotas }}</p>
+          </div>
+          <div>
+            <p class="field-label specs-grid__label">Estado</p>
+            <span class="badge-estado-meta
             {% if ahorro.estado == 'ACTIVO' %}badge-estado-meta--activo
             {% elif ahorro.estado == 'COMPLETADO' %}badge-estado-meta--completado
             {% elif ahorro.estado == 'ABANDONADO' %}badge-estado-meta--abandonado
             {% else %}badge-estado-meta--sin-iniciar{% endif %}">
-            {{ ahorro.estado }}
-          </span>
+              {% if ahorro.estado == 'SIN_INICIAR' %}SIN INICIAR{% else %}{{ ahorro.estado }}{% endif %}
+            </span>
+          </div>
         </div>
-      </div>
 
-      <!-- Resumen Cuotas -->
-      <div class="cuotas-resumen">
-        <p class="cuotas-resumen__text">
-          <i data-lucide="bar-chart-2" style="width:14px;height:14px;vertical-align:-2px;margin-right:.3rem;"></i>
-          {{ pagadas }} pagadas &nbsp;&middot;&nbsp; {{ perdidas }} perdidas &nbsp;&middot;&nbsp; {{ pendientes }} pendientes
-        </p>
-      </div>
+        <!-- Resumen Cuotas -->
+        <div class="cuotas-resumen">
+          <p class="cuotas-resumen__text">
+            <i data-lucide="bar-chart-2" style="width:14px;height:14px;vertical-align:-2px;margin-right:.3rem;"></i>
+            {{ pagadas }} pagadas &nbsp;&middot;&nbsp; {{ perdidas }} perdidas &nbsp;&middot;&nbsp; {{ pendientes }}
+            pendientes
+          </p>
+        </div>
 
-      <!-- Tabla de Cuotas -->
-      <h3 class="field-label" style="margin-bottom:.875rem;">Cuotas Detalladas</h3>
+        <!-- Tabla de Cuotas -->
+        <h3 class="field-label" style="margin-bottom:.875rem;">Cuotas Detalladas</h3>
 
-      <div style="overflow-x:auto;">
-        <table class="cuotas-table">
-          <thead>
-            <tr>
-              <th>Cuota</th>
-              <th class="cuotas-table__monto">Asignado</th>
-              <th class="cuotas-table th--aporte">Aportado</th>
-              <th>Limite</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for cuota in cuotas %}
-            <tr>
-              <td class="cuotas-table__num">
-                {{ forloop.counter|stringformat:"02d" }}/{{ cuotas|length|stringformat:"02d" }}
-              </td>
-              <td class="cuotas-table__monto">
-                ${{ cuota.aporte_asignado|floatformat:2 }}
-              </td>
-              <td>
-                {% if cuota.estado_ap == 'PENDIENTE' %}
-                <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
-                      class="form-aporte-modal form-aporte-inline">
-                  {% csrf_token %}
-                  <input type="hidden" name="aporte_id" value="{{ cuota.id }}">
-                  <div class="form-aporte-inline__wrapper">
-                    <span class="form-aporte-inline__prefix">$</span>
-                    <input type="number" name="aporte" step="0.01" min="0.01"
-                           value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
-                           class="form-aporte-inline__input">
+        <div style="overflow-x:auto;">
+          <table class="cuotas-table">
+            <thead>
+              <tr>
+                <th>Cuota</th>
+                <th class="cuotas-table__monto">Asignado</th>
+                <th class="cuotas-table th--aporte">Aportado</th>
+                <th>Tiempo Restante</th>
+                <th>Limite</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cuota in cuotas %}
+              <tr>
+                <td class="cuotas-table__num">
+                  {{ forloop.counter|stringformat:"02d" }}/{{ cuotas|length|stringformat:"02d" }}
+                </td>
+                <td class="cuotas-table__monto">
+                  ${{ cuota.aporte_asignado|floatformat:2 }}
+                </td>
+                <td>
+                  {% if cuota.estado_ap == 'PENDIENTE' and cuota.is_disponible_pago %}
+                  <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
+                    class="form-aporte-modal form-aporte-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="aporte_id" value="{{ cuota.id }}">
+                    <div class="form-aporte-inline__wrapper">
+                      <span class="form-aporte-inline__prefix">$</span>
+                      <input type="number" name="aporte" step="0.01" min="0.01"
+                        value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
+                        class="form-aporte-inline__input">
+                    </div>
+                    <button type="submit" class="form-aporte-inline__submit" title="Registrar aporte">
+                      <i data-lucide="check" style="width:15px;height:15px;stroke-width:3;"></i>
+                    </button>
+                  </form>
+                  {% elif cuota.estado_ap == 'PENDIENTE' %}
+                  <div class="form-aporte-inline" style="display:flex; align-items:center; gap:0.35rem; opacity: 0.5;">
+                    <div class="form-aporte-inline__wrapper" style="cursor: not-allowed; background:#f8fafc;">
+                      <span class="form-aporte-inline__prefix" style="color:#94a3b8;">$</span>
+                      <input type="number" disabled value="{{ cuota.aporte_asignado|stringformat:'.2f' }}"
+                        class="form-aporte-inline__input"
+                        style="cursor: not-allowed; background:transparent; color:#94a3b8;">
+                    </div>
+                    <button type="button" disabled class="form-aporte-inline__submit" title="No disponible aún"
+                      style="background:#e2e8f0; cursor:not-allowed; box-shadow:none;">
+                      <i data-lucide="lock" style="width:15px;height:15px;stroke-width:3;color:#94a3b8;"></i>
+                    </button>
                   </div>
-                  <button type="submit" class="form-aporte-inline__submit" title="Registrar aporte">
-                    <i data-lucide="check" style="width:15px;height:15px;stroke-width:3;"></i>
-                  </button>
-                </form>
-                {% else %}
-                <span class="cuotas-table__aportado">
-                  ${% if cuota.aporte %}{{ cuota.aporte|floatformat:2 }}{% else %}0.00{% endif %}
-                </span>
-                {% endif %}
-              </td>
-              <td class="cuotas-table__fecha">
-                {{ cuota.fecha_limite|date:"d/m/Y" }}
-              </td>
-              <td>
-                {% if cuota.estado_ap == 'APORTADO' %}
-                <span class="badge-estado badge-estado--aportado">APORTADO</span>
-                {% elif cuota.estado_ap == 'PENDIENTE' %}
-                <span class="badge-estado badge-estado--pendiente">PENDIENTE</span>
-                {% else %}
-                <span class="badge-estado badge-estado--perdido">{{ cuota.estado_ap }}</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr class="cuotas-table__empty">
-              <td colspan="5">
-                No se han generado cuotas para esta meta.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+                  {% else %}
+                  <span class="cuotas-table__aportado">
+                    ${% if cuota.aporte %}{{ cuota.aporte|floatformat:2 }}{% else %}0.00{% endif %}
+                  </span>
+                  {% endif %}
+                </td>
+                <td class="cuotas-table__tiempo" data-fecha-limite="{{ cuota.fecha_limite|date:'Y-m-d' }}"
+                  data-estado="{{ cuota.estado_ap }}" style="font-size:0.85rem;color:#64748b;font-weight:500;">
+                  --
+                </td>
+                <td class="cuotas-table__fecha">
+                  {{ cuota.fecha_limite|date:"d/m/Y" }}
+                </td>
+                <td>
+                  {% if cuota.estado_ap == 'APORTADO' %}
+                  <span class="badge-estado badge-estado--aportado">APORTADO</span>
+                  {% elif cuota.estado_ap == 'PENDIENTE' %}
+                  <span class="badge-estado badge-estado--pendiente">PENDIENTE</span>
+                  {% else %}
+                  <span class="badge-estado badge-estado--perdido">{{ cuota.estado_ap }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr class="cuotas-table__empty">
+                <td colspan="5">
+                  No se han generado cuotas para esta meta.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
       </div>
-
     </div>
-  </div>
 
-  <!-- Footer pegajoso -->
-  <div class="modal__footer" style="background:#f8fafc;">
-    <button type="button" class="btn-ghost btn-cerrar-modal-aporte">Cerrar</button>
-  </div>
+    <!-- Footer pegajoso -->
+    <div class="modal__footer" style="background:#f8fafc;">
+      <button type="button" class="btn-ghost btn-cerrar-modal-aporte">Cerrar</button>
+    </div>
 
-</div>
-<!-- FIN CONTENIDO PARCIAL -->
+  </div>
+  <!-- FIN CONTENIDO PARCIAL -->
