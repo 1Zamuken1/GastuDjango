@@ -116,8 +116,10 @@ class MiniDatepicker {
           const panelH      = this.panel.offsetHeight;
           const espacioAbajo = window.innerHeight - displayRect.bottom - 8;
           const espacioArriba = displayRect.top - 8;
+          
+          const inModal = this.wrapper.closest('.modal__body');
 
-          if (espacioAbajo >= panelH || espacioAbajo >= espacioArriba) {
+          if (inModal || espacioAbajo >= panelH || espacioAbajo >= espacioArriba) {
             this.panel.classList.remove('dp-panel--arriba');
           } else {
             this.panel.classList.add('dp-panel--arriba');
@@ -129,17 +131,19 @@ class MiniDatepicker {
     this.panel.addEventListener('click', (e) => {
       e.stopPropagation();
 
-      if (e.target.dataset.nav) {
-        this.vistaMes += parseInt(e.target.dataset.nav);
+      const navBtn = e.target.closest('.dp-nav');
+      if (navBtn && navBtn.dataset.nav) {
+        this.vistaMes += parseInt(navBtn.dataset.nav);
         if (this.vistaMes < 0)  { this.vistaMes = 11; this.vistaAno--; }
         if (this.vistaMes > 11) { this.vistaMes = 0;  this.vistaAno++; }
         this._renderPanel();
         return;
       }
 
-      if (e.target.dataset.d) {
+      const dayBtn = e.target.closest('.dp-day');
+      if (dayBtn && dayBtn.dataset.d) {
         this._seleccionarFecha(
-          new Date(this.vistaAno, this.vistaMes, parseInt(e.target.dataset.d))
+          new Date(this.vistaAno, this.vistaMes, parseInt(dayBtn.dataset.d))
         );
         this.panel.setAttribute('hidden', '');
         return;
