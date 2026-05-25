@@ -161,10 +161,9 @@ AUTHENTICATION_BACKENDS = [
 SITE_ID = 1
 
 # Configuracion de cuenta
-ACCOUNT_EMAIL_REQUIRED        = True
+ACCOUNT_LOGIN_METHODS         = {'email'}
+ACCOUNT_SIGNUP_FIELDS         = ['email*', 'password1*', 'password2*']
 ACCOUNT_UNIQUE_EMAIL          = True
-ACCOUNT_USERNAME_REQUIRED     = False     # username no requerido en flujo allauth
-ACCOUNT_AUTHENTICATION_METHOD = 'email'   # autenticar solo por email
 ACCOUNT_EMAIL_VERIFICATION    = 'none'    # sin verificacion por ahora (desarrollo)
 ACCOUNT_LOGIN_REDIRECT_URL    = '/dashboard/'
 ACCOUNT_LOGOUT_REDIRECT_URL   = '/'
