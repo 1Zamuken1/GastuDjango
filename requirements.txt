@@ -76,3 +76,6 @@ pytest-django==4.12.0
 # - Las dependencias de Python se gestionan con pip.
 # =========================================================
 
+gunicorn==23.0.0
+
+
