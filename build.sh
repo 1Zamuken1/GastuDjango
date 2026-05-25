@@ -8,7 +8,11 @@ pip install -r requirements.txt
 echo "=== Collecting static files ==="
 python manage.py collectstatic --no-input
 
-echo "=== Syncing allauth migrations (fake) ==="
+echo "=== Syncing existing migrations (fake) ==="
+python manage.py migrate contenttypes --fake
+python manage.py migrate auth --fake
+python manage.py migrate admin --fake
+python manage.py migrate sessions --fake
 python manage.py migrate account --fake
 python manage.py migrate socialaccount --fake
 
