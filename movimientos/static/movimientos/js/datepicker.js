@@ -80,12 +80,23 @@ class MiniDatepicker {
                              data-d="${d}">${d}</button>`;
     }
 
+    let selectsHTML = `
+      <div class="dp-mes-anio-selects">
+        <select class="dp-select dp-select-mes">
+          ${MESES.map((m, idx) => `<option value="${idx}" ${idx === this.vistaMes ? 'selected' : ''}>${m}</option>`).join('')}
+        </select>
+        <select class="dp-select dp-select-ano">
+          ${Array.from({length: 30}, (_, i) => this.hoy.getFullYear() - 10 + i).map(y => `<option value="${y}" ${y === this.vistaAno ? 'selected' : ''}>${y}</option>`).join('')}
+        </select>
+      </div>
+    `;
+
     this.panel.innerHTML = `
       <div class="dp-header">
         <button type="button" class="dp-nav" data-nav="-1">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <span class="dp-mes-anio">${MESES[this.vistaMes]} ${this.vistaAno}</span>
+        ${selectsHTML}
         <button type="button" class="dp-nav" data-nav="1">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
         </button>
@@ -164,6 +175,17 @@ class MiniDatepicker {
 
     document.addEventListener('click', () => {
       this.panel.setAttribute('hidden', '');
+    });
+
+    this.panel.addEventListener('change', (e) => {
+      if (e.target.classList.contains('dp-select-mes')) {
+        this.vistaMes = parseInt(e.target.value);
+        this._renderPanel();
+      }
+      if (e.target.classList.contains('dp-select-ano')) {
+        this.vistaAno = parseInt(e.target.value);
+        this._renderPanel();
+      }
     });
   }
 

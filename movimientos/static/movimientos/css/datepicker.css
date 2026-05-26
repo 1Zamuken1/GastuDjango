@@ -48,11 +48,31 @@
   justify-content: space-between;
   margin-bottom: .625rem;
 }
-.dp-mes-anio {
+.dp-mes-anio-selects {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.dp-select {
   font-size: .82rem;
   font-weight: 700;
   color: #0f172a;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.15rem 0.2rem;
+  border-radius: 4px;
+  outline: none;
+  transition: background 0.1s, border-color 0.1s;
+}
+.dp-select:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+.dp-select:focus {
+  background: #fff;
+  border-color: #cbd5e1;
 }
 .dp-nav {
   width: 26px; height: 26px;
