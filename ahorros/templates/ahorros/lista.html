@@ -38,7 +38,7 @@
 <div class="stats-hero">
   <div class="hero-total">
     <p class="hero-total__label">Total ahorrado</p>
-    <p class="hero-total__value font-display">${{ total_ahorrado|floatformat:0 }}</p>
+    <p class="hero-total__value font-display">${{ total_ahorrado|floatformat:"0g" }}</p>
     <span class="hero-total__badge">En todas las metas activas</span>
   </div>
   <div class="app-card hero-stats">
@@ -144,7 +144,7 @@
       </div>
     </div>
 
-    <p class="categoria-card__monto">${{ ahorro.total_acumulado|floatformat:0 }}</p>
+    <p class="categoria-card__monto">${{ ahorro.total_acumulado|floatformat:"0g" }}</p>
 
     <div class="progress-bar">
       <div class="progress-bar__fill" id="bar-{{ ahorro.id }}"
@@ -154,7 +154,7 @@
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <p class="categoria-card__footer" id="pct-{{ ahorro.id }}">0%</p>
-      <p class="categoria-card__footer">Objetivo: ${{ ahorro.monto_meta|floatformat:0 }}</p>
+      <p class="categoria-card__footer">Objetivo: ${{ ahorro.monto_meta|floatformat:"0g" }}</p>
     </div>
 
     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">

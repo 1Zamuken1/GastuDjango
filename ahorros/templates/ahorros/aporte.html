@@ -44,11 +44,11 @@
           </div>
           <div>
             <p class="field-label specs-grid__label">Monto Meta</p>
-            <p class="specs-grid__value">$ {{ ahorro.monto_meta|floatformat:2 }}</p>
+            <p class="specs-grid__value">$ {{ ahorro.monto_meta|floatformat:"2g" }}</p>
           </div>
           <div>
             <p class="field-label specs-grid__label">Total Acumulado</p>
-            <p class="specs-grid__value specs-grid__value--accent">$ {{ ahorro.total_acumulado|floatformat:2 }}</p>
+            <p class="specs-grid__value specs-grid__value--accent">$ {{ ahorro.total_acumulado|floatformat:"2g" }}</p>
           </div>
           <div>
             <p class="field-label specs-grid__label">Frecuencia</p>
@@ -105,7 +105,7 @@
                   {{ forloop.counter|stringformat:"02d" }}/{{ cuotas|length|stringformat:"02d" }}
                 </td>
                 <td class="cuotas-table__monto">
-                  ${{ cuota.aporte_asignado|floatformat:2 }}
+                  ${{ cuota.aporte_asignado|floatformat:"2g" }}
                 </td>
                 <td>
                   {% if cuota.estado_ap == 'PENDIENTE' and cuota.is_disponible_pago %}
@@ -138,7 +138,7 @@
                   </div>
                   {% else %}
                   <span class="cuotas-table__aportado">
-                    ${% if cuota.aporte %}{{ cuota.aporte|floatformat:2 }}{% else %}0.00{% endif %}
+                    ${% if cuota.aporte %}{{ cuota.aporte|floatformat:"2g" }}{% else %}0.00{% endif %}
                   </span>
                   {% endif %}
                 </td>
