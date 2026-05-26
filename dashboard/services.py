@@ -209,24 +209,26 @@ def build_dashboard_context(user, mes, anio):
         hay_deficit    = resumen.deficit
     else:
         total_ingresos, total_egresos = _totales_movimiento(user, mes, anio)
-        total_ahorros = ZERO
-        utilidad      = total_ingresos - total_egresos
-        disponible    = utilidad
-        hay_deficit   = total_egresos > total_ingresos
+        total_ahorros = (
+            AporteAhorro.objects.filter(
+                ahorro__usuario=user, estado_ap='APORTADO',
+                fecha_registro__month=mes, fecha_registro__year=anio
+            ).aggregate(t=Sum('aporte'))['t'] or ZERO
+        )
+        utilidad = total_ingresos - total_egresos - total_ahorros
+        hay_deficit = total_egresos > total_ingresos
+        
+        # Disponible historico global (suma de todas las utilidades de todos los meses)
+        # Esto asegura que "Total dinero usuario" sea correcto incluso si este mes no tiene ResumenMensual
+        disponible = (
+            ResumenMensual.objects.filter(usuario=user)
+            .aggregate(t=Sum('ingreso_neto'))['t'] or ZERO
+        ) + utilidad
 
     diferencia = total_ingresos - total_egresos
 
-    # Ahorros del mes (query directa — ResumenMensual.total_ahorros es siempre 0
-    # hasta que el modulo ahorros conecte sus propios signals)
-    ahorros_mes = (
-        AporteAhorro.objects
-        .filter(
-            ahorro__usuario=user,
-            fecha_registro__month=mes,
-            fecha_registro__year=anio,
-        )
-        .aggregate(t=Sum('aporte'))['t'] or ZERO
-    )
+    # Usamos el total_ahorros ya calculado (que respeta estado_ap='APORTADO')
+    ahorros_mes = total_ahorros
 
     # Ahorro total acumulado hasta el ultimo dia del mes visto
     ahorro_total = (
