@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!track) return;
 
-  const slides = Array.from(track.querySelectorAll('.carousel-slide'));
+  // Excluir slides ocultos (display:none) para que no afecten la navegación ni el conteo
+  const slides = Array.from(track.querySelectorAll('.carousel-slide'))
+                      .filter(s => s.style.display !== 'none');
   let current = 0, autoTimer = null, isPaused = false;
 
   function visibleCount() {
