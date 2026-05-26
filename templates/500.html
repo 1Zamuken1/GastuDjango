@@ -231,7 +231,7 @@
         src="{% static 'img/owl_500_fixing.png' %}"
         alt="GastuApp Owl Reparando"
         class="owl-shake"
-        style="width: 160px; height: 160px; object-fit: contain; position: relative; z-index: 2;"
+        style="width: 200px; height: 200px; object-fit: contain; position: relative; z-index: 2;"
       />
     </div>
 
@@ -268,25 +268,46 @@
   </main>
 
   <script>
-    // Generate rising sparks (like fire flames)
+    // Generate rising sparks (like fire flames in columns)
     (function () {
       const container = document.getElementById('sparks');
-      const count = 80; // More sparks
+      const count = 120; // More sparks for columns
+      
+      // Define 5 distinct columns with different base heights
+      // Format: { left: percentage, baseRise: px }
+      const columns = [
+        { left: 35, baseRise: 200 },
+        { left: 42, baseRise: 400 },
+        { left: 50, baseRise: 150 },
+        { left: 58, baseRise: 550 },
+        { left: 65, baseRise: 250 },
+      ];
+
       for (let i = 0; i < count; i++) {
         const s = document.createElement('div');
         s.className = 'spark';
-        // Cluster them more in the center horizontally
-        s.style.left = (35 + Math.random() * 30) + '%';
+        
+        // Pick a column randomly
+        const col = columns[Math.floor(Math.random() * columns.length)];
+        
+        // Add slight horizontal jitter within the column (±2%)
+        const leftPos = col.left + (Math.random() * 4 - 2);
+        s.style.left = leftPos + '%';
         s.style.bottom = '-10px';
-        s.style.setProperty('--dur', (1.5 + Math.random() * 2.5) + 's');
+        
+        s.style.setProperty('--dur', (1.2 + Math.random() * 2) + 's');
         s.style.setProperty('--delay', (Math.random() * 4) + 's');
         s.style.setProperty('--max-op', (0.5 + Math.random() * 0.5).toFixed(2));
+        
         // Some sparks are small, some are larger
         s.style.width = s.style.height = (2 + Math.random() * 4) + 'px';
         const colors = ['#ef4444', '#f97316', '#eab308', '#fbbf24', '#ffedd5'];
         s.style.background = colors[Math.floor(Math.random() * colors.length)];
-        // Add random height distance to CSS variable
-        s.style.setProperty('--rise', '-' + (150 + Math.random() * 350) + 'px');
+        
+        // Rise height based on the column's base height + random variation
+        const rise = col.baseRise + (Math.random() * 100 - 50);
+        s.style.setProperty('--rise', '-' + rise + 'px');
+        
         container.appendChild(s);
       }
     })();
