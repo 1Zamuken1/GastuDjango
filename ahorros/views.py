@@ -240,6 +240,19 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if aporte_ingresado <= Decimal('0.00'):
         return JsonResponse({"ok": False, "error": "El monto del aporte debe ser mayor que cero."})
 
+    if ahorro.estado == AhorroMeta.Estado.COMPLETADO:
+        return JsonResponse({"ok": False, "error": "Esta meta de ahorro ya ha sido completada."})
+
+    monto_meta = ahorro.monto_meta or Decimal('0.00')
+    total_acumulado_actual = ahorro.total_acumulado or Decimal('0.00')
+    if monto_meta > Decimal('0.00'):
+        restante_meta = monto_meta - total_acumulado_actual
+        if aporte_ingresado > restante_meta:
+            return JsonResponse({
+                "ok": False,
+                "error": f"El aporte supera el restante de la meta. Solo necesitas aportar ${restante_meta:,.2f}."
+            })
+
     hoy = date.today()
 
     resumen = ResumenMensual.objects.filter(
@@ -251,8 +264,8 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if not resumen:
         return JsonResponse({"ok": False, "error": "No existe un resumen mensual"})
 
-    if resumen.disponible <= Decimal('0.00'):
-        return JsonResponse({"ok": False, "error": "No tienes saldo disponible para realizar aportes."})
+    if resumen.disponible < aporte_ingresado:
+        return JsonResponse({"ok": False, "error": f"No tienes saldo disponible suficiente para realizar este aporte. Disponible actual: ${resumen.disponible:,.2f}."})
 
     pasar_cuotas_a_perdidas(ahorro)
 
@@ -317,6 +330,11 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     if monto_meta > Decimal('0.00') and total_acumulado >= monto_meta:
         ahorro.estado = AhorroMeta.Estado.COMPLETADO
+        pendientes = AporteAhorro.objects.filter(ahorro=ahorro, estado_ap=AporteAhorro.EstadoAp.PENDIENTE)
+        cuotas_eliminadas = pendientes.count()
+        if cuotas_eliminadas > 0:
+            pendientes.delete()
+            ahorro.cantidad_cuotas -= cuotas_eliminadas
 
     asignado = cuota.aporte_asignado or Decimal('0.00')
     if es_extraordinario or aporte_ingresado != asignado:
