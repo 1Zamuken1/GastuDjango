@@ -304,9 +304,12 @@ class GestorMovimientos {
               window.GastuAlerts.confirmar(
                   '¿Eliminar movimiento?',
                   'Esta acción no se puede deshacer.',
-                  'Sí, eliminar',
-                  () => { this.ejecutarEliminar(id); }
-              );
+                  'Sí, eliminar'
+              ).then((isConfirmed) => {
+                  if (isConfirmed) {
+                      this.ejecutarEliminar(id);
+                  }
+              });
           } else {
               this.abrirModalConfirmar(id);
           }
