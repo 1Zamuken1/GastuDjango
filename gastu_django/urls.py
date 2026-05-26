@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -32,8 +31,4 @@ urlpatterns = [
 
     # Tailwind hot reload (solo DEBUG)
     path('__reload__/', include('django_browser_reload.urls')),
-
-    # Rutas temporales para probar diseño de errores
-    path('test-404/', TemplateView.as_view(template_name='404.html')),
-    path('test-500/', TemplateView.as_view(template_name='500.html')),
 ]
