@@ -256,7 +256,17 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     pasar_cuotas_a_perdidas(ahorro)
 
-    if aporte_id:
+    es_extraordinario = request.POST.get('extraordinario') == 'true'
+
+    if es_extraordinario:
+        cuota = AporteAhorro(
+            ahorro=ahorro,
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+            fecha_limite=hoy,
+            aporte_asignado=aporte_ingresado
+        )
+        ahorro.cantidad_cuotas += 1
+    elif aporte_id:
         cuota = AporteAhorro.objects.select_for_update().get(
             id=aporte_id, ahorro=ahorro
         )
@@ -274,12 +284,13 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if cuota.aporte is not None:
         return JsonResponse({"ok": False, "error": "Esta cuota ya tiene un aporte registrado."})
 
-    if not cuota_disponible_pago(cuota, ahorro.frecuencia):
+    if not es_extraordinario and not cuota_disponible_pago(cuota, ahorro.frecuencia):
         return JsonResponse({"ok": False, "error": "La cuota no esta disponible para pago todavia."})
 
     # Registrar aporte
     cuota.aporte = aporte_ingresado
     cuota.estado_ap = AporteAhorro.EstadoAp.APORTADO
+    cuota._es_extraordinario = es_extraordinario
     cuota.save()
 
     # Actualizar dashboard
@@ -308,11 +319,11 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         ahorro.estado = AhorroMeta.Estado.COMPLETADO
 
     asignado = cuota.aporte_asignado or Decimal('0.00')
-    if aporte_ingresado != asignado:
+    if es_extraordinario or aporte_ingresado != asignado:
         recalcular_aportes_restantes(ahorro)
 
     abandono_ahorro(ahorro)
 
-    ahorro.save()
+    ahorro.save(update_fields=['total_acumulado', 'estado', 'cantidad_cuotas'])
 
     return JsonResponse({"ok": True, "message": "Aporte registrado exitosamente"})

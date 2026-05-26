@@ -190,9 +190,9 @@ def recalcular_aportes(ahorro):
     cuotas_aportadas_count = len(aportadas)
 
     if len(cuotas_nuevas) < cuotas_aportadas_count:
-        raise ValueError(
-            "No se puede reducir cuotas por debajo de las ya aportadas"
-        )
+        ahorro.cantidad_cuotas = cuotas_aportadas_count
+        ahorro.save(update_fields=['cantidad_cuotas'])
+        cuotas_nuevas = generar_cuotas_preview(ahorro)
 
     cuotas_a_registrar = cuotas_nuevas[cuotas_aportadas_count:]
     for c in cuotas_a_registrar:
