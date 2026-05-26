@@ -5,12 +5,7 @@
   gap: 1rem;
   margin-bottom: 1.25rem;
 }
-@media (max-width: 640px) {
-  .stats-hero { grid-template-columns: 1fr; }
-  .hero-total { padding: .75rem 1rem; }
-  .hero-total__value { font-size: 1.8rem; }
-  .hero-total__label { font-size: .72rem; margin-bottom: .3rem; }
-}
+
 .hero-total {
   background: linear-gradient(135deg, #059669 0%, #10b981 100%);
   border-radius: .875rem;
@@ -33,7 +28,7 @@
 .hero-total__value { font-size: 2.4rem; font-weight: 900; color: #fff; margin: 0; line-height: 1; }
 .hero-total__footer { display: flex; align-items: center; gap: .4rem; margin-top: .75rem; }
 .hero-total__badge { background: rgba(255,255,255,.2); color: #fff; font-size: .72rem; font-weight: 600; padding: .2rem .55rem; border-radius: 9999px; }
-.hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 0; overflow: visible; align-items: stretch; border-radius: inherit; }
+.hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 0; overflow: hidden; align-items: stretch; border-radius: inherit; }
 .hero-stat { padding: .75rem 1.25rem; display: flex; flex-direction: column; gap: .35rem; border-right: 1px solid var(--border); justify-content: center; align-items: center; text-align: center; transition: background .15s; cursor: default; min-width: 0; overflow: hidden; }
 .hero-stat:last-child { border-right: none; }
 .hero-stat:hover { background: #f8fafc; }
@@ -41,6 +36,16 @@
 .hero-stat__label svg { width: .9rem; height: .9rem; color: #10b981; }
 .hero-stat__value { font-size: 1.45rem; font-weight: 800; color: var(--slate-900); line-height: 1; }
 .hero-stat__sub { font-size: .75rem; color: var(--slate-500); }
+
+@media (max-width: 640px) {
+  .stats-hero { grid-template-columns: 1fr; }
+  .hero-total { padding: .75rem 1rem; }
+  .hero-total__value { font-size: 1.8rem; }
+  .hero-total__label { font-size: .72rem; margin-bottom: .3rem; }
+  .hero-stats { grid-template-columns: 1fr; }
+  .hero-stat { border-right: none; border-bottom: 1px solid var(--border); padding: 1rem; }
+  .hero-stat:last-child { border-bottom: none; }
+}
 
 /* ── Toolbar ─────────────────────────────────────── */
 .toolbar {

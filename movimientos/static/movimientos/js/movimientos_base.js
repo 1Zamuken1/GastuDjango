@@ -38,6 +38,22 @@ class GestorMovimientos {
     this._initPicker();
     this._initBuscador();
     this._initReportes();
+    
+    // Ajustar tamaños de fuente inicialmente
+    setTimeout(() => this._ajustarTamanoTextos(), 50);
+  }
+
+  /* ── Auto-ajustar Textos Largos ── */
+  _ajustarTamanoTextos() {
+    const total = document.querySelector('.hero-total__value');
+    if (total) {
+      const len = total.textContent.trim().length;
+      total.style.fontSize = len > 12 ? '1.5rem' : (len > 9 ? '1.9rem' : '');
+    }
+    document.querySelectorAll('.hero-stat__value, .categoria-card__monto').forEach(el => {
+      const len = el.textContent.trim().length;
+      el.style.fontSize = len > 12 ? '0.95rem' : (len > 9 ? '1.15rem' : '');
+    });
   }
 
   /* ── Toast ── */
@@ -155,6 +171,7 @@ class GestorMovimientos {
       });
       this.bindearCards();
       lucide.createIcons();
+      this._ajustarTamanoTextos();
     } catch (e) {
       console.error('actualizarGrid error:', e);
     }

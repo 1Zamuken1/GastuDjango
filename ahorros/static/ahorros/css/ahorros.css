@@ -10,11 +10,7 @@
   margin-bottom: 1.25rem;
 }
 
-@media (max-width: 640px) {
-  .stats-hero {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 .hero-total {
   background: #eab308;
@@ -163,6 +159,15 @@
   color: #64748b;
   line-height: 1.2;
   font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .stats-hero {
+    grid-template-columns: 1fr;
+  }
+  .hero-stats { grid-template-columns: 1fr; }
+  .hero-stat { border-right: none; border-bottom: 1px solid #e2e8f0; padding: 1rem; }
+  .hero-stat:last-child { border-bottom: none; }
 }
 
 /* ── Toolbar ──────────────────────────────────────── */
