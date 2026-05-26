@@ -1,0 +1,290 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>500 — Error del servidor · GastuApp</title>
+  <meta name="description" content="Ocurrió un error interno. Estamos trabajando en resolverlo." />
+  <link rel="icon" type="image/png" href="{% static 'img/gastu_logo_rostro.png' %}" />
+
+  <!-- Tailwind -->
+  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'DM Sans', sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(160deg, #1a0a0a 0%, #2d1015 40%, #1a0a0a 100%);
+    }
+
+    /* ── Glitch scanlines ──────────────────── */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255, 0, 0, 0.015) 2px,
+        rgba(255, 0, 0, 0.015) 4px
+      );
+      animation: scanMove 8s linear infinite;
+    }
+    @keyframes scanMove {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100vh; }
+    }
+
+    /* ── Shake animation for owl ───────────── */
+    .owl-shake {
+      animation: owlShake 6s ease-in-out infinite;
+    }
+    @keyframes owlShake {
+      0%, 85%, 100% { transform: rotate(0deg); }
+      88% { transform: rotate(-6deg) translateX(-3px); }
+      91% { transform: rotate(5deg) translateX(3px); }
+      94% { transform: rotate(-3deg) translateX(-1px); }
+      97% { transform: rotate(2deg) translateX(1px); }
+    }
+
+    /* ── Glow Ring (red) ───────────────────── */
+    .glow-ring-err {
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      border: 2px solid rgba(239, 68, 68, 0.15);
+      animation: pulseRingErr 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes pulseRingErr {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.18); opacity: 0.08; }
+    }
+
+    /* ── 500 Number ────────────────────────── */
+    .error-number {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(6rem, 18vw, 12rem);
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(135deg, #ef4444 0%, #f97316 40%, #eab308 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 50px rgba(239, 68, 68, 0.35));
+      user-select: none;
+      animation: glitchText 8s ease-in-out infinite;
+    }
+    @keyframes glitchText {
+      0%, 87%, 100% { filter: drop-shadow(0 0 50px rgba(239, 68, 68, 0.35)); }
+      88% { filter: drop-shadow(0 0 50px rgba(239, 68, 68, 0.35)) blur(1px); transform: translate(2px, -1px); }
+      89% { filter: drop-shadow(0 0 50px rgba(239, 68, 68, 0.35)); transform: translate(-1px, 1px); }
+      90% { filter: drop-shadow(0 0 50px rgba(239, 68, 68, 0.35)); transform: translate(0); }
+    }
+
+    /* ── CTA Buttons ──────────────────────── */
+    .cta-btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      color: #fff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 24px rgba(239, 68, 68, 0.35);
+    }
+    .cta-btn-primary:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 8px 36px rgba(239, 68, 68, 0.5);
+    }
+    .cta-btn-primary:active {
+      transform: translateY(-1px) scale(1.01);
+    }
+
+    .cta-btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: transparent;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: 2px solid rgba(241, 245, 249, 0.2);
+      border-radius: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .cta-btn-ghost:hover {
+      transform: translateY(-2px);
+      border-color: rgba(241, 245, 249, 0.5);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .subtitle-glow {
+      color: #94a3b8;
+      font-size: 1.1rem;
+      max-width: 440px;
+      line-height: 1.6;
+    }
+
+    /* ── Ambient orbs ─────────────────────── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb--red {
+      width: 450px;
+      height: 450px;
+      background: rgba(239, 68, 68, 0.07);
+      top: -120px;
+      right: -100px;
+      animation: orbDrift 12s ease-in-out infinite alternate;
+    }
+    .orb--orange {
+      width: 300px;
+      height: 300px;
+      background: rgba(249, 115, 22, 0.05);
+      bottom: -80px;
+      left: -80px;
+      animation: orbDrift 10s ease-in-out infinite alternate-reverse;
+    }
+    .orb--amber {
+      width: 250px;
+      height: 250px;
+      background: rgba(234, 179, 8, 0.04);
+      top: 60%;
+      left: 45%;
+      animation: orbDrift 14s ease-in-out infinite alternate;
+    }
+    @keyframes orbDrift {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(40px, -30px); }
+    }
+
+    /* ── Sparks ────────────────────────────── */
+    .sparks-container {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .spark {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: #ef4444;
+      border-radius: 50%;
+      opacity: 0;
+      animation: sparkUp var(--dur) var(--delay) ease-out infinite;
+    }
+    @keyframes sparkUp {
+      0% { opacity: 0; transform: translateY(0) scale(1); }
+      20% { opacity: var(--max-op); }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.3); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Scanlines -->
+  <div class="scanlines"></div>
+
+  <!-- Ambient Orbs -->
+  <div class="orb orb--red"></div>
+  <div class="orb orb--orange"></div>
+  <div class="orb orb--amber"></div>
+
+  <!-- Sparks -->
+  <div class="sparks-container" id="sparks"></div>
+
+  <!-- Main Content -->
+  <main style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 2rem;">
+
+    <!-- Owl + Glow -->
+    <div style="position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+      <div class="glow-ring-err"></div>
+      <img
+        src="{% static 'img/gastu_logo_rostro.png' %}"
+        alt="GastuApp Owl"
+        class="owl-shake"
+        style="width: 110px; height: 110px; object-fit: contain; position: relative; z-index: 2; filter: saturate(0.7);"
+      />
+    </div>
+
+    <!-- 500 Number -->
+    <h1 class="error-number">500</h1>
+
+    <!-- Title -->
+    <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.6rem; color: #f1f5f9; margin: 0.5rem 0 0.75rem;">
+      ¡Algo salió mal!
+    </h2>
+
+    <!-- Subtitle -->
+    <p class="subtitle-glow">
+      Nuestro servidor tuvo un pequeño tropiezo.<br>
+      El equipo ya fue notificado. Vuelve a intentarlo en unos minutos 🔧
+    </p>
+
+    <!-- CTAs -->
+    <div style="margin-top: 2.5rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+      <a href="javascript:location.reload()" class="cta-btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Recargar página
+      </a>
+      <a href="/" class="cta-btn-ghost">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Volver al inicio
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <p style="margin-top: 3rem; font-size: 0.78rem; color: #475569;">
+      GastuApp · Tu asistente financiero personal
+    </p>
+  </main>
+
+  <script>
+    // Generate rising sparks
+    (function () {
+      const container = document.getElementById('sparks');
+      const count = 35;
+      for (let i = 0; i < count; i++) {
+        const s = document.createElement('div');
+        s.className = 'spark';
+        s.style.left = (20 + Math.random() * 60) + '%';
+        s.style.bottom = '-10px';
+        s.style.setProperty('--dur', (2 + Math.random() * 3) + 's');
+        s.style.setProperty('--delay', (Math.random() * 6) + 's');
+        s.style.setProperty('--max-op', (0.4 + Math.random() * 0.6).toFixed(2));
+        s.style.width = s.style.height = (1.5 + Math.random() * 2.5) + 'px';
+        const colors = ['#ef4444', '#f97316', '#eab308', '#fbbf24'];
+        s.style.background = colors[Math.floor(Math.random() * colors.length)];
+        container.appendChild(s);
+      }
+    })();
+  </script>
+</body>
+</html>
