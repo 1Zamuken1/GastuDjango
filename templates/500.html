@@ -205,7 +205,7 @@
     @keyframes sparkUp {
       0% { opacity: 0; transform: translateY(0) scale(1); }
       20% { opacity: var(--max-op); }
-      100% { opacity: 0; transform: translateY(-80px) scale(0.3); }
+      100% { opacity: 0; transform: translateY(var(--rise)) scale(0.3); }
     }
   </style>
 </head>
@@ -268,21 +268,25 @@
   </main>
 
   <script>
-    // Generate rising sparks
+    // Generate rising sparks (like fire flames)
     (function () {
       const container = document.getElementById('sparks');
-      const count = 35;
+      const count = 80; // More sparks
       for (let i = 0; i < count; i++) {
         const s = document.createElement('div');
         s.className = 'spark';
-        s.style.left = (20 + Math.random() * 60) + '%';
+        // Cluster them more in the center horizontally
+        s.style.left = (35 + Math.random() * 30) + '%';
         s.style.bottom = '-10px';
-        s.style.setProperty('--dur', (2 + Math.random() * 3) + 's');
-        s.style.setProperty('--delay', (Math.random() * 6) + 's');
-        s.style.setProperty('--max-op', (0.4 + Math.random() * 0.6).toFixed(2));
-        s.style.width = s.style.height = (1.5 + Math.random() * 2.5) + 'px';
-        const colors = ['#ef4444', '#f97316', '#eab308', '#fbbf24'];
+        s.style.setProperty('--dur', (1.5 + Math.random() * 2.5) + 's');
+        s.style.setProperty('--delay', (Math.random() * 4) + 's');
+        s.style.setProperty('--max-op', (0.5 + Math.random() * 0.5).toFixed(2));
+        // Some sparks are small, some are larger
+        s.style.width = s.style.height = (2 + Math.random() * 4) + 'px';
+        const colors = ['#ef4444', '#f97316', '#eab308', '#fbbf24', '#ffedd5'];
         s.style.background = colors[Math.floor(Math.random() * colors.length)];
+        // Add random height distance to CSS variable
+        s.style.setProperty('--rise', '-' + (150 + Math.random() * 350) + 'px');
         container.appendChild(s);
       }
     })();
