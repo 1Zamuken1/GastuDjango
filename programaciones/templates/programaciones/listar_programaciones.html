@@ -182,12 +182,42 @@
     </div>
   </div>
 
+  <div id="toast-container"
+       style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+              display:flex;flex-direction:column;gap:.5rem;"></div>
+
 {% endblock %}
 
+<style>
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+</style>
 
 {% block programaciones_scripts %}
 <script>
       const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+
+      function mostrarToast(mensaje, tipo = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const colores = {
+          success: { bg: '#f0fdf4', border: '#86efac', text: '#15803d', icon: 'check-circle' },
+          error:   { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626', icon: 'alert-circle' },
+          info:    { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8', icon: 'info' },
+        };
+        const c = colores[tipo] || colores.info;
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          background:${c.bg};border:1px solid ${c.border};color:${c.text};
+          padding:.75rem 1rem;border-radius:.75rem;font-size:.85rem;font-weight:600;
+          display:flex;align-items:center;gap:.5rem;
+          box-shadow:0 4px 16px rgba(0,0,0,.08);
+          animation:fadeIn .2s ease;max-width:320px;
+        `;
+        toast.innerHTML = `<i data-lucide="${c.icon}" style="width:16px;height:16px;flex-shrink:0;"></i>${mensaje}`;
+        container.appendChild(toast);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        setTimeout(() => toast.remove(), 4000);
+      }
 
       function abrirModal(id)  { document.getElementById(id).style.display = 'flex' }
       function cerrarModal(id) { document.getElementById(id).style.display = 'none' }
@@ -307,7 +337,7 @@
               contenedor.appendChild(card)
             })
           })
-          .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las programaciones.' }))
+          .catch(() => mostrarToast('No se pudieron cargar las programaciones.', 'error'))
       }
 
       function verificarPendientes() {
@@ -370,28 +400,18 @@
       }
 
       function toggleProgramacion(id, activo) {
-        Swal.fire({
-          title: activo ? '¿Desactivar programación?' : '¿Activar programación?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Sí',
-          cancelButtonText: 'Cancelar',
-          confirmButtonColor: activo ? '#f05252' : '#1db87a'
-        }).then(result => {
-          if (!result.isConfirmed) return
-          fetch(`/api/programaciones/${id}/`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-            credentials: 'same-origin',
-            body: JSON.stringify({ activo: !activo })
-          })
-            .then(r => r.json())
-            .then(() => {
-              Swal.fire({ icon: 'success', title: activo ? 'Desactivada' : 'Activada', timer: 1500, showConfirmButton: false })
-              cargarProgramaciones()
-            })
-            .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar.' }))
+        fetch(`/api/programaciones/${id}/`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          credentials: 'same-origin',
+          body: JSON.stringify({ activo: !activo })
         })
+          .then(r => r.json())
+          .then(() => {
+            mostrarToast(activo ? 'Programación desactivada' : 'Programación activada')
+            cargarProgramaciones()
+          })
+          .catch(() => mostrarToast('No se pudo actualizar.', 'error'))
       }
 
       let modalContexto = 'crear'
@@ -464,10 +484,10 @@
         const frecuencia   = document.getElementById('frecuencia').value
         const fecha_inicio = document.getElementById('fecha_inicio').value
 
-        if (!monto || parseFloat(monto) <= 0) return Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' })
-        if (!categoria) return Swal.fire({ icon: 'warning', title: 'Falta categoría', text: 'Debes seleccionar una categoría.' })
-        if (!frecuencia)   return Swal.fire({ icon: 'warning', title: 'Falta frecuencia', text: 'Debes seleccionar una frecuencia.' })
-        if (!fecha_inicio) return Swal.fire({ icon: 'warning', title: 'Falta fecha', text: 'Debes indicar la fecha de inicio.' })
+        if (!monto || parseFloat(monto) <= 0) return mostrarToast('El monto debe ser mayor a 0.', 'info')
+        if (!categoria) return mostrarToast('Debes seleccionar una categoría.', 'info')
+        if (!frecuencia)   return mostrarToast('Debes seleccionar una frecuencia.', 'info')
+        if (!fecha_inicio) return mostrarToast('Debes indicar la fecha de inicio.', 'info')
 
         const body = {
           monto_programado: monto,
@@ -486,10 +506,10 @@
           .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(Object.values(d).flat().join('\n')); return d })
           .then(() => {
             cerrarModal('modal-crear')
-            Swal.fire({ icon: 'success', title: 'Programación creada', timer: 1500, showConfirmButton: false })
+            mostrarToast('Programación creada')
             cargarProgramaciones()
           })
-          .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo guardar.' }))
+          .catch(err => mostrarToast(err.message || 'No se pudo guardar.', 'error'))
       })
 
       function editarProgramacion(id) {
@@ -506,7 +526,7 @@
           document.getElementById('editar-categoria_nombre').value = `${p.categoria_nombre} (${p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
           abrirModal('modal-editar')
         })
-        .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la programación.' }))
+        .catch(() => mostrarToast('No se pudo cargar la programación.', 'error'))
     }
 
       document.getElementById('form-editar').addEventListener('submit', function(e) {
@@ -529,10 +549,10 @@
           .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(Object.values(d).flat().join('\n')); return d })
           .then(() => {
             cerrarModal('modal-editar')
-            Swal.fire({ icon: 'success', title: 'Cambios guardados', timer: 1500, showConfirmButton: false })
+            mostrarToast('Cambios guardados')
             cargarProgramaciones()
           })
-          .catch(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'No se pudo actualizar.' }))
+          .catch(err => mostrarToast(err.message || 'No se pudo actualizar.', 'error'))
       })
 
       function eliminarProgramacion(id) {
@@ -553,10 +573,10 @@
           })
             .then(r => {
               if (!r.ok) throw new Error()
-              Swal.fire({ icon: 'success', title: 'Eliminada', timer: 1500, showConfirmButton: false })
+              mostrarToast('Programación eliminada')
               cargarProgramaciones()
             })
-            .catch(() => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar.' }))
+            .catch(() => mostrarToast('No se pudo eliminar.', 'error'))
         })
       }
 
