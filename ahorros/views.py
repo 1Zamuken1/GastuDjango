@@ -31,7 +31,7 @@ def listar(request):
     """Vista principal de ahorros: lista metas con estadisticas."""
     estado = request.GET.get("estado")
     texto = request.GET.get("texto")
-    ahorros = AhorroMeta.objects.filter(usuario=request.user)
+    ahorros = AhorroMeta.objects.filter(usuario=request.user).select_related('categoria')
     
     if estado:
         ahorros = ahorros.filter(estado=estado)
@@ -218,8 +218,10 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         pendientes = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
 
         cuotas = list(cuotas_qs)
+        primera_pendiente = next((c for c in cuotas if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE), None)
+        
         for c in cuotas:
-            c.is_disponible_pago = cuota_disponible_pago(c, ahorro.frecuencia)
+            c.is_disponible_pago = cuota_disponible_pago(c, ahorro.frecuencia, primera_pendiente=primera_pendiente)
 
         return render(request, "ahorros/aporte.html", {
             "ahorro": ahorro,

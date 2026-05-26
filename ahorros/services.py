@@ -256,7 +256,7 @@ def abandono_ahorro(ahorro):
             ahorro.save()
 
 
-def cuota_disponible_pago(cuota, frecuencia):
+def cuota_disponible_pago(cuota, frecuencia, primera_pendiente=None):
     """
     Determina si una cuota pendiente esta dentro de la ventana
     de pago segun la frecuencia de la meta y es estrictamente
@@ -268,10 +268,11 @@ def cuota_disponible_pago(cuota, frecuencia):
         return False
         
     # Verificar que esta cuota sea la primera PENDIENTE de la meta
-    primera_pendiente = AporteAhorro.objects.filter(
-        ahorro=cuota.ahorro,
-        estado_ap=AporteAhorro.EstadoAp.PENDIENTE
-    ).order_by('fecha_limite').first()
+    if primera_pendiente is None:
+        primera_pendiente = AporteAhorro.objects.filter(
+            ahorro=cuota.ahorro,
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE
+        ).order_by('fecha_limite').first()
 
     if not primera_pendiente or primera_pendiente.id != cuota.id:
         return False
@@ -303,8 +304,9 @@ def find_cuota_disponible(meta_id, usuario):
 
     for c in cuotas:
         if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE:
-            if cuota_disponible_pago(c, meta.frecuencia):
+            if cuota_disponible_pago(c, meta.frecuencia, primera_pendiente=c):
                 return c
+            break # Si la primera pendiente no está en ventana, ninguna lo estará
     return None
 
 
