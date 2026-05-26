@@ -139,24 +139,49 @@
               <label for="id_new_password1" class="form-label">Nueva contrasena</label>
               <div class="input-with-toggle">
                 <input type="password" name="new_password1" id="id_new_password1"
-                       class="perfil-input" autocomplete="new-password" />
+                       class="perfil-input" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
                 <button type="button" class="toggle-pass" data-target="id_new_password1" aria-label="Mostrar contrasena">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </button>
               </div>
-              {% if password_form.new_password2.help_text %}
-              <p class="form-hint">{{ password_form.new_password2.help_text }}</p>
-              {% endif %}
+              
+              <!-- Barra de seguridad -->
+              <div class="strength-bar-track" style="margin-top:0.5rem; height:4px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                <div class="strength-bar-fill" id="strength-bar-perfil" style="height:100%; width:0%; transition:all 0.3s ease;"></div>
+              </div>
+              <p class="strength-label text-[13px] font-medium mt-1.5" id="strength-label-perfil" style="color:#94a3b8;">Escribe una contraseña</p>
+
+              <!-- Criterios -->
+              <div class="pw-criteria mt-2 space-y-1.5" id="pw-criteria-perfil">
+                <div class="pw-criterion text-[13px] text-slate-400 flex items-center gap-2 transition-colors" id="c-length-perfil">
+                  <div class="criterion-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors"></div>Mínimo 8 caracteres
+                </div>
+                <div class="pw-criterion text-[13px] text-slate-400 flex items-center gap-2 transition-colors" id="c-upper-perfil">
+                  <div class="criterion-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors"></div>Al menos una mayúscula
+                </div>
+                <div class="pw-criterion text-[13px] text-slate-400 flex items-center gap-2 transition-colors" id="c-number-perfil">
+                  <div class="criterion-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors"></div>Al menos un número
+                </div>
+                <div class="pw-criterion text-[13px] text-slate-400 flex items-center gap-2 transition-colors" id="c-special-perfil">
+                  <div class="criterion-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors"></div>Al menos un carácter especial (!@#$%...)
+                </div>
+              </div>
               <p class="form-error" id="error-new_password1"></p>
             </div>
             <div class="form-group">
               <label for="id_new_password2" class="form-label">Confirmar nueva contrasena</label>
               <div class="input-with-toggle">
                 <input type="password" name="new_password2" id="id_new_password2"
-                       class="perfil-input" autocomplete="new-password" />
+                       class="perfil-input" autocomplete="new-password" placeholder="Repite la nueva contraseña" />
                 <button type="button" class="toggle-pass" data-target="id_new_password2" aria-label="Mostrar contrasena">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </button>
+              </div>
+              
+              <!-- Indicador de coincidencia -->
+              <div class="match-indicator flex items-center gap-1.5 text-[13px] font-medium mt-2" id="match-indicator-perfil" style="color:transparent;">
+                <span id="match-icon-perfil"></span>
+                <span id="match-text-perfil"></span>
               </div>
               <p class="form-error" id="error-new_password2"></p>
             </div>
