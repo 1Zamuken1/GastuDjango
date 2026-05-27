@@ -10,16 +10,11 @@ def actualizar_resumen_al_guardar(sender, instance, **kwargs):
     cuando se crea o edita un Movimiento.
     """
     from dashboard.services import actualizar_resumen
-    from notificaciones.services import analizar_movimiento
 
     actualizar_resumen(
         usuario=instance.usuario,
         mes=instance.fecha_registro.month,
         anio=instance.fecha_registro.year,
-    )
-    analizar_movimiento(
-        usuario=instance.usuario,
-        movimiento=instance,
     )
 
     # Auditar acción

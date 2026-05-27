@@ -213,66 +213,23 @@
       <input type="hidden" name="guardar_preferencias" value="1" />
       <h4 class="tab-subsection-title">Umbrales de alerta</h4>
       <div class="form-grid">
-        <div class="form-group">
-          <label for="id_umbral_advertencia_porcentaje" class="form-label">Umbral de gastos (%)</label>
-          <input type="number" name="umbral_advertencia_porcentaje" id="id_umbral_advertencia_porcentaje"
-                 value="{{ preferencias_form.umbral_advertencia_porcentaje.value|default:80 }}"
-                 class="perfil-input" min="20" max="100" step="5" />
-          <p class="form-hint">Alerta al superar este porcentaje de tus ingresos mensuales</p>
-        </div>
-        <div class="form-group">
-          <label for="id_egreso_grande_porcentaje" class="form-label">Egreso grande (%)</label>
-          <input type="number" name="egreso_grande_porcentaje" id="id_egreso_grande_porcentaje"
-                 value="{{ preferencias_form.egreso_grande_porcentaje.value|default:30 }}"
-                 class="perfil-input" min="5" max="80" step="5" />
-          <p class="form-hint">Alerta si un solo gasto supera este porcentaje de tus ingresos</p>
-        </div>
-      </div>
-
-      <h4 class="tab-subsection-title">Notificaciones individuales</h4>
-      <p style="color:var(--slate-400);font-size:0.78rem;margin-bottom:12px;">Activa o desactiva cada tipo de alerta</p>
-
-      <div class="alert-toggles">
-        <label class="alert-toggle">
-          <input type="checkbox" name="alerta_egreso_grande"
-                 {% if preferencias_form.alerta_egreso_grande.value %}checked{% endif %} />
-          <div>
-            <span class="alert-toggle-label">Egreso grande</span>
-            <span class="alert-toggle-help">Cuando un solo gasto es muy grande</span>
-          </div>
-        </label>
-        <label class="alert-toggle">
-          <input type="checkbox" name="alerta_deficit"
-                 {% if preferencias_form.alerta_deficit.value %}checked{% endif %} />
-          <div>
-            <span class="alert-toggle-label">Balance en deficit</span>
-            <span class="alert-toggle-help">Cuando tus egresos superan tus ingresos</span>
-          </div>
-        </label>
-        <label class="alert-toggle">
-          <input type="checkbox" name="alerta_patron_inusual"
-                 {% if preferencias_form.alerta_patron_inusual.value %}checked{% endif %} />
-          <div>
-            <span class="alert-toggle-label">Patron inusual</span>
-            <span class="alert-toggle-help">Cuando detecta comportamiento de gasto extrano</span>
-          </div>
-        </label>
-        <label class="alert-toggle">
-          <input type="checkbox" name="alerta_presupuesto"
-                 {% if preferencias_form.alerta_presupuesto.value %}checked{% endif %} />
-          <div>
-            <span class="alert-toggle-label">Umbral mensual</span>
-            <span class="alert-toggle-help">Cuando llevas un alto porcentaje gastado del mes</span>
-          </div>
-        </label>
-        <label class="alert-toggle">
-          <input type="checkbox" name="alerta_aporte_proximo"
-                 {% if preferencias_form.alerta_aporte_proximo.value %}checked{% endif %} />
-          <div>
-            <span class="alert-toggle-label">Proximo pago</span>
-            <span class="alert-toggle-help">Recordatorios de pagos que se acercan</span>
-          </div>
-        </label>
+        {% for field in preferencias_form %}
+          {% if field.field.widget.input_type == "checkbox" %}
+            <label class="alert-toggle">
+              {{ field }}
+              <div>
+                <span class="alert-toggle-label">{{ field.label|default:field.name|title }}</span>
+                {% if field.help_text %}<span class="alert-toggle-help">{{ field.help_text }}</span>{% endif %}
+              </div>
+            </label>
+          {% else %}
+            <div class="form-group">
+              <label for="{{ field.id_for_label }}" class="form-label">{{ field.label|default:field.name|title }}</label>
+              {{ field }}
+              {% if field.help_text %}<p class="form-hint">{{ field.help_text }}</p>{% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
       </div>
 
       <div style="margin-top:20px;">
@@ -309,11 +266,6 @@
         <span>Todos</span>
         {% if total_no_leidas %}<span class="notif-pill-count">{{ total_no_leidas }}</span>{% endif %}
       </button>
-      <button class="notif-pill" data-modulo="INGRESOS">
-        <i data-lucide="trending-up" style="width:12px;height:12px;"></i>
-        <span>Ingresos</span>
-        {% if recuentos_modulos.INGRESOS %}<span class="notif-pill-count">{{ recuentos_modulos.INGRESOS }}</span>{% endif %}
-      </button>
       <button class="notif-pill" data-modulo="EGRESOS">
         <i data-lucide="trending-down" style="width:12px;height:12px;"></i>
         <span>Egresos</span>
@@ -323,21 +275,6 @@
         <i data-lucide="piggy-bank" style="width:12px;height:12px;"></i>
         <span>Ahorros</span>
         {% if recuentos_modulos.AHORROS %}<span class="notif-pill-count">{{ recuentos_modulos.AHORROS }}</span>{% endif %}
-      </button>
-      <button class="notif-pill" data-modulo="PRESUPUESTOS">
-        <i data-lucide="target" style="width:12px;height:12px;"></i>
-        <span>Presupuestos</span>
-        {% if recuentos_modulos.PRESUPUESTOS %}<span class="notif-pill-count">{{ recuentos_modulos.PRESUPUESTOS }}</span>{% endif %}
-      </button>
-      <button class="notif-pill" data-modulo="PLANIFICACION">
-        <i data-lucide="calendar-range" style="width:12px;height:12px;"></i>
-        <span>Planificacion</span>
-        {% if recuentos_modulos.PLANIFICACION %}<span class="notif-pill-count">{{ recuentos_modulos.PLANIFICACION }}</span>{% endif %}
-      </button>
-      <button class="notif-pill" data-modulo="GENERAL">
-        <i data-lucide="info" style="width:12px;height:12px;"></i>
-        <span>General</span>
-        {% if recuentos_modulos.GENERAL %}<span class="notif-pill-count">{{ recuentos_modulos.GENERAL }}</span>{% endif %}
       </button>
     </div>
 

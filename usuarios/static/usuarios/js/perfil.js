@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
         lucide.createIcons();
 
         // Ocultar pills de modulos vacios
-        ocultarPillsVacias(notifs);
+        // ocultarPillsVacias(notifs);
       })
       .catch(function (err) {
         notifPendingCtrl = null;

@@ -13,6 +13,7 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['10.1.164.209', 'localhost', '127.0.0.1', '.onrender.com']
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     'presupuesto',
     'categorias',
     'historial',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -73,14 +75,24 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                # Requerido por django-allauth
                 'django.template.context_processors.request',
+                'notificaciones.context_processors.notificaciones_count',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'gastu_django.wsgi.application'
+ASGI_APPLICATION = 'gastu_django.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')],
+        },
+    },
+}
 
 # ──────────────────────────────────────────────────────────────
 # BASE DE DATOS
