@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Programacion
-from .services import obtener_pendientes, ejecutar_programacion, obtener_historial
+from .services import obtener_pendientes, ejecutar_programacion
 
 
 @api_view(['GET'])
@@ -44,21 +44,3 @@ def ejecutar_programacion_view(request, pk):
 
     return Response(resultado)
 
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def historial_ejecuciones(request):
-    """Historial de ejecuciones aceptadas, paginado vía query param `limit` (max 200)."""
-    limit = min(int(request.GET.get('limit', 50)), 200)
-    data = obtener_historial(request.user, limit=limit)
-    resultados = []
-    for e in data:
-        resultados.append({
-            'descripcion': e['descripcion_snapshot'] or '—',
-            'categoria_nombre': e['categoria_nombre'],
-            'tipo': e['tipo'],
-            'monto': str(e['monto']),
-            'frecuencia': e['frecuencia_snapshot'] or '—',
-            'fecha_ejecutada': str(e['fecha_ejecutada']),
-        })
-    return Response({'ejecuciones': resultados})

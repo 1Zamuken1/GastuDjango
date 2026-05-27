@@ -30,7 +30,14 @@
 </div>
 <!-- BOTONES CREAR Y HISTORIAL -->
   <div class="programaciones-header">
-        <button onclick="abrirModalHistorial()" class="btn-historial">Ver historial</button>
+        <button class="btn-historial" id="btn-historial"
+                data-modulo="PROGRAMACIONES"
+                data-tema-accent="#8b5cf6"
+                data-tema-light="#f5f3ff"
+                data-tema-label="Programaciones"
+                data-tema-icon="calendar-range">
+          <i data-lucide="history"></i> Historial
+        </button>
         <button onclick="abrirModalCrear()" class="btn-crear"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
           data-lucide="plus" aria-hidden="true" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Nueva programación</button>
     </div>
@@ -40,31 +47,6 @@
     </div>
   </div>
   
-  <!-- MODAL HISTORIAL -->
-  <div id="modal-historial" class="modal-overlay" style="display:none;">
-    <div class="modal-container" style="width:90%; max-width:820px; max-height:80vh; overflow-y:auto;">
-      <h3 class="modal-title">Historial de ejecuciones</h3>
-      <div class="tabla-wrap">
-        <table class="tabla-historial">
-          <thead>
-            <tr>
-              <th>Descripción</th>
-              <th>Categoría</th>
-              <th>Tipo</th>
-              <th>Frecuencia</th>
-              <th>Monto</th>
-              <th>Fecha ejecutada</th>
-            </tr>
-          </thead>
-          <tbody id="historial-body"></tbody>
-        </table>
-      </div>
-      <div class="modal-actions historial" style="margin-top:16px;">
-        <button onclick="cerrarModal('modal-historial')" class="btn-cancelar historial">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL CREAR -->
   <div id="modal-crear" class="modal-overlay" style="display:none;">
     <div class="modal-container">
@@ -223,7 +205,7 @@
       function cerrarModal(id) { document.getElementById(id).style.display = 'none' }
 
       document.addEventListener('click', function(e) {
-        ['modal-crear', 'modal-editar', 'modal-historial','modal-categorias'].forEach(id => {
+        ['modal-crear', 'modal-editar', 'modal-categorias'].forEach(id => {
           const overlay = document.getElementById(id)
           if (e.target === overlay) cerrarModal(id)
         })
@@ -578,39 +560,6 @@
             })
             .catch(() => mostrarToast('No se pudo eliminar.', 'error'))
         })
-      }
-
-      function abrirModalHistorial() {
-        cargarHistorial()
-        abrirModal('modal-historial')
-      }
-
-      function cargarHistorial() {
-        fetch('/api/programaciones/historial/', { credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(data => {
-            const tbody = document.getElementById('historial-body')
-            const lista = data.ejecuciones || []
-            if (lista.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#4d7a68; padding:24px; font-style:italic;">Sin ejecuciones registradas</td></tr>'
-              return
-            }
-            tbody.innerHTML = ''
-            lista.forEach(e => {
-              const tr = document.createElement('tr')
-              const tipoClass = e.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
-              tr.innerHTML = `
-                <td class="td-descripcion">${e.descripcion || '—'}</td>
-                <td>${e.categoria_nombre}</td>
-                <td><span class="card-badge ${tipoClass}">${e.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'}</span></td>
-                <td>${e.frecuencia || '—'}</td>
-                <td>${formatMonto(e.monto)}</td>
-                <td>${formatFecha(e.fecha_ejecutada)}</td>
-              `
-              tbody.appendChild(tr)
-            })
-          })
-          .catch(() => {})
       }
 
       document.addEventListener('DOMContentLoaded', () => {

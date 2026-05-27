@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from movimientos.models import Movimiento
-from .models import Programacion, EjecucionProgramacion
+from .models import Programacion
 
 # Mapeo de frecuencia legible a delta temporal computable.
 DELTA_MAP = {
@@ -84,7 +84,7 @@ def obtener_pendientes(usuario):
 
 @transaction.atomic
 def ejecutar_programacion(prog: Programacion, accion: str, request):
-    """Ejecuta (acepta o rechaza) una programación. Crea Movimiento y EjecucionProgramacion si acepta."""
+    """Ejecuta (acepta o rechaza) una programación. Crea Movimiento si acepta."""
     from dashboard.models import ResumenMensual
 
     hoy = timezone.now().date()
@@ -123,16 +123,38 @@ def ejecutar_programacion(prog: Programacion, accion: str, request):
             'categoria_nombre': prog.categoria.nombre,
             'descripcion': mov.descripcion,
         }
-        EjecucionProgramacion.objects.create(
-            programacion=prog,
+        from historial.models import AccionHistorial
+
+        tipo_str = "ingreso" if prog.tipo == "INGRESO" else "egreso"
+        modulo_mov = (
+            AccionHistorial.ModuloChoices.INGRESOS
+            if prog.tipo == "INGRESO"
+            else AccionHistorial.ModuloChoices.EGRESOS
+        )
+        desc_mov = f"Se registró un {tipo_str} automático en '{prog.categoria.nombre}'"
+        if prog.descripcion:
+            desc_mov += f" ({prog.descripcion})"
+
+        AccionHistorial.objects.create(
             usuario=prog.usuario,
-            fecha_ejecutada=fecha_pendiente,
-            proxima_ejecucion=proxima,
-            monto=prog.monto_programado,
-            categoria_nombre=prog.categoria.nombre,
-            tipo=prog.tipo,
-            descripcion_snapshot=prog.descripcion,
-            frecuencia_snapshot=prog.frecuencia,
+            accion=AccionHistorial.AccionChoices.CREACION,
+            modulo=modulo_mov,
+            descripcion=desc_mov,
+            referencia_id=str(mov.id),
+            monto_afectado=prog.monto_programado,
+        )
+
+        desc_prog = f"Se ejecutó una programación de {tipo_str} en '{prog.categoria.nombre}'"
+        if prog.descripcion:
+            desc_prog += f" ({prog.descripcion})"
+
+        AccionHistorial.objects.create(
+            usuario=prog.usuario,
+            accion=AccionHistorial.AccionChoices.CREACION,
+            modulo=AccionHistorial.ModuloChoices.PROGRAMACIONES,
+            descripcion=desc_prog,
+            referencia_id=str(prog.id),
+            monto_afectado=prog.monto_programado,
         )
 
     prog.proxima_ejecucion = proxima
@@ -146,18 +168,3 @@ def ejecutar_programacion(prog: Programacion, accion: str, request):
         'movimiento': movimiento_data,
     }, None
 
-
-def obtener_historial(usuario, limit=50):
-    """Retorna las últimas `limit` ejecuciones del usuario usando solo los campos necesarios."""
-    return list(
-        EjecucionProgramacion.objects.filter(usuario=usuario)
-        .order_by('-fecha_ejecutada')[:limit]
-        .values(
-            'descripcion_snapshot',
-            'categoria_nombre',
-            'tipo',
-            'monto',
-            'frecuencia_snapshot',
-            'fecha_ejecutada',
-        )
-    )
