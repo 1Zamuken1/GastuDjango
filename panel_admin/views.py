@@ -79,15 +79,36 @@ def admin_home(request):
         total = next((item['total'] for item in movimientos_por_dia if item['dia'] == d), 0)
         chart_activity_data.append(total)
         
-    # ── Gráficos de Categorías Populares (Global) ──
-    top_categorias_global = (
-        Movimiento.objects.filter(activo=True)
+    # ── Gráficos de Categorías Populares (Separados por Módulo) ──
+    # 1. Ingresos
+    top_ingresos = (
+        Movimiento.objects.filter(activo=True, categoria__tipo='INGRESO')
         .values('categoria__nombre')
         .annotate(total=Count('id'))
         .order_by('-total')[:5]
     )
-    chart_cats_labels = [c['categoria__nombre'] for c in top_categorias_global]
-    chart_cats_data = [c['total'] for c in top_categorias_global]
+    chart_ingresos_labels = [c['categoria__nombre'] for c in top_ingresos]
+    chart_ingresos_data = [c['total'] for c in top_ingresos]
+
+    # 2. Egresos
+    top_egresos = (
+        Movimiento.objects.filter(activo=True, categoria__tipo='EGRESO')
+        .values('categoria__nombre')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:5]
+    )
+    chart_egresos_labels = [c['categoria__nombre'] for c in top_egresos]
+    chart_egresos_data = [c['total'] for c in top_egresos]
+
+    # 3. Ahorros
+    from ahorros.models import AhorroMeta
+    top_ahorros = (
+        AhorroMeta.objects.values('categoria__nombre')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:5]
+    )
+    chart_ahorros_labels = [c['categoria__nombre'] for c in top_ahorros]
+    chart_ahorros_data = [c['total'] for c in top_ahorros]
 
     context = {
         'total_usuarios':      total_usuarios,
@@ -103,8 +124,12 @@ def admin_home(request):
         # Datos para los gráficos pasados como JSON strings
         'chart_activity_labels': json.dumps(chart_activity_labels),
         'chart_activity_data':   json.dumps(chart_activity_data),
-        'chart_cats_labels':     json.dumps(chart_cats_labels),
-        'chart_cats_data':       json.dumps(chart_cats_data),
+        'chart_ingresos_labels': json.dumps(chart_ingresos_labels),
+        'chart_ingresos_data':   json.dumps(chart_ingresos_data),
+        'chart_egresos_labels':  json.dumps(chart_egresos_labels),
+        'chart_egresos_data':    json.dumps(chart_egresos_data),
+        'chart_ahorros_labels':  json.dumps(chart_ahorros_labels),
+        'chart_ahorros_data':    json.dumps(chart_ahorros_data),
         
         'seccion':             'home',
     }

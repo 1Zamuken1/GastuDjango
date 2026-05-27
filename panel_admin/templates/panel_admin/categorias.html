@@ -21,35 +21,53 @@
 </div>
 
 <!-- Filtros -->
-<form method="get" class="flex items-center gap-2 flex-wrap mb-5">
-  <div class="relative flex-1 min-w-[200px] max-w-xs">
+<form method="get" id="filter-form" class="flex items-center gap-4 flex-wrap mb-6">
+  <!-- Buscador -->
+  <div class="relative flex-1 min-w-[240px] max-w-xs">
     <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
     <input type="text" name="q" value="{{ q }}" placeholder="Buscar categoría..."
       id="search-cat"
       class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition" />
   </div>
-  <select name="tipo" id="filter-tipo"
-    class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer transition">
-    <option value="">Todos los tipos</option>
-    <option value="INGRESO" {% if tipo_fil == 'INGRESO' %}selected{% endif %}>Ingreso</option>
-    <option value="EGRESO"  {% if tipo_fil == 'EGRESO'  %}selected{% endif %}>Egreso</option>
-    <option value="AHORRO"  {% if tipo_fil == 'AHORRO'  %}selected{% endif %}>Ahorro</option>
-  </select>
-  <select name="estado" id="filter-estado"
-    class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer transition">
-    <option value="">Todos los estados</option>
-    <option value="activo"   {% if estado_fil == 'activo'   %}selected{% endif %}>Activas</option>
-    <option value="inactivo" {% if estado_fil == 'inactivo' %}selected{% endif %}>Inactivas</option>
-  </select>
-  <button type="submit"
-    class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 hover:bg-slate-50 transition font-500">
-    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filtrar
-  </button>
+
+  <!-- Filtro Tipo -->
+  <div class="flex items-center gap-1 bg-slate-100/80 border border-slate-200/60 p-1 rounded-xl">
+    <input type="hidden" name="tipo" id="filter-tipo-val" value="{{ tipo_fil }}" />
+    <button type="button" data-val="" class="js-tipo-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if not tipo_fil %}bg-white text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Todos
+    </button>
+    <button type="button" data-val="INGRESO" class="js-tipo-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if tipo_fil == 'INGRESO' %}bg-white text-emerald-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Ingresos
+    </button>
+    <button type="button" data-val="EGRESO" class="js-tipo-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if tipo_fil == 'EGRESO' %}bg-white text-red-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Egresos
+    </button>
+    <button type="button" data-val="AHORRO" class="js-tipo-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if tipo_fil == 'AHORRO' %}bg-white text-amber-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Ahorros
+    </button>
+  </div>
+
+  <!-- Filtro Estado -->
+  <div class="flex items-center gap-1 bg-slate-100/80 border border-slate-200/60 p-1 rounded-xl">
+    <input type="hidden" name="estado" id="filter-estado-val" value="{{ estado_fil }}" />
+    <button type="button" data-val="" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if not estado_fil %}bg-white text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Todos
+    </button>
+    <button type="button" data-val="activo" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if estado_fil == 'activo' %}bg-white text-emerald-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Activas
+    </button>
+    <button type="button" data-val="inactivo" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if estado_fil == 'inactivo' %}bg-white text-slate-500 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Inactivas
+    </button>
+  </div>
+
   {% if q or tipo_fil or estado_fil %}
-  <a href="{% url 'panel_admin:categorias' %}"
-    class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-500 hover:bg-slate-50 transition font-500">
-    <i data-lucide="x" class="w-3.5 h-3.5"></i> Limpiar
-  </a>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'panel_admin:categorias' %}"
+      class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-500 hover:bg-slate-50 transition font-500">
+      <i data-lucide="x" class="w-3.5 h-3.5"></i> Limpiar
+    </a>
+  </div>
   {% endif %}
 </form>
 
@@ -222,6 +240,22 @@
 {% block scripts %}
 <script>
   window.CREAR_CATEGORIA_URL = '{% url "panel_admin:crear_categoria" %}';
+
+  // Manejar filtros de tipo
+  document.querySelectorAll('.js-tipo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('filter-tipo-val').value = btn.dataset.val;
+      btn.closest('form').submit();
+    });
+  });
+
+  // Manejar filtros de estado
+  document.querySelectorAll('.js-estado-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('filter-estado-val').value = btn.dataset.val;
+      btn.closest('form').submit();
+    });
+  });
 </script>
 <script src="{% static 'panel_admin/js/categorias.js' %}"></script>
 {% endblock %}

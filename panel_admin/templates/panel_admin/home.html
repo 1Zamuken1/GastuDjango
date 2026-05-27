@@ -92,9 +92,8 @@
   </div>
 </div>
 
-<!-- Gráficos de Actividad y Categorías -->
-<div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px; margin-bottom:16px;">
-  <!-- Gráfico de Actividad -->
+<!-- Gráficos de Actividad -->
+<div style="margin-bottom: 24px;">
   <div class="admin-card" style="padding:20px;">
     <div class="section-header" style="margin-bottom:14px;">
       <div>
@@ -102,21 +101,50 @@
         <p class="section-sub">Nuevos movimientos registrados (últimos 7 días)</p>
       </div>
     </div>
-    <div style="position: relative; height: 300px; width: 100%;">
+    <div style="position: relative; height: 320px; width: 100%;">
       <canvas id="chartActivity"></canvas>
     </div>
   </div>
+</div>
 
-  <!-- Gráfico de Categorías -->
+<!-- 3 Gráficos de Categorías Separados -->
+<div class="cats-charts-grid" style="display:grid; gap:20px; margin-bottom:24px;">
+  <!-- Gráfico Ingresos -->
   <div class="admin-card" style="padding:20px;">
     <div class="section-header" style="margin-bottom:14px;">
       <div>
-        <p class="section-title">Top Categorías</p>
-        <p class="section-sub">Global histórico (Top 5)</p>
+        <p class="section-title">Top Ingresos</p>
+        <p class="section-sub">Categorías más usadas</p>
       </div>
     </div>
-    <div style="position: relative; height: 300px; width: 100%; display: flex; justify-content: center;">
-      <canvas id="chartCategories"></canvas>
+    <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+      <canvas id="chartIngresos"></canvas>
+    </div>
+  </div>
+
+  <!-- Gráfico Egresos -->
+  <div class="admin-card" style="padding:20px;">
+    <div class="section-header" style="margin-bottom:14px;">
+      <div>
+        <p class="section-title">Top Egresos</p>
+        <p class="section-sub">Categorías más usadas</p>
+      </div>
+    </div>
+    <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+      <canvas id="chartEgresos"></canvas>
+    </div>
+  </div>
+
+  <!-- Gráfico Ahorros -->
+  <div class="admin-card" style="padding:20px;">
+    <div class="section-header" style="margin-bottom:14px;">
+      <div>
+        <p class="section-title">Top Ahorros</p>
+        <p class="section-sub">Categorías en metas activas</p>
+      </div>
+    </div>
+    <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+      <canvas id="chartAhorros"></canvas>
     </div>
   </div>
 </div>
@@ -212,24 +240,18 @@
       }
     });
 
-    // Inicializar Gráfico de Categorías Top
-    const catsCtx = document.getElementById('chartCategories').getContext('2d');
-    const catsLabels = {{ chart_cats_labels|safe }};
-    const catsData = {{ chart_cats_data|safe }};
+    // Inicializar Gráfico de Categorías de Ingresos
+    const ingresosCtx = document.getElementById('chartIngresos').getContext('2d');
+    const ingresosLabels = {{ chart_ingresos_labels|safe }};
+    const ingresosData = {{ chart_ingresos_data|safe }};
     
-    new Chart(catsCtx, {
+    new Chart(ingresosCtx, {
       type: 'doughnut',
       data: {
-        labels: catsLabels,
+        labels: ingresosLabels,
         datasets: [{
-          data: catsData,
-          backgroundColor: [
-            '#10b981', // emerald
-            '#3b82f6', // blue
-            '#8b5cf6', // violet
-            '#f59e0b', // amber
-            '#ef4444'  // red
-          ],
+          data: ingresosData,
+          backgroundColor: ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'],
           borderWidth: 0,
           hoverOffset: 4
         }]
@@ -238,7 +260,59 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom' }
+          legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } }
+        },
+        cutout: '70%'
+      }
+    });
+
+    // Inicializar Gráfico de Categorías de Egresos
+    const egresosCtx = document.getElementById('chartEgresos').getContext('2d');
+    const egresosLabels = {{ chart_egresos_labels|safe }};
+    const egresosData = {{ chart_egresos_data|safe }};
+    
+    new Chart(egresosCtx, {
+      type: 'doughnut',
+      data: {
+        labels: egresosLabels,
+        datasets: [{
+          data: egresosData,
+          backgroundColor: ['#ef4444', '#f87171', '#fca5a5', '#fecaca', '#fee2e2'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } }
+        },
+        cutout: '70%'
+      }
+    });
+
+    // Inicializar Gráfico de Categorías de Ahorros
+    const ahorrosCtx = document.getElementById('chartAhorros').getContext('2d');
+    const ahorrosLabels = {{ chart_ahorros_labels|safe }};
+    const ahorrosData = {{ chart_ahorros_data|safe }};
+    
+    new Chart(ahorrosCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ahorrosLabels,
+        datasets: [{
+          data: ahorrosData,
+          backgroundColor: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } }
         },
         cutout: '70%'
       }

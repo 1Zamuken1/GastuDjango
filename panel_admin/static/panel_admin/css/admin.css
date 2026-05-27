@@ -27,6 +27,14 @@
   --admin-light:  #eef2ff;
 }
 
+/* ── Fondo sutil con patrón de puntos ────────────────────────── */
+body.bg-slate-50 {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(circle, #e2e8f0 0.8px, transparent 0.8px);
+  background-size: 24px 24px;
+}
+
 /* ── Nav link (topbar) ───────────────────────────────────────── */
 .admin-nav-link {
   display: inline-flex;
@@ -381,9 +389,19 @@
   background: var(--white);
   outline: none;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
 }
-.filter-select:focus { border-color: var(--admin-accent); }
+.filter-select:focus {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
 
 /* ── Mensajes ──────────────────────────────────────────────── */
 .message {
@@ -402,7 +420,26 @@
 .message--warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ── Select nativo con Tailwind mejorado ─────────────────── */
+select.px-3 {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+
 /* ── Responsive ────────────────────────────────────────────── */
+.cats-charts-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 1024px) {
+  .cats-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
