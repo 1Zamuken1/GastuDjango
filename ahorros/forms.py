@@ -27,8 +27,12 @@ class AhorroMetaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # SOLO categorías de tipo AHORRO
-        self.fields['categoria'].queryset = Categoria.objects.filter(
-            tipo=Categoria.TipoCategoria.AHORRO, activo=True)
+        qs = Categoria.objects.filter(tipo=Categoria.TipoCategoria.AHORRO, activo=True)
+        
+        if self.instance and self.instance.pk and self.instance.categoria_id:
+            qs = qs | Categoria.objects.filter(pk=self.instance.categoria_id)
+            
+        self.fields['categoria'].queryset = qs.order_by('nombre')
         # Quitamos la obligatoriedad automática de estos campos
         self.fields['fecha_meta'].required = False
         self.fields['cantidad_cuotas'].required = False
