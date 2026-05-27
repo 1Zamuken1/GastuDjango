@@ -136,7 +136,7 @@ class GestorMovimientos {
             <div>
               <p class="categoria-card__nombre">
                 ${cat.nombre}
-                ${!cat.activo ? '<span style="font-size: 0.65rem; background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; margin-left: 4px; font-weight: 700; vertical-align: middle;">Inactiva</span>' : ''}
+                ${!cat.activo ? '<span class="badge-inactiva">Inactiva</span>' : ''}
               </p>
               <p class="categoria-card__cantidad">${cat.cantidad} registro${cat.cantidad !== 1 ? 's' : ''}</p>
             </div>
@@ -242,18 +242,19 @@ class GestorMovimientos {
           card.querySelector('.categoria-card__nombre').textContent.replace('Inactiva', '').trim();
           
         const btnNuevo = document.getElementById('btn-nuevo-desde-registros');
+        const tooltipNuevo = document.getElementById('tooltip-nuevo');
         if (btnNuevo) {
           const esActiva = card.dataset.activo === 'true';
           if (!esActiva) {
             btnNuevo.disabled = true;
             btnNuevo.style.opacity = '0.5';
-            btnNuevo.title = 'Categoría inactiva. No permite nuevos registros.';
             btnNuevo.style.cursor = 'not-allowed';
+            if (tooltipNuevo) tooltipNuevo.style.display = 'block';
           } else {
             btnNuevo.disabled = false;
             btnNuevo.style.opacity = '1';
-            btnNuevo.title = '';
             btnNuevo.style.cursor = 'pointer';
+            if (tooltipNuevo) tooltipNuevo.style.display = 'none';
           }
         }
         

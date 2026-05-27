@@ -132,7 +132,7 @@
         <p class="categoria-card__nombre">
           {{ item.categoria.nombre }}
           {% if not item.categoria.activo %}
-            <span style="font-size: 0.65rem; background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; margin-left: 4px; font-weight: 700; vertical-align: middle;">Inactiva</span>
+            <span class="badge-inactiva">Inactiva</span>
           {% endif %}
         </p>
         <p class="categoria-card__cantidad">{{ item.cantidad }} registro{{ item.cantidad|pluralize }}</p>
