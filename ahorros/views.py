@@ -246,7 +246,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         usuario=usuario,
         mes=hoy.month,
         anio=hoy.year,
-    ).select_for_update().first()
+    ).first()
 
     if not resumen:
         return JsonResponse({"ok": False, "error": "No existe un resumen mensual"})
@@ -281,11 +281,8 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     cuota.aporte = aporte_ingresado
     cuota.estado_ap = AporteAhorro.EstadoAp.APORTADO
     cuota.save()
-
-    # Actualizar dashboard
-    resumen.disponible -= aporte_ingresado
-    resumen.total_ahorros += aporte_ingresado
-    resumen.save()
+    # El signal post_save de AporteAhorro se encarga de actualizar
+    # el ResumenMensual (ingreso_neto, disponible, ganancia_acumulada, etc.)
 
     # Actualizar acumulado del ahorro
     total_acumulado = ahorro.total_acumulado or Decimal('0.00')
