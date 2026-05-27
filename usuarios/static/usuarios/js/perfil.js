@@ -341,6 +341,72 @@ document.addEventListener('DOMContentLoaded', function () {
     cargarNotificaciones();
   }
 
+  // ── Deep-link: ?notif=ID → scroll + highlight + marcar leída ──
+  (function() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var notifId = urlParams.get('notif');
+    if (!notifId) return;
+
+    // Esperar a que las notificaciones se rendericen y luego hacer scroll
+    function scrollYHighlight() {
+      var card = document.querySelector('.notif-item[data-notif-id="' + notifId + '"]');
+      if (!card) return false;
+
+      // Scroll suave al card
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Añadir highlight visual temporal
+      card.style.transition = 'box-shadow 0.3s, background 0.3s';
+      card.style.background = '#fef9c3';
+      card.style.boxShadow = '0 0 0 2px #f59e0b';
+      card.style.borderRadius = '10px';
+      setTimeout(function() {
+        card.style.background = '';
+        card.style.boxShadow = '';
+      }, 2500);
+
+      // Si no está leída, marcarla como leída
+      if (card.classList.contains('unread')) {
+        var csrfForDeep = notifFiltersEl ? (notifFiltersEl.getAttribute('data-csrf') || '') : '';
+        fetch('/notificaciones/marcar-leidas/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfForDeep,
+          },
+          body: JSON.stringify({ ids: [notifId] }),
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.ok) {
+              card.classList.remove('unread');
+              card.classList.add('read');
+              var btn = card.querySelector('.notif-read-btn');
+              if (btn) btn.remove();
+            }
+          })
+          .catch(function() {});
+      }
+
+      // Limpiar el param de la URL sin recargar
+      var cleanUrl = new URL(window.location);
+      cleanUrl.searchParams.delete('notif');
+      window.history.replaceState({}, '', cleanUrl);
+      return true;
+    }
+
+    // Intentar varias veces mientras el fetch de notificaciones termina
+    var attempts = 0;
+    var maxAttempts = 20;
+    var interval = setInterval(function() {
+      attempts++;
+      if (scrollYHighlight() || attempts >= maxAttempts) {
+        clearInterval(interval);
+      }
+    }, 150);
+  })();
+
   // ══════════════════════════════════════════════════════════
   //  ELIMINAR CUENTA — Modal + Slide to Confirm
   // ══════════════════════════════════════════════════════════
