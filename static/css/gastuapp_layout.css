@@ -943,3 +943,60 @@ body.sidebar-mini #app-content {
   border: 2px solid white;
   border-radius: 50%;
 }
+
+/* ── Tooltips Premium ── */
+.tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.tooltip-wrapper .tooltip-custom {
+  visibility: hidden;
+  background-color: #0f172a;
+  color: #f8fafc;
+  text-align: center;
+  border-radius: 6px;
+  padding: 6px 12px;
+  position: absolute;
+  z-index: 1000;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.2s;
+  font-size: 0.75rem;
+  white-space: normal;
+  max-width: 200px;
+  pointer-events: none;
+  font-weight: 500;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.tooltip-wrapper .tooltip-custom::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #0f172a transparent transparent transparent;
+}
+.tooltip-wrapper:hover .tooltip-custom,
+.tooltip-wrapper:focus-within .tooltip-custom {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Badges Globales ── */
+.badge-inactiva {
+  font-size: 0.65rem; 
+  background: #fee2e2; 
+  color: #ef4444; 
+  padding: 2px 6px; 
+  border-radius: 4px; 
+  margin-left: 6px; 
+  font-weight: 700; 
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

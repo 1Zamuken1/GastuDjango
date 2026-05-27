@@ -250,7 +250,6 @@ function initOnboarding() {
         <button class="carousel-dot" data-index="3" aria-label="Tarjeta 4"></button>
         <button class="carousel-dot" data-index="4" aria-label="Tarjeta 5"></button>
         <button class="carousel-dot" data-index="5" aria-label="Tarjeta 6"></button>
-        <button class="carousel-dot" data-index="6" aria-label="Tarjeta 7"></button>
       </div>
       <button class="carousel-btn" id="carousel-prev" aria-label="Anterior">
         <i data-lucide="chevron-left"></i>
@@ -264,18 +263,18 @@ function initOnboarding() {
   <div class="carousel-viewport">
     <div class="carousel-track" id="carousel-track">
 
-      {# 1 — Disponible (permanente) #}
+      {# 1 — Total dinero usuario (antes Disponible) #}
       <div class="carousel-slide">
         <div class="stat-card stat-card--disponible">
           <div class="stat-card__header">
-            <p class="stat-card__label">Disponible</p>
+            <p class="stat-card__label">Total dinero usuario</p>
             <div class="icon-box icon-box--blue"><i data-lucide="wallet"></i></div>
           </div>
           <p id="val-disponible"
              class="stat-card__value{% if disponible < 0 %} stat-card__value--negative{% endif %}">
             ${{ disponible|floatformat:'0g' }}
           </p>
-          <p class="stat-card__note">Saldo acumulado + mes actual</p>
+          <p class="stat-card__note">Dinero total acumulado a la fecha</p>
         </div>
       </div>
 
@@ -290,7 +289,7 @@ function initOnboarding() {
              class="stat-card__value{% if utilidad < 0 %} stat-card__value--negative{% endif %}">
             ${{ utilidad|floatformat:'0g' }}
           </p>
-          <p class="stat-card__note">Ingresos − egresos − ahorros</p>
+          <p class="stat-card__note">Ingresos del mes − egresos − ahorros del mes</p>
         </div>
       </div>
 
@@ -332,8 +331,8 @@ function initOnboarding() {
         </div>
       </div>
 
-      {# 6 — Diferencia #}
-      <div class="carousel-slide">
+      {# 6 — Diferencia (oculto visualmente, lógica back intacta para Ahorros e IA) #}
+      <div class="carousel-slide" style="display:none;" aria-hidden="true">
         <div id="stat-card-diferencia"
              class="stat-card {% if diferencia >= 0 %}stat-card--diferencia-pos{% else %}stat-card--diferencia-neg{% endif %}">
           <div class="stat-card__header">

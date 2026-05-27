@@ -13,13 +13,9 @@
     <p class="section-title">Carga masiva de categorias</p>
     <p class="section-sub">Importa multiples categorias desde un archivo CSV</p>
   </div>
-  <a href="{% url 'panel_admin:categorias' %}" class="btn btn--ghost">
-    <i data-lucide="arrow-left"></i> Volver a categorias
-  </a>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
-
   <!-- ── Formulario de subida ──────────────────────────────── -->
   <div class="admin-card">
     <div class="admin-card-header">
@@ -32,8 +28,8 @@
         <label class="form-label" for="archivo_csv">Archivo CSV</label>
         <div class="file-drop-area" id="file-drop-area">
           <i data-lucide="file-spreadsheet" class="file-drop-icon"></i>
-          <p class="file-drop-text">Arrastra tu archivo aqui o haz clic para seleccionar</p>
-          <p class="file-drop-hint">.csv — maximo 2 MB</p>
+          <p class="file-drop-text">Arrastra tu archivo aquí o haz clic para seleccionar</p>
+          <p class="file-drop-hint">.csv — máximo 2 MB</p>
           <input type="file" name="archivo_csv" id="archivo_csv" accept=".csv" required class="file-input" />
         </div>
         <p id="nombre-archivo" class="file-name-preview"></p>
@@ -71,18 +67,18 @@
           <tbody>
             <tr>
               <td><code>nombre</code></td>
-              <td><span class="badge badge--green">Si</span></td>
-              <td>Texto libre (max 100 caracteres)</td>
+              <td><span class="badge badge--green">Sí</span></td>
+              <td>Texto libre (máx 100 caracteres)</td>
             </tr>
             <tr>
               <td><code>tipo</code></td>
-              <td><span class="badge badge--green">Si</span></td>
+              <td><span class="badge badge--green">Sí</span></td>
               <td><code>INGRESO</code>, <code>EGRESO</code>, <code>AHORRO</code></td>
             </tr>
             <tr>
               <td><code>descripcion</code></td>
               <td><span class="badge badge--amber">No</span></td>
-              <td>Texto libre (max 255 caracteres)</td>
+              <td>Texto libre (máx 255 caracteres)</td>
             </tr>
             <tr>
               <td><code>activo</code></td>
@@ -95,7 +91,7 @@
       <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 16px;">
         <p style="font-size:0.82rem;font-weight:600;color:#0369a1;margin-bottom:6px;">
           <i data-lucide="lightbulb" style="width:14px;height:14px;vertical-align:middle;"></i>
-          Ejemplo de contenido valido:
+          Ejemplo de contenido válido:
         </p>
         <pre style="font-size:0.78rem;color:#0c4a6e;margin:0;line-height:1.7;">nombre,tipo,descripcion,activo
 Salario,INGRESO,Pago mensual,true
@@ -105,7 +101,7 @@ Fondo Emergencia,AHORRO,Reserva de seguridad,true</pre>
       <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-top:12px;">
         <p style="font-size:0.82rem;color:#854d0e;margin:0;">
           <i data-lucide="alert-triangle" style="width:14px;height:14px;vertical-align:middle;"></i>
-          Las categorias que ya existen en el sistema (mismo nombre y tipo) seran omitidas automaticamente.
+          Las categorías que ya existen en el sistema (mismo nombre y tipo) serán omitidas automáticamente.
         </p>
       </div>
     </div>
@@ -120,8 +116,9 @@ Fondo Emergencia,AHORRO,Reserva de seguridad,true</pre>
   .admin-card {
     background: var(--white);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 14px;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
   .admin-card-header {
     display: flex;
@@ -133,34 +130,42 @@ Fondo Emergencia,AHORRO,Reserva de seguridad,true</pre>
   }
   .admin-card-title {
     font-size: 0.9rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--slate-700);
     margin: 0;
   }
   .file-drop-area {
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 36px 20px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 40px 20px;
     text-align: center;
     position: relative;
     cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
+    background: #f8fafc/50;
+    transition: all 0.2s ease-in-out;
   }
   .file-drop-area:hover,
   .file-drop-area.drag-over {
     border-color: var(--indigo, #6366f1);
     background: #f5f3ff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.08);
   }
   .file-drop-icon {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     color: var(--slate-400);
-    margin: 0 auto 10px;
+    margin: 0 auto 12px;
     display: block;
+    transition: transform 0.2s;
+  }
+  .file-drop-area:hover .file-drop-icon {
+    transform: translateY(-2px);
+    color: var(--indigo, #6366f1);
   }
   .file-drop-text {
     font-size: 0.88rem;
     color: var(--slate-600);
+    font-weight: 500;
     margin-bottom: 4px;
   }
   .file-drop-hint {
@@ -177,11 +182,14 @@ Fondo Emergencia,AHORRO,Reserva de seguridad,true</pre>
     height: 100%;
   }
   .file-name-preview {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     color: var(--indigo, #6366f1);
-    margin-top: 8px;
-    font-weight: 500;
+    margin-top: 10px;
+    font-weight: 600;
     min-height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   code {
     background: #f1f5f9;
@@ -197,9 +205,166 @@ Fondo Emergencia,AHORRO,Reserva de seguridad,true</pre>
   const dropArea       = document.getElementById('file-drop-area');
   const nombreArchivo  = document.getElementById('nombre-archivo');
   const btnLimpiar     = document.getElementById('btn-limpiar');
+  
+  // Contenedor de vista previa dinámico
+  const formGroup      = inputArchivo.closest('.form-group');
+  const previewDiv     = document.createElement('div');
+  previewDiv.id        = 'csv-preview-container';
+  previewDiv.className = 'mt-4 border border-slate-100 rounded-xl p-4 bg-slate-50/50 hidden';
+  formGroup.appendChild(previewDiv);
+
+  let parsedCsvRows = [];
+  let currentPreviewPage = 1;
+  const previewPageSize = 5;
+
+  function handleFile(file) {
+    if (!file) {
+      parsedCsvRows = [];
+      currentPreviewPage = 1;
+      previewDiv.classList.add('hidden');
+      previewDiv.innerHTML = '';
+      nombreArchivo.innerHTML = '';
+      return;
+    }
+    
+    nombreArchivo.innerHTML = `<i data-lucide="file" class="w-4 h-4 text-indigo-500"></i> ${file.name}`;
+    
+    // Leer y previsualizar CSV
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+      if (lines.length === 0) {
+        showPreviewError("El archivo está vacío.");
+        return;
+      }
+      
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const hasNombre = headers.includes('nombre');
+      const hasTipo = headers.includes('tipo');
+      
+      if (!hasNombre || !hasTipo) {
+        showPreviewError("Las columnas obligatorias 'nombre' y 'tipo' no se encontraron en la cabecera.");
+        return;
+      }
+      
+      parsedCsvRows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.trim());
+        if (cols.length >= headers.length) {
+          const rowObj = {};
+          headers.forEach((h, idx) => {
+            rowObj[h] = cols[idx];
+          });
+          parsedCsvRows.push(rowObj);
+        }
+      }
+      
+      currentPreviewPage = 1;
+      renderPreviewPage();
+    };
+    reader.readAsText(file);
+  }
+
+  function showPreviewError(msg) {
+    previewDiv.classList.remove('hidden');
+    previewDiv.innerHTML = `
+      <div class="flex items-start gap-2.5 text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 text-xs">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+        <div>
+          <p class="font-600">Error de formato</p>
+          <p class="mt-0.5 text-slate-500">${msg}</p>
+        </div>
+      </div>
+    `;
+    lucide.createIcons();
+  }
+
+  function renderPreviewPage() {
+    if (parsedCsvRows.length === 0) {
+      previewDiv.classList.add('hidden');
+      return;
+    }
+    
+    previewDiv.classList.remove('hidden');
+    const totalRows = parsedCsvRows.length;
+    const totalPages = Math.ceil(totalRows / previewPageSize);
+    
+    // Rango de filas
+    const startIndex = (currentPreviewPage - 1) * previewPageSize;
+    const endIndex = Math.min(startIndex + previewPageSize, totalRows);
+    const pageRows = parsedCsvRows.slice(startIndex, endIndex);
+    
+    previewDiv.innerHTML = `
+      <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
+        <p class="text-xs font-700 text-slate-700 uppercase tracking-wider">Vista previa de datos</p>
+        <span class="text-[10px] text-indigo-600 font-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">${totalRows} fila(s) detectada(s)</span>
+      </div>
+      <div class="overflow-x-auto border border-slate-100 rounded-xl bg-white shadow-sm mb-3">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50/50 text-[10px] font-700 uppercase tracking-wider text-slate-400">
+              <th class="px-3 py-2">Nombre</th>
+              <th class="px-3 py-2">Tipo</th>
+              <th class="px-3 py-2">Descripción</th>
+              <th class="px-3 py-2">Activo</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            ${pageRows.map(r => `
+              <tr class="hover:bg-slate-50/40 transition-colors">
+                <td class="px-3 py-2.5 font-600 text-slate-700 text-xs">${r.nombre || ''}</td>
+                <td class="px-3 py-2.5">
+                  <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-700 ${r.tipo === 'INGRESO' ? 'bg-emerald-50 text-emerald-700' : r.tipo === 'EGRESO' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}">${r.tipo || ''}</span>
+                </td>
+                <td class="px-3 py-2.5 text-slate-500 text-xs max-w-[150px] truncate" title="${r.descripcion || ''}">${r.descripcion || '—'}</td>
+                <td class="px-3 py-2.5">
+                  <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-600 ${r.activo === 'false' ? 'bg-slate-100 text-slate-500' : 'bg-green-50 text-green-700'}">${r.activo || 'true'}</span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Paginación -->
+      ${totalPages > 1 ? `
+      <div class="flex items-center justify-between mt-3 px-1">
+        <span class="text-[11px] text-slate-500 font-500">Mostrando ${startIndex + 1}-${endIndex} de ${totalRows}</span>
+        <div class="flex items-center gap-1">
+          <button type="button" id="prev-page-btn" ${currentPreviewPage === 1 ? 'disabled' : ''} class="w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 transition active:scale-95 disabled:opacity-40 disabled:pointer-events-none">
+            <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+          </button>
+          <span class="text-xs font-600 text-slate-600 px-2">${currentPreviewPage} / ${totalPages}</span>
+          <button type="button" id="next-page-btn" ${currentPreviewPage === totalPages ? 'disabled' : ''} class="w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 transition active:scale-95 disabled:opacity-40 disabled:pointer-events-none">
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+      ` : ''}
+    `;
+    
+    // Bind buttons
+    if (totalPages > 1) {
+      document.getElementById('prev-page-btn').addEventListener('click', () => {
+        if (currentPreviewPage > 1) {
+          currentPreviewPage--;
+          renderPreviewPage();
+        }
+      });
+      document.getElementById('next-page-btn').addEventListener('click', () => {
+        if (currentPreviewPage < totalPages) {
+          currentPreviewPage++;
+          renderPreviewPage();
+        }
+      });
+    }
+    
+    lucide.createIcons();
+  }
 
   inputArchivo.addEventListener('change', function () {
-    nombreArchivo.textContent = this.files[0] ? this.files[0].name : '';
+    handleFile(this.files[0]);
   });
 
   dropArea.addEventListener('dragover', function (e) {
@@ -216,12 +381,12 @@ Fondo Emergencia,AHORRO,Reserva de seguridad,true</pre>
     dropArea.classList.remove('drag-over');
     if (e.dataTransfer.files.length) {
       inputArchivo.files = e.dataTransfer.files;
-      nombreArchivo.textContent = e.dataTransfer.files[0].name;
+      handleFile(e.dataTransfer.files[0]);
     }
   });
 
   btnLimpiar.addEventListener('click', function () {
-    nombreArchivo.textContent = '';
+    handleFile(null);
   });
 </script>
 {% endblock %}

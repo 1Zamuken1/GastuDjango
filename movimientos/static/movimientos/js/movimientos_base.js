@@ -146,10 +146,14 @@ class GestorMovimientos {
       grid.innerHTML = data.categorias.map(cat => `
         <div class="categoria-card"
              data-categoria-id="${cat.id}"
-             data-search-text="${cat.nombre.toLowerCase()}">
+             data-search-text="${cat.nombre.toLowerCase()}"
+             data-activo="${cat.activo ? 'true' : 'false'}">
           <div class="categoria-card__header">
             <div>
-              <p class="categoria-card__nombre">${cat.nombre}</p>
+              <p class="categoria-card__nombre">
+                ${cat.nombre}
+                ${!cat.activo ? '<span class="badge-inactiva">Inactiva</span>' : ''}
+              </p>
               <p class="categoria-card__cantidad">${cat.cantidad} registro${cat.cantidad !== 1 ? 's' : ''}</p>
             </div>
             <div class="categoria-card__icon"><i data-lucide="folder"></i></div>
@@ -252,7 +256,25 @@ class GestorMovimientos {
         this.categoriaActualId = card.dataset.categoriaId;
         this.paginaActual = 1;
         document.getElementById('modal-registros-titulo').textContent =
-          card.querySelector('.categoria-card__nombre').textContent;
+          card.querySelector('.categoria-card__nombre').textContent.replace('Inactiva', '').trim();
+          
+        const btnNuevo = document.getElementById('btn-nuevo-desde-registros');
+        const tooltipNuevo = document.getElementById('tooltip-nuevo');
+        if (btnNuevo) {
+          const esActiva = card.dataset.activo === 'true';
+          if (!esActiva) {
+            btnNuevo.disabled = true;
+            btnNuevo.style.opacity = '0.5';
+            btnNuevo.style.cursor = 'not-allowed';
+            if (tooltipNuevo) tooltipNuevo.style.display = 'block';
+          } else {
+            btnNuevo.disabled = false;
+            btnNuevo.style.opacity = '1';
+            btnNuevo.style.cursor = 'pointer';
+            if (tooltipNuevo) tooltipNuevo.style.display = 'none';
+          }
+        }
+        
         this.modalRegistros.removeAttribute('hidden');
         this.cargarRegistros(this.categoriaActualId, this.paginaActual);
       });
@@ -321,9 +343,12 @@ class GestorMovimientos {
               window.GastuAlerts.confirmar(
                   '¿Eliminar movimiento?',
                   'Esta acción no se puede deshacer.',
-                  'Sí, eliminar',
-                  () => { this.ejecutarEliminar(id); }
-              );
+                  'Sí, eliminar'
+              ).then((isConfirmed) => {
+                  if (isConfirmed) {
+                      this.ejecutarEliminar(id);
+                  }
+              });
           } else {
               this.abrirModalConfirmar(id);
           }

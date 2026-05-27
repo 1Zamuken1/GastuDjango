@@ -4,7 +4,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}GastuApp{% endblock %}</title>
+  
+  <!-- SEO Básico -->
+  <title>{% block title %}GastuApp — Gestión financiera inteligente{% endblock %}</title>
+  <meta name="description" content="GastuApp es tu asistente de finanzas personales. Registra ingresos, controla presupuestos, visualiza reportes y ahorra más dinero con alertas inteligentes." />
+  <meta name="keywords" content="finanzas personales, presupuesto, ahorro, control de gastos, inteligencia artificial, app financiera" />
+  <meta name="author" content="GastuApp" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://gastu.onrender.com/" />
+  <meta property="og:title" content="GastuApp — Toma el control de tu dinero" />
+  <meta property="og:description" content="Registra tus ingresos y gastos de forma sencilla. Recibe reportes visuales y alertas para mejorar tus finanzas personales." />
+  <meta property="og:image" content="https://gastu.onrender.com{% static 'img/gastu_logo_rostro.png' %}" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:url" content="https://gastu.onrender.com/" />
+  <meta name="twitter:title" content="GastuApp — Gestión financiera inteligente" />
+  <meta name="twitter:description" content="Empieza a controlar tus gastos y presupuesto gratis con GastuApp." />
+  <meta name="twitter:image" content="https://gastu.onrender.com{% static 'img/gastu_logo_rostro.png' %}" />
+
   <link rel="icon" type="image/png" href="{% static 'img/gastu_logo_rostro.png' %}" />
 
   <script src="https://cdn.tailwindcss.com"></script>

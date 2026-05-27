@@ -132,11 +132,17 @@
 
   {% for ahorro in ahorros %}
   <div class="categoria-card" id="meta-card-{{ ahorro.id }}"
-       data-search-text="{{ ahorro.categoria.nombre|lower }} {{ ahorro.descripcion|lower }}">
+       data-search-text="{{ ahorro.categoria.nombre|lower }} {{ ahorro.descripcion|lower }}"
+       data-activo="{{ ahorro.categoria.activo|yesno:'true,false' }}">
 
     <div class="categoria-card__header">
       <div style="flex:1;min-width:0;padding-right:10px;">
-        <p class="categoria-card__nombre truncate">{{ ahorro.categoria.nombre|default:"Meta de Ahorro" }}</p>
+        <p class="categoria-card__nombre truncate">
+          {{ ahorro.categoria.nombre|default:"Meta de Ahorro" }}
+          {% if not ahorro.categoria.activo %}
+            <span class="badge-inactiva">Inactiva</span>
+          {% endif %}
+        </p>
         <p class="categoria-card__cantidad truncate">{{ ahorro.descripcion|default:"Sin descripción" }}</p>
       </div>
       <div class="categoria-card__icon">
