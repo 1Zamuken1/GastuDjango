@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     'tailwind',
     'theme',
     'django_browser_reload',
+    # Requerido por SITE_ID / django-allauth
+    'django.contrib.sites',
     # ── django-allauth ───────────────────────────────────────────
     'allauth',
     'allauth.account',
@@ -168,16 +170,21 @@ ACCOUNT_EMAIL_VERIFICATION    = 'none'    # sin verificacion por ahora (desarrol
 ACCOUNT_LOGIN_REDIRECT_URL    = '/dashboard/'
 ACCOUNT_LOGOUT_REDIRECT_URL   = '/'
 ACCOUNT_EMAIL_SUBJECT_PREFIX  = ''        # Quita el sufijo [ejemplo.com] de los correos
+# El username no se pide en el formulario; el adaptador lo genera automaticamente
+ACCOUNT_USERNAME_REQUIRED     = False
+
+# Adaptador personalizado: genera username automatico para usuarios de Google
+# (AbstractUser exige username en BD aunque no se muestre en el formulario)
+SOCIALACCOUNT_ADAPTER = 'usuarios.adapters.SocialAccountAdapter'
 
 
 # Configuracion de redes sociales — Google OAuth
-# client_id y secret se obtienen de Google Cloud Console
-# Dejar vacios en desarrollo; completar al activar OAuth en produccion
+# client_id y secret se obtienen de Google Cloud Console y se cargan desde .env
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': '',
-            'secret':    '',
+            'client_id': os.getenv('GOOGLE_OAUTH_CLIENT_ID', ''),
+            'secret':    os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', ''),
             'key':       '',
         },
         'SCOPE':       ['profile', 'email'],
@@ -185,6 +192,8 @@ SOCIALACCOUNT_PROVIDERS = {
         'EMAIL_AUTHENTICATION': True,
     }
 }
+# En produccion (Render) el callback de Google debe ir por HTTPS
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https' if not DEBUG else 'http'
 
 # ──────────────────────────────────────────────────────────────
 # CONFIGURACION DE CORREO (Gmail SMTP)
