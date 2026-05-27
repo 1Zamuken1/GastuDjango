@@ -218,8 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  });
-
   /* ── Toggle Contraseñas Crear Usuario ────────────────────── */
   document.getElementById('toggleCrearPass1')?.addEventListener('click', function() {
     const input = document.getElementById('crear-password1');

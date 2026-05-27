@@ -26,8 +26,6 @@ INSTALLED_APPS = [
     'tailwind',
     'theme',
     'django_browser_reload',
-    # Requerido por SITE_ID / django-allauth
-    'django.contrib.sites',
     # ── django-allauth ───────────────────────────────────────────
     'allauth',
     'allauth.account',
@@ -184,6 +182,7 @@ ACCOUNT_EMAIL_SUBJECT_PREFIX  = ''        # Quita el sufijo [ejemplo.com] de los
 # Adaptador personalizado: genera username automatico para usuarios de Google
 # (AbstractUser exige username en BD aunque no se muestre en el formulario)
 SOCIALACCOUNT_ADAPTER = 'usuarios.adapters.SocialAccountAdapter'
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 
 # Configuracion de redes sociales — Google OAuth
