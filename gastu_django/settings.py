@@ -48,7 +48,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    # Whitenoise: solo en producción (DEBUG=False).
+    # En desarrollo, Django sirve los estáticos de cada app directamente.
+    *(['whitenoise.middleware.WhiteNoiseMiddleware'] if not DEBUG else []),
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -132,6 +134,12 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Whitenoise: en produccion comprime y sirve con hash de versión
+STATICFILES_STORAGE = (
+    'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    if not DEBUG
+    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+)
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ──────────────────────────────────────────────────────────────
