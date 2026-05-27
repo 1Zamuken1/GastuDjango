@@ -164,24 +164,12 @@
     </div>
 
     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-      {% if ahorro.categoria.activo %}
       <button type="button"
               class="btn-amber btn-abrir-modal-aporte"
               data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
               style="padding:0.4rem 0.8rem;font-size:0.75rem;border-radius:0.5rem;gap:0.25rem;">
         <i data-lucide="plus-circle" style="width:12px;height:12px;"></i> Aporte
       </button>
-      {% else %}
-      <span class="tooltip-wrapper">
-        <button type="button"
-                class="btn-amber"
-                disabled
-                style="padding:0.4rem 0.8rem;font-size:0.75rem;border-radius:0.5rem;gap:0.25rem;opacity:0.5;cursor:not-allowed;">
-          <i data-lucide="plus-circle" style="width:12px;height:12px;"></i> Aporte
-        </button>
-        <span class="tooltip-custom">Categoría inactiva — No permite nuevos aportes</span>
-      </span>
-      {% endif %}
       <button type="button"
               class="btn-editar-meta"
               data-id="{{ ahorro.id }}"
