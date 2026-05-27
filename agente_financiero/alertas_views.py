@@ -24,13 +24,14 @@ class AlertasView(View):
         if not request.user.is_authenticated:
             return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
 
-        ultima = AlertaDiaria.objects.filter(usuario=request.user).first()
-
-        if ultima and not AlertaDiaria.debe_mostrar(request.user):
-            return JsonResponse({
-                "ok": True, "mostrar": True,
-                "alertas": ultima.alertas_json, "registro_id": ultima.id,
-            })
+        if not AlertaDiaria.debe_mostrar(request.user):
+            ultima = AlertaDiaria.objects.filter(usuario=request.user).first()
+            if ultima:
+                return JsonResponse({
+                    "ok": True, "mostrar": True,
+                    "alertas": ultima.alertas_json, "registro_id": ultima.id,
+                })
+            return JsonResponse({"ok": True, "mostrar": False, "alertas": []})
 
         try:
             alertas = generar_alertas(request.user)

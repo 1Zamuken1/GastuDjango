@@ -52,18 +52,27 @@ class AlertaDiaria(models.Model):
 
     @classmethod
     def debe_mostrar(cls, usuario) -> bool:
-        """True si deben mostrarse alertas nuevas: nunca mostradas o pasaron >6 h desde la última."""
+        """True si deben mostrarse alertas nuevas.
+
+        Reglas:
+        1. Período de luna de miel: durante las primeras 3h desde el registro
+           del usuario no se muestran alertas (evita conflicto con tutorial/onboarding).
+        2. Si nunca se han generado alertas, se muestra (solo si pasó la luna de miel).
+        3. Si pasaron >= 6 horas desde la última generación, se genera nueva.
+        4. Si no, se devuelve la existente (ventana deslizante de 6h).
+        """
         from datetime import timedelta
 
         ahora = timezone.now()
-        hoy_inicio = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # ── Luna de miel: primeras 3h desde el registro ──
+        if usuario.date_joined and (ahora - usuario.date_joined).total_seconds() < 3 * 3600:
+            return False
+
         ultima = cls.objects.filter(usuario=usuario).first()
 
         if not ultima:
             return True
 
-        if ultima.generado_en >= hoy_inicio:
-            if (ahora - ultima.generado_en).total_seconds() < 6 * 3600:
-                return False
-
-        return True
+        # ── Ventana deslizante de 6h ──
+        return (ahora - ultima.generado_en).total_seconds() >= 6 * 3600
