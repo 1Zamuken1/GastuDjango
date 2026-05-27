@@ -286,6 +286,7 @@ def resumen_movimientos(request):
             {
                 'id': cd['categoria'].id,
                 'nombre': cd['categoria'].nombre,
+                'activo': cd['categoria'].activo,
                 'total': str(cd['total']),
                 'total_fmt': f"${cd['total']:,.0f}",
                 'cantidad': cd['cantidad'],

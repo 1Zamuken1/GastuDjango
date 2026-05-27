@@ -130,10 +130,14 @@ class GestorMovimientos {
       grid.innerHTML = data.categorias.map(cat => `
         <div class="categoria-card"
              data-categoria-id="${cat.id}"
-             data-search-text="${cat.nombre.toLowerCase()}">
+             data-search-text="${cat.nombre.toLowerCase()}"
+             data-activo="${cat.activo ? 'true' : 'false'}">
           <div class="categoria-card__header">
             <div>
-              <p class="categoria-card__nombre">${cat.nombre}</p>
+              <p class="categoria-card__nombre">
+                ${cat.nombre}
+                ${!cat.activo ? '<span style="font-size: 0.65rem; background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; margin-left: 4px; font-weight: 700; vertical-align: middle;">Inactiva</span>' : ''}
+              </p>
               <p class="categoria-card__cantidad">${cat.cantidad} registro${cat.cantidad !== 1 ? 's' : ''}</p>
             </div>
             <div class="categoria-card__icon"><i data-lucide="folder"></i></div>
@@ -235,7 +239,24 @@ class GestorMovimientos {
         this.categoriaActualId = card.dataset.categoriaId;
         this.paginaActual = 1;
         document.getElementById('modal-registros-titulo').textContent =
-          card.querySelector('.categoria-card__nombre').textContent;
+          card.querySelector('.categoria-card__nombre').textContent.replace('Inactiva', '').trim();
+          
+        const btnNuevo = document.getElementById('btn-nuevo-desde-registros');
+        if (btnNuevo) {
+          const esActiva = card.dataset.activo === 'true';
+          if (!esActiva) {
+            btnNuevo.disabled = true;
+            btnNuevo.style.opacity = '0.5';
+            btnNuevo.title = 'Categoría inactiva. No permite nuevos registros.';
+            btnNuevo.style.cursor = 'not-allowed';
+          } else {
+            btnNuevo.disabled = false;
+            btnNuevo.style.opacity = '1';
+            btnNuevo.title = '';
+            btnNuevo.style.cursor = 'pointer';
+          }
+        }
+        
         this.modalRegistros.removeAttribute('hidden');
         this.cargarRegistros(this.categoriaActualId, this.paginaActual);
       });
