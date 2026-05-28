@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -154,7 +154,10 @@ def perfil_view(request):
                 return JsonResponse({'ok': False, 'errors': perfil_form.errors})
 
         elif 'cambiar_password' in request.POST:
-            password_form = PasswordChangeForm(request.user, request.POST)
+            if request.user.has_usable_password():
+                password_form = PasswordChangeForm(request.user, request.POST)
+            else:
+                password_form = SetPasswordForm(request.user, request.POST)
             if password_form.is_valid():
                 password_form.save()
                 update_session_auth_hash(request, request.user)
