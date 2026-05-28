@@ -466,6 +466,7 @@
     const campanaDot = document.getElementById("gastu-campana-dot");
 
     let registroId = null;
+    let ultimoRegistroId = null;
 
     function abrirModal() {
       overlay.classList.add("gastu--visible");
@@ -543,6 +544,7 @@
         if (!data.ok || !data.mostrar) return;
 
         registroId = data.registro_id;
+        ultimoRegistroId = data.registro_id;
         var SESSION_KEY = "gastu_modal_visto_" + data.registro_id;
 
         if (sessionStorage.getItem(SESSION_KEY)) {
@@ -590,5 +592,29 @@
     });
 
     setTimeout(cargarAlertas, 800);
+
+    // ── Sondeo periódico cada 30 min ──
+    setInterval(function () {
+      fetch(API_URL, {
+        method: "GET",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        credentials: "same-origin",
+      })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          if (!data || !data.ok || !data.mostrar) return;
+          if (!data.alertas || data.alertas.length === 0) return;
+
+          // Nuevas alertas detectadas (cambio de registro_id)
+          if (ultimoRegistroId && data.registro_id !== ultimoRegistroId) {
+            ultimoRegistroId = data.registro_id;
+            renderizarAlertas(data.alertas);
+            campana.style.display = "flex";
+            campanaDot.classList.add("gastu-campana__dot--visible");
+            sessionStorage.setItem("gastu_modal_visto_" + data.registro_id, "1");
+          }
+        })
+        .catch(function () { /* silencio */ });
+    }, 30 * 60 * 1000);
   })();
 </script>

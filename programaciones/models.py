@@ -39,28 +39,3 @@ class Programacion(models.Model):
 
     def __str__(self):
         return f'{self.tipo} - {self.categoria} | {self.frecuencia} | ${self.monto_programado}'
-
-
-class EjecucionProgramacion(models.Model):
-    """Registro histórico de cada ejecución (aceptada) de una Programacion."""
-    programacion = models.ForeignKey(
-        Programacion, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='ejecuciones', db_index=True,
-    )
-    usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE, null=True, db_index=True)
-    fecha_ejecutada = models.DateField(db_index=True)
-    proxima_ejecucion = models.DateField(null=True, blank=True)
-    monto = models.DecimalField(max_digits=12, decimal_places=2)
-    categoria_nombre = models.CharField(max_length=100)
-    tipo = models.CharField(max_length=10, db_index=True)
-    descripcion_snapshot = models.CharField(max_length=100, blank=True, null=True)
-    frecuencia_snapshot = models.CharField(max_length=30, blank=True, null=True)
-
-    class Meta:
-        ordering = ['-fecha_ejecutada']
-        indexes = [
-            models.Index(fields=['usuario', 'fecha_ejecutada']),
-        ]
-
-    def __str__(self):
-        return f'{self.programacion} — {self.fecha_ejecutada}'
