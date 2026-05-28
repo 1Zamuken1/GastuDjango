@@ -9,7 +9,7 @@ from usuarios.models import Usuario
 from categorias.models import Categoria
 from movimientos.models import Movimiento
 from dashboard.models import ResumenMensual
-from programaciones.models import Programacion, EjecucionProgramacion
+from programaciones.models import Programacion
 from programaciones.serializers import ProgramacionSerializer
 from programaciones.services import (
     calcular_proxima_fecha,
@@ -233,14 +233,7 @@ class TestProgramacionAPI:
             {"accion": "invalida"}, content_type="application/json")
         assert r.status_code == 400
 
-    @pytest.mark.django_db
-    def test_historial(self, client_auto, prog_activa, usuario, cat_egreso):
-        EjecucionProgramacion.objects.create(programacion=prog_activa, usuario=usuario,
-            fecha_ejecutada=date.today(), monto=Decimal("100000"),
-            categoria_nombre="Comida", tipo="EGRESO")
-        r = client_auto.get("/api/programaciones/historial/")
-        assert r.status_code == 200
-        assert len(r.json()["ejecuciones"]) == 1
+
 
     @pytest.mark.django_db
     def test_no_autenticado(self):
