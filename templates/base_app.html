@@ -268,95 +268,280 @@
           <i data-lucide="help-circle" style="width: 18px; height: 18px; color: #10b981"></i>
         </button>
 
-        <button class="topbar-btn" id="notif-btn" title="Notificaciones" onclick="window.location.href='/perfil/?tab=notificaciones'">
+        <button class="topbar-btn" id="notif-btn" title="Notificaciones" onclick="toggleNotifDropdown()">
           <i data-lucide="bell" style="width: 16px; height: 16px"></i>
-          {% if notificaciones_count %}
-          <span class="notif-badge">{{ notificaciones_count }}</span>
+          {% if global_notificaciones_count %}
+          <span class="notif-badge">{{ global_notificaciones_count }}</span>
           {% endif %}
         </button>
 
         <div class="topbar-sep"></div>
 
-        <!-- Panel notificaciones -->
-        <div
-          id="notif-panel"
-          style="
+        <!-- Panel notificaciones (estilo YouTube) -->
+        <div id="notif-panel">
+          <!-- Header -->
+          <div class="notif-dropdown-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <i data-lucide="bell" style="width:15px;height:15px;color:#64748b;flex-shrink:0;"></i>
+              <span class="notif-dropdown-title">Notificaciones</span>
+              <span id="notif-dropdown-badge" class="notif-dropdown-count" style="display:none;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button id="notif-dropdown-marcar-btn" class="notif-dropdown-marcar" title="Marcar todas como leídas" style="display:none;">
+                <i data-lucide="check-check" style="width:13px;height:13px;"></i>
+                <span>Marcar leídas</span>
+              </button>
+              <button onclick="toggleNotifDropdown()" class="notif-dropdown-close" aria-label="Cerrar">
+                <i data-lucide="x" style="width:13px;height:13px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Lista de notificaciones recientes -->
+          <div id="notif-lista" class="notif-dropdown-lista">
+            <div class="notif-dropdown-loading">
+              <i data-lucide="loader" style="width:22px;height:22px;animation:notifSpin 1s linear infinite;"></i>
+              <span>Cargando...</span>
+            </div>
+          </div>
+
+          <!-- Footer: ver todas -->
+          <div class="notif-dropdown-footer">
+            <a href="/perfil/?tab=notificaciones" class="notif-dropdown-ver-todas">
+              <span>Ver todas las notificaciones</span>
+              <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Overlay para cerrar al hacer clic fuera -->
+        <div id="notif-overlay" onclick="cerrarNotifDropdown()"></div>
+
+        <style>
+          /* ── Notification Dropdown ─────────────────────── */
+          #notif-panel {
             position: fixed;
-            top: calc(var(--topbar-h) + 8px);
-            right: 60px;
-            width: 340px;
-            max-height: 480px;
+            top: calc(var(--topbar-h) + 10px);
+            right: 16px;
+            width: 360px;
+            max-height: 520px;
             background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-            z-index: 200;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            box-shadow: 0 20px 60px -10px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.06);
+            z-index: 500;
             display: none;
             flex-direction: column;
             overflow: hidden;
-          "
-        >
-          <!-- Header -->
-          <div
-            style="
-              padding: 14px 18px 12px;
-              border-bottom: 1px solid var(--border);
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-            "
-          >
-            <div style="display: flex; align-items: center; gap: 8px">
-              <i
-                data-lucide="bell"
-                style="width: 15px; height: 15px; color: #64748b"
-              ></i>
-              <span
-                style="
-                  font-family: &quot;Plus Jakarta Sans&quot;, sans-serif;
-                  font-weight: 700;
-                  font-size: 0.9rem;
-                  color: #0f172a;
-                "
-                >Notificaciones</span
-              >
-            </div>
-            <button
-              onclick="toggleNotifDropdown()"
-              style="
-                width: 26px;
-                height: 26px;
-                border-radius: 8px;
-                border: 1px solid var(--border);
-                background: transparent;
-                color: #94a3b8;
-                cursor: pointer;
-                display: grid;
-                place-items: center;
-              "
-            >
-              <i data-lucide="x" style="width: 13px; height: 13px"></i>
-            </button>
-          </div>
+            transform-origin: top right;
+            animation: notifPanelIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+          }
+          #notif-panel.open {
+            display: flex;
+          }
+          @keyframes notifPanelIn {
+            from { opacity: 0; transform: scale(0.93) translateY(-8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+          }
+          @keyframes notifSpin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+          }
+          .notif-dropdown-header {
+            padding: 14px 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+          }
+          .notif-dropdown-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: #0f172a;
+          }
+          .notif-dropdown-count {
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 99px;
+            min-width: 18px;
+            text-align: center;
+            line-height: 1.5;
+          }
+          .notif-dropdown-close {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+          }
+          .notif-dropdown-close:hover {
+            background: #f1f5f9;
+            color: #475569;
+          }
+          .notif-dropdown-marcar {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+          }
+          .notif-dropdown-marcar:hover {
+            background: #f1f5f9;
+            color: #334155;
+          }
+          .notif-dropdown-lista {
+            overflow-y: auto;
+            flex: 1;
+            padding: 6px 0;
+          }
+          .notif-dropdown-lista::-webkit-scrollbar { width: 4px; }
+          .notif-dropdown-lista::-webkit-scrollbar-track { background: transparent; }
+          .notif-dropdown-lista::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+          .notif-dropdown-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            gap: 8px;
+            color: #94a3b8;
+            font-size: 0.8rem;
+          }
+          .notif-dropdown-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            gap: 8px;
+            color: #94a3b8;
+          }
+          .notif-dropdown-empty i { color: #cbd5e1; }
+          .notif-dropdown-empty span { font-size: 0.82rem; }
 
-          <!-- Lista -->
-          <div id="notif-lista" style="overflow-y: auto; flex: 1; padding: 8px">
-            <div
-              style="
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                padding: 40px 20px;
-                gap: 8px;
-                color: #94a3b8;
-              "
-            >
-              <i data-lucide="loader" style="width: 28px; height: 28px"></i>
-              <span style="font-size: 0.82rem">Cargando...</span>
-            </div>
-          </div>
-        </div>
+          /* Cada item del dropdown */
+          .notif-drop-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-left: 3px solid transparent;
+            text-decoration: none;
+            position: relative;
+          }
+          .notif-drop-item:hover {
+            background: #f8fafc;
+          }
+          .notif-drop-item.unread {
+            border-left-color: #f59e0b;
+            background: #fffdf7;
+          }
+          .notif-drop-item.unread:hover {
+            background: #fef9ee;
+          }
+          .notif-drop-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+          }
+          .notif-drop-icon i { width: 15px; height: 15px; }
+          .notif-drop-body { flex: 1; min-width: 0; }
+          .notif-drop-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .notif-drop-desc {
+            font-size: 0.74rem;
+            color: #64748b;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          .notif-drop-time {
+            font-size: 0.68rem;
+            color: #94a3b8;
+            margin-top: 3px;
+          }
+          .notif-drop-unread-dot {
+            width: 7px;
+            height: 7px;
+            background: #f59e0b;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 6px;
+          }
+
+          /* Footer */
+          .notif-dropdown-footer {
+            padding: 10px 14px;
+            border-top: 1px solid #f1f5f9;
+            flex-shrink: 0;
+          }
+          .notif-dropdown-ver-todas {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 8px 0;
+            border-radius: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            font-family: 'DM Sans', sans-serif;
+          }
+          .notif-dropdown-ver-todas:hover {
+            background: #10b981;
+            color: #fff;
+            border-color: #10b981;
+          }
+
+          /* Overlay */
+          #notif-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 499;
+            background: transparent;
+          }
+          #notif-overlay.open { display: block; }
+        </style>
 
         <div style="position: relative">
           <button id="user-btn" aria-label="Menú de usuario">
@@ -599,5 +784,248 @@
     {% block scripts %}{% endblock %}
     <!-- incluye alertas de agente_financiero -->
     {% include "agente_financiero/partials/alertas_modal.html" %}
+
+    <!-- ══════════════════════════════════════════
+     NOTIFICATION DROPDOWN — JS Global
+══════════════════════════════════════════ -->
+    <script>
+    (function() {
+      var ICON_MAP_DROPDOWN = {
+        DEFICIT:                  { icon: 'trending-down',  color: '#2563eb', bg: '#eff6ff' },
+        EGRESO_GRANDE:            { icon: 'arrow-up-right', color: '#e11d48', bg: '#fef2f2' },
+        UMBRAL_MENSUAL:           { icon: 'alert-triangle', color: '#d97706', bg: '#fffbeb' },
+        GASTO_INCREMENTAL:        { icon: 'trending-up',    color: '#e11d48', bg: '#fff1f2' },
+        REDUCCION_INGRESOS:       { icon: 'trending-down',  color: '#6366f1', bg: '#eef2ff' },
+        PATRON_INUSUAL:           { icon: 'eye',            color: '#2563eb', bg: '#eff6ff' },
+        CONCENTRACION_GASTO:      { icon: 'bar-chart-3',    color: '#e11d48', bg: '#fff1f2' },
+        CONCEPTO_SIN_USO:         { icon: 'circle-help',    color: '#d97706', bg: '#fffbeb' },
+        VELOCIDAD_GASTO:          { icon: 'zap',            color: '#e11d48', bg: '#fff1f2' },
+        INACTIVIDAD_INGRESOS:     { icon: 'pause',          color: '#6366f1', bg: '#eef2ff' },
+        EGRESOS_AGRUPADOS:        { icon: 'layers',         color: '#e11d48', bg: '#fff1f2' },
+        MICRO_GASTOS:             { icon: 'coins',          color: '#d97706', bg: '#fffbeb' },
+        GASTOS_HORMIGA:           { icon: 'bug',            color: '#b45309', bg: '#fffbeb' },
+        PROYECCION_SOBREGASTO:    { icon: 'activity',       color: '#2563eb', bg: '#eff6ff' },
+        COMPARACION_PERIODO:      { icon: 'git-compare',    color: '#d97706', bg: '#fffbeb' },
+        DIA_MES_CRITICO:          { icon: 'calendar-x',     color: '#e11d48', bg: '#fff1f2' },
+        EGRESO_SIN_CONCEPTO:      { icon: 'tag-off',        color: '#64748b', bg: '#f1f5f9' },
+        INGRESO_INUSUAL:          { icon: 'banknote',       color: '#10b981', bg: '#ecfdf5' },
+        RECORDATORIO_CUOTA_AHORRO:{ icon: 'piggy-bank',     color: '#10b981', bg: '#ecfdf5' },
+      };
+
+      var panelOpen = false;
+      var notifLoaded = false;
+      var notifPanelCtrl = null;
+      var CSRF_TOKEN_DROPDOWN = '';
+
+      function getCsrf() {
+        // Intentar obtener CSRF del cookie
+        var name = 'csrftoken';
+        var cookieValue = '';
+        if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      function escHtml(text) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(text));
+        return d.innerHTML;
+      }
+
+      function buildDropItem(n) {
+        var ic = ICON_MAP_DROPDOWN[n.tipo] || { icon: 'bell', color: '#10b981', bg: '#ecfdf5' };
+        var cls = n.leida ? '' : ' unread';
+        var dot = n.leida ? '' : '<div class="notif-drop-unread-dot"></div>';
+        return '<div class="notif-drop-item' + cls + '" data-notif-id="' + n.id + '" data-leida="' + (n.leida ? '1' : '0') + '">' +
+          '<div class="notif-drop-icon" style="background:' + ic.bg + ';color:' + ic.color + ';">' +
+            '<i data-lucide="' + ic.icon + '"></i>' +
+          '</div>' +
+          '<div class="notif-drop-body">' +
+            '<p class="notif-drop-title">' + escHtml(n.titulo) + '</p>' +
+            '<p class="notif-drop-desc">' + escHtml(n.descripcion) + '</p>' +
+            '<p class="notif-drop-time">' + n.fecha + '</p>' +
+          '</div>' +
+          dot +
+        '</div>';
+      }
+
+      function cargarNotifDropdown() {
+        var lista = document.getElementById('notif-lista');
+        if (!lista) return;
+
+        if (notifPanelCtrl) { notifPanelCtrl.abort(); notifPanelCtrl = null; }
+
+        lista.innerHTML = '<div class="notif-dropdown-loading">' +
+          '<i data-lucide="loader" style="width:22px;height:22px;animation:notifSpin 1s linear infinite;"></i>' +
+          '<span>Cargando...</span></div>';
+        if (window.lucide) lucide.createIcons();
+
+        var ctrl = new AbortController();
+        notifPanelCtrl = ctrl;
+
+        fetch('/notificaciones/json/?limit=8', {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          signal: ctrl.signal,
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            notifPanelCtrl = null;
+            notifLoaded = true;
+            if (!data || !data.ok) {
+              lista.innerHTML = '<div class="notif-dropdown-empty"><i data-lucide="alert-triangle"></i><span>Error al cargar</span></div>';
+              if (window.lucide) lucide.createIcons();
+              return;
+            }
+
+            // Actualizar badge del botón campana
+            actualizarBadgeCampana(data.total_no_leidas);
+
+            // Mostrar/ocultar "marcar leídas"
+            var marcarBtn = document.getElementById('notif-dropdown-marcar-btn');
+            if (marcarBtn) marcarBtn.style.display = data.total_no_leidas > 0 ? 'flex' : 'none';
+
+            // Badge en header del panel
+            var dropBadge = document.getElementById('notif-dropdown-badge');
+            if (dropBadge) {
+              if (data.total_no_leidas > 0) {
+                dropBadge.textContent = data.total_no_leidas;
+                dropBadge.style.display = 'inline-block';
+              } else {
+                dropBadge.style.display = 'none';
+              }
+            }
+
+            var notifs = data.notificaciones || [];
+            // Solo mostrar las 8 más recientes
+            var recent = notifs.slice(0, 8);
+
+            if (recent.length === 0) {
+              lista.innerHTML = '<div class="notif-dropdown-empty">' +
+                '<i data-lucide="bell-off" style="width:28px;height:28px;"></i>' +
+                '<span>Sin notificaciones</span></div>';
+              if (window.lucide) lucide.createIcons();
+              return;
+            }
+
+            lista.innerHTML = recent.map(buildDropItem).join('');
+            if (window.lucide) lucide.createIcons();
+
+            // Delegación de click en items
+            lista.querySelectorAll('.notif-drop-item').forEach(function(item) {
+              item.addEventListener('click', function() {
+                var id = item.getAttribute('data-notif-id');
+                var leida = item.getAttribute('data-leida') === '1';
+
+                // Si no está leída, marcarla en background
+                if (!leida) {
+                  fetch('/notificaciones/marcar-leidas/', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'X-CSRFToken': getCsrf(),
+                    },
+                    body: JSON.stringify({ ids: [id] }),
+                  }).catch(function() {});
+                }
+
+                // Redirigir al perfil con esa notificación destacada
+                cerrarNotifDropdown();
+                window.location.href = '/perfil/?tab=notificaciones&notif=' + id;
+              });
+            });
+          })
+          .catch(function(err) {
+            notifPanelCtrl = null;
+            if (err.name === 'AbortError') return;
+            var lista2 = document.getElementById('notif-lista');
+            if (lista2) {
+              lista2.innerHTML = '<div class="notif-dropdown-empty"><i data-lucide="alert-triangle"></i><span>Error de conexión</span></div>';
+              if (window.lucide) lucide.createIcons();
+            }
+          });
+      }
+
+      function actualizarBadgeCampana(count) {
+        var btn = document.getElementById('notif-btn');
+        if (!btn) return;
+        var badge = btn.querySelector('.notif-badge');
+        if (count > 0) {
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'notif-badge';
+            btn.appendChild(badge);
+          }
+          badge.textContent = count > 99 ? '99+' : count;
+        } else {
+          if (badge) badge.remove();
+        }
+      }
+
+      window.toggleNotifDropdown = function() {
+        var panel = document.getElementById('notif-panel');
+        var overlay = document.getElementById('notif-overlay');
+        if (!panel) return;
+
+        if (panelOpen) {
+          cerrarNotifDropdown();
+        } else {
+          panel.classList.add('open');
+          if (overlay) overlay.classList.add('open');
+          panelOpen = true;
+          // Siempre recargar al abrir para datos frescos
+          cargarNotifDropdown();
+          if (window.lucide) lucide.createIcons();
+        }
+      };
+
+      window.cerrarNotifDropdown = function() {
+        var panel = document.getElementById('notif-panel');
+        var overlay = document.getElementById('notif-overlay');
+        if (panel) panel.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+        panelOpen = false;
+      };
+
+      // Marcar todas como leídas desde el dropdown
+      document.addEventListener('DOMContentLoaded', function() {
+        var marcarBtn = document.getElementById('notif-dropdown-marcar-btn');
+        if (marcarBtn) {
+          marcarBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fetch('/notificaciones/marcar-leidas/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrf(),
+              },
+              body: JSON.stringify({}),
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                if (d.ok) {
+                  cargarNotifDropdown();
+                }
+              });
+          });
+        }
+      });
+
+      // Cerrar con Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && panelOpen) cerrarNotifDropdown();
+      });
+
+    })();
+    </script>
   </body>
 </html>

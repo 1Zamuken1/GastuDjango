@@ -31,7 +31,7 @@ def listar(request):
     """Vista principal de ahorros: lista metas con estadisticas."""
     estado = request.GET.get("estado")
     texto = request.GET.get("texto")
-    ahorros = AhorroMeta.objects.filter(usuario=request.user)
+    ahorros = AhorroMeta.objects.filter(usuario=request.user).select_related('categoria')
     
     if estado:
         ahorros = ahorros.filter(estado=estado)
@@ -218,8 +218,10 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         pendientes = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
 
         cuotas = list(cuotas_qs)
+        primera_pendiente = next((c for c in cuotas if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE), None)
+        
         for c in cuotas:
-            c.is_disponible_pago = cuota_disponible_pago(c, ahorro.frecuencia)
+            c.is_disponible_pago = cuota_disponible_pago(c, ahorro.frecuencia, primera_pendiente=primera_pendiente)
 
         return render(request, "ahorros/aporte.html", {
             "ahorro": ahorro,
@@ -240,6 +242,19 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if aporte_ingresado <= Decimal('0.00'):
         return JsonResponse({"ok": False, "error": "El monto del aporte debe ser mayor que cero."})
 
+    if ahorro.estado == AhorroMeta.Estado.COMPLETADO:
+        return JsonResponse({"ok": False, "error": "Esta meta de ahorro ya ha sido completada."})
+
+    monto_meta = ahorro.monto_meta or Decimal('0.00')
+    total_acumulado_actual = ahorro.total_acumulado or Decimal('0.00')
+    if monto_meta > Decimal('0.00'):
+        restante_meta = monto_meta - total_acumulado_actual
+        if aporte_ingresado > restante_meta:
+            return JsonResponse({
+                "ok": False,
+                "error": f"El aporte supera el restante de la meta. Solo necesitas aportar ${restante_meta:,.2f}."
+            })
+
     hoy = date.today()
 
     resumen = ResumenMensual.objects.filter(
@@ -251,12 +266,22 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if not resumen:
         return JsonResponse({"ok": False, "error": "No existe un resumen mensual"})
 
-    if resumen.disponible <= Decimal('0.00'):
-        return JsonResponse({"ok": False, "error": "No tienes saldo disponible para realizar aportes."})
+    if resumen.disponible < aporte_ingresado:
+        return JsonResponse({"ok": False, "error": f"No tienes saldo disponible suficiente para realizar este aporte. Disponible actual: ${resumen.disponible:,.2f}."})
 
     pasar_cuotas_a_perdidas(ahorro)
 
-    if aporte_id:
+    es_extraordinario = request.POST.get('extraordinario') == 'true'
+
+    if es_extraordinario:
+        cuota = AporteAhorro(
+            ahorro=ahorro,
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+            fecha_limite=hoy,
+            aporte_asignado=aporte_ingresado
+        )
+        ahorro.cantidad_cuotas += 1
+    elif aporte_id:
         cuota = AporteAhorro.objects.select_for_update().get(
             id=aporte_id, ahorro=ahorro
         )
@@ -274,12 +299,13 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if cuota.aporte is not None:
         return JsonResponse({"ok": False, "error": "Esta cuota ya tiene un aporte registrado."})
 
-    if not cuota_disponible_pago(cuota, ahorro.frecuencia):
+    if not es_extraordinario and not cuota_disponible_pago(cuota, ahorro.frecuencia):
         return JsonResponse({"ok": False, "error": "La cuota no esta disponible para pago todavia."})
 
     # Registrar aporte
     cuota.aporte = aporte_ingresado
     cuota.estado_ap = AporteAhorro.EstadoAp.APORTADO
+    cuota._es_extraordinario = es_extraordinario
     cuota.save()
     # El signal post_save de AporteAhorro se encarga de actualizar
     # el ResumenMensual (ingreso_neto, disponible, ganancia_acumulada, etc.)
@@ -303,13 +329,18 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     if monto_meta > Decimal('0.00') and total_acumulado >= monto_meta:
         ahorro.estado = AhorroMeta.Estado.COMPLETADO
+        pendientes = AporteAhorro.objects.filter(ahorro=ahorro, estado_ap=AporteAhorro.EstadoAp.PENDIENTE)
+        cuotas_eliminadas = pendientes.count()
+        if cuotas_eliminadas > 0:
+            pendientes.delete()
+            ahorro.cantidad_cuotas -= cuotas_eliminadas
 
     asignado = cuota.aporte_asignado or Decimal('0.00')
-    if aporte_ingresado != asignado:
+    if es_extraordinario or aporte_ingresado != asignado:
         recalcular_aportes_restantes(ahorro)
 
     abandono_ahorro(ahorro)
 
-    ahorro.save()
+    ahorro.save(update_fields=['total_acumulado', 'estado', 'cantidad_cuotas'])
 
     return JsonResponse({"ok": True, "message": "Aporte registrado exitosamente"})

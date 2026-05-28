@@ -6,19 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Dashboard — GastuApp{% endblock %}</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            display: ['"Plus Jakarta Sans"', 'sans-serif'],
-            sans:    ['"DM Sans"', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

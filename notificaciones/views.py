@@ -59,6 +59,8 @@ def dict_notif(n):
         'descripcion': n.descripcion,
         'leida':       n.leida,
         'fecha':       n.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+        'referencia_id': n.referencia_id,
+        'referencia_tipo': n.referencia_tipo,
     }
 
 
