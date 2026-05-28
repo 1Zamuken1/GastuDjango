@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from .preferencias.models import PreferenciasAlertas
 
 
 class Notificacion(models.Model):
@@ -37,6 +38,9 @@ class Notificacion(models.Model):
         PROYECCION_SOBREGASTO = 'PROYECCION_SOBREGASTO', 'Proyección de sobregasto'
         COMPARACION_PERIODO   = 'COMPARACION_PERIODO',   'Comparación con mes anterior'
         DIA_MES_CRITICO       = 'DIA_MES_CRITICO',       'Día del mes crítico'
+        
+        # — Ahorros —
+        RECORDATORIO_CUOTA_AHORRO = 'RECORDATORIO_CUOTA_AHORRO', 'Recordatorio de cuota de ahorro'
 
         # — Inconsistencias —
         EGRESO_SIN_CONCEPTO   = 'EGRESO_SIN_CONCEPTO',   'Egresos sin categorizar'
@@ -65,6 +69,13 @@ class Notificacion(models.Model):
         max_length=20,
         choices=Modulo.choices,
         default=Modulo.GENERAL,
+    )
+    referencia_id = models.PositiveIntegerField(null=True, blank=True)
+    referencia_tipo = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        help_text="Ej: 'movimiento', 'ahorro', 'programacion', 'sistema'"
     )
 
     @classmethod
@@ -100,6 +111,12 @@ class Notificacion(models.Model):
         }
         if tipo in tipos_egreso:
             return cls.Modulo.EGRESOS
+
+        tipos_ahorro = {
+            cls.Tipo.RECORDATORIO_CUOTA_AHORRO,
+        }
+        if tipo in tipos_ahorro:
+            return cls.Modulo.AHORROS
 
         return cls.Modulo.GENERAL
 

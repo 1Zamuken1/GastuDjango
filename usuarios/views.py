@@ -6,8 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.conf import settings
 
-from .forms import UsuarioCreationForm, LoginForm, PerfilForm, PreferenciasForm
-from .models import Preferencias
+from .forms import UsuarioCreationForm, LoginForm, PerfilForm
+from notificaciones.preferencias.models import PreferenciasAlertas
+from notificaciones.preferencias.forms import PreferenciasAlertasForm
+from notificaciones.preferencias.service import PreferenciasService
 
 
 # ──────────────────────────────────────────────────────────────
@@ -89,10 +91,10 @@ def perfil_view(request):
     perfil_form = PerfilForm(instance=request.user)
     password_form = PasswordChangeForm(request.user)
 
-    preferencias, _ = Preferencias.objects.get_or_create(
+    preferencias, _ = PreferenciasAlertas.objects.get_or_create(
         usuario=request.user,
     )
-    preferencias_form = PreferenciasForm(instance=preferencias)
+    preferencias_form = PreferenciasAlertasForm(instance=preferencias)
 
     tab_activo = request.GET.get('tab', 'datos')
     tabs_validas = {'datos', 'preferencias', 'notificaciones'}
@@ -164,11 +166,12 @@ def perfil_view(request):
                 return JsonResponse({'ok': False, 'errors': password_form.errors})
 
         elif 'guardar_preferencias' in request.POST:
-            preferencias_form = PreferenciasForm(request.POST, instance=preferencias)
+            preferencias_form = PreferenciasAlertasForm(request.POST, instance=preferencias)
             if preferencias_form.is_valid():
                 pref = preferencias_form.save(commit=False)
                 pref.usuario = request.user
                 pref.save()
+                PreferenciasService.invalidar_cache(request.user.id)
                 if is_ajax:
                     return JsonResponse({'ok': True, 'mensaje': 'Preferencias de alertas actualizadas.'})
                 messages.success(request, 'Preferencias de alertas actualizadas.')

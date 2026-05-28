@@ -275,7 +275,6 @@
 }
 
 /* ── Botones Primary (scoped a ahorros — NO contamina otras apps) ── */
-/* Se usa la clase wrapper .ahorros-scope que se pone en el body de la app */
 .ahorros-scope .btn-primary,
 #app-content .btn-primary-ahorro {
   background: #eab308;
@@ -1096,4 +1095,184 @@
 .categoria-card[data-activo="false"]:hover {
   filter: grayscale(0.85);
   opacity: 0.9;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   PLAZO TOGGLE — selector mutuamente exclusivo cuotas / fecha
+   ═══════════════════════════════════════════════════════════ */
+
+/* Separador "elige una opción" */
+.plazo-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.plazo-label-line {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.plazo-label-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.plazo-label-text svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: #eab308;
+}
+
+/* Tabs */
+.plazo-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  margin-bottom: 0.875rem;
+}
+
+.plazo-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border: none;
+  background: #f8fafc;
+  font-family: "DM Sans", sans-serif;
+  position: relative;
+  transition: background 0.15s, color 0.15s;
+}
+
+.plazo-tab svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+
+.plazo-tab:first-child {
+  border-right: 1.5px solid #e2e8f0;
+}
+
+.plazo-tab.active {
+  background: #fff;
+  color: #b45309;
+  font-weight: 700;
+}
+
+.plazo-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: #eab308;
+}
+
+.plazo-tab:hover:not(.active) {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* Paneles */
+.plazo-panel {
+  margin-bottom: 0.875rem;
+  animation: panelIn 0.18s ease;
+}
+
+.plazo-panel[hidden] {
+  display: none;
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.plazo-panel label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.plazo-panel input[type="number"],
+.plazo-panel input[type="hidden"] {
+  width: 100%;
+  padding: 0.6rem 0.875rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  font-family: "DM Sans", sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.plazo-panel input[type="number"]:focus {
+  border-color: #eab308;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+
+/* Input de fecha display (datepicker visual) */
+.plazo-panel .plazo-fecha-display {
+  width: 100%;
+  padding: 0.6rem 0.875rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  font-family: "DM Sans", sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.plazo-panel .plazo-fecha-display:focus {
+  border-color: #eab308;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+
+.plazo-hint {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 500;
+}
+
+.plazo-hint svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+  color: #cbd5e1;
 }

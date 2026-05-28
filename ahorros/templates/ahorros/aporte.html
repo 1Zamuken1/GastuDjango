@@ -74,6 +74,25 @@
           </div>
         </div>
 
+        <!-- Aporte Extraordinario -->
+        <div class="aporte-extraordinario" style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+          <h3 class="field-label" style="margin-bottom:.5rem; font-size:.85rem; color: #3b82f6;">
+            <i data-lucide="zap" style="width:14px;height:14px;vertical-align:-2px;margin-right:.25rem;"></i>Aporte Libre / Extraordinario
+          </h3>
+          <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.75rem;">Adelanta capital a tu ahorro sin restricción de fechas.</p>
+          <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}" class="form-aporte-modal form-aporte-inline">
+            {% csrf_token %}
+            <input type="hidden" name="extraordinario" value="true">
+            <div class="form-aporte-inline__wrapper" style="width: 100%; max-width: 250px;">
+              <span class="form-aporte-inline__prefix">$</span>
+              <input type="number" name="aporte" step="0.01" min="0.01" placeholder="Ej. 100000" required class="form-aporte-inline__input" style="width: 100%;">
+            </div>
+            <button type="submit" class="form-aporte-inline__submit" style="background: #3b82f6; color: white;" title="Registrar aporte extraordinario">
+              <i data-lucide="arrow-right" style="width:15px;height:15px;stroke-width:2;"></i>
+            </button>
+          </form>
+        </div>
+
         <!-- Resumen Cuotas -->
         <div class="cuotas-resumen">
           <p class="cuotas-resumen__text">
