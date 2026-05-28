@@ -298,6 +298,16 @@
     color: #e11d48;
 }
 
+.historial-item__node--extra {
+    background: #f3e8ff;
+    color: #a855f7;
+    border: 1.5px solid #e9d5ff;
+}
+.historial-item__tag--extra {
+    background: #f3e8ff;
+    color: #9333ea;
+}
+
 /* ── Estados vacío, loading, error ── */
 .historial-state {
     display: flex;

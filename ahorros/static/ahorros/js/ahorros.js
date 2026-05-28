@@ -124,17 +124,17 @@ function calcularTiemposRestantes(container) {
       celda.textContent = '—';
       return;
     }
-    
+
     const fechaStr = celda.dataset.fechaLimite;
     if (!fechaStr) return;
-    
+
     const partes = fechaStr.split('-');
     const limite = new Date(partes[0], partes[1] - 1, partes[2]);
     limite.setHours(0,0,0,0);
-    
+
     const diffTime = limite - hoy;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) {
       celda.textContent = 'Vencida';
       celda.style.color = '#ef4444';
@@ -168,7 +168,6 @@ async function enviarAporte(e, url) {
       mostrarToast(json.message || 'Aporte registrado', 'success');
       setTimeout(() => location.reload(), 700);
     } else {
-      // Mostrar alerta de error dentro del modal
       const errContainer = overlayAporte.querySelector('#modal-error-container');
       const errMsg       = overlayAporte.querySelector('#modal-error-message');
       if (errContainer && errMsg) {
@@ -202,7 +201,7 @@ const modalPicker          = document.getElementById('modal-picker-cat');
 const pickerGrid           = document.getElementById('picker-grid');
 const pickerBuscador       = document.getElementById('picker-buscador');
 const pickerSelLabel       = document.getElementById('picker-seleccionado-label');
-let   _pickerCallback      = null; // función a llamar al seleccionar
+let   _pickerCallback      = null;
 
 function abrirPicker(callback) {
   _pickerCallback = callback;
@@ -247,7 +246,87 @@ modalPicker.addEventListener('click', e => { if (e.target === modalPicker) cerra
 
 
 /* ══════════════════════════════════════════════════════════
-   6. MODAL CREAR META
+   6. PLAZO TOGGLE — selector mutuamente exclusivo cuotas / fecha
+   ══════════════════════════════════════════════════════════ */
+
+/**
+ * Cambia el panel activo del toggle de plazo.
+ * Al cambiar, limpia el campo del otro panel para que el backend
+ * nunca reciba cuotas y fecha al mismo tiempo.
+ *
+ * @param {string} prefix  - 'crear' | 'editar'
+ * @param {string} modo    - 'cuotas' | 'fecha'
+ */
+function switchPlazo(prefix, modo) {
+  const panelCuotas = document.getElementById(`panel-${prefix}-cuotas`);
+  const panelFecha  = document.getElementById(`panel-${prefix}-fecha`);
+  const tabCuotas   = document.getElementById(`tab-${prefix}-cuotas`);
+  const tabFecha    = document.getElementById(`tab-${prefix}-fecha`);
+  const inputCuotas = document.getElementById(`${prefix}-cuotas`);
+  const inputFecha  = document.getElementById(`${prefix}-fecha-meta`);
+
+  // Leer el datepicker en el momento de ejecucion (las variables dpCrear/dpEditar
+  // son null al inicio del script y se asignan en DOMContentLoaded; leerlas aqui
+  // garantiza que siempre tengamos la instancia real, no el null inicial)
+  const dpActual = prefix === 'crear' ? dpCrear : dpEditar;
+
+  if (modo === 'cuotas') {
+    panelCuotas.removeAttribute('hidden');
+    panelFecha.setAttribute('hidden', '');
+    tabCuotas.classList.add('active');
+    tabCuotas.setAttribute('aria-selected', 'true');
+    tabFecha.classList.remove('active');
+    tabFecha.setAttribute('aria-selected', 'false');
+    // limpiar() resetea this.valor, el input hidden Y el texto visual del display
+    // setValor('') no sirve porque tiene un guard "if (!isoStr) return" al inicio
+    if (dpActual && typeof dpActual.limpiar === 'function') dpActual.limpiar();
+
+
+  } else {
+    panelFecha.removeAttribute('hidden');
+    panelCuotas.setAttribute('hidden', '');
+    tabFecha.classList.add('active');
+    tabFecha.setAttribute('aria-selected', 'true');
+    tabCuotas.classList.remove('active');
+    tabCuotas.setAttribute('aria-selected', 'false');
+    // Limpiar cuotas para que el backend no reciba ambos
+    if (inputCuotas) inputCuotas.value = '';
+    // Limpiar tambien el datepicker por si vuelve al panel de fecha tras haber
+    // estado en cuotas (el display mostraria una fecha vieja de una sesion anterior)
+    if (dpActual && typeof dpActual.limpiar === 'function') dpActual.limpiar();
+  }
+
+  lucide.createIcons();
+}
+
+/**
+ * Inicializa el toggle al abrir un modal.
+ * Detecta el modo correcto según los valores existentes (útil para editar).
+ *
+ * @param {string}      prefix           - 'crear' | 'editar'
+ * @param {string|null} fechaExistente   - 'YYYY-MM-DD' o null
+ * @param {number|null} cuotasExistentes - número o null
+ */
+function initPlazoToggle(prefix, fechaExistente = null, cuotasExistentes = null) {
+  // Si hay fecha y NO hay cuotas → modo fecha; en cualquier otro caso → cuotas (default)
+  const modoInicial = (fechaExistente && !cuotasExistentes) ? 'fecha' : 'cuotas';
+  switchPlazo(prefix, modoInicial);
+
+  if (cuotasExistentes) {
+    const inp = document.getElementById(`${prefix}-cuotas`);
+    if (inp) inp.value = cuotasExistentes;
+  }
+  if (fechaExistente) {
+    const inp = document.getElementById(`${prefix}-fecha-meta`);
+    if (inp) inp.value = fechaExistente;
+    const dpVar = prefix === 'crear' ? dpCrear : dpEditar;
+    if (dpVar && typeof dpVar.setValor === 'function') dpVar.setValor(fechaExistente);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   7. MODAL CREAR META
    ══════════════════════════════════════════════════════════ */
 
 const modalCrear     = document.getElementById('modal-crear-meta');
@@ -260,20 +339,20 @@ function abrirModalCrear() {
   document.getElementById('crear-categoria').value = '';
   document.getElementById('crear-cat-label').textContent = 'Seleccionar categoría';
   document.getElementById('crear-cat-btn').classList.remove('selected');
-  
+
   const fLabel = document.getElementById('crear-frecuencia-label');
   if (fLabel) {
     document.getElementById('crear-frecuencia').value = '';
     fLabel.textContent = '-- Seleccionar --';
     fLabel.style.color = 'var(--slate-500)';
   }
-  if (typeof dpCrear !== 'undefined' && dpCrear) {
-    dpCrear.setValor('');
-  }
 
   ocultarErroresCrear();
   modalCrear.removeAttribute('hidden');
   lucide.createIcons();
+  // Inicializar toggle en modo cuotas por defecto
+  initPlazoToggle('crear', null, null);
+  modalCrear.querySelector('.modal__body').scrollTop = 0;
 }
 
 function cerrarModalCrear() {
@@ -284,6 +363,8 @@ function mostrarErroresCrear(errors) {
   const msgs = Object.values(errors).flat().join(' · ');
   crearErrorsTxt.textContent = msgs;
   crearErrors.style.display = 'flex';
+  lucide.createIcons();
+  crearErrors.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function ocultarErroresCrear() {
@@ -291,7 +372,6 @@ function ocultarErroresCrear() {
   crearErrorsTxt.textContent = '';
 }
 
-// Picker de categoría para crear
 document.getElementById('crear-cat-btn').addEventListener('click', () => {
   abrirPicker((id, nombre) => {
     document.getElementById('crear-categoria').value = id;
@@ -331,7 +411,7 @@ document.getElementById('btn-guardar-crear').addEventListener('click', async () 
 
 
 /* ══════════════════════════════════════════════════════════
-   7. MODAL EDITAR META
+   8. MODAL EDITAR META
    ══════════════════════════════════════════════════════════ */
 
 const modalEditar     = document.getElementById('modal-editar-meta');
@@ -348,6 +428,8 @@ function mostrarErroresEditar(errors) {
   const msgs = Object.values(errors).flat().join(' · ');
   editarErrorsTxt.textContent = msgs;
   editarErrors.style.display = 'flex';
+  lucide.createIcons();
+  editarErrors.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function ocultarErroresEditar() {
@@ -355,7 +437,6 @@ function ocultarErroresEditar() {
   editarErrorsTxt.textContent = '';
 }
 
-// Picker de categoría para editar
 document.getElementById('editar-cat-btn').addEventListener('click', () => {
   abrirPicker((id, nombre) => {
     document.getElementById('editar-categoria').value = id;
@@ -379,7 +460,7 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
       const a = json.ahorro;
       document.getElementById('editar-ahorro-id').value = a.id;
       document.getElementById('editar-monto-meta').value = a.monto_meta;
-      
+
       document.getElementById('editar-frecuencia').value = a.frecuencia;
       const fLabelEdit = document.getElementById('editar-frecuencia-label');
       if (fLabelEdit) {
@@ -388,12 +469,6 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
         fLabelEdit.style.color = a.frecuencia ? 'var(--slate-900)' : 'var(--slate-500)';
       }
 
-      document.getElementById('editar-fecha-meta').value = a.fecha_meta;
-      if (typeof dpEditar !== 'undefined' && dpEditar) {
-        dpEditar.setValor(a.fecha_meta || '');
-      }
-
-      document.getElementById('editar-cuotas').value = a.cantidad_cuotas;
       document.getElementById('editar-descripcion').value = a.descripcion;
       document.getElementById('editar-categoria').value = a.categoria_id;
 
@@ -407,6 +482,16 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
 
       modalEditar.removeAttribute('hidden');
       lucide.createIcons();
+
+      // Inicializar el toggle con los valores existentes del ahorro.
+      // Si el ahorro tiene fecha_meta Y cantidad_cuotas (siempre los tendrá por el modelo),
+      // el criterio es: si el usuario originalmente usó fecha → mostrar panel fecha;
+      // si usó cuotas → mostrar panel cuotas.
+      // Como el backend siempre calcula el campo que faltaba, usamos la heurística:
+      // si fecha_meta existe, mostramos fecha; el usuario puede cambiar.
+      initPlazoToggle('editar', a.fecha_meta || null, a.cantidad_cuotas || null);
+      modalEditar.querySelector('.modal__body').scrollTop = 0;
+
     } catch {
       mostrarToast('Error de conexión al cargar la meta.', 'error');
     }
@@ -439,7 +524,7 @@ document.getElementById('btn-guardar-editar').addEventListener('click', async ()
 
 
 /* ══════════════════════════════════════════════════════════
-   8. MODAL ELIMINAR META
+   9. MODAL ELIMINAR META
    ══════════════════════════════════════════════════════════ */
 
 const modalEliminar = document.getElementById('modal-eliminar-meta');
@@ -497,7 +582,7 @@ document.getElementById('btn-confirmar-eliminar').addEventListener('click', asyn
 
 
 /* ══════════════════════════════════════════════════════════
-   9. MODAL DE REPORTE / EXPORTACIÓN
+   10. MODAL DE REPORTE / EXPORTACIÓN
    ══════════════════════════════════════════════════════════ */
 
 const modalReporte  = document.getElementById('modal-reporte');
@@ -543,7 +628,7 @@ document.getElementById('btn-descargar-reporte').addEventListener('click', () =>
 
 
 /* ══════════════════════════════════════════════════════════
-   10. ESCAPE cierra modales
+   11. ESCAPE cierra modales
    ══════════════════════════════════════════════════════════ */
 
 document.addEventListener('keydown', e => {
@@ -556,11 +641,12 @@ document.addEventListener('keydown', e => {
   if (!overlayAporte.hasAttribute('hidden'))   { cerrarModalAporte();    return; }
 });
 
+
 /* ══════════════════════════════════════════════════════════
-   11. DATEPICKER, FRECUENCIA Y FILTRO DE ESTADO
+   12. DATEPICKER, FRECUENCIA Y FILTRO DE ESTADO
    ══════════════════════════════════════════════════════════ */
 
-let dpCrear = null;
+let dpCrear  = null;
 let dpEditar = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -577,7 +663,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  const btnFiltroEstado = document.getElementById('btn-filtro-estado');
+  // Inicializar el toggle de crear en modo cuotas por defecto
+  initPlazoToggle('crear', null, null);
+
+  // Filtro de estado
+  const btnFiltroEstado  = document.getElementById('btn-filtro-estado');
   const menuFiltroEstado = document.getElementById('menu-filtro-estado');
   if (btnFiltroEstado && menuFiltroEstado) {
     btnFiltroEstado.addEventListener('click', (e) => {
@@ -589,18 +679,19 @@ document.addEventListener('DOMContentLoaded', () => {
         menuFiltroEstado.setAttribute('hidden', '');
       }
     });
-    
-    const params = new URLSearchParams(window.location.search);
+
+    const params       = new URLSearchParams(window.location.search);
     const estadoActual = params.get('estado');
     if (estadoActual) {
       const estadoLabels = { 'SIN_INICIAR': 'Sin Iniciar', 'ACTIVO': 'Activo', 'COMPLETADO': 'Completado', 'ABANDONADO': 'Abandonado' };
       if (estadoLabels[estadoActual]) {
         btnFiltroEstado.innerHTML = `<i data-lucide="filter"></i> Estado: ${estadoLabels[estadoActual]} <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>`;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        lucide.createIcons();
       }
     }
   }
 
+  // Picker de frecuencia
   document.querySelectorAll('.picker-frecuencia-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -615,9 +706,9 @@ document.addEventListener('DOMContentLoaded', () => {
     opt.addEventListener('click', (e) => {
       e.stopPropagation();
       const target = opt.dataset.target;
-      const val = opt.dataset.value;
-      const text = opt.textContent;
-      
+      const val    = opt.dataset.value;
+      const text   = opt.textContent;
+
       document.getElementById(`${target}-frecuencia`).value = val;
       const label = document.getElementById(`${target}-frecuencia-label`);
       if (label) {
@@ -632,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (e) => {
     document.querySelectorAll('.frecuencia-menu').forEach(menu => {
       const target = menu.id.replace('-frecuencia-menu', '');
-      const btn = document.getElementById(`${target}-frecuencia-btn`);
+      const btn    = document.getElementById(`${target}-frecuencia-btn`);
       if (btn && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
         menu.style.display = 'none';
       }

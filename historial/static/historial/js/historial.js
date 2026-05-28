@@ -173,7 +173,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let itemsHTML = '<div class="historial-timeline">';
         acciones.forEach(act => {
-            const cfg = actionMap[act.accion] || actionMap.CREACION;
+            let cfg = actionMap[act.accion] || actionMap.CREACION;
+
+            if (act.descripcion && act.descripcion.toLowerCase().includes('extraordinario')) {
+                cfg = { 
+                    icon: 'zap', 
+                    tag: 'Extraordinario', 
+                    nodeClass: 'historial-item__node--extra', 
+                    tagClass: 'historial-item__tag--extra' 
+                };
+            }
 
             const montoHTML = act.monto_afectado
                 ? `<span class="historial-item__monto" style="background:${tema.light};color:${tema.accent};">$${parseFloat(act.monto_afectado).toLocaleString('es-CO')}</span>`

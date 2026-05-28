@@ -3,8 +3,11 @@ from django.dispatch import receiver
 
 
 @receiver(post_save, sender='ahorros.AhorroMeta')
-def historial_ahorro_guardado(sender, instance, created, **kwargs):
+def historial_ahorro_guardado(sender, instance, created, update_fields=None, **kwargs):
     """Registra en el historial la creación o edición de una meta de ahorro."""
+    if not created and update_fields is not None:
+        return
+        
     from historial.models import AccionHistorial
 
     accion = (
@@ -88,9 +91,11 @@ def historial_aporte_registrado(sender, instance, created, **kwargs):
     if instance.estado_ap != 'APORTADO':
         return
 
+    es_extraordinario = getattr(instance, '_es_extraordinario', False)
+
     # La creación masiva de cuotas (bulk_create) no llega aquí,
     # pero si llegara (created=True) la ignoramos para no contaminar el historial.
-    if created:
+    if created and not es_extraordinario:
         return
 
     categoria_nombre = (
@@ -99,11 +104,16 @@ def historial_aporte_registrado(sender, instance, created, **kwargs):
         else "sin categoría"
     )
 
+    if es_extraordinario:
+        descripcion = f"Se registró un aporte extraordinario a la meta '{categoria_nombre}'"
+    else:
+        descripcion = f"Se registró un aporte a la meta '{categoria_nombre}'"
+
     AccionHistorial.objects.create(
         usuario=instance.ahorro.usuario,
         accion=AccionHistorial.AccionChoices.CREACION,
         modulo=AccionHistorial.ModuloChoices.AHORROS,
-        descripcion=f"Se registró un aporte a la meta '{categoria_nombre}'",
+        descripcion=descripcion,
         referencia_id=str(instance.id),
         monto_afectado=instance.aporte,
     )

@@ -27,10 +27,10 @@ def on_movimiento_guardado(sender, instance, created, **kwargs):
     Se ejecuta cada vez que se crea o edita un Movimiento.
     Llama al analizador de alertas de forma segura (nunca falla silenciosamente).
     """
-    from .services import analizar_movimiento
+    from .dispatcher import NotificationDispatcher
 
     try:
-        analizar_movimiento(
+        NotificationDispatcher.dispatch(
             usuario=instance.usuario,
             movimiento=instance,
         )
