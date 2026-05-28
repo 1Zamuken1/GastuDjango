@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /$
+Allow: /login/
+Allow: /register/
+Allow: /auth/
+Allow: /sitemap.xml
+Disallow: /dashboard/
+Disallow: /movimientos/
+Disallow: /categorias/
+Disallow: /ahorros/
+Disallow: /presupuesto/
+Disallow: /programaciones/
+Disallow: /historial/
+Disallow: /agente_financiero/
+Disallow: /notificaciones/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /admin-panel/
+
+Sitemap: https://gastu.onrender.com/sitemap.xml

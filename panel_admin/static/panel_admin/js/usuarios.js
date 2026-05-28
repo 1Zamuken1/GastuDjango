@@ -218,5 +218,121 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  /* ── Toggle Contraseñas Crear Usuario ────────────────────── */
+  document.getElementById('toggleCrearPass1')?.addEventListener('click', function() {
+    const input = document.getElementById('crear-password1');
+    if (!input) return;
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    this.innerHTML = isPass ? '<i data-lucide="eye-off" class="w-[15px] h-[15px]"></i>' : '<i data-lucide="eye" class="w-[15px] h-[15px]"></i>';
+    lucide.createIcons({ nodes: [this] });
+  });
+
+  document.getElementById('toggleCrearPass2')?.addEventListener('click', function() {
+    const input = document.getElementById('crear-password2');
+    if (!input) return;
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    this.innerHTML = isPass ? '<i data-lucide="eye-off" class="w-[15px] h-[15px]"></i>' : '<i data-lucide="eye" class="w-[15px] h-[15px]"></i>';
+    lucide.createIcons({ nodes: [this] });
+  });
+
+  /* ── Password Strength and Match (Admin Crear) ───────────── */
+  const passInput = document.getElementById('crear-password1');
+  const pass2Input = document.getElementById('crear-password2');
+  const strengthBar = document.getElementById('strength-bar-crear');
+  const strengthLbl = document.getElementById('strength-label-crear');
+  const matchDiv = document.getElementById('match-indicator-crear');
+  const matchIcon = document.getElementById('match-icon-crear');
+  const matchText = document.getElementById('match-text-crear');
+
+  const LEVELS = [
+    { color: '#ef4444', label: 'Muy débil',  pct: '20%' },
+    { color: '#f97316', label: 'Débil',      pct: '40%' },
+    { color: '#eab308', label: 'Regular',    pct: '60%' },
+    { color: '#10b981', label: 'Fuerte',     pct: '80%' },
+    { color: '#059669', label: 'Muy fuerte', pct: '100%' },
+  ];
+
+  function toggleCriterionTailwind(id, met) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const dot = el.querySelector('.criterion-dot');
+    if (met) {
+      el.classList.add('text-emerald-500');
+      el.classList.remove('text-slate-400');
+      if (dot) {
+        dot.classList.add('bg-emerald-500');
+        dot.classList.remove('bg-slate-300');
+      }
+    } else {
+      el.classList.add('text-slate-400');
+      el.classList.remove('text-emerald-500');
+      if (dot) {
+        dot.classList.add('bg-slate-300');
+        dot.classList.remove('bg-emerald-500');
+      }
+    }
+  }
+
+  function evalPasswordTailwind(pw) {
+    const c = {
+      length:  pw.length >= 8,
+      upper:   /[A-Z]/.test(pw),
+      number:  /\d/.test(pw),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw),
+    };
+    toggleCriterionTailwind('c-length-crear',  c.length);
+    toggleCriterionTailwind('c-upper-crear',   c.upper);
+    toggleCriterionTailwind('c-number-crear',  c.number);
+    toggleCriterionTailwind('c-special-crear', c.special);
+    return Object.values(c).filter(Boolean).length;
+  }
+
+  function checkMatchAdmin() {
+    const v1 = passInput?.value || '';
+    const v2 = pass2Input?.value || '';
+    if (!matchDiv) return;
+    if (!v2) { matchDiv.style.color = 'transparent'; return; }
+
+    if (v1 === v2) {
+      matchDiv.style.color = '#10b981';
+      if (matchIcon) matchIcon.textContent = '✓';
+      if (matchText) matchText.textContent = 'Las contraseñas coinciden';
+    } else {
+      matchDiv.style.color = '#ef4444';
+      if (matchIcon) matchIcon.textContent = '✗';
+      if (matchText) matchText.textContent = 'Las contraseñas no coinciden';
+    }
+  }
+
+  if (passInput) {
+    passInput.addEventListener('input', () => {
+      const pw = passInput.value;
+      const score = pw.length ? evalPasswordTailwind(pw) : 0;
+
+      if (!pw.length) {
+        if (strengthBar) strengthBar.style.width = '0%';
+        if (strengthLbl) { strengthLbl.textContent = 'Escribe una contraseña'; strengthLbl.style.color = '#94a3b8'; }
+        return;
+      }
+
+      const level = LEVELS[score - 1] || LEVELS[0];
+      if (strengthBar) {
+        strengthBar.style.width = level.pct;
+        strengthBar.style.backgroundColor = level.color;
+      }
+      if (strengthLbl) {
+        strengthLbl.textContent = level.label;
+        strengthLbl.style.color = level.color;
+      }
+      checkMatchAdmin();
+    });
+  }
+
+  if (pass2Input) {
+    pass2Input.addEventListener('input', checkMatchAdmin);
+    pass2Input.addEventListener('blur', checkMatchAdmin);
+  }
 
 });

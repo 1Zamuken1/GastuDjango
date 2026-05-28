@@ -107,7 +107,7 @@ def perfil_view(request):
 
         if 'eliminar_cuenta' in request.POST:
             password = request.POST.get('password_confirmacion', '')
-            if not request.user.check_password(password):
+            if request.user.has_usable_password() and not request.user.check_password(password):
                 if is_ajax:
                     return JsonResponse({'ok': False, 'msg': 'La contrasena es incorrecta.'})
                 messages.error(request, 'La contrasena es incorrecta.')

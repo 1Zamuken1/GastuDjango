@@ -21,34 +21,50 @@
 </div>
 
 <!-- Filtros -->
-<form method="get" class="flex items-center gap-2 flex-wrap mb-5">
-  <div class="relative flex-1 min-w-[200px] max-w-xs">
+<form method="get" id="filter-form" class="flex items-center gap-4 flex-wrap mb-6">
+  <!-- Buscador -->
+  <div class="relative flex-1 min-w-[240px] max-w-xs">
     <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
     <input type="text" name="q" value="{{ q }}" placeholder="Buscar usuario o correo..."
       id="search-input"
       class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition" />
   </div>
-  <select name="rol"
-    class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer transition">
-    <option value="">Todos los roles</option>
-    <option value="USER"  {% if rol_fil == 'USER'  %}selected{% endif %}>Usuario</option>
-    <option value="ADMIN" {% if rol_fil == 'ADMIN' %}selected{% endif %}>Admin</option>
-  </select>
-  <select name="estado"
-    class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer transition">
-    <option value="">Todos los estados</option>
-    <option value="activo"   {% if estado_fil == 'activo'   %}selected{% endif %}>Activos</option>
-    <option value="inactivo" {% if estado_fil == 'inactivo' %}selected{% endif %}>Inactivos</option>
-  </select>
-  <button type="submit"
-    class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 hover:bg-slate-50 transition font-500">
-    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filtrar
-  </button>
+
+  <!-- Filtro Rol -->
+  <div class="flex items-center gap-1 bg-slate-100/80 border border-slate-200/60 p-1 rounded-xl">
+    <input type="hidden" name="rol" id="filter-rol-val" value="{{ rol_fil }}" />
+    <button type="button" data-val="" class="js-rol-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if not rol_fil %}bg-white text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Todos los roles
+    </button>
+    <button type="button" data-val="USER" class="js-rol-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if rol_fil == 'USER' %}bg-white text-emerald-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Usuarios
+    </button>
+    <button type="button" data-val="ADMIN" class="js-rol-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if rol_fil == 'ADMIN' %}bg-white text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Admins
+    </button>
+  </div>
+
+  <!-- Filtro Estado -->
+  <div class="flex items-center gap-1 bg-slate-100/80 border border-slate-200/60 p-1 rounded-xl">
+    <input type="hidden" name="estado" id="filter-estado-val" value="{{ estado_fil }}" />
+    <button type="button" data-val="" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if not estado_fil %}bg-white text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Todos los estados
+    </button>
+    <button type="button" data-val="activo" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if estado_fil == 'activo' %}bg-white text-emerald-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Activos
+    </button>
+    <button type="button" data-val="inactivo" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if estado_fil == 'inactivo' %}bg-white text-slate-500 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+      Inactivos
+    </button>
+  </div>
+
   {% if q or rol_fil or estado_fil %}
-  <a href="{% url 'panel_admin:usuarios' %}"
-    class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-500 hover:bg-slate-50 transition font-500">
-    <i data-lucide="x" class="w-3.5 h-3.5"></i> Limpiar
-  </a>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'panel_admin:usuarios' %}"
+      class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-500 hover:bg-slate-50 transition font-500">
+      <i data-lucide="x" class="w-3.5 h-3.5"></i> Limpiar
+    </a>
+  </div>
   {% endif %}
 </form>
 
@@ -176,14 +192,56 @@
         </div>
         <div>
           <label class="block text-xs font-600 text-slate-600 mb-1">Contraseña</label>
-          <input class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
-            type="password" name="password1" placeholder="Mínimo 8 caracteres" required />
+          <div class="relative">
+            <input class="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
+              type="password" name="password1" id="crear-password1" placeholder="Mínimo 8 caracteres" required />
+            <button type="button" id="toggleCrearPass1"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+              <i data-lucide="eye" class="w-[15px] h-[15px]"></i>
+            </button>
+          </div>
+          
+          <!-- Barra de seguridad -->
+          <div class="strength-bar-track mt-2 h-1 bg-slate-100 rounded-full overflow-hidden">
+            <div class="strength-bar-fill h-full w-0 transition-all duration-300" id="strength-bar-crear"></div>
+          </div>
+          <p class="strength-label text-[12px] font-medium mt-1 text-slate-400" id="strength-label-crear">Escribe una contraseña</p>
+
+          <!-- Criterios -->
+          <div class="pw-criteria mt-2 p-2 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5" id="pw-criteria-crear">
+            <div class="pw-criterion text-[12px] text-slate-400 flex items-center gap-2 transition-colors" id="c-length-crear">
+              <div class="criterion-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors"></div>Mínimo 8 caracteres
+            </div>
+            <div class="pw-criterion text-[12px] text-slate-400 flex items-center gap-2 transition-colors" id="c-upper-crear">
+              <div class="criterion-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors"></div>Al menos una mayúscula
+            </div>
+            <div class="pw-criterion text-[12px] text-slate-400 flex items-center gap-2 transition-colors" id="c-number-crear">
+              <div class="criterion-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors"></div>Al menos un número
+            </div>
+            <div class="pw-criterion text-[12px] text-slate-400 flex items-center gap-2 transition-colors" id="c-special-crear">
+              <div class="criterion-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors"></div>Al menos un carácter especial (!@#$%...)
+            </div>
+          </div>
+          
           <p class="form-error text-xs text-red-500 mt-1" id="err-crear-password1"></p>
         </div>
         <div>
           <label class="block text-xs font-600 text-slate-600 mb-1">Confirmar contraseña</label>
-          <input class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
-            type="password" name="password2" placeholder="Repite la contraseña" required />
+          <div class="relative">
+            <input class="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
+              type="password" name="password2" id="crear-password2" placeholder="Repite la contraseña" required />
+            <button type="button" id="toggleCrearPass2"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+              <i data-lucide="eye" class="w-[15px] h-[15px]"></i>
+            </button>
+          </div>
+          
+          <!-- Indicador de coincidencia -->
+          <div class="match-indicator flex items-center gap-1.5 text-[12px] font-medium mt-1.5" id="match-indicator-crear" style="color:transparent;">
+            <span id="match-icon-crear"></span>
+            <span id="match-text-crear"></span>
+          </div>
+
           <p class="form-error text-xs text-red-500 mt-1" id="err-crear-password2"></p>
         </div>
         <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -270,6 +328,22 @@
 {% block scripts %}
 <script>
   window.CREAR_USUARIO_URL = '{% url "panel_admin:crear_usuario" %}';
+
+  // Manejar filtros de rol
+  document.querySelectorAll('.js-rol-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('filter-rol-val').value = btn.dataset.val;
+      btn.closest('form').submit();
+    });
+  });
+
+  // Manejar filtros de estado
+  document.querySelectorAll('.js-estado-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('filter-estado-val').value = btn.dataset.val;
+      btn.closest('form').submit();
+    });
+  });
 </script>
 <script src="{% static 'panel_admin/js/usuarios.js' %}"></script>
 {% endblock %}

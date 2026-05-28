@@ -79,15 +79,36 @@ def admin_home(request):
         total = next((item['total'] for item in movimientos_por_dia if item['dia'] == d), 0)
         chart_activity_data.append(total)
         
-    # ── Gráficos de Categorías Populares (Global) ──
-    top_categorias_global = (
-        Movimiento.objects.filter(activo=True)
+    # ── Gráficos de Categorías Populares (Separados por Módulo) ──
+    # 1. Ingresos
+    top_ingresos = (
+        Movimiento.objects.filter(activo=True, categoria__tipo='INGRESO')
         .values('categoria__nombre')
         .annotate(total=Count('id'))
         .order_by('-total')[:5]
     )
-    chart_cats_labels = [c['categoria__nombre'] for c in top_categorias_global]
-    chart_cats_data = [c['total'] for c in top_categorias_global]
+    chart_ingresos_labels = [c['categoria__nombre'] for c in top_ingresos]
+    chart_ingresos_data = [c['total'] for c in top_ingresos]
+
+    # 2. Egresos
+    top_egresos = (
+        Movimiento.objects.filter(activo=True, categoria__tipo='EGRESO')
+        .values('categoria__nombre')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:5]
+    )
+    chart_egresos_labels = [c['categoria__nombre'] for c in top_egresos]
+    chart_egresos_data = [c['total'] for c in top_egresos]
+
+    # 3. Ahorros
+    from ahorros.models import AhorroMeta
+    top_ahorros = (
+        AhorroMeta.objects.values('categoria__nombre')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:5]
+    )
+    chart_ahorros_labels = [c['categoria__nombre'] for c in top_ahorros]
+    chart_ahorros_data = [c['total'] for c in top_ahorros]
 
     context = {
         'total_usuarios':      total_usuarios,
@@ -103,8 +124,12 @@ def admin_home(request):
         # Datos para los gráficos pasados como JSON strings
         'chart_activity_labels': json.dumps(chart_activity_labels),
         'chart_activity_data':   json.dumps(chart_activity_data),
-        'chart_cats_labels':     json.dumps(chart_cats_labels),
-        'chart_cats_data':       json.dumps(chart_cats_data),
+        'chart_ingresos_labels': json.dumps(chart_ingresos_labels),
+        'chart_ingresos_data':   json.dumps(chart_ingresos_data),
+        'chart_egresos_labels':  json.dumps(chart_egresos_labels),
+        'chart_egresos_data':    json.dumps(chart_egresos_data),
+        'chart_ahorros_labels':  json.dumps(chart_ahorros_labels),
+        'chart_ahorros_data':    json.dumps(chart_ahorros_data),
         
         'seccion':             'home',
     }
@@ -136,6 +161,17 @@ def admin_perfil(request):
         return JsonResponse({'ok': True, 'msg': 'Perfil actualizado correctamente.', 'username': username})
 
     return JsonResponse({'ok': False, 'msg': 'Método no permitido.'}, status=405)
+
+
+def tiene_sesion_activa(user_id):
+    from django.contrib.sessions.models import Session
+    from django.utils import timezone
+    sesiones = Session.objects.filter(expire_date__gte=timezone.now())
+    for s in sesiones:
+        data = s.get_decoded()
+        if str(data.get('_auth_user_id')) == str(user_id):
+            return True
+    return False
 
 
 # ──────────────────────────────────────────────────────────────
@@ -234,6 +270,11 @@ def admin_toggle_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, pk=usuario_id)
     if usuario == request.user:
         return JsonResponse({'ok': False, 'msg': 'No puedes desactivarte a ti mismo.'})
+    if usuario.rol == 'ADMIN':
+        return JsonResponse({'ok': False, 'msg': 'No puedes desactivar a un administrador.'})
+    if usuario.is_active and tiene_sesion_activa(usuario.id):
+        return JsonResponse({'ok': False, 'msg': 'No puedes desactivar a un usuario con sesión activa.'})
+    
     usuario.is_active = not usuario.is_active
     usuario.save()
     estado = 'activado' if usuario.is_active else 'desactivado'
@@ -247,6 +288,9 @@ def admin_cambiar_rol(request, usuario_id):
     usuario = get_object_or_404(Usuario, pk=usuario_id)
     if usuario == request.user:
         return JsonResponse({'ok': False, 'msg': 'No puedes cambiar tu propio rol.'})
+    if usuario.rol == 'ADMIN':
+        return JsonResponse({'ok': False, 'msg': 'No puedes quitarle el rol a otro administrador.'})
+        
     nuevo_rol        = 'ADMIN' if usuario.rol == 'USER' else 'USER'
     usuario.rol      = nuevo_rol
     usuario.is_staff = (nuevo_rol == 'ADMIN')
@@ -263,6 +307,8 @@ def admin_eliminar_usuario(request, usuario_id):
         return JsonResponse({'ok': False, 'msg': 'No puedes eliminarte a ti mismo.'})
     if usuario.rol == 'ADMIN':
         return JsonResponse({'ok': False, 'msg': 'No puedes eliminar a otro administrador.'})
+    if tiene_sesion_activa(usuario.id):
+        return JsonResponse({'ok': False, 'msg': 'No puedes eliminar a un usuario con sesión activa.'})
 
     username = usuario.username
     try:

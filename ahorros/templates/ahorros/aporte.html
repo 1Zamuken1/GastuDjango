@@ -44,11 +44,11 @@
           </div>
           <div>
             <p class="field-label specs-grid__label">Monto Meta</p>
-            <p class="specs-grid__value">$ {{ ahorro.monto_meta|floatformat:2 }}</p>
+            <p class="specs-grid__value">$ {{ ahorro.monto_meta|floatformat:"2g" }}</p>
           </div>
           <div>
             <p class="field-label specs-grid__label">Total Acumulado</p>
-            <p class="specs-grid__value specs-grid__value--accent">$ {{ ahorro.total_acumulado|floatformat:2 }}</p>
+            <p class="specs-grid__value specs-grid__value--accent">$ {{ ahorro.total_acumulado|floatformat:"2g" }}</p>
           </div>
           <div>
             <p class="field-label specs-grid__label">Frecuencia</p>
@@ -124,24 +124,40 @@
                   {{ forloop.counter|stringformat:"02d" }}/{{ cuotas|length|stringformat:"02d" }}
                 </td>
                 <td class="cuotas-table__monto">
-                  ${{ cuota.aporte_asignado|floatformat:2 }}
+                  ${{ cuota.aporte_asignado|floatformat:"2g" }}
                 </td>
                 <td>
                   {% if cuota.estado_ap == 'PENDIENTE' and cuota.is_disponible_pago %}
-                  <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
-                    class="form-aporte-modal form-aporte-inline">
-                    {% csrf_token %}
-                    <input type="hidden" name="aporte_id" value="{{ cuota.id }}">
-                    <div class="form-aporte-inline__wrapper">
-                      <span class="form-aporte-inline__prefix">$</span>
-                      <input type="number" name="aporte" step="0.01" min="0.01"
-                        value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
-                        class="form-aporte-inline__input">
-                    </div>
-                    <button type="submit" class="form-aporte-inline__submit" title="Registrar aporte">
-                      <i data-lucide="check" style="width:15px;height:15px;stroke-width:3;"></i>
-                    </button>
-                  </form>
+                    {% if ahorro.categoria.activo %}
+                      <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
+                        class="form-aporte-modal form-aporte-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="aporte_id" value="{{ cuota.id }}">
+                        <div class="form-aporte-inline__wrapper">
+                          <span class="form-aporte-inline__prefix">$</span>
+                          <input type="number" name="aporte" step="0.01" min="0.01"
+                            value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
+                            class="form-aporte-inline__input">
+                        </div>
+                        <button type="submit" class="form-aporte-inline__submit" title="Registrar aporte">
+                          <i data-lucide="check" style="width:15px;height:15px;stroke-width:3;"></i>
+                        </button>
+                      </form>
+                    {% else %}
+                      <div class="form-aporte-inline tooltip-wrapper" style="display:flex; align-items:center; gap:0.35rem; opacity: 0.5;">
+                        <div class="form-aporte-inline__wrapper" style="cursor: not-allowed; background:#f8fafc;">
+                          <span class="form-aporte-inline__prefix" style="color:#94a3b8;">$</span>
+                          <input type="number" disabled value="{{ cuota.aporte_asignado|stringformat:'.2f' }}"
+                            class="form-aporte-inline__input"
+                            style="cursor: not-allowed; background:transparent; color:#94a3b8;">
+                        </div>
+                        <button type="button" disabled class="form-aporte-inline__submit"
+                          style="background:#e2e8f0; cursor:not-allowed; box-shadow:none;">
+                          <i data-lucide="lock" style="width:15px;height:15px;stroke-width:3;color:#94a3b8;"></i>
+                        </button>
+                        <span class="tooltip-custom" style="white-space:normal; max-width:180px;">Categoría inactiva. No permite aportes.</span>
+                      </div>
+                    {% endif %}
                   {% elif cuota.estado_ap == 'PENDIENTE' %}
                   <div class="form-aporte-inline" style="display:flex; align-items:center; gap:0.35rem; opacity: 0.5;">
                     <div class="form-aporte-inline__wrapper" style="cursor: not-allowed; background:#f8fafc;">
@@ -157,7 +173,7 @@
                   </div>
                   {% else %}
                   <span class="cuotas-table__aportado">
-                    ${% if cuota.aporte %}{{ cuota.aporte|floatformat:2 }}{% else %}0.00{% endif %}
+                    ${% if cuota.aporte %}{{ cuota.aporte|floatformat:"2g" }}{% else %}0.00{% endif %}
                   </span>
                   {% endif %}
                 </td>

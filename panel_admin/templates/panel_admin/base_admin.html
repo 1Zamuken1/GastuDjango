@@ -58,24 +58,14 @@
     </a>
   </nav>
 
-  <!-- Derecha: volver + usuario -->
+  <!-- Derecha: usuario -->
   <div class="flex items-center gap-2 shrink-0">
-    <a href="{% url 'dashboard:home' %}"
-       class="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800">
-      <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-      Volver a la app
-    </a>
-
-    <div class="h-5 w-px bg-slate-700 mx-1"></div>
-
-    <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white font-700 text-xs font-display shrink-0">
-        {{ request.user.username|first|upper }}
-      </div>
-      <span class="hidden lg:block text-xs text-slate-300 font-500 max-w-[100px] truncate">
-        {{ request.user.username }}
-      </span>
+    <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white font-700 text-xs font-display shrink-0">
+      {{ request.user.username|first|upper }}
     </div>
+    <span class="hidden lg:block text-xs text-slate-300 font-500 max-w-[100px] truncate">
+      {{ request.user.username }}
+    </span>
 
     <a href="{% url 'logout' %}"
        class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"

@@ -20,6 +20,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
+    'django.contrib.sites',
     'rest_framework',
     # ── Tailwind CSS ─────────────────────────────────────────────
     'tailwind',
@@ -48,7 +50,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    # Whitenoise: solo en producción (DEBUG=False).
+    # En desarrollo, Django sirve los estáticos de cada app directamente.
+    *(['whitenoise.middleware.WhiteNoiseMiddleware'] if not DEBUG else []),
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -142,6 +146,12 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Whitenoise: en produccion comprime y sirve con hash de versión
+STATICFILES_STORAGE = (
+    'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    if not DEBUG
+    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+)
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ──────────────────────────────────────────────────────────────
@@ -181,15 +191,19 @@ ACCOUNT_LOGIN_REDIRECT_URL    = '/dashboard/'
 ACCOUNT_LOGOUT_REDIRECT_URL   = '/'
 ACCOUNT_EMAIL_SUBJECT_PREFIX  = ''        # Quita el sufijo [ejemplo.com] de los correos
 
+# Adaptador personalizado: genera username automatico para usuarios de Google
+# (AbstractUser exige username en BD aunque no se muestre en el formulario)
+SOCIALACCOUNT_ADAPTER = 'usuarios.adapters.SocialAccountAdapter'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
 
 # Configuracion de redes sociales — Google OAuth
-# client_id y secret se obtienen de Google Cloud Console
-# Dejar vacios en desarrollo; completar al activar OAuth en produccion
+# client_id y secret se obtienen de Google Cloud Console y se cargan desde .env
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': '',
-            'secret':    '',
+            'client_id': os.getenv('GOOGLE_OAUTH_CLIENT_ID', ''),
+            'secret':    os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', ''),
             'key':       '',
         },
         'SCOPE':       ['profile', 'email'],

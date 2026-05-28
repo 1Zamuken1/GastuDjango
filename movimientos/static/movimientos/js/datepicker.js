@@ -1,6 +1,7 @@
 /**
  * MiniDatepicker
  * Datepicker ligero y estético integrado con el design system de GastuApp.
+ * Soporta 3 vistas: calendario (días), selector de meses y selector de años.
  * Uso: new MiniDatepicker(inputEl, { onChange: (isoDate) => {} })
  */
 'use strict';
@@ -8,12 +9,14 @@
 class MiniDatepicker {
   constructor(inputEl, opciones = {}) {
     this.input    = inputEl;
-    this.onChange = opciones.onChange || null;
+    this.onChange  = opciones.onChange || null;
     this.acento   = opciones.acento   || 'ingreso';
     this.valor    = null;
     this.hoy      = new Date();
     this.vistaAno = this.hoy.getFullYear();
     this.vistaMes = this.hoy.getMonth();
+    this.modo     = 'dias'; // 'dias' | 'meses' | 'anios'
+    this.paginaAnio = Math.floor(this.hoy.getFullYear() / 12) * 12;
 
     this._construir();
     this._bindear();
@@ -50,24 +53,41 @@ class MiniDatepicker {
     this.input.parentNode.insertBefore(this.wrapper, this.input.nextSibling);
   }
 
-  _renderPanel() {
-    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    const DIAS  = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+  /* ── Constantes ──────────────────────────────────── */
+  static get MESES() {
+    return ['Ene','Feb','Mar','Abr','May','Jun',
+            'Jul','Ago','Sep','Oct','Nov','Dic'];
+  }
+  static get MESES_FULL() {
+    return ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+            'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  }
+  static get DIAS() {
+    return ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+  }
 
+  /* ── Render principal (despacha al modo activo) ──── */
+  _renderPanel() {
+    switch (this.modo) {
+      case 'meses': this._renderMeses(); break;
+      case 'anios': this._renderAnios(); break;
+      default:      this._renderDias();  break;
+    }
+  }
+
+  /* ── Vista de DÍAS (calendario) ──────────────────── */
+  _renderDias() {
     const primerDia = new Date(this.vistaAno, this.vistaMes, 1);
     const totalDias = new Date(this.vistaAno, this.vistaMes + 1, 0).getDate();
-    // lunes=0 ... domingo=6
     let offsetInicio = primerDia.getDay() - 1;
     if (offsetInicio < 0) offsetInicio = 6;
 
-    const valorSeleccionado = this.valor
+    const valorSel = this.valor
       ? `${this.valor.getFullYear()}-${this.valor.getMonth()}-${this.valor.getDate()}`
       : null;
-
     const hoyKey = `${this.hoy.getFullYear()}-${this.hoy.getMonth()}-${this.hoy.getDate()}`;
 
-    let celdasHTML = DIAS.map(d => `<span class="dp-dow">${d}</span>`).join('');
+    let celdasHTML = MiniDatepicker.DIAS.map(d => `<span class="dp-dow">${d}</span>`).join('');
 
     for (let i = 0; i < offsetInicio; i++) {
       celdasHTML += `<span class="dp-day dp-day--vacio"></span>`;
@@ -75,7 +95,7 @@ class MiniDatepicker {
     for (let d = 1; d <= totalDias; d++) {
       const key = `${this.vistaAno}-${this.vistaMes}-${d}`;
       const esHoy = key === hoyKey;
-      const esSel = valorSeleccionado && key === valorSeleccionado;
+      const esSel = valorSel && key === valorSel;
       celdasHTML += `<button type="button" class="dp-day${esHoy ? ' dp-day--hoy' : ''}${esSel ? ' dp-day--sel' : ''}"
                              data-d="${d}">${d}</button>`;
     }
@@ -85,7 +105,10 @@ class MiniDatepicker {
         <button type="button" class="dp-nav" data-nav="-1">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <span class="dp-mes-anio">${MESES[this.vistaMes]} ${this.vistaAno}</span>
+        <div class="dp-header-centro">
+          <button type="button" class="dp-header-btn" data-cambio="meses">${MiniDatepicker.MESES_FULL[this.vistaMes]}</button>
+          <button type="button" class="dp-header-btn" data-cambio="anios">${this.vistaAno}</button>
+        </div>
         <button type="button" class="dp-nav" data-nav="1">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
         </button>
@@ -95,6 +118,54 @@ class MiniDatepicker {
         <button type="button" class="dp-btn-hoy">Hoy</button>
         <button type="button" class="dp-btn-limpiar">Limpiar</button>
       </div>`;
+  }
+
+  /* ── Vista de MESES (grilla 4×3) ─────────────────── */
+  _renderMeses() {
+    let celdasHTML = '';
+    for (let m = 0; m < 12; m++) {
+      const esActual = (m === this.hoy.getMonth() && this.vistaAno === this.hoy.getFullYear());
+      const esSel    = (m === this.vistaMes);
+      celdasHTML += `<button type="button" class="dp-celda${esActual ? ' dp-celda--hoy' : ''}${esSel ? ' dp-celda--sel' : ''}"
+                             data-mes="${m}">${MiniDatepicker.MESES[m]}</button>`;
+    }
+
+    this.panel.innerHTML = `
+      <div class="dp-header">
+        <button type="button" class="dp-nav" data-nav-anio="-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button type="button" class="dp-header-btn dp-header-btn--titulo" data-cambio="anios">${this.vistaAno}</button>
+        <button type="button" class="dp-nav" data-nav-anio="1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="dp-grid-pick">${celdasHTML}</div>`;
+  }
+
+  /* ── Vista de AÑOS (grilla 4×3) ──────────────────── */
+  _renderAnios() {
+    const inicio = this.paginaAnio;
+    let celdasHTML = '';
+    for (let i = 0; i < 12; i++) {
+      const y = inicio + i;
+      const esActual = (y === this.hoy.getFullYear());
+      const esSel    = (y === this.vistaAno);
+      celdasHTML += `<button type="button" class="dp-celda${esActual ? ' dp-celda--hoy' : ''}${esSel ? ' dp-celda--sel' : ''}"
+                             data-anio="${y}">${y}</button>`;
+    }
+
+    this.panel.innerHTML = `
+      <div class="dp-header">
+        <button type="button" class="dp-nav" data-nav-pagina="-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span class="dp-header-rango">${inicio} — ${inicio + 11}</span>
+        <button type="button" class="dp-nav" data-nav-pagina="1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="dp-grid-pick">${celdasHTML}</div>`;
   }
 
   /* ── Eventos ──────────────────────────────────────── */
@@ -107,16 +178,15 @@ class MiniDatepicker {
           p.classList.remove('dp-panel--arriba');
         });
       if (!abierto) {
+        this.modo = 'dias';
         this._renderPanel();
         this.panel.removeAttribute('hidden');
 
-        /* Medir espacio real con rAF (panel ya en DOM pero aún no repintado) */
         requestAnimationFrame(() => {
           const displayRect = this.display.getBoundingClientRect();
           const panelH      = this.panel.offsetHeight;
           const espacioAbajo = window.innerHeight - displayRect.bottom - 8;
           const espacioArriba = displayRect.top - 8;
-          
           const inModal = this.wrapper.closest('.modal__body');
 
           if (inModal || espacioAbajo >= panelH || espacioAbajo >= espacioArriba) {
@@ -131,6 +201,50 @@ class MiniDatepicker {
     this.panel.addEventListener('click', (e) => {
       e.stopPropagation();
 
+      /* ── Cambiar modo (mes ↔ año ↔ días) ─── */
+      const cambioBtn = e.target.closest('[data-cambio]');
+      if (cambioBtn) {
+        this.modo = cambioBtn.dataset.cambio;
+        if (this.modo === 'anios') this.paginaAnio = Math.floor(this.vistaAno / 12) * 12;
+        this._renderPanel();
+        return;
+      }
+
+      /* ── Seleccionar un mes ─── */
+      const mesBtn = e.target.closest('[data-mes]');
+      if (mesBtn) {
+        this.vistaMes = parseInt(mesBtn.dataset.mes);
+        this.modo = 'dias';
+        this._renderPanel();
+        return;
+      }
+
+      /* ── Seleccionar un año ─── */
+      const anioBtn = e.target.closest('[data-anio]');
+      if (anioBtn) {
+        this.vistaAno = parseInt(anioBtn.dataset.anio);
+        this.modo = 'meses';
+        this._renderPanel();
+        return;
+      }
+
+      /* ── Navegar año en vista meses ─── */
+      const navAnio = e.target.closest('[data-nav-anio]');
+      if (navAnio) {
+        this.vistaAno += parseInt(navAnio.dataset.navAnio);
+        this._renderPanel();
+        return;
+      }
+
+      /* ── Navegar página en vista años ─── */
+      const navPagina = e.target.closest('[data-nav-pagina]');
+      if (navPagina) {
+        this.paginaAnio += parseInt(navPagina.dataset.navPagina) * 12;
+        this._renderPanel();
+        return;
+      }
+
+      /* ── Navegar mes a mes (flechas en vista días) ─── */
       const navBtn = e.target.closest('.dp-nav');
       if (navBtn && navBtn.dataset.nav) {
         this.vistaMes += parseInt(navBtn.dataset.nav);
@@ -140,6 +254,7 @@ class MiniDatepicker {
         return;
       }
 
+      /* ── Seleccionar día ─── */
       const dayBtn = e.target.closest('.dp-day');
       if (dayBtn && dayBtn.dataset.d) {
         this._seleccionarFecha(

@@ -51,6 +51,93 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // ── Password Strength and Match (Perfil) ────────────────
+  var passInput = document.getElementById('id_new_password1');
+  var pass2Input = document.getElementById('id_new_password2');
+  var strengthBar = document.getElementById('strength-bar-perfil');
+  var strengthLbl = document.getElementById('strength-label-perfil');
+  var matchDiv = document.getElementById('match-indicator-perfil');
+  var matchIcon = document.getElementById('match-icon-perfil');
+  var matchText = document.getElementById('match-text-perfil');
+
+  var LEVELS = [
+    { color: '#ef4444', label: 'Muy débil',  pct: '20%' },
+    { color: '#f97316', label: 'Débil',      pct: '40%' },
+    { color: '#eab308', label: 'Regular',    pct: '60%' },
+    { color: '#10b981', label: 'Fuerte',     pct: '80%' },
+    { color: '#059669', label: 'Muy fuerte', pct: '100%' },
+  ];
+
+  function toggleCriterion(id, met) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('met', met);
+  }
+
+  function evalPassword(pw) {
+    var c = {
+      length:  pw.length >= 8,
+      upper:   /[A-Z]/.test(pw),
+      number:  /\d/.test(pw),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw),
+    };
+    toggleCriterion('c-length-perfil',  c.length);
+    toggleCriterion('c-upper-perfil',   c.upper);
+    toggleCriterion('c-number-perfil',  c.number);
+    toggleCriterion('c-special-perfil', c.special);
+    var metCount = 0;
+    if(c.length) metCount++;
+    if(c.upper) metCount++;
+    if(c.number) metCount++;
+    if(c.special) metCount++;
+    return metCount;
+  }
+
+  function checkMatch() {
+    var v1 = passInput ? passInput.value : '';
+    var v2 = pass2Input ? pass2Input.value : '';
+    if (!matchDiv) return;
+    if (!v2) { matchDiv.style.color = 'transparent'; return; }
+
+    if (v1 === v2) {
+      matchDiv.style.color = '#10b981';
+      if (matchIcon) matchIcon.textContent = '✓';
+      if (matchText) matchText.textContent = 'Las contraseñas coinciden';
+    } else {
+      matchDiv.style.color = '#ef4444';
+      if (matchIcon) matchIcon.textContent = '✗';
+      if (matchText) matchText.textContent = 'Las contraseñas no coinciden';
+    }
+  }
+
+  if (passInput) {
+    passInput.addEventListener('input', function () {
+      var pw = passInput.value;
+      var score = pw.length ? evalPassword(pw) : 0;
+
+      if (!pw.length) {
+        if (strengthBar) strengthBar.style.width = '0%';
+        if (strengthLbl) { strengthLbl.textContent = 'Escribe una contraseña'; strengthLbl.style.color = '#94a3b8'; }
+        return;
+      }
+
+      var level = LEVELS[score - 1] || LEVELS[0];
+      if (strengthBar) {
+        strengthBar.style.width = level.pct;
+        strengthBar.style.backgroundColor = level.color;
+      }
+      if (strengthLbl) {
+        strengthLbl.textContent = level.label;
+        strengthLbl.style.color = level.color;
+      }
+      checkMatch();
+    });
+  }
+
+  if (pass2Input) {
+    pass2Input.addEventListener('input', checkMatch);
+    pass2Input.addEventListener('blur', checkMatch);
+  }
+
   // ── Auto-hide toasts ───────────────────────────────────
   document.querySelectorAll('.perfil-toast').forEach(function (el) {
     setTimeout(function () {
