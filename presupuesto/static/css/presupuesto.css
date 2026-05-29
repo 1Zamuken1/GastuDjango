@@ -794,20 +794,97 @@
     font-size: 1.45rem;
     flex: 1 1 100%;
   }
+
+  .presupuesto-header {
+    flex-direction: row;
+    align-items: center;
+  }
+
   .btn-crear {
-    width: 100%;
+    flex: 1;
     justify-content: center;
   }
-  .card-footer {
+
+  .btn-historial {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Stats */
+  .stat-number {
+    font-size: 2rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-item {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-item:last-child {
+    border-bottom: none;
+  }
+
+  .stat-item-value {
+    font-size: 1.2rem;
+  }
+
+  .stat-item-value.amber {
+    font-size: 1.3rem;
+  }
+
+  /* Cards */
+  #cards-presupuesto {
+    gap: 14px;
+  }
+
+  .card-header {
+    padding: 14px 14px 10px;
     flex-wrap: wrap;
+    gap: 8px;
   }
+
+  .card-limite {
+    font-size: 18px;
+  }
+
+  .card-body {
+    padding: 10px 14px;
+  }
+
+  .card-footer {
+    padding: 10px 12px;
+    flex-direction: column;
+  }
+
   .card-btn {
-    flex: 1 1 calc(50% - 4px);
+    flex: 1 1 100%;
   }
+
+  /* Modals */
+  .modal-overlay {
+    padding: 12px;
+  }
+
   .modal-container {
-    padding: 22px 16px;
+    padding: 20px 16px;
+    border-radius: var(--r-lg);
   }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
   .categorias-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+
+  .categoria-card {
+    padding: 12px 8px;
+    font-size: 12px;
   }
 }
