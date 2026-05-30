@@ -1025,6 +1025,46 @@
         if (e.key === 'Escape' && panelOpen) cerrarNotifDropdown();
       });
 
+      // ── WebSocket para Notificaciones en Tiempo Real ────────
+      function initWebSocket() {
+        // Aseguramos que la URL utilice wss:// si estamos en HTTPS (Producción)
+        var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        var wsUrl = protocol + window.location.host + '/ws/notificaciones/';
+        var ws = new WebSocket(wsUrl);
+        
+        ws.onmessage = function(e) {
+          try {
+            var data = JSON.parse(e.data);
+            if (data.type === 'notificacion') {
+              // Incrementar badge
+              var btn = document.getElementById('notif-btn');
+              if (btn) {
+                var badge = btn.querySelector('.notif-badge');
+                var count = badge && badge.textContent !== '99+' ? parseInt(badge.textContent) : 0;
+                if (isNaN(count)) count = 0;
+                actualizarBadgeCampana(count + 1);
+              }
+              // Si el panel de notificaciones está abierto, lo recargamos para mostrar la nueva
+              if (panelOpen) {
+                cargarNotifDropdown();
+              }
+            }
+          } catch(err) {
+            console.error('Error parseando mensaje WS:', err);
+          }
+        };
+
+        ws.onclose = function(e) {
+          // Intento de reconexión automática tras 5 segundos si el socket se cae
+          setTimeout(initWebSocket, 5000);
+        };
+      }
+
+      // Solo iniciamos el WebSocket si el backend renderiza que hay un usuario logueado
+      {% if user.is_authenticated %}
+      initWebSocket();
+      {% endif %}
+
     })();
     </script>
   </body>

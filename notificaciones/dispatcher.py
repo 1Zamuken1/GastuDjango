@@ -44,19 +44,21 @@ class NotificationDispatcher:
     @classmethod
     def _push_to_websocket(cls, usuario_id, notificaciones):
         channel_layer = get_channel_layer()
+        print(f"[WS-DISPATCH] channel_layer obtenido: {channel_layer}")
         if not channel_layer:
             return
 
         group_name = f"notificaciones_{usuario_id}"
+        print(f"[WS-DISPATCH] Enviando {len(notificaciones)} notificaciones al grupo {group_name}")
         
         for notif in notificaciones:
             data = {
                 'id': notif.id,
-                'tipo': notif.tipo,
+                'tipo': str(notif.tipo),
                 'titulo': notif.titulo,
                 'descripcion': notif.descripcion,
                 'fecha_creacion': notif.fecha_creacion.isoformat(),
-                'modulo': notif.modulo,
+                'modulo': str(notif.modulo),
             }
             try:
                 async_to_sync(channel_layer.group_send)(
