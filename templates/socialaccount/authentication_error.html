@@ -1,0 +1,77 @@
+{% extends 'landing/base.html' %}
+{% load static %}
+{% block title %}Error de autenticación — GastuApp{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'usuarios/css/auth.css' %}">
+<style>
+    .error-icon-ring {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #fef2f2;
+        border: 1px solid #fee2e2;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: #ef4444;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="relative flex items-center justify-center min-h-screen px-6 py-32 auth-bg">
+    <div class="auth-grid"></div>
+
+    <div class="relative z-10 w-full max-w-sm">
+
+        <!-- Header -->
+        <div id="auth-header" class="mb-8 text-center gsap-hidden">
+            <a href="{% url 'landing:home' %}" class="text-3xl font-black font-display text-slate-900">
+                Gastu<span class="text-emerald-500">App</span>
+            </a>
+            <p class="mt-2 text-sm text-slate-400">Autenticación externa</p>
+        </div>
+
+        <!-- Card -->
+        <div id="auth-card" class="p-8 glass-card gradient-border rounded-2xl gsap-hidden text-center">
+
+            <!-- Icono de error -->
+            <div class="error-icon-ring">
+                <i data-lucide="alert-circle" class="w-7 h-7"></i>
+            </div>
+
+            <h1 class="text-xl font-bold font-display text-slate-900 mb-2">Falló la autenticación</h1>
+            <p class="text-sm text-slate-500 mb-7 leading-relaxed">
+                Se produjo un error al intentar iniciar sesión a través de su cuenta de terceros. Por favor, intente de nuevo o use otro método de acceso.
+            </p>
+
+            <div class="flex flex-col gap-3">
+                <a href="{% url 'login' %}"
+                    class="flex items-center justify-center w-full gap-2 py-3 text-sm btn-emerald">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    Volver a iniciar sesión
+                </a>
+                
+                <a href="{% url 'register' %}"
+                    class="flex items-center justify-center w-full gap-2 py-3 border border-slate-200 rounded-xl text-sm text-slate-500 hover:bg-slate-50 transition font-medium">
+                    Crear una cuenta nueva
+                </a>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+    gsap.set(['#auth-header', '#auth-card'], { y: 22 });
+    gsap.to('#auth-header', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', delay: 0.15 });
+    gsap.to('#auth-card', { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', delay: 0.28 });
+</script>
+{% endblock %}
