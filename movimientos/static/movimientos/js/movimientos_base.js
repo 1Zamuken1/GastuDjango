@@ -38,6 +38,7 @@ class GestorMovimientos {
     this._initPicker();
     this._initBuscador();
     this._initReportes();
+    this._initFormateoMonto();
     
     // Ajustar tamaños de fuente inicialmente
     setTimeout(() => this._ajustarTamanoTextos(), 50);
@@ -96,8 +97,10 @@ class GestorMovimientos {
     this.modalRegistros.setAttribute('hidden', '');
     this.modalMovimiento.removeAttribute('hidden');
     document.getElementById('campo-descripcion').value = descripcion;
-    document.getElementById('campo-monto').value = monto;
     document.getElementById('campo-categoria').value = categoriaId;
+    const montoInput = document.getElementById('campo-monto');
+    montoInput.value = this._formatearNumero(monto);
+    montoInput.dataset.raw = monto;
     this.limpiarErrores();
     this._syncPickerLabel(categoriaId);
   }
@@ -195,10 +198,13 @@ class GestorMovimientos {
       : URL_GUARDAR;
 
     try {
+      const formData = new FormData(this.formMovimiento);
+      const montoInput = document.getElementById('campo-monto');
+      if (montoInput.dataset.raw) formData.set('monto', montoInput.dataset.raw);
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF_TOKEN },
-        body: new FormData(this.formMovimiento),
+        body: formData,
       });
       const data = await res.json();
 
@@ -547,6 +553,42 @@ class GestorMovimientos {
     document.querySelector('.btn-export--pdf').addEventListener('click', () => abrirModalReporte('pdf'));
     document.querySelector('.btn-export--excel').addEventListener('click', () => abrirModalReporte('excel'));
     document.querySelector('.btn-export--csv').addEventListener('click', () => abrirModalReporte('csv'));
+  }
+
+  /* ── Formateo de monto en tiempo real ── */
+  _formatearNumero(raw) {
+    if (!raw) return '';
+    const entero = String(raw).split('.')[0].replace(/\D/g, '');
+    if (!entero) return '';
+    return entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  _initFormateoMonto() {
+    const input = document.getElementById('campo-monto');
+    input.addEventListener('input', function () {
+      const el = this;
+      const oldLen = el.value.length;
+      const start = el.selectionStart;
+      let digitCount = 0;
+      for (let i = 0; i < start; i++) {
+        if (/\d/.test(el.value[i])) digitCount++;
+      }
+      const digitos = el.value.replace(/\D/g, '');
+      if (!digitos) { el.dataset.raw = ''; el.value = ''; return; }
+      const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      el.dataset.raw = digitos;
+      el.value = formatted;
+      let newPos = formatted.length;
+      if (start < oldLen) {
+        let dc = 0;
+        for (let i = 0; i < formatted.length; i++) {
+          if (dc >= digitCount) { newPos = i; break; }
+          if (/\d/.test(formatted[i])) dc++;
+          newPos = i + 1;
+        }
+      }
+      el.setSelectionRange(newPos, newPos);
+    });
   }
 
   /* ── Progress bars init ── */
