@@ -1,4 +1,10 @@
 {% extends "base_programacion.html" %}
+{% load static %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'programaciones/css/datepicker.css' %}">
+{% endblock %}
 
 {% block programaciones_content %}
   <div class="stats-hero">
@@ -84,11 +90,11 @@
         <div class="form-row">
           <div class="form-group">
             <label>Fecha inicio</label>
-            <input type="date" id="fecha_inicio" class="form-input">
+            <input type="hidden" id="fecha_inicio">
           </div>
           <div class="form-group">
             <label>Fecha fin <span class="label-opcional">(opcional)</span></label>
-            <input type="date" id="fecha_fin" class="form-input">
+            <input type="hidden" id="fecha_fin">
           </div>
         </div>
         <div class="modal-actions">
@@ -136,11 +142,11 @@
         <div class="form-row">
           <div class="form-group">
             <label>Fecha inicio</label>
-            <input type="date" id="editar-fecha_inicio" class="form-input">
+            <input type="hidden" id="editar-fecha_inicio">
           </div>
           <div class="form-group">
             <label>Fecha fin <span class="label-opcional">(opcional)</span></label>
-            <input type="date" id="editar-fecha_fin" class="form-input">
+            <input type="hidden" id="editar-fecha_fin">
           </div>
         </div>
         <div class="modal-actions">
@@ -175,8 +181,14 @@
 </style>
 
 {% block programaciones_scripts %}
+<script src="{% static 'programaciones/js/datepicker.js' %}"></script>
 <script>
       const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+
+      let dpInicioCrear = null
+      let dpFinCrear = null
+      let dpInicioEditar = null
+      let dpFinEditar = null
 
       function mostrarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
@@ -456,6 +468,8 @@
 
       function abrirModalCrear() {
         document.getElementById('form-crear').reset()
+        dpInicioCrear?.limpiar()
+        dpFinCrear?.limpiar()
         abrirModal('modal-crear')
       }
 
@@ -504,6 +518,8 @@
           document.getElementById('editar-descripcion').value      = p.descripcion || ''
           document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
           document.getElementById('editar-fecha_fin').value        = p.fecha_fin || ''
+          dpInicioEditar?.setValor(p.fecha_inicio)
+          dpFinEditar?.setValor(p.fecha_fin || '')
           document.getElementById('editar-categoria').value        = p.categoria
           document.getElementById('editar-categoria_nombre').value = `${p.categoria_nombre} (${p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
           abrirModal('modal-editar')
@@ -565,7 +581,29 @@
       document.addEventListener('DOMContentLoaded', () => {
         window.CURRENT_MODULE = 'programaciones';
         if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
-        
+
+        if (typeof MiniDatepicker !== 'undefined') {
+          const inpInicioCrear = document.getElementById('fecha_inicio')
+          const inpFinCrear = document.getElementById('fecha_fin')
+          const inpInicioEditar = document.getElementById('editar-fecha_inicio')
+          const inpFinEditar = document.getElementById('editar-fecha_fin')
+          if (inpInicioCrear) {
+            dpInicioCrear = new MiniDatepicker(inpInicioCrear, {})
+            inpInicioCrear.parentNode.appendChild(dpInicioCrear.wrapper)
+          }
+          if (inpFinCrear) {
+            dpFinCrear = new MiniDatepicker(inpFinCrear, {})
+            inpFinCrear.parentNode.appendChild(dpFinCrear.wrapper)
+          }
+          if (inpInicioEditar) {
+            dpInicioEditar = new MiniDatepicker(inpInicioEditar, {})
+            inpInicioEditar.parentNode.appendChild(dpInicioEditar.wrapper)
+          }
+          if (inpFinEditar) {
+            dpFinEditar = new MiniDatepicker(inpFinEditar, {})
+            inpFinEditar.parentNode.appendChild(dpFinEditar.wrapper)
+          }
+        }
         cargarProgramaciones()
         verificarPendientes()
       })

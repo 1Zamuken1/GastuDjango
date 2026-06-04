@@ -125,9 +125,30 @@ class TestObtenerEstadoPresupuesto:
         assert e["categoria"] == "Comida"
         assert e["limite"] == 500000.0
         assert e["gastado"] == 0.0
+        assert e["disponible"] == 500000.0
         assert "alerta" in e
         assert "porcentaje" in e
         assert "categoria_id" in e
+
+    @pytest.mark.django_db
+    def test_disponible_sin_gastos(self, presupuesto_valido):
+        e = obtener_estado_presupuesto(presupuesto_valido)
+        assert e["disponible"] == e["limite"]
+
+    @pytest.mark.django_db
+    def test_disponible_con_gastos(self, presupuesto_valido, cat_egreso, usuario):
+        Movimiento.objects.create(usuario=usuario, categoria=cat_egreso, tipo="EGRESO", monto=Decimal("100000"))
+        Movimiento.objects.create(usuario=usuario, categoria=cat_egreso, tipo="EGRESO", monto=Decimal("50000"))
+        e = obtener_estado_presupuesto(presupuesto_valido)
+        assert e["disponible"] == 350000.0
+        assert e["disponible"] == e["limite"] - e["gastado"]
+
+    @pytest.mark.django_db
+    def test_disponible_excede_limite(self, presupuesto_valido, cat_egreso, usuario):
+        Movimiento.objects.create(usuario=usuario, categoria=cat_egreso, tipo="EGRESO", monto=Decimal("600000"))
+        e = obtener_estado_presupuesto(presupuesto_valido)
+        assert e["disponible"] == -100000.0
+        assert e["disponible"] < 0
 
 
 class TestPresupuestoSerializer:
@@ -210,6 +231,17 @@ class TestPresupuestoAPI:
         r = client_auto.post("/api/presupuestos/verificar_vencidos/")
         assert r.status_code == 200
         assert len(r.json()["desactivados"]) == 1
+
+    @pytest.mark.django_db
+    def test_con_estado_contiene_disponible(self, client_auto, presupuesto_valido):
+        r = client_auto.get("/api/presupuestos/con_estado/")
+        assert r.status_code == 200
+        data = r.json()["data"]
+        assert len(data) >= 1
+        for item in data:
+            assert "disponible" in item
+            assert isinstance(item["disponible"], (int, float))
+            assert item["disponible"] == float(presupuesto_valido.limite) - (item.get("gastado") or 0)
 
     @pytest.mark.django_db
     def test_no_autenticado(self):
