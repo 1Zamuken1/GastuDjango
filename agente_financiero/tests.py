@@ -69,21 +69,35 @@ class TestMensajeChat:
 
 
 class TestAlertaDiariaDebeMostrar:
-    def test_nunca_mostrada(self, usuario):
+    def _saltar_luna_miel(self, usuario):
+        """Avanza el date_joined del usuario para evitar la luna de miel de 3h."""
+        usuario.date_joined = timezone.now() - timedelta(hours=4)
+        usuario.save()
+
+    def test_luna_de_miel_activa(self, usuario):
+        """Usuario recién creado (<3h): no debe mostrar alertas."""
+        assert AlertaDiaria.debe_mostrar(usuario) is False
+
+    def test_despues_luna_de_miel_sin_alertas(self, usuario):
+        """Pasó la luna de miel, sin alertas → debe mostrar."""
+        self._saltar_luna_miel(usuario)
         assert AlertaDiaria.debe_mostrar(usuario) is True
 
     def test_mostrada_hace_poco(self, usuario):
+        self._saltar_luna_miel(usuario)
         AlertaDiaria.objects.create(usuario=usuario, alertas_json=[],
             generado_en=timezone.now())
         assert AlertaDiaria.debe_mostrar(usuario) is False
 
     def test_mostrada_hace_mas_de_6h(self, usuario):
+        self._saltar_luna_miel(usuario)
         alerta = AlertaDiaria.objects.create(usuario=usuario, alertas_json=[])
         AlertaDiaria.objects.filter(pk=alerta.pk).update(
             generado_en=timezone.now() - timedelta(hours=7))
         assert AlertaDiaria.debe_mostrar(usuario) is True
 
     def test_mostrada_dia_anterior(self, usuario):
+        self._saltar_luna_miel(usuario)
         alerta = AlertaDiaria.objects.create(usuario=usuario, alertas_json=[])
         AlertaDiaria.objects.filter(pk=alerta.pk).update(
             generado_en=timezone.now() - timedelta(days=1))

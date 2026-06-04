@@ -13,6 +13,7 @@ class AccionHistorial(ModeloBase):
         EGRESOS = 'EGRESOS', 'Egresos'
         CATEGORIAS = 'CATEGORIAS', 'Categorias'
         AHORROS = 'AHORROS', 'Ahorros'
+        PROGRAMACIONES = 'PROGRAMACIONES', 'Programaciones'
         PRESUPUESTOS = 'PRESUPUESTOS', 'Presupuestos'
         PROYECCIONES = 'PROYECCIONES', 'Proyecciones'
         SISTEMA = 'SISTEMA', 'Sistema'

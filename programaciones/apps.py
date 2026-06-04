@@ -5,3 +5,6 @@ class ProgramacionesConfig(AppConfig):
     """Configuración de la app programaciones."""
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'programaciones'
+
+    def ready(self):
+        import programaciones.signals

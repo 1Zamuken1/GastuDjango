@@ -339,10 +339,9 @@ def admin_eliminar_usuario(request, usuario_id):
             except Exception:
                 pass
 
-            # 4. Programaciones (y sus ejecuciones)
+            # 4. Programaciones
             try:
-                from programaciones.models import Programacion, EjecucionProgramacion
-                EjecucionProgramacion.objects.filter(programacion__usuario=usuario).delete()
+                from programaciones.models import Programacion
                 Programacion.objects.filter(usuario=usuario).delete()
             except Exception:
                 pass
