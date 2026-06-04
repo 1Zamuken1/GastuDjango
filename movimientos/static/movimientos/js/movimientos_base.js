@@ -21,6 +21,7 @@ class GestorMovimientos {
     this.formatoReporte         = 'csv';
     this.dpDesde = null;
     this.dpHasta = null;
+    this.dpFecha = null;
 
     this.modalMovimiento    = document.getElementById('modal-movimiento');
     this.modalRegistros     = document.getElementById('modal-registros');
@@ -39,6 +40,7 @@ class GestorMovimientos {
     this._initBuscador();
     this._initReportes();
     this._initFormateoMonto();
+    this._initDatepickerFecha();
     
     // Ajustar tamaños de fuente inicialmente
     setTimeout(() => this._ajustarTamanoTextos(), 50);
@@ -85,6 +87,7 @@ class GestorMovimientos {
     this.movimientoEditandoId = null;
     document.getElementById('modal-titulo').textContent = `Nuevo ${this.tipoLabel}`;
     this.formMovimiento.reset();
+    if (this.dpFecha) this.dpFecha.limpiar();
     this.limpiarErrores();
     this.modalRegistros.setAttribute('hidden', '');
     this.modalMovimiento.removeAttribute('hidden');
@@ -97,6 +100,11 @@ class GestorMovimientos {
     this.modalRegistros.setAttribute('hidden', '');
     this.modalMovimiento.removeAttribute('hidden');
     document.getElementById('campo-descripcion').value = descripcion;
+    if (this.dpFecha && fechaRaw) {
+      this.dpFecha.setValor(fechaRaw);
+    } else if (this.dpFecha) {
+      this.dpFecha.limpiar();
+    }
     document.getElementById('campo-categoria').value = categoriaId;
     const montoInput = document.getElementById('campo-monto');
     montoInput.value = this._formatearNumero(monto);
@@ -125,7 +133,14 @@ class GestorMovimientos {
   /* ── Grid ── */
   async actualizarGrid() {
     try {
-      const res = await fetch(`${URL_RESUMEN}?tipo=${this.tipo}`, {
+      const selectMes = document.getElementById('select-mes');
+      const selectAnio = document.getElementById('select-anio');
+      let url = `${URL_RESUMEN}?tipo=${this.tipo}`;
+      if (selectMes && selectAnio) {
+          url += `&mes=${selectMes.value}&anio=${selectAnio.value}`;
+      }
+      
+      const res = await fetch(url, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
       });
       const data = await res.json();
@@ -486,6 +501,15 @@ class GestorMovimientos {
       this._pickerEls.pickerLabel.textContent = card.dataset.nombre;
       this._pickerEls.pickerLabel.style.color = 'var(--slate-900)';
     }
+  }
+
+  /* ── Datepicker Fecha (formulario CRUD) ── */
+  _initDatepickerFecha() {
+    const inputFecha = document.getElementById('campo-fecha');
+    const container  = document.getElementById('dp-fecha-container');
+    if (!inputFecha || !container) return;
+    this.dpFecha = new MiniDatepicker(inputFecha, this.dpAcento);
+    container.appendChild(this.dpFecha.wrapper);
   }
 
   /* ── Reportes ── */

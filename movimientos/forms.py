@@ -1,3 +1,5 @@
+import datetime
+from django.utils import timezone
 from django import forms
 
 from categorias.models import Categoria
@@ -18,6 +20,12 @@ class MovimientoForm(forms.ModelForm):
     fecha_registro NO se expone al usuario: el modelo usa auto_now_add=True,
     por lo que se llena automáticamente con la fecha y hora del servidor al guardar.
     """
+
+    fecha = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'fecha-input'}),
+        label='Fecha (opcional)'
+    )
 
     class Meta:
         model = Movimiento
@@ -84,4 +92,17 @@ class MovimientoForm(forms.ModelForm):
                 f'Registra un ingreso primero o reduce el monto del egreso.'
             )
 
-        return monto 
+        return monto
+
+    def save(self, commit=True):
+        movimiento = super().save(commit=False)
+        fecha_ingresada = self.cleaned_data.get('fecha')
+        if fecha_ingresada:
+            ahora = timezone.now()
+            # Combinar la fecha ingresada con la hora actual
+            dt = datetime.datetime.combine(fecha_ingresada, ahora.time())
+            movimiento.fecha_registro = timezone.make_aware(dt) if timezone.is_naive(dt) else dt
+            
+        if commit:
+            movimiento.save()
+        return movimiento 

@@ -1,4 +1,7 @@
+import logging
 import concurrent.futures
+
+logger = logging.getLogger(__name__)
 from django.utils import timezone
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -39,17 +42,17 @@ class NotificationDispatcher:
                 cls._push_to_websocket(usuario.id, nuevas_notificaciones)
 
         except Exception as e:
-            print(f"[notificaciones] Error en background task para {usuario}: {e}")
+            logger.warning(f"Error en background task para {usuario}: {e}")
 
     @classmethod
     def _push_to_websocket(cls, usuario_id, notificaciones):
         channel_layer = get_channel_layer()
-        print(f"[WS-DISPATCH] channel_layer obtenido: {channel_layer}")
+        logger.debug(f"channel_layer obtenido: {channel_layer}")
         if not channel_layer:
             return
 
         group_name = f"notificaciones_{usuario_id}"
-        print(f"[WS-DISPATCH] Enviando {len(notificaciones)} notificaciones al grupo {group_name}")
+        logger.debug(f"Enviando {len(notificaciones)} notificaciones al grupo {group_name}")
         
         for notif in notificaciones:
             data = {

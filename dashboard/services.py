@@ -60,20 +60,23 @@ def actualizar_resumen(usuario, mes, anio):
     ).aggregate(total=Sum('aporte'))['total'] or ZERO
 
     ingreso_neto = total_ingresos - total_egresos - total_ahorros
-    disponible   = ingreso_neto
 
-    # Acumulados historicos — todos los meses excepto el actual
+    # Acumulados historicos
     anteriores = ResumenMensual.objects.filter(
         usuario=usuario,
     ).exclude(mes=mes, anio=anio)
 
-    ganancia_acumulada = (
-        anteriores.aggregate(total=Sum('ingreso_neto'))['total'] or ZERO
-    ) + ingreso_neto
-
     ahorro_total = (
         anteriores.aggregate(total=Sum('total_ahorros'))['total'] or ZERO
     ) + total_ahorros
+
+    # Total dinero usuario: Todos los ingresos - Todos los egresos (sin restar ahorros)
+    ingresos_historicos = Movimiento.objects.filter(usuario=usuario, tipo='INGRESO', activo=True).aggregate(t=Sum('monto'))['t'] or ZERO
+    egresos_historicos = Movimiento.objects.filter(usuario=usuario, tipo='EGRESO', activo=True).aggregate(t=Sum('monto'))['t'] or ZERO
+    ganancia_acumulada = ingresos_historicos - egresos_historicos
+
+    # Disponible: Ganancia acumulada real - Ahorros totales
+    disponible = ganancia_acumulada - ahorro_total
 
     ResumenMensual.objects.update_or_create(
         usuario=usuario,
@@ -100,46 +103,16 @@ def actualizar_resumen(usuario, mes, anio):
 
 def obtener_disponible(usuario, mes, anio, monto_original=None):
     """
-    Devuelve el saldo disponible del usuario para el mes dado.
-
-    Lee desde ResumenMensual (cache pre-calculado por signals).
-    Si no existe el resumen aun (usuario nuevo o primer movimiento),
-    cae en fallback con queries directas a Movimiento.
-
-    En edicion de un egreso existente, monto_original se suma al disponible
-    base para evitar que la validacion bloquee falsamente el propio egreso.
-
-    Args:
-        usuario: instancia del usuario.
-        mes (int): mes a consultar.
-        anio (int): ano a consultar.
-        monto_original (Decimal | None): monto original del egreso en edicion.
-
-    Returns:
-        Decimal: saldo disponible del mes.
+    Devuelve el saldo disponible global del usuario.
     """
     from .models import ResumenMensual
+    from ahorros.models import AporteAhorro
 
-    resumen = ResumenMensual.objects.filter(
-        usuario=usuario, mes=mes, anio=anio
-    ).first()
-
-    if resumen:
-        disponible_base = resumen.disponible
-    else:
-        total_ingresos = (
-            Movimiento.objects
-            .filter(usuario=usuario, tipo='INGRESO',
-                    fecha_registro__month=mes, fecha_registro__year=anio)
-            .aggregate(t=Sum('monto'))['t'] or ZERO
-        )
-        total_egresos = (
-            Movimiento.objects
-            .filter(usuario=usuario, tipo='EGRESO',
-                    fecha_registro__month=mes, fecha_registro__year=anio)
-            .aggregate(t=Sum('monto'))['t'] or ZERO
-        )
-        disponible_base = total_ingresos - total_egresos
+    ingresos_historicos = Movimiento.objects.filter(usuario=usuario, tipo='INGRESO', activo=True).aggregate(t=Sum('monto'))['t'] or ZERO
+    egresos_historicos = Movimiento.objects.filter(usuario=usuario, tipo='EGRESO', activo=True).aggregate(t=Sum('monto'))['t'] or ZERO
+    ahorros_historicos = AporteAhorro.objects.filter(ahorro__usuario=usuario, estado_ap='APORTADO').aggregate(t=Sum('aporte'))['t'] or ZERO
+    
+    disponible_base = ingresos_historicos - egresos_historicos - ahorros_historicos
 
     if monto_original is not None:
         return disponible_base + monto_original
@@ -205,7 +178,8 @@ def build_dashboard_context(user, mes, anio):
         total_egresos  = resumen.total_egresos
         total_ahorros  = resumen.total_ahorros
         utilidad       = resumen.ingreso_neto
-        disponible     = resumen.ganancia_acumulada
+        disponible_global = resumen.disponible
+        total_dinero   = resumen.ganancia_acumulada
         hay_deficit    = resumen.deficit
     else:
         total_ingresos, total_egresos = _totales_movimiento(user, mes, anio)
@@ -218,12 +192,12 @@ def build_dashboard_context(user, mes, anio):
         utilidad = total_ingresos - total_egresos - total_ahorros
         hay_deficit = total_egresos > total_ingresos
         
-        # Disponible historico global (suma de todas las utilidades de todos los meses)
-        # Esto asegura que "Total dinero usuario" sea correcto incluso si este mes no tiene ResumenMensual
-        disponible = (
-            ResumenMensual.objects.filter(usuario=user)
-            .aggregate(t=Sum('ingreso_neto'))['t'] or ZERO
-        ) + utilidad
+        ingresos_historicos = Movimiento.objects.filter(usuario=user, tipo='INGRESO', activo=True).aggregate(t=Sum('monto'))['t'] or ZERO
+        egresos_historicos = Movimiento.objects.filter(usuario=user, tipo='EGRESO', activo=True).aggregate(t=Sum('monto'))['t'] or ZERO
+        ahorros_historicos = AporteAhorro.objects.filter(ahorro__usuario=user, estado_ap='APORTADO').aggregate(t=Sum('aporte'))['t'] or ZERO
+        
+        total_dinero = ingresos_historicos - egresos_historicos
+        disponible_global = total_dinero - ahorros_historicos
 
     diferencia = total_ingresos - total_egresos
 
@@ -254,7 +228,8 @@ def build_dashboard_context(user, mes, anio):
         'total_egresos':             total_egresos,
         'total_ahorros':             total_ahorros,
         'utilidad':                  utilidad,
-        'disponible':                disponible,
+        'disponible_global':         disponible_global,
+        'total_dinero':              total_dinero,
         'diferencia':                diferencia,
         'ahorro_total':              ahorro_total,
         'ahorros_mes':               ahorros_mes,

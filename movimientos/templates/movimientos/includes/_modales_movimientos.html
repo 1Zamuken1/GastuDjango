@@ -570,22 +570,20 @@
           <span class="field-error-msg" id="error-categoria"></span>
         </div>
 
-        <!-- Descripción + Monto -->
+        <!-- Fecha + Monto -->
         <div class="fields-row">
 
-          <!-- Descripción -->
+          <!-- Fecha -->
           <div class="fg">
-            <label class="fg-label" for="campo-descripcion">
-              Descripción
-              <span class="fg-label-opt">(opcional)</span>
+            <label class="fg-label">
+              Fecha <span class="fg-label-opt">(opcional)</span>
             </label>
-            <input class="desc-input" type="text" id="campo-descripcion" name="descripcion"
-              placeholder="Ej: Netflix, Supermercado..." maxlength="255" autocomplete="off" />
+            <input type="hidden" id="campo-fecha" name="fecha" />
+            <div id="dp-fecha-container"></div>
             <div class="fg-hint-row">
-              <span class="fg-hint">Agrega un detalle para identificarlo fácil</span>
-              <span class="fg-counter" id="desc-counter">0/255</span>
+              <span class="fg-hint">Por defecto usa el día actual</span>
             </div>
-            <span class="field-error-msg" id="error-descripcion"></span>
+            <span class="field-error-msg" id="error-fecha"></span>
           </div>
 
           <!-- Monto -->
@@ -603,6 +601,21 @@
             <span class="field-error-msg" id="error-monto"></span>
           </div>
 
+        </div>
+
+        <!-- Descripción -->
+        <div class="fg">
+          <label class="fg-label" for="campo-descripcion">
+            Descripción
+            <span class="fg-label-opt">(opcional)</span>
+          </label>
+          <input class="desc-input" type="text" id="campo-descripcion" name="descripcion"
+            placeholder="Ej: Netflix, Supermercado..." maxlength="255" autocomplete="off" />
+          <div class="fg-hint-row">
+            <span class="fg-hint">Agrega un detalle para identificarlo fácil</span>
+            <span class="fg-counter" id="desc-counter">0/255</span>
+          </div>
+          <span class="field-error-msg" id="error-descripcion"></span>
         </div>
 
       </div>

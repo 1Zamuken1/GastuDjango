@@ -634,3 +634,36 @@ pytest --cov=.
 - Utilizar nomes descriptivos para los tests que indiquen claramente qué se está probando
 - Los tests deben ser independientes y no depender del estado de otros tests
 - Utilizar el método `setUp()` para crear objetos comunes necesarios para múltiples tests
+
+---
+
+## 24. WebSockets y Notificaciones en Tiempo Real
+
+El sistema cuenta con un canal de WebSockets bidireccional gestionado por **Django Channels** y servido mediante **Daphne**. Se utiliza principalmente para "empujar" (push) notificaciones al navegador del usuario sin requerir recargas (polling).
+
+### Arquitectura de WebSockets
+1. **Frontend:** `base_app.html` inyecta un listener WebSocket (`ws://` o `wss://`) que escucha eventos tipo `notificacion`.
+2. **Backend (Consumers):** `notificaciones/consumers.py` gestiona la conexión asíncrona y la suscripción del usuario a un grupo específico (ej. `notificaciones_{user.id}`).
+3. **Dispatchers:** Cuando se crea una notificación (ej. desde `notificaciones/dispatcher.py` en un hilo en segundo plano), el servidor envía un mensaje al *Channel Layer* que luego se retransmite por el túnel WebSocket.
+4. **Serialización (JSON):** Todos los valores en el backend (incluidos `Enums` como `Notificacion.Tipo`) deben convertirse explícitamente a `str()` antes de pasar al Channel Layer, ya que un fallo de serialización JSON cerrará silenciosamente la conexión asíncrona.
+
+### Configuración del Channel Layer y Entornos
+
+El sistema soporta dos modos de funcionamiento que se autoconfiguran en `settings.py`:
+
+**1. Desarrollo Local (InMemoryChannelLayer)**
+- Activo por defecto cuando NO existe la variable `REDIS_URL`.
+- Utiliza la memoria RAM de Python como "tablero de mensajes".
+- **Ventaja:** No requiere instalar programas externos (como Redis) en Windows.
+- **Limitación:** Solo funciona correctamente dentro del mismo proceso de Python.
+
+**2. Producción / Render (RedisChannelLayer)**
+- Activo automáticamente si existe la variable de entorno `REDIS_URL`.
+- En producción, con múltiples workers o servidores, el `InMemoryChannelLayer` pierde los mensajes porque no se comparten la memoria.
+- **Pasos para desplegar en Render:**
+  1. Crear un nuevo servicio **Redis** (plan Free) en la misma región que el Web Service de GastuApp.
+  2. Copiar la **Internal URL** provista por Render (ej. `redis://red-...`).
+  3. En el Web Service de GastuApp, ir a la sección **Environment** y agregar:
+     - `Key`: `REDIS_URL`
+     - `Value`: [La Internal URL copiada]
+  4. Redesplegar. Django Channels detectará la variable y utilizará Redis como backend de mensajería asíncrona.
