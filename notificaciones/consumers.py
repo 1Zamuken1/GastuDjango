@@ -1,10 +1,13 @@
 import json
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+logger = logging.getLogger(__name__)
 
 class NotificacionesConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope["user"]
-        print(f"[WS] Intento de conexión de: {self.user}")
+        logger.debug(f"Intento de conexión WS de: {self.user}")
         if self.user.is_anonymous:
             await self.close()
         else:
@@ -14,7 +17,7 @@ class NotificacionesConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
             await self.accept()
-            print(f"[WS] Conectado exitosamente al grupo: {self.group_name}")
+            logger.debug(f"Conectado exitosamente al grupo: {self.group_name}")
 
     async def disconnect(self, close_code):
         if hasattr(self, 'group_name'):
@@ -24,7 +27,7 @@ class NotificacionesConsumer(AsyncWebsocketConsumer):
             )
 
     async def notificacion_mensaje(self, event):
-        print(f"[WS] Recibiendo evento notificacion_mensaje para enviar a cliente: {event['data']}")
+        logger.debug(f"Enviando notificación a cliente: {event['data'].get('tipo', '')}")
         # Enviar mensaje al WebSocket
         await self.send(text_data=json.dumps({
             'type': 'notificacion',

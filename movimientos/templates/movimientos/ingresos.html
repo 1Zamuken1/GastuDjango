@@ -71,10 +71,10 @@
       </button>
 
       <!-- Divisor -->
-      <span style="color:#cbd5e1;font-weight:300;font-size:12px;">|</span>
+      <span id="divisor-anio" style="color:#cbd5e1;font-weight:300;font-size:12px;display:{% if anio == 'all' %}none{% else %}inline{% endif %};">|</span>
 
       <!-- Botón Año -->
-      <button type="button" id="btn-custom-anio" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-left:4px;height:100%;display:flex;align-items:center;gap:2px;">
+      <button type="button" id="btn-custom-anio" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-left:4px;height:100%;display:{% if anio == 'all' %}none{% else %}flex{% endif %};align-items:center;gap:2px;">
         <span id="label-anio">{{ anio }}</span>
         <i data-lucide="chevron-down" style="width:12px;height:12px;color:#94a3b8;"></i>
       </button>
@@ -221,13 +221,30 @@
       });
 
       const renderOptions = () => {
-        const selectedYear = parseInt(selectAnio.value);
         const today = new Date();
         const currentYear = today.getFullYear();
         const currentMonth = today.getMonth() + 1;
+        const selectedYear = selectAnio.value === 'all' ? currentYear : parseInt(selectAnio.value);
 
         // Render Meses
         dropMes.innerHTML = '';
+        
+        // Opción "Todas las fechas"
+        const optAll = document.createElement('div');
+        const isSelectedAll = selectMes.value === 'all';
+        optAll.className = `px-3 py-2 text-sm font-medium transition-colors rounded-lg cursor-pointer mb-1 last:mb-0 ${isSelectedAll ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'}`;
+        optAll.innerText = 'Todas las fechas';
+        optAll.addEventListener('click', () => {
+          selectMes.value = 'all';
+          selectAnio.value = 'all';
+          labelMes.innerText = 'Todas las fechas';
+          document.getElementById('divisor-anio').style.display = 'none';
+          btnAnio.style.display = 'none';
+          renderOptions();
+          aplicarFiltro();
+        });
+        dropMes.appendChild(optAll);
+
         mesesNombres.forEach((nombre, index) => {
           const m = index + 1;
           const isDisabled = (selectedYear < userJoinedYear || (selectedYear === userJoinedYear && m < userJoinedMonth)) ||
@@ -242,6 +259,12 @@
             opt.addEventListener('click', () => {
               selectMes.value = m;
               labelMes.innerText = nombre;
+              if(selectAnio.value === 'all') {
+                  selectAnio.value = currentYear;
+                  labelAnio.innerText = currentYear;
+              }
+              document.getElementById('divisor-anio').style.display = 'inline';
+              btnAnio.style.display = 'flex';
               renderOptions();
               aplicarFiltro();
             });

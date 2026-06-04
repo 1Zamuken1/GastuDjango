@@ -257,17 +257,11 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     hoy = date.today()
 
-    resumen = ResumenMensual.objects.filter(
-        usuario=usuario,
-        mes=hoy.month,
-        anio=hoy.year,
-    ).first()
+    from dashboard.services import obtener_disponible
+    disponible_actual = obtener_disponible(usuario, hoy.month, hoy.year)
 
-    if not resumen:
-        return JsonResponse({"ok": False, "error": "No existe un resumen mensual"})
-
-    if resumen.disponible < aporte_ingresado:
-        return JsonResponse({"ok": False, "error": f"No tienes saldo disponible suficiente para realizar este aporte. Disponible actual: ${resumen.disponible:,.2f}."})
+    if disponible_actual < aporte_ingresado:
+        return JsonResponse({"ok": False, "error": f"No tienes saldo disponible suficiente para realizar este aporte. Disponible actual: ${disponible_actual:,.2f}."})
 
     pasar_cuotas_a_perdidas(ahorro)
 

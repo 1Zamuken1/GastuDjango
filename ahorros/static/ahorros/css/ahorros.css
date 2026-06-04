@@ -474,7 +474,8 @@
 
 /* ── Modal de meta (crear/editar) EXTRA GRANDE ─────── */
 .modal--meta {
-  width: min(560px, 95vw);
+  width: min(620px, 95vw);
+  max-width: none;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -486,6 +487,7 @@
 }
 .modal--picker {
   width: min(520px, 95vw);
+  max-width: none;
   max-height: 88vh;
   display: flex;
   flex-direction: column;
@@ -777,7 +779,7 @@
 
 /* ── Detalle de meta (modal aporte) ───────────────── */
 .detalle-modal {
-  width: min(800px, 95vw);
+  width: min(1000px, 95vw);
   max-width: none;
   max-height: 85vh;
   display: flex;
@@ -909,7 +911,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  max-width: 200px;
+  width: 100%;
+  min-width: 130px;
 }
 
 .form-aporte-inline__wrapper {
@@ -1068,22 +1071,73 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
+  .stats-hero {
+    grid-template-columns: 1fr;
+  }
+  .hero-total {
+    padding: .75rem 1rem;
+  }
+  .hero-total__value {
+    font-size: 1.8rem;
+  }
   .hero-stats {
     grid-template-columns: 1fr;
   }
-
   .hero-stat {
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
   }
-
   .hero-stat:last-child {
     border-bottom: none;
   }
-
   .categorias-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ── Responsive: pantallas grandes (≥ 1280px) ────── */
+@media (min-width: 1280px) {
+  /* Cards de metas: 4 columnas fijas en desktop */
+  .categorias-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Modal crear/editar: bastante más ancho */
+  .modal--meta {
+    width: min(820px, 92vw);
+  }
+
+  /* Modal picker de categorías: más ancho en desktop */
+  .modal--picker {
+    width: min(800px, 92vw);
+  }
+  .modal--picker .picker-cat-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+
+  /* Modal detalle aportes: más ancho */
+  .detalle-modal {
+    width: min(1100px, 92vw);
+  }
+}
+
+@media (min-width: 1536px) {
+  /* Ultra-wide: cards aún más anchas */
+  .categorias-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .modal--meta {
+    width: min(900px, 88vw);
+  }
+
+  .modal--picker {
+    width: min(900px, 88vw);
+  }
+
+  .detalle-modal {
+    width: min(1200px, 90vw);
   }
 }
 
