@@ -71,17 +71,23 @@
         </div>
         <div class="form-group">
           <label>Frecuencia</label>
-          <select id="frecuencia" class="form-input">
-            <option value="">Selecciona la frecuencia</option>
-            <option value="DIARIO">Diario</option>
-            <option value="SEMANAL">Semanal</option>
-            <option value="QUINCENAL">Quincenal</option>
-            <option value="MENSUAL">Mensual</option>
-            <option value="BIMESTRAL">Bimestral</option>
-            <option value="TRIMESTRAL">Trimestral</option>
-            <option value="SEMESTRAL">Semestral</option>
-            <option value="ANUAL">Anual</option>
-          </select>
+          <input type="hidden" id="frecuencia">
+          <div style="position:relative;">
+            <button type="button" class="picker-frecuencia-btn" id="crear-frecuencia-btn">
+              <span id="crear-frecuencia-label" class="picker-frecuencia-label">Selecciona la frecuencia</span>
+              <i data-lucide="chevron-down" style="width:16px;height:16px;flex-shrink:0;"></i>
+            </button>
+            <div id="crear-frecuencia-menu" class="frecuencia-menu" style="display:none;">
+              <div class="frecuencia-option" data-target="crear" data-value="DIARIO">Diario</div>
+              <div class="frecuencia-option" data-target="crear" data-value="SEMANAL">Semanal</div>
+              <div class="frecuencia-option" data-target="crear" data-value="QUINCENAL">Quincenal</div>
+              <div class="frecuencia-option" data-target="crear" data-value="MENSUAL">Mensual</div>
+              <div class="frecuencia-option" data-target="crear" data-value="BIMESTRAL">Bimestral</div>
+              <div class="frecuencia-option" data-target="crear" data-value="TRIMESTRAL">Trimestral</div>
+              <div class="frecuencia-option" data-target="crear" data-value="SEMESTRAL">Semestral</div>
+              <div class="frecuencia-option" data-target="crear" data-value="ANUAL">Anual</div>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label>Descripción <span class="label-opcional">(opcional)</span></label>
@@ -124,16 +130,23 @@
         </div>
         <div class="form-group">
           <label>Frecuencia</label>
-          <select id="editar-frecuencia" class="form-input">
-            <option value="DIARIO">Diario</option>
-            <option value="SEMANAL">Semanal</option>
-            <option value="QUINCENAL">Quincenal</option>
-            <option value="MENSUAL">Mensual</option>
-            <option value="BIMESTRAL">Bimestral</option>
-            <option value="TRIMESTRAL">Trimestral</option>
-            <option value="SEMESTRAL">Semestral</option>
-            <option value="ANUAL">Anual</option>
-          </select>
+          <input type="hidden" id="editar-frecuencia">
+          <div style="position:relative;">
+            <button type="button" class="picker-frecuencia-btn" id="editar-frecuencia-btn">
+              <span id="editar-frecuencia-label" class="picker-frecuencia-label">Selecciona la frecuencia</span>
+              <i data-lucide="chevron-down" style="width:16px;height:16px;flex-shrink:0;"></i>
+            </button>
+            <div id="editar-frecuencia-menu" class="frecuencia-menu" style="display:none;">
+              <div class="frecuencia-option" data-target="editar" data-value="DIARIO">Diario</div>
+              <div class="frecuencia-option" data-target="editar" data-value="SEMANAL">Semanal</div>
+              <div class="frecuencia-option" data-target="editar" data-value="QUINCENAL">Quincenal</div>
+              <div class="frecuencia-option" data-target="editar" data-value="MENSUAL">Mensual</div>
+              <div class="frecuencia-option" data-target="editar" data-value="BIMESTRAL">Bimestral</div>
+              <div class="frecuencia-option" data-target="editar" data-value="TRIMESTRAL">Trimestral</div>
+              <div class="frecuencia-option" data-target="editar" data-value="SEMESTRAL">Semestral</div>
+              <div class="frecuencia-option" data-target="editar" data-value="ANUAL">Anual</div>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label>Descripción <span class="label-opcional">(opcional)</span></label>
@@ -473,6 +486,8 @@
 
       function abrirModalCrear() {
         document.getElementById('form-crear').reset()
+        document.getElementById('crear-frecuencia-label').textContent = 'Selecciona la frecuencia'
+        document.getElementById('frecuencia').value = ''
         dpInicioCrear?.limpiar()
         dpFinCrear?.limpiar()
         abrirModal('modal-crear')
@@ -520,6 +535,11 @@
           document.getElementById('editar-id').value               = p.id
           document.getElementById('editar-monto_programado').value = p.monto_programado
           document.getElementById('editar-frecuencia').value       = p.frecuencia
+          const freqLabel = document.getElementById('editar-frecuencia-label')
+          if (freqLabel) {
+            const freqMap = { DIARIO:'Diario', SEMANAL:'Semanal', QUINCENAL:'Quincenal', MENSUAL:'Mensual', BIMESTRAL:'Bimestral', TRIMESTRAL:'Trimestral', SEMESTRAL:'Semestral', ANUAL:'Anual' }
+            freqLabel.textContent = freqMap[p.frecuencia] || 'Selecciona la frecuencia'
+          }
           document.getElementById('editar-descripcion').value      = p.descripcion || ''
           document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
           document.getElementById('editar-fecha_fin').value        = p.fecha_fin || ''
@@ -609,6 +629,43 @@
             inpFinEditar.parentNode.appendChild(dpFinEditar.wrapper)
           }
         }
+        // Picker de frecuencia
+        document.querySelectorAll('.picker-frecuencia-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const target = btn.id === 'crear-frecuencia-btn' ? 'crear' : 'editar';
+            const menu = document.getElementById(`${target}-frecuencia-menu`);
+            document.querySelectorAll('.frecuencia-menu').forEach(m => { if (m !== menu) m.style.display = 'none' });
+            if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+          });
+        });
+
+        document.querySelectorAll('.frecuencia-option').forEach(opt => {
+          opt.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const target = opt.dataset.target;
+            const val    = opt.dataset.value;
+            const text   = opt.textContent;
+
+            document.getElementById(`${target}-frecuencia`).value = val;
+            const label = document.getElementById(`${target}-frecuencia-label`);
+            if (label) label.textContent = text;
+            const menu = document.getElementById(`${target}-frecuencia-menu`);
+            if (menu) menu.style.display = 'none';
+          });
+        });
+
+        document.addEventListener('click', (e) => {
+          document.querySelectorAll('.frecuencia-menu').forEach(menu => {
+            const target = menu.id.replace('-frecuencia-menu', '');
+            const btn    = document.getElementById(`${target}-frecuencia-btn`);
+            if (btn && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+              menu.style.display = 'none';
+            }
+          });
+        });
+
         cargarProgramaciones()
         verificarPendientes()
       })
