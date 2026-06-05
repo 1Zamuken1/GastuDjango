@@ -443,15 +443,20 @@
       lista.forEach(cat => {
         const div = document.createElement('div')
         div.className = 'categoria-card'
+        const iconName = cat.tipo === 'INGRESO' ? 'trending-up' : 'trending-down'
         const tipoClass = cat.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
         const tipoLabel = cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
         div.innerHTML = `
-          <span class="cat-nombre">${cat.nombre}</span>
+          <div class="categoria-card__icon">
+            <i data-lucide="${iconName}"></i>
+          </div>
+          <span class="categoria-card__nombre">${cat.nombre}</span>
           <span class="card-badge ${tipoClass}">${tipoLabel}</span>
         `
         div.onclick = () => seleccionarCategoria(cat)
         contenedor.appendChild(div)
       })
+      if (typeof lucide !== 'undefined') lucide.createIcons()
     }
 
       function seleccionarCategoria(cat) {

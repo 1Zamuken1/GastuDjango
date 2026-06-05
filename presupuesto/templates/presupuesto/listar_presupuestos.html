@@ -420,10 +420,16 @@
           lista.forEach(cat => {
             const div = document.createElement('div')
             div.className = 'categoria-card'
-            div.textContent = cat.nombre
+            div.innerHTML = `
+              <div class="categoria-card__icon">
+                <i data-lucide="trending-down"></i>
+              </div>
+              <span class="categoria-card__nombre">${cat.nombre}</span>
+            `
             div.onclick = () => seleccionarCategoria(cat)
             contenedor.appendChild(div)
           })
+          if (typeof lucide !== 'undefined') lucide.createIcons()
         }
 
       function seleccionarCategoria(cat) {
