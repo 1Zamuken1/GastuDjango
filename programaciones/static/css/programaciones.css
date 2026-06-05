@@ -13,6 +13,7 @@
   --bg-card-hover: #f4f8ff;
   --bg-footer: #f0f5ff;
 
+  --blue-whithe: #c4dbf1;
   --blue: #4da6ff;
   --blue-dark: #1a85f5;
   --blue-press: #0d6fd9;
@@ -521,6 +522,116 @@
   color: #fff;
   border-color: var(--danger);
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.28);
+}
+
+/* ================================================================
+   PICKER DE FRECUENCIA  (custom dropdown a lo ahorros)
+   ================================================================ */
+.picker-frecuencia-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--bg-card);
+  color: var(--text-3);
+  font-family: var(--font-b);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background var(--transition);
+  text-align: left;
+  gap: 8px;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.picker-frecuencia-btn:hover {
+  background: #fdfdff;
+}
+.picker-frecuencia-btn:focus,
+.picker-frecuencia-btn:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow:
+    0 0 0 3px var(--blue-mid),
+    var(--shadow-xs);
+}
+.picker-frecuencia-btn svg {
+  transition: transform var(--transition);
+}
+.picker-frecuencia-btn[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.picker-frecuencia-label {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.frecuencia-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 60;
+  padding: 4px 0;
+  animation: fadeDropdown 0.12s ease;
+}
+@keyframes fadeDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.frecuencia-option {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-family: var(--font-b);
+  font-size: 14px;
+  color: var(--text-1);
+  transition: background 0.1s;
+}
+.frecuencia-option:hover {
+  background: var(--blue-whithe);
+}
+.frecuencia-option:active {
+  background: var(--blue-mid);
+}
+
+.frecuencia-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.frecuencia-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+.frecuencia-menu::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+.frecuencia-menu::-webkit-scrollbar-thumb:hover {
+  background: #0f172a;
 }
 
 /* ================================================================
