@@ -58,7 +58,11 @@
         <form id="form-crear" class="modal-form">
           <div class="form-group">
             <label>Límite</label>
-            <input type="number" id="limite" class="form-input" placeholder="0.00" min="0" step="0.01">
+            <div class="monto-field-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="text" inputmode="numeric" id="limite" class="monto-input" placeholder="0" autocomplete="off">
+              <span class="monto-currency-tag">COP</span>
+            </div>
           </div>
           <div class="form-group">
             <label>Categoría</label>
@@ -91,7 +95,11 @@
           <input type="hidden" id="editar-id">
           <div class="form-group">
             <label>Límite</label>
-            <input type="number" id="editar-limite" class="form-input" placeholder="0.00" min="0" step="0.01">
+            <div class="monto-field-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="text" inputmode="numeric" id="editar-limite" class="monto-input" placeholder="0" autocomplete="off">
+              <span class="monto-currency-tag">COP</span>
+            </div>
           </div>
           <div class="form-group">
             <label>Categoría</label>
@@ -320,9 +328,14 @@
                   <div class="card-limite">${limite}</div>
                   <div class="card-categoria">${p.categoria_nombre}</div>
                 </div>
-                <span class="card-badge ${p.isActivo ? 'activo' : 'inactivo'}">
-                  ${p.isActivo ? 'Activo' : 'Inactivo'}
-                </span>
+                <div class="card-badges">
+                  <div class="card-tipo-icon tipo-egreso">
+                    <i data-lucide="trending-down" style="width:16px;height:16px;"></i>
+                  </div>
+                  <span class="card-badge ${p.isActivo ? 'activo' : 'inactivo'}">
+                    ${p.isActivo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
               </div>
               <div class="card-body">
                 <div class="progreso-wrap">
@@ -362,6 +375,7 @@
             `
             contenedor.appendChild(card)
           })
+          if (typeof lucide !== 'undefined') lucide.createIcons()
         })
         .catch(err => console.error('cargarPresupuestos error:', err))
       }
@@ -455,7 +469,8 @@
         e.preventDefault()
 
         const categoria  = document.getElementById('categoria').value
-        const limiteVal  = parseFloat(document.getElementById('limite').value)
+        const raw        = document.getElementById('limite').dataset.raw
+        const limiteVal  = raw ? parseFloat(raw) : 0
         const fechaIni   = document.getElementById('fecha_inicio').value
         const fechaFin   = document.getElementById('fecha_fin').value
 
@@ -504,7 +519,9 @@
           .then(r => r.json())
           .then(p => {
             document.getElementById('editar-id').value               = p.id
-            document.getElementById('editar-limite').value           = p.limite
+            const rawLim = String(parseInt(p.limite, 10))
+            document.getElementById('editar-limite').dataset.raw     = rawLim
+            document.getElementById('editar-limite').value           = rawLim.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
             document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
             document.getElementById('editar-fecha_fin').value        = p.fecha_fin
             dpInicioEditar?.setValor(p.fecha_inicio)
@@ -521,7 +538,8 @@
 
         const id         = document.getElementById('editar-id').value
         const categoria  = document.getElementById('editar-categoria').value
-        const limiteVal  = parseFloat(document.getElementById('editar-limite').value)
+        const raw        = document.getElementById('editar-limite').dataset.raw
+        const limiteVal  = raw ? parseFloat(raw) : 0
         const fechaIni   = document.getElementById('editar-fecha_inicio').value
         const fechaFin   = document.getElementById('editar-fecha_fin').value
 
@@ -586,7 +604,21 @@
       }
 
       // ── Init ──────────────────────────────────────────────────────────────────────
+      function initFormateoMonto(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.addEventListener('input', function () {
+          const digitos = this.value.replace(/\D/g, '');
+          if (!digitos) { this.dataset.raw = ''; this.value = ''; return; }
+          const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+          this.dataset.raw = digitos;
+          this.value = formatted;
+        });
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
+        initFormateoMonto('limite')
+        initFormateoMonto('editar-limite')
         if (typeof MiniDatepicker !== 'undefined') {
           const inpInicioCrear = document.getElementById('fecha_inicio')
           const inpFinCrear = document.getElementById('fecha_fin')

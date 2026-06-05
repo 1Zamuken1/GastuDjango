@@ -367,6 +367,13 @@
   letter-spacing: 0.6px;
 }
 
+.card-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
 /* Badges */
 .card-badge {
   font-family: var(--font-d);
@@ -385,6 +392,20 @@
 }
 .card-badge.inactivo {
   color: var(--text-3);
+}
+
+/* Icono de tipo en card */
+.card-tipo-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.tipo-egreso {
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 /* Body tarjeta */
@@ -706,6 +727,73 @@
 .form-input option {
   background: #fff;
   color: var(--text-1);
+}
+
+/* ── Campo tipo monto ($ + COP) ──────────────────────── */
+.monto-field-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background var(--transition);
+}
+.monto-field-wrap:focus-within {
+  border-color: var(--purple);
+  box-shadow:
+    0 0 0 3px var(--purple-mid),
+    var(--shadow-xs);
+  background: #fdfcff;
+}
+
+.monto-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 14px;
+  background: var(--purple-tint);
+  color: var(--purple);
+  font-family: var(--font-d);
+  font-size: 0.9rem;
+  font-weight: 800;
+  border-right: 1.5px solid var(--border-strong);
+  user-select: none;
+}
+.monto-field-wrap:focus-within .monto-prefix {
+  border-right-color: var(--purple-mid);
+}
+
+.monto-input {
+  flex: 1;
+  padding: 11px 10px;
+  border: none;
+  outline: none;
+  font-family: var(--font-d);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-1);
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.monto-input::placeholder {
+  color: var(--text-3);
+}
+
+.monto-currency-tag {
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 8px;
+  font-family: var(--font-d);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  user-select: none;
 }
 
 .modal-actions {

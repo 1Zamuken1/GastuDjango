@@ -60,7 +60,11 @@
       <form id="form-crear" class="modal-form">
         <div class="form-group">
           <label>Monto programado</label>
-          <input type="number" id="monto_programado" class="form-input" placeholder="0.00" min="0.01" step="0.01">
+          <div class="monto-field-wrap">
+            <span class="monto-prefix">$</span>
+            <input type="text" inputmode="numeric" id="monto_programado" class="monto-input" placeholder="0" autocomplete="off">
+            <span class="monto-currency-tag">COP</span>
+          </div>
         </div>
         <div class="form-group">
           <label>Categoría</label>
@@ -119,7 +123,11 @@
         <input type="hidden" id="editar-id">
         <div class="form-group">
           <label>Monto programado</label>
-          <input type="number" id="editar-monto_programado" class="form-input" placeholder="0.00" min="0.01" step="0.01">
+          <div class="monto-field-wrap">
+            <span class="monto-prefix">$</span>
+            <input type="text" inputmode="numeric" id="editar-monto_programado" class="monto-input" placeholder="0" autocomplete="off">
+            <span class="monto-currency-tag">COP</span>
+          </div>
         </div>
         <div class="form-group">
           <label>Categoría</label>
@@ -289,8 +297,9 @@
             }
 
             lista.forEach(p => {
-              const tipoClass   = p.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
-              const tipoLabel   = p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
+              const esIngreso  = p.tipo === 'INGRESO'
+              const iconName   = esIngreso ? 'trending-up' : 'trending-down'
+              const tipoClass  = esIngreso ? 'tipo-ingreso' : 'tipo-egreso'
               const activoClass = p.activo ? 'badge-activo' : 'badge-inactivo'
               const activoLabel = p.activo ? 'Activo' : 'Inactivo'
               const fechaFin    = p.fecha_fin ? formatFecha(p.fecha_fin) : '—'
@@ -307,7 +316,9 @@
                     <div class="card-categoria">${p.categoria_nombre || '—'}</div>
                   </div>
                   <div class="card-badges">
-                    <span class="card-badge ${tipoClass}">${tipoLabel}</span>
+                    <div class="card-tipo-icon ${tipoClass}">
+                      <i data-lucide="${iconName}" style="width:16px;height:16px;"></i>
+                    </div>
                     <span class="card-badge ${activoClass}">${activoLabel}</span>
                   </div>
                 </div>
@@ -343,6 +354,7 @@
               `
               contenedor.appendChild(card)
             })
+            if (typeof lucide !== 'undefined') lucide.createIcons()
           })
           .catch(() => mostrarToast('No se pudieron cargar las programaciones.', 'error'))
       }
@@ -496,7 +508,8 @@
       document.getElementById('form-crear').addEventListener('submit', function(e) {
         e.preventDefault()
         const categoria = document.getElementById('categoria').value
-        const monto        = document.getElementById('monto_programado').value
+        const raw       = document.getElementById('monto_programado').dataset.raw
+        const monto     = raw || '0'
         const frecuencia   = document.getElementById('frecuencia').value
         const fecha_inicio = document.getElementById('fecha_inicio').value
 
@@ -533,7 +546,9 @@
         .then(r => r.json())
         .then(p => {
           document.getElementById('editar-id').value               = p.id
-          document.getElementById('editar-monto_programado').value = p.monto_programado
+          const rawMonto = String(parseInt(p.monto_programado, 10))
+          document.getElementById('editar-monto_programado').dataset.raw = rawMonto
+          document.getElementById('editar-monto_programado').value       = rawMonto.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
           document.getElementById('editar-frecuencia').value       = p.frecuencia
           const freqLabel = document.getElementById('editar-frecuencia-label')
           if (freqLabel) {
@@ -555,8 +570,9 @@
       document.getElementById('form-editar').addEventListener('submit', function(e) {
         e.preventDefault()
         const id   = document.getElementById('editar-id').value
+        const raw  = document.getElementById('editar-monto_programado').dataset.raw
         const body = {
-          monto_programado: document.getElementById('editar-monto_programado').value,
+          monto_programado: raw || '0',
           categoria:        document.getElementById('editar-categoria').value,
           frecuencia:       document.getElementById('editar-frecuencia').value,
           descripcion:      document.getElementById('editar-descripcion').value || null,
@@ -629,13 +645,28 @@
             inpFinEditar.parentNode.appendChild(dpFinEditar.wrapper)
           }
         }
+        function initFormateoMonto(inputId) {
+          const inp = document.getElementById(inputId);
+          if (!inp) return;
+          inp.addEventListener('input', function () {
+            const digitos = this.value.replace(/\D/g, '');
+            if (!digitos) { this.dataset.raw = ''; this.value = ''; return; }
+            const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            this.dataset.raw = digitos;
+            this.value = formatted;
+          });
+        }
+        initFormateoMonto('monto_programado')
+        initFormateoMonto('editar-monto_programado')
         // Picker de frecuencia
+        function inputId(prefix) { return prefix === 'crear' ? 'frecuencia' : 'editar-frecuencia'; }
+
         document.querySelectorAll('.picker-frecuencia-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const target = btn.id === 'crear-frecuencia-btn' ? 'crear' : 'editar';
-            const menu = document.getElementById(`${target}-frecuencia-menu`);
+            const prefix = btn.id === 'crear-frecuencia-btn' ? 'crear' : 'editar';
+            const menu = document.getElementById(`${prefix}-frecuencia-menu`);
             document.querySelectorAll('.frecuencia-menu').forEach(m => { if (m !== menu) m.style.display = 'none' });
             if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
           });
@@ -644,22 +675,22 @@
         document.querySelectorAll('.frecuencia-option').forEach(opt => {
           opt.addEventListener('click', (e) => {
             e.stopPropagation();
-            const target = opt.dataset.target;
+            const prefix = opt.dataset.target;
             const val    = opt.dataset.value;
             const text   = opt.textContent;
 
-            document.getElementById(`${target}-frecuencia`).value = val;
-            const label = document.getElementById(`${target}-frecuencia-label`);
+            document.getElementById(inputId(prefix)).value = val;
+            const label = document.getElementById(`${prefix}-frecuencia-label`);
             if (label) label.textContent = text;
-            const menu = document.getElementById(`${target}-frecuencia-menu`);
+            const menu = document.getElementById(`${prefix}-frecuencia-menu`);
             if (menu) menu.style.display = 'none';
           });
         });
 
         document.addEventListener('click', (e) => {
           document.querySelectorAll('.frecuencia-menu').forEach(menu => {
-            const target = menu.id.replace('-frecuencia-menu', '');
-            const btn    = document.getElementById(`${target}-frecuencia-btn`);
+            const prefix = menu.id.replace('-frecuencia-menu', '');
+            const btn    = document.getElementById(`${prefix}-frecuencia-btn`);
             if (btn && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
               menu.style.display = 'none';
             }
