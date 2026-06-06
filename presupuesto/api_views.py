@@ -50,6 +50,7 @@ class PresupuestoViewSet(viewsets.ModelViewSet):
             item['gastado'] = estado.get('gastado', 0)
             item['porcentaje'] = estado.get('porcentaje', 0)
             item['alerta'] = estado.get('alerta', 'baja')
+            item['disponible'] = estado.get('disponible', 0)
         return Response({"ok": True, "data": serializer.data})
 
     @action(detail=False, methods=['post'])

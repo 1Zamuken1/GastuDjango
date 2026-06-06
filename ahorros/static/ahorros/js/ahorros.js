@@ -95,6 +95,9 @@ function abrirModalAporte(url) {
       overlayAporte.innerHTML = html;
       lucide.createIcons();
       calcularTiemposRestantes(overlayAporte);
+      
+      bindMontoFormatter(overlayAporte.querySelector('#aporte-extra-monto'));
+
       overlayAporte.querySelectorAll('.btn-cerrar-modal-aporte').forEach(btn => {
         btn.addEventListener('click', cerrarModalAporte);
       });
@@ -158,6 +161,11 @@ async function enviarAporte(e, url) {
   e.preventDefault();
   const form = e.currentTarget;
   const data = new FormData(form);
+
+  const inputExtra = form.querySelector('#aporte-extra-monto');
+  if (inputExtra && inputExtra.dataset.raw && form.contains(inputExtra)) {
+    data.set('aporte', inputExtra.dataset.raw);
+  }
 
   try {
     const res  = await fetch(form.action, { method: 'POST', body: data });
@@ -343,7 +351,7 @@ function abrirModalCrear() {
   const fLabel = document.getElementById('crear-frecuencia-label');
   if (fLabel) {
     document.getElementById('crear-frecuencia').value = '';
-    fLabel.textContent = '-- Seleccionar --';
+    fLabel.textContent = 'Seleccionar Frecuencia';
     fLabel.style.color = 'var(--slate-500)';
   }
 
@@ -391,6 +399,9 @@ modalCrear.addEventListener('click', e => { if (e.target === modalCrear) cerrarM
 
 document.getElementById('btn-guardar-crear').addEventListener('click', async () => {
   const data = new FormData(formCrear);
+  const m = document.getElementById('crear-monto-meta');
+  if (m && m.dataset.raw) data.set('monto_meta', m.dataset.raw);
+
   try {
     const res  = await fetch(URL_CREAR_META, {
       method: 'POST', body: data,
@@ -459,13 +470,15 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
 
       const a = json.ahorro;
       document.getElementById('editar-ahorro-id').value = a.id;
-      document.getElementById('editar-monto-meta').value = a.monto_meta;
+      const inputEditMonto = document.getElementById('editar-monto-meta');
+      inputEditMonto.value = formatearNumeroStr(a.monto_meta);
+      inputEditMonto.dataset.raw = a.monto_meta;
 
       document.getElementById('editar-frecuencia').value = a.frecuencia;
       const fLabelEdit = document.getElementById('editar-frecuencia-label');
       if (fLabelEdit) {
         const freqMap = { 'DIARIA':'Diaria', 'SEMANAL':'Semanal', 'QUINCENAL':'Quincenal', 'MENSUAL':'Mensual', 'TRIMESTRAL':'Trimestral', 'SEMESTRAL':'Semestral', 'ANUAL':'Anual' };
-        fLabelEdit.textContent = freqMap[a.frecuencia] || '-- Seleccionar --';
+        fLabelEdit.textContent = freqMap[a.frecuencia] || 'Seleccionar Frecuencia';
         fLabelEdit.style.color = a.frecuencia ? 'var(--slate-900)' : 'var(--slate-500)';
       }
 
@@ -504,6 +517,9 @@ modalEditar.addEventListener('click', e => { if (e.target === modalEditar) cerra
 
 document.getElementById('btn-guardar-editar').addEventListener('click', async () => {
   const data = new FormData(formEditar);
+  const m = document.getElementById('editar-monto-meta');
+  if (m && m.dataset.raw) data.set('monto_meta', m.dataset.raw);
+
   try {
     const res  = await fetch(_editarUrl, {
       method: 'POST', body: data,
@@ -646,6 +662,43 @@ document.addEventListener('keydown', e => {
    12. DATEPICKER, FRECUENCIA Y FILTRO DE ESTADO
    ══════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════
+   13. FORMATEO DE MONTOS
+   ══════════════════════════════════════════════════════════ */
+function bindMontoFormatter(el) {
+  if (!el) return;
+  el.addEventListener('input', function () {
+    const oldLen = this.value.length;
+    const start = this.selectionStart;
+    let digitCount = 0;
+    for (let i = 0; i < start; i++) {
+      if (/\d/.test(this.value[i])) digitCount++;
+    }
+    const digitos = this.value.replace(/\D/g, '');
+    if (!digitos) { this.dataset.raw = ''; this.value = ''; return; }
+    const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    this.dataset.raw = digitos;
+    this.value = formatted;
+    let newPos = formatted.length;
+    if (start < oldLen) {
+      let dc = 0;
+      for (let i = 0; i < formatted.length; i++) {
+        if (dc >= digitCount) { newPos = i; break; }
+        if (/\d/.test(formatted[i])) dc++;
+        newPos = i + 1;
+      }
+    }
+    this.setSelectionRange(newPos, newPos);
+  });
+}
+
+function formatearNumeroStr(raw) {
+  if (!raw) return '';
+  const entero = String(raw).split('.')[0].replace(/\D/g, '');
+  if (!entero) return '';
+  return entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 let dpCrear  = null;
 let dpEditar = null;
 
@@ -665,6 +718,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Inicializar el toggle de crear en modo cuotas por defecto
   initPlazoToggle('crear', null, null);
+
+  bindMontoFormatter(document.getElementById('crear-monto-meta'));
+  bindMontoFormatter(document.getElementById('editar-monto-meta'));
 
   // Filtro de estado
   const btnFiltroEstado  = document.getElementById('btn-filtro-estado');

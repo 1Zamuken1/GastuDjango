@@ -89,14 +89,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'gastu_django.wsgi.application'
 ASGI_APPLICATION = 'gastu_django.asgi.application'
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')],
+if os.getenv('REDIS_URL'):
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [os.getenv('REDIS_URL')],
+            },
         },
-    },
-}
+    }
+else:
+    # Capa en memoria para desarrollo local (no requiere servidor Redis extra)
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        }
+    }
 
 # ──────────────────────────────────────────────────────────────
 # BASE DE DATOS
@@ -111,6 +119,9 @@ if os.getenv('USE_SQLITE', 'False') == 'True':
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
+            'OPTIONS': {
+                'timeout': 20,
+            },
         }
     }
 

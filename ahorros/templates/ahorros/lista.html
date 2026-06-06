@@ -240,15 +240,24 @@
           <label for="crear-cat-btn">Categoría</label>
           <input type="hidden" id="crear-categoria" name="categoria">
           <button type="button" class="picker-cat-btn" id="crear-cat-btn">
+            <div class="picker-trigger-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
             <span class="picker-cat-label" id="crear-cat-label">Seleccionar categoría</span>
-            <i data-lucide="chevron-right" style="width:14px;height:14px;flex-shrink:0;"></i>
+            <div class="picker-trigger-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
           </button>
         </p>
 
         <p>
           <label for="crear-monto-meta">Monto Meta</label>
-          <input type="number" id="crear-monto-meta" name="monto_meta"
-                 placeholder="0.00" step="0.01" min="0.01">
+          <input type="text" inputmode="numeric" id="crear-monto-meta" name="monto_meta"
+                 placeholder="0" autocomplete="off" data-raw="">
         </p>
 
         <p>
@@ -262,7 +271,7 @@
                            transition:border-color .15s;font-family:'DM Sans',sans-serif;"
                     onfocus="this.style.borderColor='#d97706';this.style.boxShadow='0 0 0 3px rgba(217,119,6,0.1)'"
                     onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-              <span id="crear-frecuencia-label" style="flex:1;text-align:left;">-- Seleccionar --</span>
+              <span id="crear-frecuencia-label" style="flex:1;text-align:left;">Seleccionar Frecuencia</span>
               <i data-lucide="chevron-down" style="width:14px;height:14px;flex-shrink:0;"></i>
             </button>
             <div id="crear-frecuencia-menu" class="frecuencia-menu"
@@ -379,15 +388,24 @@
           <label>Categoría</label>
           <input type="hidden" id="editar-categoria" name="categoria">
           <button type="button" class="picker-cat-btn" id="editar-cat-btn">
+            <div class="picker-trigger-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
             <span class="picker-cat-label" id="editar-cat-label">Seleccionar categoría</span>
-            <i data-lucide="chevron-right" style="width:14px;height:14px;flex-shrink:0;"></i>
+            <div class="picker-trigger-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
           </button>
         </p>
 
         <p>
           <label for="editar-monto-meta">Monto Meta</label>
-          <input type="number" id="editar-monto-meta" name="monto_meta"
-                 placeholder="0.00" step="0.01" min="0.01">
+          <input type="text" inputmode="numeric" id="editar-monto-meta" name="monto_meta"
+                 placeholder="0" autocomplete="off" data-raw="">
         </p>
 
         <p>
@@ -401,7 +419,7 @@
                            transition:border-color .15s;font-family:'DM Sans',sans-serif;"
                     onfocus="this.style.borderColor='#d97706';this.style.boxShadow='0 0 0 3px rgba(217,119,6,0.1)'"
                     onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-              <span id="editar-frecuencia-label" style="flex:1;text-align:left;">-- Seleccionar --</span>
+              <span id="editar-frecuencia-label" style="flex:1;text-align:left;">Seleccionar Frecuencia</span>
               <i data-lucide="chevron-down" style="width:14px;height:14px;flex-shrink:0;"></i>
             </button>
             <div id="editar-frecuencia-menu" class="frecuencia-menu"

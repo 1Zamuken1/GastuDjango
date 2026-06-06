@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -106,35 +106,40 @@ def perfil_view(request):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if 'eliminar_cuenta' in request.POST:
-            password = request.POST.get('password_confirmacion', '')
-            if request.user.has_usable_password() and not request.user.check_password(password):
-                if is_ajax:
-                    return JsonResponse({'ok': False, 'msg': 'La contrasena es incorrecta.'})
-                messages.error(request, 'La contrasena es incorrecta.')
-                return redirect('perfil')
-
-            # Desconectar signals de movimientos para evitar errores
-            # durante el CASCADE delete del usuario
-            from django.db.models.signals import post_save, post_delete
-            from movimientos.models import Movimiento
-            from movimientos.signals import (
-                actualizar_resumen_al_guardar,
-                actualizar_resumen_al_eliminar,
-            )
-            post_save.disconnect(actualizar_resumen_al_guardar, sender=Movimiento)
-            post_delete.disconnect(actualizar_resumen_al_eliminar, sender=Movimiento)
-
             try:
-                request.user.delete()
-            finally:
-                post_save.connect(actualizar_resumen_al_guardar, sender=Movimiento)
-                post_delete.connect(actualizar_resumen_al_eliminar, sender=Movimiento)
+                password = request.POST.get('password_confirmacion', '')
+                if request.user.has_usable_password() and not request.user.check_password(password):
+                    if is_ajax:
+                        return JsonResponse({'ok': False, 'msg': 'La contrasena es incorrecta.'})
+                    messages.error(request, 'La contrasena es incorrecta.')
+                    return redirect('perfil')
 
-            logout(request)
-            if is_ajax:
-                return JsonResponse({'ok': True, 'redirect': '/'})
-            messages.success(request, 'Tu cuenta ha sido eliminada permanentemente.')
-            return redirect('/')
+                # Desconectar signals de movimientos para evitar errores
+                # durante el CASCADE delete del usuario
+                from django.db.models.signals import post_save, post_delete
+                from movimientos.models import Movimiento
+                from movimientos.signals import (
+                    actualizar_resumen_al_guardar,
+                    actualizar_resumen_al_eliminar,
+                )
+                post_save.disconnect(actualizar_resumen_al_guardar, sender=Movimiento)
+                post_delete.disconnect(actualizar_resumen_al_eliminar, sender=Movimiento)
+
+                try:
+                    request.user.delete()
+                finally:
+                    post_save.connect(actualizar_resumen_al_guardar, sender=Movimiento)
+                    post_delete.connect(actualizar_resumen_al_eliminar, sender=Movimiento)
+
+                logout(request)
+                if is_ajax:
+                    return JsonResponse({'ok': True, 'redirect': '/'})
+                messages.success(request, 'Tu cuenta ha sido eliminada permanentemente.')
+                return redirect('/')
+            except Exception as e:
+                if is_ajax:
+                    return JsonResponse({'ok': False, 'msg': f'Error al eliminar: {str(e)}'})
+                raise
 
 
         if 'actualizar_datos' in request.POST:
@@ -149,7 +154,10 @@ def perfil_view(request):
                 return JsonResponse({'ok': False, 'errors': perfil_form.errors})
 
         elif 'cambiar_password' in request.POST:
-            password_form = PasswordChangeForm(request.user, request.POST)
+            if request.user.has_usable_password():
+                password_form = PasswordChangeForm(request.user, request.POST)
+            else:
+                password_form = SetPasswordForm(request.user, request.POST)
             if password_form.is_valid():
                 password_form.save()
                 update_session_auth_hash(request, request.user)

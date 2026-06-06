@@ -2,7 +2,7 @@
 
 > Documento de referencia para agentes IA y colaboradores.
 > Mantener actualizado al final de cada sesión de trabajo significativa.
-> Última actualización: 2026-05-04
+> Última actualización: 2026-06-03
 
 ---
 
@@ -44,11 +44,11 @@ GastuDjango/
 ├── movimientos/           # Modelo Movimiento — CRUD completo — 100%
 ├── categorias/            # Modelo Categoria — CRUD completo — 100%
 ├── ahorros/               # Metas de ahorro y aportes — 70%
-├── programaciones/        # Movimientos recurrentes y programados — 90%
-├── presupuesto/           # Planificación de presupuestos mensuales — 80%
+├── programaciones/        # Movimientos recurrentes y programados — 95%
+├── presupuesto/           # Planificación de presupuestos mensuales — 95%
 ├── notificaciones/        # Alertas automáticas y centro de notificaciones — 80%
 ├── dashboard/             # Vista principal, estadísticas y navegación — 100%
-├── agente_financiero/     # Integración con IA (Gemini/Groq) para análisis y chat — 80%
+├── agente_financiero/     # Integración con IA (Gemini/Groq) para análisis y chat — 97%
 ├── landing/               # Landing page pública — 100%
 ├── panel_admin/           # Dashboard administrativo para gestión de datos — 90%
 ├── historial/             # Sistema de auditoría y log de acciones — 100%
@@ -105,13 +105,32 @@ DATABASE_URL=postgresql://postgres.hazefwuhlqytkhafdcux:[PASSWORD]@aws-1-sa-east
 
 ```python
 urlpatterns = [
+    path('sitemap.xml', sitemap, ...),
+    path('robots.txt', TemplateView.as_view(...)),
     path('admin/', admin.site.urls),
     path('', include('landing.urls', namespace='landing')),
-    path('', include('usuarios.urls')),                          # login, logout, register — sin namespace
+    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
+    path('', include('usuarios.urls')),
     path('', include('movimientos.urls', namespace='movimientos')),
     path('categorias/', include('categorias.urls', namespace='categorias')),
-    path('presupuesto/', include('presupuesto.urls')),           # sin namespace aún
-    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
+    path('admin-panel/', include('panel_admin.urls', namespace='panel_admin')),
+    path('ahorros/', include('ahorros.urls', namespace='ahorros')),
+
+    # APIs del módulo de planificación financiera
+    path('api/', include('categorias.api_urls')),
+    path('api/', include('presupuesto.api_urls')),            # CRUD presupuestos vía ViewSet
+    path('api/', include('programaciones.api_urls')),         # CRUD programaciones + pendientes/ejecutar
+    path('api/', include('agente_financiero.api_urls')),      # Chat, limpiar, alertas
+
+    # Módulos web del módulo de planificación financiera
+    path('presupuesto/', include('presupuesto.urls')),        # SPA de presupuestos
+    path('programaciones/', include('programaciones.urls')),  # SPA de programaciones
+    path('agente_financiero/', include('agente_financiero.urls')),  # Chat con GASTU
+
+    path('notificaciones/', include('notificaciones.urls', namespace='notificaciones')),
+    path('historial/', include('historial.urls', namespace='historial')),
+    path('auth/', include('allauth.urls')),
+    path('__reload__/', include('django_browser_reload.urls')),
 ]
 ```
 
@@ -421,31 +440,139 @@ Campos: `username`, `email`, `telefono`, `password1`, `password2`.
 
 ---
 
-## 13. App presupuesto — estado desconocido
+## 13. App presupuesto — estado actual (95%)
 
-Desarrollada por otro integrante del equipo. URL de lista: `listar_presupuestos` (sin namespace aún).
+### Modelo: `Presupuesto`
 
-**Bugs conocidos en el código existente:**
-- Ninguna vista tiene `@login_required`.
-- Usa `Presupuesto.objects.get(id=id)` sin verificar propietario — cualquier usuario puede editar/eliminar presupuestos ajenos.
-- Validación manual con `request.POST` en lugar de `ModelForm`.
-- Campo `isActivo` en camelCase en el modelo.
-- Template extiende `base.html` legacy en lugar de `base_app.html`.
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `limite` | `DecimalField` | Máximo permitido para el período |
+| `fecha_inicio` | `DateField` | Inicio del período presupuestal |
+| `fecha_fin` | `DateField` | Fin del período presupuestal |
+| `isActivo` | `BooleanField` | **camelCase** — pendiente de migrar a `is_activo` |
+| `categoria` | FK → `categorias.Categoria` | Categoría asociada |
+| `usuario` | FK → `usuarios.Usuario` | Propietario |
+
+### API REST vía ViewSet (`/api/presupuestos/`)
+
+CRUD completo con `PresupuestoViewSet` + 3 endpoints custom:
+- `GET /api/presupuestos/alertas/` — estado de alerta de presupuestos activos
+- `GET /api/presupuestos/con_estado/` — todos con `gastado`, `porcentaje`, `alerta`
+- `POST /api/presupuestos/verificar_vencidos/` — desactiva expirados
+
+### Servicios (`services.py`)
+
+- `_qs_con_total_gastado(qs)` — anota gasto real vía subquery de `Movimiento`
+- `desactivar_presupuestos_vencidos(usuario)` — desactiva los que tienen `fecha_fin < hoy`
+- `calcular_alerta_presupuesto(p)` — calcula `(total_gastado, porcentaje)`
+- `nivel_alerta(porcentaje)` — mapea % a nivel: baja, nivel_50..95, critica
+- `obtener_estados_presupuestos(usuario)` — estados completos de presupuestos activos
+
+### Señales
+
+- `post_save` → `auditar_presupuesto_guardar` (CREACION / EDICION en `AccionHistorial`)
+- `post_delete` → `auditar_presupuesto_eliminar` (ELIMINACION)
+
+### Tests: 217 líneas, pytest
+
+### Bugs conocidos
+- **Sin `@login_required`** en `views.py` (la vista web es accesible sin autenticación)
+- **`isActivo`** en camelCase — migrar a `is_activo`
+- **`con_estado`** no calcula gastado para presupuestos inactivos (siempre 0)
+- **Admin vacío** — modelo no registrado en `admin.py`
 
 ---
 
-## 14. App agente_financiero — Implementado (80%)
+## 14. App programaciones — estado actual (95%)
 
-Integración con Gemini Flash y Groq. Capacidad para analizar movimientos, responder dudas financieras y generar alertas personalizadas.
+### Modelo: `Programacion`
 
-**Componentes principales:**
-- `gastu_agent_py_code`: 3,845 tokens
-- `gastu_agent_react_code`: 5,906 tokens
-- `gastu_agent_ux`: 4,008 tokens
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `monto_programado` | `DecimalField` | Monto a ejecutar |
+| `tipo` | `CharField` | `INGRESO` / `EGRESO` (copiado desde `categoria.tipo`) |
+| `descripcion` | `CharField` | Opcional, 100 caracteres |
+| `fecha_inicio` | `DateField` | Inicio de la recurrencia |
+| `fecha_fin` | `DateField` | Fin de la recurrencia (opcional) |
+| `frecuencia` | `CharField` | DIARIO, SEMANAL, QUINCENAL, MENSUAL, BIMESTRAL, TRIMESTRAL, SEMESTRAL, ANUAL |
+| `proxima_ejecucion` | `DateField` | Próxima fecha de ejecución calculada |
+| `activo` | `BooleanField` | Se desactiva automáticamente al vencer |
+| `categoria` | FK → `categorias.Categoria` | Categoría asociada |
+| `usuario` | FK → `usuarios.Usuario` | Propietario |
+
+### API REST vía ViewSet (`/api/programaciones/`)
+
+CRUD completo con `ProgramacionViewSet` + 2 endpoints custom:
+- `GET /api/programaciones/pendientes/` — lista programaciones listas para ejecutar hoy
+- `POST /api/programaciones/{id}/ejecutar/` — acepta o rechaza (`{"accion": "aceptar"|"rechazar"}`)
+
+### Servicios (`services.py`)
+
+- `calcular_proxima_fecha(prog, hoy)` — próxima ejecución usando `relativedelta` según frecuencia
+- `desactivar_si_vencida(prog, hoy)` — desactiva si `fecha_fin` ya pasó
+- `obtener_pendientes(usuario)` — recolecta programaciones listas para ejecutar
+- `ejecutar_programacion(prog, accion, request)` — crea `Movimiento` y avanza `proxima_ejecucion`
+- `DELTA_MAP` — mapeo frecuencia → `relativedelta`
+
+### Señales
+
+- `post_save` → `auditar_programacion_guardar`
+- `post_delete` → `auditar_programacion_eliminar`
+
+### Templates: SPA completa
+
+- `base_programacion.html` → extiende `base_app.html`
+- `listar_programaciones.html` — stats hero, grid de cards, modales CRUD, verificación de pendientes al cargar
+
+### Tests: 20 tests pytest (servicios, serializers, API)
 
 ---
 
-## 19. App panel_admin — Estado actual (100%)
+## 15. App agente_financiero — estado actual (97%)
+
+Integración con **Groq Cloud** (`llama-3.3-70b-versatile`) para análisis financiero mediante tool calling y alertas personalizadas.
+
+### Modelos
+
+- `MensajeChat` — historial de la conversación (`usuario`, `rol`, `contenido`, `creado_en`)
+- `AlertaDiaria` — alertas generadas automáticamente con control de frecuencia
+
+### APIs REST (`/api/agente/`)
+
+- `GET/POST /api/agente/chat/` — obtener historial (GET) o enviar mensaje al agente (POST)
+- `POST /api/agente/limpiar/` — eliminar todo el historial del usuario
+- `GET/POST /api/agente/alertas/` — obtener alertas (GET) o marcar como vistas (POST)
+
+### Componentes backend
+
+- **`RecolectorDatos`** (`recolector.py`) — reúne resumen mensual, últimos movimientos, metas de ahorro, presupuestos y programaciones del usuario
+- **`construir_prompt()`** (`prompt_builder.py`) — arma el system prompt con identidad GASTU + contexto financiero
+- **`EjecutorHerramientas`** (`herramientas.py`) — 3 herramientas invocables por el LLM:
+  - `obtener_movimientos(tipo, mes, anio, categoria, limite)` — filtrar movimientos
+  - `obtener_resumen_periodo(mes, anio)` — agregado del mes
+  - `obtener_gastos_por_categoria(anio, mes)` — egresos agrupados
+- **`generar_alertas()`** (`alertas_service.py`) — detecta 6 tipos de situación (balance negativo, presupuesto agotado, metas próximas a vencer, metas casi completas, cuotas pendientes, sin ahorros) y genera alertas con IA + fallback sin IA
+- **`preguntar_a_groq()`** (`groq_client.py`) — tool calling nativo con Groq, modelo `llama-3.3-70b-versatile`, temperatura 0.4
+
+### Frecuencia de alertas
+
+- **Luna de miel:** 3h desde el registro sin alertas (evita conflicto con onboarding)
+- **Ventana deslizante:** cada 6h se genera un nuevo lote de alertas
+
+### Frontend
+
+- `agente_financiero.html` — chat completo con burbujas, 4 sugerencias rápidas, indicador de escritura
+- `agente_financiero.js` — comunicación vía fetch, formatea respuesta (bold con `**`)
+- `agente_financiero.css` — tema premium verde oliva + café
+- `alertas_modal.html` — overlay con skeleton loader, sondeo cada 30 min
+- Avatar del agente: GASTU (logo `gastu_logo_rostro.png`)
+
+### Tests: 47 tests pytest
+### Admin: `MensajeChatAdmin` y `AlertaDiariaAdmin` registrados
+
+---
+
+## 16. App panel_admin — Estado actual (100%)
 
 App `panel_admin` con `namespace='panel_admin'`. Template principal: `panel_admin/templates/panel_admin/base_admin.html`.
 
@@ -454,15 +581,9 @@ App `panel_admin` con `namespace='panel_admin'`. Template principal: `panel_admi
 - **Alertas**: Utiliza `GastuAlerts` (`static/js/gastu_alerts.js`) para notificaciones consistentes en toda la aplicación, reemplazando alertas y confirmaciones nativas de JavaScript, lo que soluciona problemas de bloqueo del navegador al cambiar roles o estados.
 - **Doble Binding Resuelto**: `admin.js` solo inicializa Lucide y gestiona el toggle de la sidebar. La lógica específica vive en `usuarios.js` y `categorias.js` para evitar múltiples event listeners.
 
-- `prompt_builder.py`: Construcción de contextos para la IA.
-- `recolector.py`: Módulo para extraer datos relevantes del usuario.
-- `alertas_service.py`: Lógica de generación de alertas inteligentes.
-
-Los endpoints REST de `movimientos/views_api.py` y `programaciones/api_pendientes.py` son consumidos por este agente para obtener datos en tiempo real.
-
 ---
 
-## 15. App landing — estado actual (100%)
+## 17. App landing — estado actual (100%)
 
 App `landing` con `namespace='landing'`. Template principal: `landing/templates/landing/home.html`.
 
@@ -474,7 +595,7 @@ App `landing` con `namespace='landing'`. Template principal: `landing/templates/
 
 ---
 
-## 16. Modelo base abstracto
+## 18. Modelo base abstracto
 
 Definida en `movimientos/models.py` como `ModeloBase`. Provee `activo (BooleanField)` y `fecha_creacion (DateTimeField)`.
 
@@ -486,22 +607,25 @@ class NuevoModelo(ModeloBase):
     ...
 ```
 
-Todos los modelos nuevos deben heredar de `ModeloBase`. `ahorros/models.py` y `presupuesto/models.py` aún no lo hacen — corregir al implementar esas apps.
+Todos los modelos nuevos deben heredar de `ModeloBase`. `ahorros/models.py`, `presupuesto/models.py` y `programaciones/models.py` aún no lo hacen (definen sus propios campos `activo` y `fecha_creacion`).
 
 ---
 
-## 17. Bugs conocidos y pendientes técnicos
+## 19. Bugs conocidos y pendientes técnicos
 
 | Archivo | Bug | Estado |
 |---|---|---|
 | `notificaciones/services.py` | Código duplicado y comentado al final del archivo | Limpieza pendiente |
-| `presupuesto/` | Módulo en fase de reestructuración (vistas mínimas) | En progreso |
+| `presupuesto/views.py` | Falta `@login_required` | Pendiente |
+| `presupuesto/models.py` | Campo `isActivo` en camelCase | Pendiente |
+| `presupuesto/api_views.py` | `con_estado` no calcula gastado para inactivos | Pendiente |
+| `presupuesto/admin.py` | Modelo no registrado en admin | Pendiente |
 | `usuarios/views.py` | Rate limiting en login no implementado | Pendiente |
 | `movimientos/views_api.py` | Decidir approach de seguridad para el Agente (CSRF vs Token) | En discusión |
 
 ---
 
-## 18. Setup del proyecto desde cero
+## 20. Setup del proyecto desde cero
 
 ```bash
 git clone https://github.com/1Zamuken1/GastuDjango.git
@@ -517,7 +641,7 @@ python manage.py runserver
 
 ---
 
-## 19. Convenciones del proyecto
+## 21. Convenciones del proyecto
 
 - **Commits:** en español, concisos, con prefijo convencional (`feat:`, `fix:`, `perf:`, `refactor:`)
 - **Docstrings:** usar docstrings Python en lugar de comentarios `#` en código de negocio
@@ -532,7 +656,7 @@ python manage.py runserver
 
 ---
 
-## 20. Sistema de Historial (Audit Log)
+## 22. Sistema de Historial (Audit Log)
 
 Implementado en la app `historial` para rastrear operaciones CRUD de los usuarios en una ventana de 30 días. La interfaz se basa en un panel Offcanvas renderizado dinámicamente según el módulo.
 
@@ -570,7 +694,7 @@ El panel se pintará con tus colores y solo listará las acciones de tu `data-mo
 
 ---
 
-## 21. Sistema de Reportes y Exportación
+## 23. Sistema de Reportes y Exportación
 
 Implementado a nivel global (principalmente desde la app `dashboard`) para generar documentos consolidados con la imagen corporativa de Gastu.
 
@@ -587,7 +711,7 @@ Implementado a nivel global (principalmente desde la app `dashboard`) para gener
 
 ---
 
-## 22. Metodología de Pruebas Automatizadas (TDD Visual con Playwright)
+## 24. Metodología de Pruebas Automatizadas (TDD Visual con Playwright)
 
 GastuApp emplea un flujo de trabajo de pruebas guiado por el comportamiento visual y automatizado por la IA. El proceso para validar un Caso de Uso (CU) consta de los siguientes pasos:
 
@@ -606,7 +730,7 @@ GastuApp emplea un flujo de trabajo de pruebas guiado por el comportamiento visu
   - Eliminar scripts de depuración temporales (`debug_*.py`).
   - Asegurar que `.gitignore` esté actualizado para ignorar estos artefactos de prueba si llegaran a recrearse.
 
-## 23. Pruebas Unitarias con Pytest
+## 25. Pruebas Unitarias con Pytest
 
 El proyecto también incluye pruebas unitarias tradicionales utilizando pytest y pytest-django para validar la lógica de backend y funcionalidades específicas de las aplicaciones.
 
@@ -634,3 +758,36 @@ pytest --cov=.
 - Utilizar nomes descriptivos para los tests que indiquen claramente qué se está probando
 - Los tests deben ser independientes y no depender del estado de otros tests
 - Utilizar el método `setUp()` para crear objetos comunes necesarios para múltiples tests
+
+---
+
+## 24. WebSockets y Notificaciones en Tiempo Real
+
+El sistema cuenta con un canal de WebSockets bidireccional gestionado por **Django Channels** y servido mediante **Daphne**. Se utiliza principalmente para "empujar" (push) notificaciones al navegador del usuario sin requerir recargas (polling).
+
+### Arquitectura de WebSockets
+1. **Frontend:** `base_app.html` inyecta un listener WebSocket (`ws://` o `wss://`) que escucha eventos tipo `notificacion`.
+2. **Backend (Consumers):** `notificaciones/consumers.py` gestiona la conexión asíncrona y la suscripción del usuario a un grupo específico (ej. `notificaciones_{user.id}`).
+3. **Dispatchers:** Cuando se crea una notificación (ej. desde `notificaciones/dispatcher.py` en un hilo en segundo plano), el servidor envía un mensaje al *Channel Layer* que luego se retransmite por el túnel WebSocket.
+4. **Serialización (JSON):** Todos los valores en el backend (incluidos `Enums` como `Notificacion.Tipo`) deben convertirse explícitamente a `str()` antes de pasar al Channel Layer, ya que un fallo de serialización JSON cerrará silenciosamente la conexión asíncrona.
+
+### Configuración del Channel Layer y Entornos
+
+El sistema soporta dos modos de funcionamiento que se autoconfiguran en `settings.py`:
+
+**1. Desarrollo Local (InMemoryChannelLayer)**
+- Activo por defecto cuando NO existe la variable `REDIS_URL`.
+- Utiliza la memoria RAM de Python como "tablero de mensajes".
+- **Ventaja:** No requiere instalar programas externos (como Redis) en Windows.
+- **Limitación:** Solo funciona correctamente dentro del mismo proceso de Python.
+
+**2. Producción / Render (RedisChannelLayer)**
+- Activo automáticamente si existe la variable de entorno `REDIS_URL`.
+- En producción, con múltiples workers o servidores, el `InMemoryChannelLayer` pierde los mensajes porque no se comparten la memoria.
+- **Pasos para desplegar en Render:**
+  1. Crear un nuevo servicio **Redis** (plan Free) en la misma región que el Web Service de GastuApp.
+  2. Copiar la **Internal URL** provista por Render (ej. `redis://red-...`).
+  3. En el Web Service de GastuApp, ir a la sección **Environment** y agregar:
+     - `Key`: `REDIS_URL`
+     - `Value`: [La Internal URL copiada]
+  4. Redesplegar. Django Channels detectará la variable y utilizará Redis como backend de mensajería asíncrona.

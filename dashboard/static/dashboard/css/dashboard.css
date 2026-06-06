@@ -15,6 +15,7 @@
 .status-badge svg { width: 14px; height: 14px; flex-shrink: 0; }
 .status-badge--ok      { background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; }
 .status-badge--deficit { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+.status-badge--warning { background: #fffbeb; border: 1px solid #fde68a; color: #d97706; }
 
 .carousel-section { margin-bottom: 20px; }
 .carousel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -28,7 +29,7 @@
 .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
 .stat-card--disponible::before   { background: #3b82f6; }
 .stat-card--utilidad::before     { background: #7c3aed; }
-.stat-card--ahorro-total::before { background: #94a3b8; }
+.stat-card--ahorro-total::before { background: #d97706; }
 .stat-card--ingresos::before     { background: #10b981; }
 .stat-card--gastos::before       { background: #e11d48; }
 .stat-card--diferencia-pos::before { background: #10b981; }

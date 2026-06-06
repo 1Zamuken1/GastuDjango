@@ -85,7 +85,7 @@
             <input type="hidden" name="extraordinario" value="true">
             <div class="form-aporte-inline__wrapper" style="width: 100%; max-width: 250px;">
               <span class="form-aporte-inline__prefix">$</span>
-              <input type="number" name="aporte" step="0.01" min="0.01" placeholder="Ej. 100000" required class="form-aporte-inline__input" style="width: 100%;">
+              <input type="text" inputmode="numeric" name="aporte" id="aporte-extra-monto" data-raw="" placeholder="Ej. 100.000" required class="form-aporte-inline__input" style="width: 100%;" autocomplete="off">
             </div>
             <button type="submit" class="form-aporte-inline__submit" style="background: #3b82f6; color: white;" title="Registrar aporte extraordinario">
               <i data-lucide="arrow-right" style="width:15px;height:15px;stroke-width:2;"></i>

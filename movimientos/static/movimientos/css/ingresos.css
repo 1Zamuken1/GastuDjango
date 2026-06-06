@@ -161,6 +161,54 @@
 .form-control:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
 .form-error { font-size: .78rem; color: #ef4444; margin-top: .3rem; display: block; }
 
+/* ── Modal responsive ──────────────────────────── */
+@media (max-width: 640px) {
+  .modal-overlay--wide { padding: .75rem; align-items: center; }
+  .modal--lg { width: 100%; max-height: 90vh; }
+  .modal__header { padding: .85rem 1rem; flex-wrap: wrap; gap: .5rem; }
+  .modal__footer--pagination { padding: .75rem 1rem; flex-wrap: wrap; gap: .5rem; }
+  .pagination-info { font-size: .72rem; }
+  .modal--lg .data-table,
+  .modal--lg .data-table thead,
+  .modal--lg .data-table tbody,
+  .modal--lg .data-table tr,
+  .modal--lg .data-table th,
+  .modal--lg .data-table td { display: block; }
+  .modal--lg .data-table thead { display: none; }
+  .modal--lg .data-table tr {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal--lg .data-table tr:last-child { border-bottom: none; }
+  .modal--lg .data-table td {
+    padding: .25rem 0;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .875rem;
+  }
+  .modal--lg .data-table td::before {
+    font-weight: 600;
+    color: var(--slate-400);
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+  .modal--lg .data-table td:nth-child(1)::before { content: "Descripción"; }
+  .modal--lg .data-table td:nth-child(2)::before { content: "Fecha"; }
+  .modal--lg .data-table td:nth-child(3)::before { content: "Monto"; }
+  .modal--lg .data-table td:nth-child(4) {
+    justify-content: center;
+    padding-top: .5rem;
+    border-top: 1px solid var(--border);
+    margin-top: .35rem;
+  }
+  .modal--lg .data-table td:nth-child(4)::before { display: none; }
+}
+
 /* ── Paginación ──────────────────────────────────── */
 .pagination-info { font-size: .8rem; color: var(--slate-500); }
 .pagination-controls { display: flex; align-items: center; gap: .75rem; font-size: .875rem; color: var(--slate-700); }

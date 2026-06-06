@@ -27,29 +27,7 @@
 
   <link rel="icon" type="image/png" href="{% static 'img/gastu_logo_rostro.png' %}" />
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            emerald: {
-              50:  '#ecfdf5',
-              100: '#d1fae5',
-              200: '#a7f3d0',
-              400: '#34d399',
-              500: '#10b981',
-              600: '#059669',
-            }
-          },
-          fontFamily: {
-            display: ['"Plus Jakarta Sans"', 'sans-serif'],
-            sans:    ['"DM Sans"', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -190,25 +168,41 @@
 
   <!-- NAVBAR -->
   <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white/80">
-    <div class="max-w-6xl 2xl:max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="max-w-6xl 2xl:max-w-7xl mx-auto px-6 py-4">
 
-      <a href="{% url 'landing:home' %}" class="font-display text-2xl font-black text-slate-900 tracking-tight">
-        Gastu<span class="text-emerald-500">App</span>
-      </a>
-
-      <div class="hidden md:flex items-center gap-8">
-        <a href="{% url 'landing:home' %}#funciones"
-           class="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-medium">Funciones</a>
-        <a href="{% url 'landing:home' %}#como-funciona"
-           class="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-medium">¿Cómo funciona?</a>
-        <a href="{% url 'landing:home' %}#metricas"
-           class="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-medium">Métricas</a>
+      <!-- Mobile: 2×2 grid -->
+      <div class="flex flex-col gap-1 sm:hidden">
+        <div class="flex items-center justify-between">
+          <span class="font-display text-2xl font-black text-slate-900 tracking-tight">Gastu</span>
+          <a href="{% url 'login' %}" class="btn-ghost text-xs px-3 py-1.5">Iniciar Sesión</a>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="font-display text-2xl font-black text-emerald-500 tracking-tight">App</span>
+          <a href="{% url 'register' %}" class="btn-emerald text-xs px-3 py-1.5">Registrarse</a>
+        </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <a href="{% url 'login' %}" class="btn-ghost text-sm px-4 py-2 hidden sm:inline-block">Iniciar Sesión</a>
-        <a href="{% url 'register' %}" class="btn-emerald text-sm px-4 py-2">Registrarse</a>
+      <!-- Desktop: flex row -->
+      <div class="hidden sm:flex sm:items-center sm:justify-between">
+        <a href="{% url 'landing:home' %}" class="font-display text-2xl font-black text-slate-900 tracking-tight">
+          Gastu<span class="text-emerald-500">App</span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-8">
+          <a href="{% url 'landing:home' %}#funciones"
+             class="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-medium">Funciones</a>
+          <a href="{% url 'landing:home' %}#como-funciona"
+             class="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-medium">¿Cómo funciona?</a>
+          <a href="{% url 'landing:home' %}#metricas"
+             class="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-medium">Métricas</a>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="{% url 'login' %}" class="btn-ghost text-sm px-4 py-2">Iniciar Sesión</a>
+          <a href="{% url 'register' %}" class="btn-emerald text-sm px-4 py-2">Registrarse</a>
+        </div>
       </div>
+
     </div>
   </nav>
 

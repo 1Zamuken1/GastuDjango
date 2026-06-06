@@ -1,4 +1,10 @@
 {% extends "base_presupuesto.html" %}
+{% load static %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'presupuesto/css/datepicker.css' %}">
+{% endblock %}
 
 {% block presupuestos_content %}
 <div class="stats-hero">
@@ -52,7 +58,11 @@
         <form id="form-crear" class="modal-form">
           <div class="form-group">
             <label>Límite</label>
-            <input type="number" id="limite" class="form-input" placeholder="0.00" min="0" step="0.01">
+            <div class="monto-field-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="text" inputmode="numeric" id="limite" class="monto-input" placeholder="0" autocomplete="off">
+              <span class="monto-currency-tag">COP</span>
+            </div>
           </div>
           <div class="form-group">
             <label>Categoría</label>
@@ -63,11 +73,11 @@
           </div>
           <div class="form-group">
             <label>Fecha inicio</label>
-            <input type="date" id="fecha_inicio" class="form-input">
+            <input type="hidden" id="fecha_inicio">
           </div>
           <div class="form-group">
             <label>Fecha fin</label>
-            <input type="date" id="fecha_fin" class="form-input">
+            <input type="hidden" id="fecha_fin">
           </div>
           <div class="modal-actions">
             <button type="submit" class="btn-guardar">Guardar</button>
@@ -85,7 +95,11 @@
           <input type="hidden" id="editar-id">
           <div class="form-group">
             <label>Límite</label>
-            <input type="number" id="editar-limite" class="form-input" placeholder="0.00" min="0" step="0.01">
+            <div class="monto-field-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="text" inputmode="numeric" id="editar-limite" class="monto-input" placeholder="0" autocomplete="off">
+              <span class="monto-currency-tag">COP</span>
+            </div>
           </div>
           <div class="form-group">
             <label>Categoría</label>
@@ -96,11 +110,11 @@
           </div>
           <div class="form-group">
             <label>Fecha inicio</label>
-            <input type="date" id="editar-fecha_inicio" class="form-input">
+            <input type="hidden" id="editar-fecha_inicio">
           </div>
           <div class="form-group">
             <label>Fecha fin</label>
-            <input type="date" id="editar-fecha_fin" class="form-input">
+            <input type="hidden" id="editar-fecha_fin">
           </div>
           <div class="modal-actions">
             <button type="submit" class="btn-guardar">Guardar cambios</button>
@@ -135,11 +149,17 @@
 </style>
 
 {% block presupuestos_scripts %}
+<script src="{% static 'presupuesto/js/datepicker.js' %}"></script>
 <script>
       window.CURRENT_MODULE = 'presupuestos';
       if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
 
       const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+
+      let dpInicioCrear = null
+      let dpFinCrear = null
+      let dpInicioEditar = null
+      let dpFinEditar = null
 
       function mostrarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
@@ -268,6 +288,10 @@
             const alertaStr = p.alerta || 'baja'
             const porcentaje = p.porcentaje || 0
             const gastado = (p.gastado || 0).toLocaleString('es-CO')
+            const disponible = parseFloat(p.limite) - (p.gastado || 0)
+            const disponibleFmt = disponible.toLocaleString('es-CO', {
+              style: 'currency', currency: 'COP', maximumFractionDigits: 0
+            })
 
             let color = '#1ba74e'
             let textoEstado = 'Normal'
@@ -304,9 +328,14 @@
                   <div class="card-limite">${limite}</div>
                   <div class="card-categoria">${p.categoria_nombre}</div>
                 </div>
-                <span class="card-badge ${p.isActivo ? 'activo' : 'inactivo'}">
-                  ${p.isActivo ? 'Activo' : 'Inactivo'}
-                </span>
+                <div class="card-badges">
+                  <div class="card-tipo-icon tipo-egreso">
+                    <i data-lucide="trending-down" style="width:16px;height:16px;"></i>
+                  </div>
+                  <span class="card-badge ${p.isActivo ? 'activo' : 'inactivo'}">
+                    ${p.isActivo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
               </div>
               <div class="card-body">
                 <div class="progreso-wrap">
@@ -318,6 +347,10 @@
                 <div class="card-row">
                   <span class="card-label">Gastado</span>
                   <span class="card-value">$${gastado}</span>
+                </div>
+                <div class="card-row">
+                  <span class="card-label">Disponible</span>
+                  <span class="card-value">${disponibleFmt}</span>
                 </div>
                 <div class="card-row">
                   <span class="card-label">Estado</span>
@@ -342,6 +375,7 @@
             `
             contenedor.appendChild(card)
           })
+          if (typeof lucide !== 'undefined') lucide.createIcons()
         })
         .catch(err => console.error('cargarPresupuestos error:', err))
       }
@@ -400,10 +434,16 @@
           lista.forEach(cat => {
             const div = document.createElement('div')
             div.className = 'categoria-card'
-            div.textContent = cat.nombre
+            div.innerHTML = `
+              <div class="categoria-card__icon">
+                <i data-lucide="trending-down"></i>
+              </div>
+              <span class="categoria-card__nombre">${cat.nombre}</span>
+            `
             div.onclick = () => seleccionarCategoria(cat)
             contenedor.appendChild(div)
           })
+          if (typeof lucide !== 'undefined') lucide.createIcons()
         }
 
       function seleccionarCategoria(cat) {
@@ -420,6 +460,8 @@
       // ── Crear presupuesto ─────────────────────────────────────────────────────────
       function abrirModalCrear() {
         document.getElementById('form-crear').reset()
+        dpInicioCrear?.limpiar()
+        dpFinCrear?.limpiar()
         abrirModal('modal-crear')
       }
 
@@ -427,7 +469,8 @@
         e.preventDefault()
 
         const categoria  = document.getElementById('categoria').value
-        const limiteVal  = parseFloat(document.getElementById('limite').value)
+        const raw        = document.getElementById('limite').dataset.raw
+        const limiteVal  = raw ? parseFloat(raw) : 0
         const fechaIni   = document.getElementById('fecha_inicio').value
         const fechaFin   = document.getElementById('fecha_fin').value
 
@@ -476,9 +519,13 @@
           .then(r => r.json())
           .then(p => {
             document.getElementById('editar-id').value               = p.id
-            document.getElementById('editar-limite').value           = p.limite
+            const rawLim = String(parseInt(p.limite, 10))
+            document.getElementById('editar-limite').dataset.raw     = rawLim
+            document.getElementById('editar-limite').value           = rawLim.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
             document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
             document.getElementById('editar-fecha_fin').value        = p.fecha_fin
+            dpInicioEditar?.setValor(p.fecha_inicio)
+            dpFinEditar?.setValor(p.fecha_fin || '')
             document.getElementById('editar-categoria').value        = p.categoria
             document.getElementById('editar-categoria_nombre').value = p.categoria_nombre
             abrirModal('modal-editar')
@@ -491,7 +538,8 @@
 
         const id         = document.getElementById('editar-id').value
         const categoria  = document.getElementById('editar-categoria').value
-        const limiteVal  = parseFloat(document.getElementById('editar-limite').value)
+        const raw        = document.getElementById('editar-limite').dataset.raw
+        const limiteVal  = raw ? parseFloat(raw) : 0
         const fechaIni   = document.getElementById('editar-fecha_inicio').value
         const fechaFin   = document.getElementById('editar-fecha_fin').value
 
@@ -556,6 +604,44 @@
       }
 
       // ── Init ──────────────────────────────────────────────────────────────────────
-      document.addEventListener('DOMContentLoaded', () => cargarPresupuestos())
+      function initFormateoMonto(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.addEventListener('input', function () {
+          const digitos = this.value.replace(/\D/g, '');
+          if (!digitos) { this.dataset.raw = ''; this.value = ''; return; }
+          const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+          this.dataset.raw = digitos;
+          this.value = formatted;
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        initFormateoMonto('limite')
+        initFormateoMonto('editar-limite')
+        if (typeof MiniDatepicker !== 'undefined') {
+          const inpInicioCrear = document.getElementById('fecha_inicio')
+          const inpFinCrear = document.getElementById('fecha_fin')
+          const inpInicioEditar = document.getElementById('editar-fecha_inicio')
+          const inpFinEditar = document.getElementById('editar-fecha_fin')
+          if (inpInicioCrear) {
+            dpInicioCrear = new MiniDatepicker(inpInicioCrear, {})
+            inpInicioCrear.parentNode.appendChild(dpInicioCrear.wrapper)
+          }
+          if (inpFinCrear) {
+            dpFinCrear = new MiniDatepicker(inpFinCrear, {})
+            inpFinCrear.parentNode.appendChild(dpFinCrear.wrapper)
+          }
+          if (inpInicioEditar) {
+            dpInicioEditar = new MiniDatepicker(inpInicioEditar, {})
+            inpInicioEditar.parentNode.appendChild(dpInicioEditar.wrapper)
+          }
+          if (inpFinEditar) {
+            dpFinEditar = new MiniDatepicker(inpFinEditar, {})
+            inpFinEditar.parentNode.appendChild(dpFinEditar.wrapper)
+          }
+        }
+        cargarPresupuestos()
+      })
     </script>
 {% endblock %}

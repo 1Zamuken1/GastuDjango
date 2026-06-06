@@ -1,4 +1,4 @@
-/* ── MiniDatepicker ──────────────────────────────────── */
+/* ── MiniDatepicker — Presupuestos ──────────────────── */
 .dp-wrapper { position: relative; width: 100%; }
 
 .dp-display {
@@ -18,29 +18,23 @@
   font-family: 'DM Sans', sans-serif;
 }
 .dp-display:hover  { border-color: #cbd5e1; }
-.dp-display:focus  { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+.dp-display:focus  { outline: none; border-color: #7c5cbf; box-shadow: 0 0 0 3px rgba(124,92,191,.12); }
 .dp-display svg    { color: #94a3b8; flex-shrink: 0; }
 .dp-display-text   { flex: 1; }
 
 .dp-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 2000;
+  position: fixed;
+  z-index: 9999;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: .875rem;
   box-shadow: 0 12px 40px rgba(0,0,0,.14);
   width: 260px;
   padding: .875rem;
-  animation: dp-in .14s ease;
+  animation: dp-fade .14s ease;
 }
 .dp-panel[hidden] { display: none; }
-.dp-panel--arriba {
-  top: auto;
-  bottom: calc(100% + 6px);
-}
-@keyframes dp-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+@keyframes dp-fade { from { opacity:0; } to { opacity:1; } }
 
 .dp-header {
   display: flex;
@@ -70,7 +64,7 @@
 }
 .dp-header-btn:hover {
   background: #f1f5f9;
-  color: #10b981;
+  color: #7c5cbf;
 }
 .dp-header-btn--titulo {
   font-size: .88rem;
@@ -125,9 +119,9 @@
 }
 .dp-day:hover        { background: #f1f5f9; color: #0f172a; }
 .dp-day--vacio       { pointer-events: none; visibility: hidden; }
-.dp-day--hoy         { border: 1.5px solid #10b981; color: #10b981; font-weight: 700; }
-.dp-day--sel         { background: #10b981 !important; color: #fff !important; font-weight: 700; border: none; }
-.dp-day--sel:hover   { background: #059669 !important; }
+.dp-day--hoy         { border: 1.5px solid #7c5cbf; color: #7c5cbf; font-weight: 700; }
+.dp-day--sel         { background: #7c5cbf !important; color: #fff !important; font-weight: 700; border: none; }
+.dp-day--sel:hover   { background: #5e3fa3 !important; }
 
 /* ── Grilla de meses y años (4×3) ────────────────────── */
 .dp-grid-pick {
@@ -153,18 +147,18 @@
   color: #0f172a;
 }
 .dp-celda--hoy {
-  border: 1.5px solid #10b981;
-  color: #10b981;
+  border: 1.5px solid #7c5cbf;
+  color: #7c5cbf;
   font-weight: 700;
 }
 .dp-celda--sel {
-  background: #10b981 !important;
+  background: #7c5cbf !important;
   color: #fff !important;
   font-weight: 700;
   border: none;
 }
 .dp-celda--sel:hover {
-  background: #059669 !important;
+  background: #5e3fa3 !important;
 }
 
 .dp-footer {
@@ -185,63 +179,7 @@
   transition: background .12s;
   font-family: 'DM Sans', sans-serif;
 }
-.dp-btn-hoy          { color: #10b981; }
-.dp-btn-hoy:hover    { background: #ecfdf5; }
+.dp-btn-hoy          { color: #7c5cbf; }
+.dp-btn-hoy:hover    { background: #f5f3ff; }
 .dp-btn-limpiar      { color: #64748b; }
 .dp-btn-limpiar:hover{ background: #f1f5f9; }
-
-/* ── Variante egresos ────────────────────────────────── */
-[data-acento="egreso"] .dp-display:focus {
-  border-color: #e11d48;
-  box-shadow: 0 0 0 3px rgba(225,29,72,.12);
-}
-[data-acento="egreso"] .dp-day--hoy,
-[data-acento="egreso"] .dp-celda--hoy {
-  border-color: #e11d48;
-  color: #e11d48;
-}
-[data-acento="egreso"] .dp-day--sel,
-[data-acento="egreso"] .dp-celda--sel {
-  background: #e11d48 !important;
-}
-[data-acento="egreso"] .dp-day--sel:hover,
-[data-acento="egreso"] .dp-celda--sel:hover {
-  background: #be123c !important;
-}
-[data-acento="egreso"] .dp-btn-hoy {
-  color: #e11d48;
-}
-[data-acento="egreso"] .dp-btn-hoy:hover {
-  background: #fff1f2;
-}
-[data-acento="egreso"] .dp-header-btn:hover {
-  color: #e11d48;
-}
-
-/* ── Variante ahorros ────────────────────────────────── */
-[data-acento="ahorro"] .dp-display:focus {
-  border-color: #d97706;
-  box-shadow: 0 0 0 3px rgba(217,119,6,.12);
-}
-[data-acento="ahorro"] .dp-day--hoy,
-[data-acento="ahorro"] .dp-celda--hoy {
-  border-color: #d97706;
-  color: #d97706;
-}
-[data-acento="ahorro"] .dp-day--sel,
-[data-acento="ahorro"] .dp-celda--sel {
-  background: #d97706 !important;
-}
-[data-acento="ahorro"] .dp-day--sel:hover,
-[data-acento="ahorro"] .dp-celda--sel:hover {
-  background: #b45309 !important;
-}
-[data-acento="ahorro"] .dp-btn-hoy {
-  color: #d97706;
-}
-[data-acento="ahorro"] .dp-btn-hoy:hover {
-  background: #fffbeb;
-}
-[data-acento="ahorro"] .dp-header-btn:hover {
-  color: #d97706;
-}

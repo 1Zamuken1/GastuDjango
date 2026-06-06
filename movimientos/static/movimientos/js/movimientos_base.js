@@ -21,6 +21,7 @@ class GestorMovimientos {
     this.formatoReporte         = 'csv';
     this.dpDesde = null;
     this.dpHasta = null;
+    this.dpFecha = null;
 
     this.modalMovimiento    = document.getElementById('modal-movimiento');
     this.modalRegistros     = document.getElementById('modal-registros');
@@ -38,6 +39,8 @@ class GestorMovimientos {
     this._initPicker();
     this._initBuscador();
     this._initReportes();
+    this._initFormateoMonto();
+    this._initDatepickerFecha();
     
     // Ajustar tamaños de fuente inicialmente
     setTimeout(() => this._ajustarTamanoTextos(), 50);
@@ -84,6 +87,7 @@ class GestorMovimientos {
     this.movimientoEditandoId = null;
     document.getElementById('modal-titulo').textContent = `Nuevo ${this.tipoLabel}`;
     this.formMovimiento.reset();
+    if (this.dpFecha) this.dpFecha.limpiar();
     this.limpiarErrores();
     this.modalRegistros.setAttribute('hidden', '');
     this.modalMovimiento.removeAttribute('hidden');
@@ -96,8 +100,15 @@ class GestorMovimientos {
     this.modalRegistros.setAttribute('hidden', '');
     this.modalMovimiento.removeAttribute('hidden');
     document.getElementById('campo-descripcion').value = descripcion;
-    document.getElementById('campo-monto').value = monto;
+    if (this.dpFecha && fechaRaw) {
+      this.dpFecha.setValor(fechaRaw);
+    } else if (this.dpFecha) {
+      this.dpFecha.limpiar();
+    }
     document.getElementById('campo-categoria').value = categoriaId;
+    const montoInput = document.getElementById('campo-monto');
+    montoInput.value = this._formatearNumero(monto);
+    montoInput.dataset.raw = monto;
     this.limpiarErrores();
     this._syncPickerLabel(categoriaId);
   }
@@ -122,7 +133,14 @@ class GestorMovimientos {
   /* ── Grid ── */
   async actualizarGrid() {
     try {
-      const res = await fetch(`${URL_RESUMEN}?tipo=${this.tipo}`, {
+      const selectMes = document.getElementById('select-mes');
+      const selectAnio = document.getElementById('select-anio');
+      let url = `${URL_RESUMEN}?tipo=${this.tipo}`;
+      if (selectMes && selectAnio) {
+          url += `&mes=${selectMes.value}&anio=${selectAnio.value}`;
+      }
+      
+      const res = await fetch(url, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
       });
       const data = await res.json();
@@ -195,10 +213,13 @@ class GestorMovimientos {
       : URL_GUARDAR;
 
     try {
+      const formData = new FormData(this.formMovimiento);
+      const montoInput = document.getElementById('campo-monto');
+      if (montoInput.dataset.raw) formData.set('monto', montoInput.dataset.raw);
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF_TOKEN },
-        body: new FormData(this.formMovimiento),
+        body: formData,
       });
       const data = await res.json();
 
@@ -482,6 +503,15 @@ class GestorMovimientos {
     }
   }
 
+  /* ── Datepicker Fecha (formulario CRUD) ── */
+  _initDatepickerFecha() {
+    const inputFecha = document.getElementById('campo-fecha');
+    const container  = document.getElementById('dp-fecha-container');
+    if (!inputFecha || !container) return;
+    this.dpFecha = new MiniDatepicker(inputFecha, this.dpAcento);
+    container.appendChild(this.dpFecha.wrapper);
+  }
+
   /* ── Reportes ── */
   _initReportes() {
     const self = this;
@@ -547,6 +577,42 @@ class GestorMovimientos {
     document.querySelector('.btn-export--pdf').addEventListener('click', () => abrirModalReporte('pdf'));
     document.querySelector('.btn-export--excel').addEventListener('click', () => abrirModalReporte('excel'));
     document.querySelector('.btn-export--csv').addEventListener('click', () => abrirModalReporte('csv'));
+  }
+
+  /* ── Formateo de monto en tiempo real ── */
+  _formatearNumero(raw) {
+    if (!raw) return '';
+    const entero = String(raw).split('.')[0].replace(/\D/g, '');
+    if (!entero) return '';
+    return entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  _initFormateoMonto() {
+    const input = document.getElementById('campo-monto');
+    input.addEventListener('input', function () {
+      const el = this;
+      const oldLen = el.value.length;
+      const start = el.selectionStart;
+      let digitCount = 0;
+      for (let i = 0; i < start; i++) {
+        if (/\d/.test(el.value[i])) digitCount++;
+      }
+      const digitos = el.value.replace(/\D/g, '');
+      if (!digitos) { el.dataset.raw = ''; el.value = ''; return; }
+      const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      el.dataset.raw = digitos;
+      el.value = formatted;
+      let newPos = formatted.length;
+      if (start < oldLen) {
+        let dc = 0;
+        for (let i = 0; i < formatted.length; i++) {
+          if (dc >= digitCount) { newPos = i; break; }
+          if (/\d/.test(formatted[i])) dc++;
+          newPos = i + 1;
+        }
+      }
+      el.setSelectionRange(newPos, newPos);
+    });
   }
 
   /* ── Progress bars init ── */
