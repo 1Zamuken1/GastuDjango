@@ -159,9 +159,11 @@ function initOnboarding() {
     </p>
   </div>
   <span id="status-badge-wrap"
-        class="status-badge {% if hay_deficit %}status-badge--deficit{% else %}status-badge--ok{% endif %}">
-    {% if hay_deficit %}
-      <i data-lucide="alert-triangle"></i> Balance en déficit este mes
+        class="status-badge {% if total_dinero < 0 %}status-badge--deficit{% elif hay_deficit %}status-badge--warning{% else %}status-badge--ok{% endif %}">
+    {% if total_dinero < 0 %}
+      <i data-lucide="alert-triangle"></i> Balance global en déficit
+    {% elif hay_deficit %}
+      <i data-lucide="info"></i> Gastos superan ingresos del mes
     {% else %}
       <i data-lucide="check-circle"></i> Finanzas en orden
     {% endif %}
@@ -249,7 +251,6 @@ function initOnboarding() {
         <button class="carousel-dot" data-index="2" aria-label="Tarjeta 3"></button>
         <button class="carousel-dot" data-index="3" aria-label="Tarjeta 4"></button>
         <button class="carousel-dot" data-index="4" aria-label="Tarjeta 5"></button>
-        <button class="carousel-dot" data-index="5" aria-label="Tarjeta 6"></button>
       </div>
       <button class="carousel-btn" id="carousel-prev" aria-label="Anterior">
         <i data-lucide="chevron-left"></i>
@@ -263,33 +264,33 @@ function initOnboarding() {
   <div class="carousel-viewport">
     <div class="carousel-track" id="carousel-track">
 
-      {# 1 — Total dinero usuario (antes Disponible) #}
+      {# 1 — Total dinero usuario #}
       <div class="carousel-slide">
-        <div class="stat-card stat-card--disponible">
+        <div class="stat-card stat-card--total-dinero">
           <div class="stat-card__header">
             <p class="stat-card__label">Total dinero usuario</p>
             <div class="icon-box icon-box--blue"><i data-lucide="wallet"></i></div>
           </div>
-          <p id="val-disponible"
-             class="stat-card__value{% if disponible < 0 %} stat-card__value--negative{% endif %}">
-            ${{ disponible|floatformat:'0g' }}
+          <p id="val-total-dinero"
+             class="stat-card__value{% if total_dinero < 0 %} stat-card__value--negative{% endif %}">
+            ${{ total_dinero|floatformat:'0g' }}
           </p>
           <p class="stat-card__note">Dinero total acumulado a la fecha</p>
         </div>
       </div>
 
-      {# 2 — Utilidad mensual #}
+      {# 2 — Disponible #}
       <div class="carousel-slide">
-        <div class="stat-card stat-card--utilidad">
+        <div class="stat-card stat-card--disponible">
           <div class="stat-card__header">
-            <p class="stat-card__label">Utilidad mensual</p>
+            <p class="stat-card__label">Disponible</p>
             <div class="icon-box icon-box--violet"><i data-lucide="trending-up"></i></div>
           </div>
-          <p id="val-utilidad"
-             class="stat-card__value{% if utilidad < 0 %} stat-card__value--negative{% endif %}">
-            ${{ utilidad|floatformat:'0g' }}
+          <p id="val-disponible-global"
+             class="stat-card__value{% if disponible_global < 0 %} stat-card__value--negative{% endif %}">
+            ${{ disponible_global|floatformat:'0g' }}
           </p>
-          <p class="stat-card__note">Ingresos del mes − egresos − ahorros del mes</p>
+          <p class="stat-card__note">Disponible para gastar o ahorrar</p>
         </div>
       </div>
 
@@ -298,10 +299,10 @@ function initOnboarding() {
         <div class="stat-card stat-card--ahorro-total">
           <div class="stat-card__header">
             <p class="stat-card__label">Ahorro total</p>
-            <div class="icon-box icon-box--slate"><i data-lucide="landmark"></i></div>
+            <div class="icon-box icon-box--amber"><i data-lucide="landmark"></i></div>
           </div>
           <p id="val-ahorro-total" class="stat-card__value">${{ ahorro_total|floatformat:'0g' }}</p>
-          <p class="stat-card__note">Acumulado hasta este mes</p>
+          <p class="stat-card__note">Capital aportado a la fecha</p>
         </div>
       </div>
 
@@ -350,17 +351,7 @@ function initOnboarding() {
         </div>
       </div>
 
-      {# 7 — Ahorros del mes #}
-      <div class="carousel-slide">
-        <div class="stat-card stat-card--ahorros-mes">
-          <div class="stat-card__header">
-            <p class="stat-card__label">Ahorros del mes</p>
-            <div class="icon-box icon-box--amber"><i data-lucide="piggy-bank"></i></div>
-          </div>
-          <p id="val-ahorros-mes" class="stat-card__value">${{ ahorros_mes|floatformat:'0g' }}</p>
-          <p class="stat-card__note">Aportes registrados este mes</p>
-        </div>
-      </div>
+
 
     </div>
   </div>

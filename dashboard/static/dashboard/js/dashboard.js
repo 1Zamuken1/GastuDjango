@@ -692,8 +692,8 @@ requestAnimationFrame(() => {
       }
     };
 
-    setVal('val-disponible',   data.disponible,  true);
-    setVal('val-utilidad',     data.utilidad,    true);
+    setVal('val-total-dinero',      data.total_dinero,       true);
+    setVal('val-disponible-global', data.disponible_global,  true);
     setVal('val-ahorro-total', data.ahorro_total);
     setVal('val-ingresos',     data.total_ingresos);
     setVal('val-egresos',      data.total_egresos);
@@ -713,9 +713,12 @@ requestAnimationFrame(() => {
     /* ── Status badge ── */
     const badge = document.getElementById('status-badge-wrap');
     if (badge) {
-      if (data.hay_deficit) {
+      if (data.total_dinero < 0) {
         badge.className = 'status-badge status-badge--deficit';
-        badge.innerHTML = '<i data-lucide="alert-triangle"></i> Balance en déficit este mes';
+        badge.innerHTML = '<i data-lucide="alert-triangle"></i> Balance global en déficit';
+      } else if (data.hay_deficit) {
+        badge.className = 'status-badge status-badge--warning';
+        badge.innerHTML = '<i data-lucide="info"></i> Gastos superan ingresos del mes';
       } else {
         badge.className = 'status-badge status-badge--ok';
         badge.innerHTML = '<i data-lucide="check-circle"></i> Finanzas en orden';

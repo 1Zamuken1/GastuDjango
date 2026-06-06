@@ -15,9 +15,10 @@ from .forms import MovimientoForm
 from .models import Movimiento
 
 
-def _build_categorias_con_totales(usuario, tipo, mes, anio):
+def _build_categorias_con_totales(usuario, tipo, mes=None, anio=None):
     """
     Calcula las categorías con sus totales para un usuario, tipo y mes dados.
+    Si mes y anio son None, calcula el histórico completo de todas las fechas.
 
     Devuelve una tupla (categorias_con_totales, total_mes) donde
     categorias_con_totales es una lista de dicts con:
@@ -27,15 +28,14 @@ def _build_categorias_con_totales(usuario, tipo, mes, anio):
     - porcentaje: float (0-100, redondeado a 1 decimal)
     - ultimo_registro: date
     """
-    total_mes = (
-        Movimiento.objects
-        .filter(usuario=usuario, tipo=tipo, fecha_registro__month=mes, fecha_registro__year=anio)
-        .aggregate(total=Sum('monto'))['total'] or Decimal('0')
-    )
+    qs_base = Movimiento.objects.filter(usuario=usuario, tipo=tipo)
+    if mes is not None and anio is not None:
+        qs_base = qs_base.filter(fecha_registro__month=mes, fecha_registro__year=anio)
+
+    total_mes = qs_base.aggregate(total=Sum('monto'))['total'] or Decimal('0')
 
     cats_qs = (
-        Movimiento.objects
-        .filter(usuario=usuario, tipo=tipo, fecha_registro__month=mes, fecha_registro__year=anio)
+        qs_base
         .values('categoria')
         .annotate(total=Sum('monto'), cantidad=Count('id'), ultimo_registro=Max('fecha_registro'))
         .order_by('-total')
@@ -60,15 +60,30 @@ def _build_categorias_con_totales(usuario, tipo, mes, anio):
 
 @login_required
 def lista_ingresos(request):
-    """Lista de ingresos del mes actual u opcionalmente del mes seleccionado agrupados por categoría."""
+    """Lista de ingresos. Por defecto muestra todas las fechas históricas."""
     hoy = timezone.localdate()
-    try:
-        mes = int(request.GET.get('mes', hoy.month))
-        anio = int(request.GET.get('anio', hoy.year))
-        if mes < 1 or mes > 12:
-            mes = hoy.month
-    except (ValueError, TypeError):
-        mes, anio = hoy.month, hoy.year
+    mes_str = request.GET.get('mes', 'all')
+    anio_str = request.GET.get('anio', 'all')
+    
+    if mes_str == 'all' or anio_str == 'all':
+        mes, anio = None, None
+        mes_numero = 'all'
+        mes_nombre = 'Todas las fechas'
+        anio_ctx = 'all'
+    else:
+        try:
+            mes = int(mes_str)
+            anio = int(anio_str)
+            if mes < 1 or mes > 12:
+                mes, anio = hoy.month, hoy.year
+            mes_numero = mes
+            mes_nombre = MESES_ES[mes]
+            anio_ctx = anio
+        except (ValueError, TypeError):
+            mes, anio = hoy.month, hoy.year
+            mes_numero = mes
+            mes_nombre = MESES_ES[mes]
+            anio_ctx = anio
 
     categorias_con_totales, total_mes = _build_categorias_con_totales(
         request.user, 'INGRESO', mes, anio
@@ -91,9 +106,9 @@ def lista_ingresos(request):
         'cantidad_mes': cantidad_mes,
         'promedio_mes': promedio_mes,
         'categorias_disponibles': Categoria.objects.filter(activo=True, tipo='INGRESO', es_sistema=False).order_by('nombre'),
-        'mes_nombre': MESES_ES[mes],
-        'mes_numero': mes,
-        'anio': anio,
+        'mes_nombre': mes_nombre,
+        'mes_numero': mes_numero,
+        'anio': anio_ctx,
         'hoy': hoy,
         'mes_primer_registro': mes_primer_registro,
         'anio_primer_registro': anio_primer_registro,
@@ -102,15 +117,30 @@ def lista_ingresos(request):
 
 @login_required
 def lista_egresos(request):
-    """Lista de egresos del mes actual u opcionalmente del mes seleccionado agrupados por categoría."""
+    """Lista de egresos. Por defecto muestra todas las fechas históricas."""
     hoy = timezone.localdate()
-    try:
-        mes = int(request.GET.get('mes', hoy.month))
-        anio = int(request.GET.get('anio', hoy.year))
-        if mes < 1 or mes > 12:
-            mes = hoy.month
-    except (ValueError, TypeError):
-        mes, anio = hoy.month, hoy.year
+    mes_str = request.GET.get('mes', 'all')
+    anio_str = request.GET.get('anio', 'all')
+    
+    if mes_str == 'all' or anio_str == 'all':
+        mes, anio = None, None
+        mes_numero = 'all'
+        mes_nombre = 'Todas las fechas'
+        anio_ctx = 'all'
+    else:
+        try:
+            mes = int(mes_str)
+            anio = int(anio_str)
+            if mes < 1 or mes > 12:
+                mes, anio = hoy.month, hoy.year
+            mes_numero = mes
+            mes_nombre = MESES_ES[mes]
+            anio_ctx = anio
+        except (ValueError, TypeError):
+            mes, anio = hoy.month, hoy.year
+            mes_numero = mes
+            mes_nombre = MESES_ES[mes]
+            anio_ctx = anio
 
     categorias_con_totales, total_mes = _build_categorias_con_totales(
         request.user, 'EGRESO', mes, anio
@@ -123,7 +153,11 @@ def lista_egresos(request):
         else Decimal('0')
     )
 
-    disponible = obtener_disponible(request.user, mes, anio)
+    # El presupuesto/disponible debe resolverse con un mes específico.
+    # Si la vista es 'all', usamos el mes actual por defecto para la card de Disponible.
+    mes_disp = mes if mes is not None else hoy.month
+    anio_disp = anio if anio is not None else hoy.year
+    disponible = obtener_disponible(request.user, mes_disp, anio_disp)
 
     primer_registro = Movimiento.objects.filter(usuario=request.user).aggregate(Min('fecha_registro'))['fecha_registro__min']
     mes_primer_registro = primer_registro.month if primer_registro else request.user.date_joined.month
@@ -136,9 +170,9 @@ def lista_egresos(request):
         'promedio_mes': promedio_mes,
         'disponible': disponible,
         'categorias_disponibles': Categoria.objects.filter(activo=True, tipo='EGRESO', es_sistema=False).order_by('nombre'),
-        'mes_nombre': MESES_ES[mes],
-        'mes_numero': mes,
-        'anio': anio,
+        'mes_nombre': mes_nombre,
+        'mes_numero': mes_numero,
+        'anio': anio_ctx,
         'hoy': hoy,
         'mes_primer_registro': mes_primer_registro,
         'anio_primer_registro': anio_primer_registro,
@@ -187,7 +221,7 @@ def guardar_movimiento(request, pk=None):
             'monto': str(mov.monto),
             'monto_fmt': f"${mov.monto:,.0f}",
             'fecha': mov.fecha_registro.strftime('%d %b %Y'),
-            'fecha_raw': mov.fecha_registro.isoformat(),
+            'fecha_raw': mov.fecha_registro.date().isoformat(),
             'categoria_id': mov.categoria_id,
             'categoria_nombre': mov.categoria.nombre,
             'tipo': mov.tipo,
@@ -238,7 +272,7 @@ def registros_por_categoria(request):
                 'id': m.id,
                 'descripcion': m.descripcion or 'Sin descripción',
                 'fecha': m.fecha_registro.strftime('%d %b %Y'),
-                'fecha_raw': m.fecha_registro.isoformat(),
+                'fecha_raw': m.fecha_registro.date().isoformat(),
                 'monto': str(m.monto),
                 'monto_fmt': f"${m.monto:,.0f}",
                 'tipo': m.tipo,
@@ -256,10 +290,8 @@ def registros_por_categoria(request):
 @login_required
 def resumen_movimientos(request):
     """
-    Devuelve JSON con los totales y categorías del mes actual para un tipo dado.
-
-    GET param: tipo — 'INGRESO' o 'EGRESO'
-
+    Devuelve JSON con los totales y categorías. 
+    Acepta mes y anio como parametros (o 'all' para todas las fechas).
     Usado por el frontend para actualizar el grid de categorías y el hero
     después de un CRUD sin recargar la página.
     """
@@ -267,8 +299,17 @@ def resumen_movimientos(request):
     if tipo not in ('INGRESO', 'EGRESO'):
         return JsonResponse({'ok': False, 'error': 'tipo inválido'}, status=400)
 
-    hoy = timezone.localdate()
-    mes, anio = hoy.month, hoy.year
+    mes_str = request.GET.get('mes', 'all')
+    anio_str = request.GET.get('anio', 'all')
+    
+    if mes_str == 'all' or anio_str == 'all':
+        mes, anio = None, None
+    else:
+        try:
+            mes = int(mes_str)
+            anio = int(anio_str)
+        except (ValueError, TypeError):
+            mes, anio = None, None
 
     categorias_con_totales, total_mes = _build_categorias_con_totales(
         request.user, tipo, mes, anio
