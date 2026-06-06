@@ -94,6 +94,7 @@ def obtener_estado_presupuesto(presupuesto):
         "categoria_id": presupuesto.categoria.id,
         "limite": float(presupuesto.limite),
         "gastado": float(total_gastado),
+        "disponible": float(presupuesto.limite - total_gastado),
         "porcentaje": round(float(porcentaje), 2),
         "alerta": alerta,
     }
