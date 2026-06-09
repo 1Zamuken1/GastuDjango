@@ -47,3 +47,6 @@ capturas_pruebas/
 
 # Scripts personales de prueba (no van al repo)
 seed_meses_anteriores.py
+
+# Documentación, diagramas y Excel externos al código
+Docs/
