@@ -12,6 +12,9 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['10.1.164.209', 'localhost', '127.0.0.1', '.onrender.com']
 
+# CSRF Trusted Origins para producción
+CSRF_TRUSTED_ORIGINS = ['https://gastu.onrender.com']
+
 INSTALLED_APPS = [
     'daphne',
     'django.contrib.admin',
@@ -62,8 +65,8 @@ MIDDLEWARE = [
     # Requerido por django-allauth
     'allauth.account.middleware.AccountMiddleware',
     # Tailwind hot reload (solo en DEBUG)
-    'django_browser_reload.middleware.BrowserReloadMiddleware',
-    # ── Separación de contextos Admin / Usuario ───────────────
+    *(['django_browser_reload.middleware.BrowserReloadMiddleware'] if DEBUG else []),
+    # 🔹 Separación de contextos Admin / Usuario 🔹───────────────
     'gastu_django.middleware.AdminAreaMiddleware',
 ]
 

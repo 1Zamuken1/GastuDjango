@@ -40,10 +40,10 @@
 ```
 GastuDjango/
 ├── gastu_django/          # Configuración central (settings, urls, wsgi)
-├── usuarios/              # Modelo Usuario personalizado, login, register, perfil — 90%
+├── usuarios/              # Modelo Usuario personalizado, login, register, perfil — 95%
 ├── movimientos/           # Modelo Movimiento — CRUD completo — 100%
 ├── categorias/            # Modelo Categoria — CRUD completo — 100%
-├── ahorros/               # Metas de ahorro y aportes — 70%
+├── ahorros/               # Metas de ahorro y aportes — 95%
 ├── programaciones/        # Movimientos recurrentes y programados — 95%
 ├── presupuesto/           # Planificación de presupuestos mensuales — 95%
 ├── notificaciones/        # Alertas automáticas y centro de notificaciones — 80%
@@ -408,17 +408,23 @@ Servicio `notificaciones/services.py` con función `analizar_movimiento` — dis
 
 ---
 
-## 11. App ahorros — estado actual (50%)
+## 11. App ahorros — estado actual (95%)
 
-Modelo definido pero con deuda técnica. Interfaces en progreso (otro integrante).
+CRUD completo implementado y modelo refactorizado (deuda técnica eliminada, usa `snake_case`). Funcionalidades incluyen:
+- Creación de metas con cálculo dinámico de plazos y frecuencias.
+- Gestión de aportes (asignados o extraordinarios) con validación de saldo disponible en dashboard.
+- Historial de aportes y cuotas perdidas.
+- Exportación a CSV, Excel y PDF.
+- Dashboard resumen de ahorros.
 
-**Bug conocido en el modelo:** campos en camelCase (`montoMeta`, `totalAcumulado`, `fechaMeta`, `cantidadCuotas`, `aporteAsignado`, `estadoAp`, `fechaLimite`). Migrar a snake_case al implementar la app.
+**Pendiente (el 5% restante):**
+- Vista del historial general (log de acciones de auditoría) global en la aplicación.
 
-**Nota de arquitectura:** los ahorros en el dashboard se calculan directamente desde `AporteAhorro` con `fecha_registro__lte=ultimo_dia`. No confiar en `ResumenMensual.total_ahorros` — siempre es 0 porque los signals no están conectados.
+**Nota de arquitectura:** los ahorros en el dashboard se calculan directamente desde `AporteAhorro` con `fecha_registro__lte=ultimo_dia`.
 
 ---
 
-## 12. App usuarios — estado actual (70%)
+## 12. App usuarios — estado actual (95%)
 
 ### Modelo
 
@@ -430,12 +436,13 @@ Campos: `username`, `email`, `telefono`, `password1`, `password2`.
 
 ### Lo que funciona
 
-- Login, registro y logout con vistas propias.
+- Login, registro, logout y recuperación de contraseña vía correo.
+- Plantillas personalizadas de correo (cuenta activa e inactiva).
 - `register.html` con barra de seguridad de contraseña (4 criterios: longitud, mayúscula, número, especial), toggle de visibilidad, indicador de coincidencia de contraseñas.
+- Vista de Perfil (`/perfil/`) completa: edición de datos personales, cambio de contraseña, panel de preferencias de notificaciones y eliminación de cuenta.
 
-### Pendiente (el 30% restante)
+### Pendiente (el 5% restante)
 
-- Vista de perfil de usuario (edición de datos, cambio de contraseña).
 - Rate limiting en login (`django-ratelimit`).
 
 ---
