@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.views.generic import TemplateView
 from django.contrib.sitemaps.views import sitemap
 from landing.sitemaps import StaticViewSitemap
+from django.conf import settings
 
 sitemaps = {
     'static': StaticViewSitemap,
@@ -37,7 +38,10 @@ urlpatterns = [
 
     # OAuth
     path('auth/', include('allauth.urls')),
-
-    # Tailwind hot reload (solo DEBUG)
-    path('__reload__/', include('django_browser_reload.urls')),
 ]
+
+# Tailwind hot reload (solo DEBUG)
+if settings.DEBUG:
+    urlpatterns += [
+        path('__reload__/', include('django_browser_reload.urls')),
+    ]

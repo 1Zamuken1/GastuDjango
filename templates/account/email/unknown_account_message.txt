@@ -1,0 +1,11 @@
+Hola,
+
+Recibes este correo porque tú, u otra persona, ha intentado restablecer la contraseña para la cuenta con el correo electrónico {{ email }}. Sin embargo, no tenemos registro de ninguna cuenta activa con este correo en GastuApp.
+
+Si fue un error o recién nos conoces, te invitamos a crear una cuenta usando el siguiente enlace:
+{{ signup_url }}
+
+Nota: Si no realizaste esta solicitud, puedes ignorar este correo de forma segura.
+
+Gracias por confiar en GastuApp.
+© 2026 GastuApp. Todos los derechos reservados.
