@@ -377,25 +377,41 @@ categorias:lista_categorias
 
 ---
 
-## 10. App notificaciones — estado actual (50%)
+## 10. App notificaciones — estado actual (100%)
 
-Servicio `notificaciones/services.py` con función `analizar_movimiento` — disparada por signals de `movimientos`. Crea alertas automáticas en base a reglas (déficit, egreso grande, etc.).
+Aplicación completamente funcional y fuertemente refactorizada. Utiliza una arquitectura avanzada basada en analizadores (`analyzers/`), chequeos (`checks/`) y un despachador (`dispatcher.py`) para generar alertas inteligentes en tiempo real, conectada mediante WebSockets (`consumers.py`).
 
-**Modelo `Notificacion`:** campos `titulo`, `tipo` (`DEFICIT`, `EGRESO_GRANDE`, otros), `leida` (Boolean), `fecha_creacion`.
+**Modelos (`notificaciones/models.py`):**
+- `Notificacion`: Almacena la alerta. Cuenta con múltiples tipos (`Tipo`) que cubren desde umbrales y déficits hasta patrones inusuales, proyecciones de sobregasto y recordatorios de ahorro.
+- Se ha integrado un sistema de categorización por `Modulo` (INGRESOS, EGRESOS, AHORROS, etc.) que permite filtrar las alertas en la interfaz.
 
-**Bug conocido:** `analizar_movimiento` está definida dos veces en el archivo. La segunda sobreescribe silenciosamente a la primera. Corregir antes de añadir lógica nueva: eliminar la definición de la línea ~29, conservar solo la segunda (la que tiene el parámetro `ultimo_egreso`).
+**Vistas y APIs (`notificaciones/views.py`):**
+- `notificaciones_json`: Endpoint GET que devuelve las notificaciones del usuario paginadas y filtradas por módulo, junto con recuentos de no leídas.
+- `notificaciones_marcar_leidas`: Endpoint POST para marcar notificaciones individuales o por módulo como leídas.
 
-**Pendiente:** interfaz de notificaciones (listado, marcar como leídas). La lógica de creación funciona pero no hay vista dedicada.
+**Resolución de Bugs Antiguos:**
+- El archivo antiguo `services.py` fue eliminado por completo, resolviendo la deuda técnica y la duplicidad de funciones.
+- La interfaz de usuario ya está completamente soportada mediante los endpoints REST y la conexión asíncrona de WebSockets (Django Channels).
 
 ---
 
-## 11. App ahorros — estado actual (50%)
+## 11. App ahorros — estado actual (100%)
 
-Modelo definido pero con deuda técnica. Interfaces en progreso (otro integrante).
+Aplicación completamente funcional e integrada. Permite crear metas de ahorro, generar cuotas automáticas basadas en la frecuencia elegida, y registrar aportes que actualizan el dashboard y el historial en tiempo real.
 
-**Bug conocido en el modelo:** campos en camelCase (`montoMeta`, `totalAcumulado`, `fechaMeta`, `cantidadCuotas`, `aporteAsignado`, `estadoAp`, `fechaLimite`). Migrar a snake_case al implementar la app.
+**Modelos (`ahorros/models.py`):**
+- `AhorroMeta`: Define la meta de ahorro (monto, fecha, frecuencia, cantidad de cuotas). **Nota de deuda técnica:** Aún no hereda de `ModeloBase` (hereda directamente de `models.Model`).
+- `AporteAhorro`: Representa las cuotas (aportes) generadas automáticamente. Estados: `PENDIENTE`, `APORTADO`, `PERDIDO`.
+*Nota: Los campos ya fueron migrados a `snake_case` correctamente.*
 
-**Nota de arquitectura:** los ahorros en el dashboard se calculan directamente desde `AporteAhorro` con `fecha_registro__lte=ultimo_dia`. No confiar en `ResumenMensual.total_ahorros` — siempre es 0 porque los signals no están conectados.
+**Integración (Signals y Dashboard):**
+- **Dashboard:** Los signals en `ahorros/signals.py` actualizan correctamente `ResumenMensual` (`total_ahorros`, `ingreso_neto`, `disponible`) cada vez que se registra o elimina un aporte (`estado_ap == 'APORTADO'`).
+- **Historial:** Todas las creaciones/ediciones/eliminaciones de metas y aportes se auditan automáticamente creando registros en `historial.models.AccionHistorial` bajo `ModuloChoices.AHORROS`.
+
+**Vistas y Servicios:**
+- Incluye vistas para listar, crear, editar, eliminar metas y registrar aportes.
+- Módulo integrado para exportar a CSV, Excel y PDF (`views_exportar.py`).
+- Capa de servicios (`services.py`) maneja el recálculo dinámico de fechas, montos y estados de cuotas tras ediciones o abonos extraordinarios.
 
 ---
 
