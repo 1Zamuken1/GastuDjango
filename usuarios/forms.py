@@ -3,6 +3,8 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
+from django.utils.safestring import mark_safe
+from django.urls import reverse
 from .models import Usuario, Preferencias
 
 
@@ -150,6 +152,24 @@ class LoginForm(forms.Form):
                 password=password,
             )
             if self._usuario_cache is None:
+                # Comprobar si existe el usuario pero no tiene contraseña (creado con Google)
+                try:
+                    user_obj = Usuario.objects.get(email__iexact=email)
+                    if not user_obj.has_usable_password():
+                        reset_url = reverse('account_reset_password')
+                        raise ValidationError(
+                            mark_safe(
+                                'Parece que usaste Google para crear esta cuenta.<br>'
+                                '<div class="mt-2 flex items-center gap-2">'
+                                '<a href="/auth/google/login/" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">Iniciar con Google</a>'
+                                '<span class="text-xs text-slate-400">o</span>'
+                                f'<a href="{reset_url}" class="text-xs text-emerald-600 hover:text-emerald-500 font-medium underline">Crear contraseña</a>'
+                                '</div>'
+                            )
+                        )
+                except Usuario.DoesNotExist:
+                    pass
+
                 raise ValidationError(
                     'Correo o contrasena incorrectos. Verifica tus datos e intenta de nuevo.'
                 )

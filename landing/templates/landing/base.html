@@ -160,6 +160,57 @@
     /* Spinner */
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinning { animation: spin 0.8s linear infinite; }
+
+    /* ── Landing Navbar — Responsive ────────────────────────────── */
+    .landing-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .landing-nav__logo {
+      font-size: 1.5rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .landing-nav__links {
+      display: none;
+      align-items: center;
+      gap: 2rem;
+    }
+    .landing-nav__auth {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    .landing-nav__btn {
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      white-space: nowrap;
+    }
+
+    /* Tablet / Laptop pequeno (480px – 1023px): logo + botones, sin links nav */
+    @media (min-width: 480px) {
+      .landing-nav__logo { font-size: 1.5rem; }
+      .landing-nav__btn  { padding: 0.5rem 1.25rem; }
+    }
+
+    /* Desktop (>= 1024px): fila completa con links de nav */
+    @media (min-width: 1024px) {
+      .landing-nav__links { display: flex; }
+      .landing-nav__logo  { font-size: 1.5rem; }
+    }
+
+    /* Celular pequeno (< 480px): escala compacta */
+    @media (max-width: 479px) {
+      .landing-nav__logo { font-size: 1.25rem; }
+      .landing-nav__btn  {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.75rem;
+      }
+      .landing-nav__auth { gap: 0.5rem; }
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -170,25 +221,13 @@
   <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white/80">
     <div class="max-w-6xl 2xl:max-w-7xl mx-auto px-6 py-4">
 
-      <!-- Mobile: 2×2 grid -->
-      <div class="flex flex-col gap-1 sm:hidden">
-        <div class="flex items-center justify-between">
-          <span class="font-display text-2xl font-black text-slate-900 tracking-tight">Gastu</span>
-          <a href="{% url 'login' %}" class="btn-ghost text-xs px-3 py-1.5">Iniciar Sesión</a>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="font-display text-2xl font-black text-emerald-500 tracking-tight">App</span>
-          <a href="{% url 'register' %}" class="btn-emerald text-xs px-3 py-1.5">Registrarse</a>
-        </div>
-      </div>
-
-      <!-- Desktop: flex row -->
-      <div class="hidden sm:flex sm:items-center sm:justify-between">
-        <a href="{% url 'landing:home' %}" class="font-display text-2xl font-black text-slate-900 tracking-tight">
+      <!-- Navbar: una sola fila responsiva en todas las pantallas -->
+      <div class="landing-nav">
+        <a href="{% url 'landing:home' %}" class="landing-nav__logo font-display font-black text-slate-900 tracking-tight">
           Gastu<span class="text-emerald-500">App</span>
         </a>
 
-        <div class="hidden md:flex items-center gap-8">
+        <div class="landing-nav__links">
           <a href="{% url 'landing:home' %}#funciones"
              class="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-medium">Funciones</a>
           <a href="{% url 'landing:home' %}#como-funciona"
@@ -197,9 +236,9 @@
              class="text-slate-500 hover:text-emerald-600 transition-colors text-sm font-medium">Métricas</a>
         </div>
 
-        <div class="flex items-center gap-3">
-          <a href="{% url 'login' %}" class="btn-ghost text-sm px-4 py-2">Iniciar Sesión</a>
-          <a href="{% url 'register' %}" class="btn-emerald text-sm px-4 py-2">Registrarse</a>
+        <div class="landing-nav__auth">
+          <a href="{% url 'login' %}" class="btn-ghost landing-nav__btn">Iniciar Sesión</a>
+          <a href="{% url 'register' %}" class="btn-emerald landing-nav__btn">Registrarse</a>
         </div>
       </div>
 
