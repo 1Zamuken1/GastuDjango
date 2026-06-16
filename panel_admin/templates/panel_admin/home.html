@@ -8,7 +8,7 @@
 {% block content %}
 
 <!-- Stats -->
-<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+<div class="admin-stats-grid">
   <div class="stat-card stat-card--indigo">
     <p class="stat-label">Total usuarios</p>
     <p class="stat-value">{{ total_usuarios }}</p>
@@ -36,7 +36,7 @@
 </div>
 
 <!-- Opciones rápidas + Top usuarios -->
-<div style="display:grid; grid-template-columns: 280px 1fr; gap:16px; margin-bottom:16px;">
+<div class="admin-sidebar-grid">
 
   <!-- Opciones rápidas -->
   <div class="admin-card" style="padding:20px;">
@@ -117,7 +117,7 @@
         <p class="section-sub">Categorías más usadas</p>
       </div>
     </div>
-    <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+    <div style="position: relative; height: 260px; width: 100%; overflow: hidden;">
       <canvas id="chartIngresos"></canvas>
     </div>
   </div>
@@ -130,7 +130,7 @@
         <p class="section-sub">Categorías más usadas</p>
       </div>
     </div>
-    <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+    <div style="position: relative; height: 260px; width: 100%; overflow: hidden;">
       <canvas id="chartEgresos"></canvas>
     </div>
   </div>
@@ -143,7 +143,7 @@
         <p class="section-sub">Categorías en metas activas</p>
       </div>
     </div>
-    <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+    <div style="position: relative; height: 260px; width: 100%; overflow: hidden;">
       <canvas id="chartAhorros"></canvas>
     </div>
   </div>
@@ -203,14 +203,24 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{{ chart_activity_labels|json_script:"activity-labels-data" }}
+{{ chart_activity_data|json_script:"activity-data" }}
+{{ chart_ingresos_labels|json_script:"ingresos-labels-data" }}
+{{ chart_ingresos_data|json_script:"ingresos-data" }}
+{{ chart_egresos_labels|json_script:"egresos-labels-data" }}
+{{ chart_egresos_data|json_script:"egresos-data" }}
+{{ chart_ahorros_labels|json_script:"ahorros-labels-data" }}
+{{ chart_ahorros_data|json_script:"ahorros-data" }}
+
 <script>
   window.PERFIL_URL = '{% url "panel_admin:perfil" %}';
 
   document.addEventListener("DOMContentLoaded", () => {
     // Inicializar Gráfico de Actividad
     const activityCtx = document.getElementById('chartActivity').getContext('2d');
-    const activityLabels = {{ chart_activity_labels|safe }};
-    const activityData = {{ chart_activity_data|safe }};
+    const activityLabels = JSON.parse(document.getElementById('activity-labels-data').textContent);
+    const activityData = JSON.parse(document.getElementById('activity-data').textContent);
     
     new Chart(activityCtx, {
       type: 'line',
@@ -242,8 +252,8 @@
 
     // Inicializar Gráfico de Categorías de Ingresos
     const ingresosCtx = document.getElementById('chartIngresos').getContext('2d');
-    const ingresosLabels = {{ chart_ingresos_labels|safe }};
-    const ingresosData = {{ chart_ingresos_data|safe }};
+    const ingresosLabels = JSON.parse(document.getElementById('ingresos-labels-data').textContent);
+    const ingresosData = JSON.parse(document.getElementById('ingresos-data').textContent);
     
     new Chart(ingresosCtx, {
       type: 'doughnut',
@@ -268,8 +278,8 @@
 
     // Inicializar Gráfico de Categorías de Egresos
     const egresosCtx = document.getElementById('chartEgresos').getContext('2d');
-    const egresosLabels = {{ chart_egresos_labels|safe }};
-    const egresosData = {{ chart_egresos_data|safe }};
+    const egresosLabels = JSON.parse(document.getElementById('egresos-labels-data').textContent);
+    const egresosData = JSON.parse(document.getElementById('egresos-data').textContent);
     
     new Chart(egresosCtx, {
       type: 'doughnut',
@@ -294,8 +304,8 @@
 
     // Inicializar Gráfico de Categorías de Ahorros
     const ahorrosCtx = document.getElementById('chartAhorros').getContext('2d');
-    const ahorrosLabels = {{ chart_ahorros_labels|safe }};
-    const ahorrosData = {{ chart_ahorros_data|safe }};
+    const ahorrosLabels = JSON.parse(document.getElementById('ahorros-labels-data').textContent);
+    const ahorrosData = JSON.parse(document.getElementById('ahorros-data').textContent);
     
     new Chart(ahorrosCtx, {
       type: 'doughnut',

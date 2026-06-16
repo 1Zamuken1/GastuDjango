@@ -20,8 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function postForm(url, fd) {
+    // Evitar bodies multipart vacíos que pueden causar HTTP 400 en Daphne/Channels
+    let isEmpty = true;
+    for (let key of fd.keys()) { isEmpty = false; break; }
+    if (isEmpty) fd.append('_dummy_field', '1');
+
     const resp = await fetch(url, {
       method:  'POST',
+      credentials: 'same-origin',
       headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest' },
       body:    fd,
     });

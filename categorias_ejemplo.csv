@@ -1,8 +1,0 @@
-nombre,tipo,descripcion,activo
-Salario,INGRESO,Sueldo mensual principal,true
-Alimentación,EGRESO,Mercado y comida fuera,true
-Criptomonedas,INGRESO,Ganancias en activos digitales,true
-Suscripciones,EGRESO,Netflix, Spotify y servicios digitales,true
-Mascotas,EGRESO,Alimento y gastos veterinarios,true
-Tecnología,AHORRO,Ahorro para cambiar de móvil o PC,true
-Boda,AHORRO,Fondo para celebración de matrimonio,true

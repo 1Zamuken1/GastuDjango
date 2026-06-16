@@ -117,7 +117,8 @@ body.bg-slate-50 {
   box-shadow: 0 24px 60px rgba(0,0,0,0.18);
   width: 100%;
   animation: modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
-  overflow: hidden;
+  overflow-y: auto;
+  max-height: 90vh;
 }
 @keyframes modalIn {
   from { opacity: 0; transform: scale(0.93) translateY(12px); }
@@ -431,15 +432,251 @@ select.px-3 {
   padding-right: 30px;
 }
 
-/* ── Responsive ────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════════ */
+
+/* ── Helper classes para grids del admin ─────────────────── */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.admin-sidebar-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-import-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
 .cats-charts-grid {
   grid-template-columns: repeat(3, 1fr);
 }
+
+/* ── Filtros responsive ──────────────────────────────────── */
+.admin-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.admin-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(241, 245, 249, 0.8);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  padding: 4px;
+  border-radius: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+}
+
+.admin-filter-group::-webkit-scrollbar { display: none; }
+
+.admin-filter-btn {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 8px;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: #64748b;
+}
+.admin-filter-btn:hover { color: #1e293b; }
+.admin-filter-btn.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.admin-filter-btn.active-indigo  { color: #4f46e5; }
+.admin-filter-btn.active-emerald { color: #059669; }
+.admin-filter-btn.active-red     { color: #dc2626; }
+.admin-filter-btn.active-amber   { color: #d97706; }
+.admin-filter-btn.active-slate   { color: #475569; }
+
+/* ── Tabla cells truncadas ───────────────────────────────── */
+.cell-truncate {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Desktop grande (>1024px) ────────────────────────────── */
+@media (min-width: 1025px) {
+  .admin-stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ── Tablet (≤1024px) ────────────────────────────────────── */
 @media (max-width: 1024px) {
   .cats-charts-grid {
     grid-template-columns: 1fr;
   }
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-sidebar-grid {
+    grid-template-columns: 1fr;
+  }
 }
+
+/* ── Tablet pequeña (≤768px) ─────────────────────────────── */
 @media (max-width: 768px) {
-  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .admin-import-grid {
+    grid-template-columns: 1fr;
+  }
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  .modal-box {
+    max-width: 95vw !important;
+  }
+  .modal-overlay {
+    padding: 16px;
+  }
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .admin-table td,
+  .admin-table thead th {
+    padding: 10px 12px;
+  }
+  .cell-truncate {
+    max-width: 140px;
+  }
+}
+
+/* ── Móvil (≤640px) ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Stats */
+  .admin-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat-card { padding: 14px 16px; }
+  .stat-value { font-size: 1.4rem; }
+  .stat-label { font-size: 0.68rem; }
+  .stat-icon svg { width: 40px; height: 40px; }
+
+  /* Main container */
+  main .px-4 { padding-left: 12px; padding-right: 12px; }
+
+  /* Nav */
+  .admin-nav-link { padding: 6px 8px; font-size: 0.75rem; gap: 4px; }
+
+  /* Topbar */
+  header.fixed { padding-left: 10px; padding-right: 10px; gap: 6px; }
+
+  /* Filters stack */
+  .admin-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .admin-filter-group {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .admin-filter-btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px 6px;
+    font-size: 0.7rem;
+  }
+
+  /* Search full width */
+  .admin-filters .relative {
+    max-width: none;
+    min-width: 0;
+  }
+
+  /* Tables */
+  .admin-table { font-size: 0.78rem; }
+  .admin-table td,
+  .admin-table thead th { padding: 8px 10px; }
+  .cell-truncate { max-width: 100px; }
+
+  /* Badges smaller */
+  .badge { font-size: 0.68rem; padding: 2px 8px; }
+
+  /* Buttons */
+  .btn { padding: 7px 12px; font-size: 0.78rem; }
+  .btn--sm { padding: 4px 8px; font-size: 0.72rem; }
+
+  /* Quick actions */
+  .quick-action { padding: 8px 10px; font-size: 0.8rem; }
+  .quick-action-icon { width: 28px; height: 28px; }
+
+  /* Modals */
+  .modal-overlay { padding: 10px; }
+  .modal-box { max-width: 100% !important; border-radius: 12px; }
+  .modal-header { padding: 14px 16px; }
+
+  /* Cards */
+  .admin-card-header { padding: 12px 16px; }
+  .admin-card-title { font-size: 0.82rem; }
+
+  /* Page title */
+  h1.font-display { font-size: 1.1rem; }
+}
+
+/* ── Móvil muy pequeño (≤400px — ej: 360x740) ───────────── */
+@media (max-width: 400px) {
+  .admin-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stat-card { padding: 12px; border-radius: 10px; }
+  .stat-value { font-size: 1.2rem; }
+  .stat-label { font-size: 0.65rem; letter-spacing: 0.05em; }
+  .stat-sub { font-size: 0.68rem; }
+  .stat-icon { display: none; }
+
+  .admin-sidebar-grid { gap: 12px; }
+
+  /* Filtros aún más compactos */
+  .admin-filter-btn { padding: 5px 4px; font-size: 0.65rem; }
+
+  /* Tabla ultra compacta */
+  .admin-table { font-size: 0.72rem; }
+  .admin-table td,
+  .admin-table thead th { padding: 7px 8px; }
+  .admin-table thead th { font-size: 0.65rem; }
+  .cell-truncate { max-width: 80px; }
+
+  /* Acción botones más pequeños */
+  .action-btn { width: 26px; height: 26px; }
+  .action-btn svg { width: 11px; height: 11px; }
+
+  /* Toggle ligeramente más pequeño */
+  .toggle { width: 32px; height: 18px; }
+  .toggle-slider::before { width: 12px; height: 12px; }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(14px); }
+
+  /* Modales */
+  .modal-header { padding: 12px 14px; }
+  .modal-title { font-size: 0.85rem; }
+
+  /* Import grid */
+  .admin-import-grid { gap: 16px; }
+
+  /* File drop */
+  .file-drop-area { padding: 24px 16px; }
+  .file-drop-text { font-size: 0.8rem; }
+  .file-drop-icon { width: 36px; height: 36px; }
 }
