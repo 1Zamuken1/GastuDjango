@@ -186,7 +186,6 @@ class MiniDatepicker {
           const displayRect = this.display.getBoundingClientRect();
           const panelH      = this.panel.offsetHeight;
           const espacioAbajo = window.innerHeight - displayRect.bottom - 8;
-          const espacioArriba = displayRect.top - 8;
           const inModal = this.wrapper.closest('.modal__body');
 
           if (inModal || espacioAbajo >= panelH || espacioAbajo >= espacioArriba) {

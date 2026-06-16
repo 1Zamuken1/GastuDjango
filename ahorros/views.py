@@ -152,6 +152,12 @@ def editar_ahorro(request, id):
             ahorro.fecha_meta = fecha_meta
             ahorro.cantidad_cuotas = cuotas
 
+            # Ajustar estado si el monto_meta editado altera el cumplimiento
+            if ahorro.total_acumulado >= ahorro.monto_meta:
+                ahorro.estado = AhorroMeta.Estado.COMPLETADO
+            elif ahorro.estado == AhorroMeta.Estado.COMPLETADO and ahorro.total_acumulado < ahorro.monto_meta:
+                ahorro.estado = AhorroMeta.Estado.ACTIVO
+
             ahorro.save()
             recalcular_aportes(ahorro)
             recalcular_fechas_cuotas(ahorro)
@@ -217,15 +223,34 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         perdidas = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
         pendientes = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
 
-        cuotas = list(cuotas_qs)
-        primera_pendiente = next((c for c in cuotas if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE), None)
+        cuotas_todas = list(cuotas_qs)
+        cuotas_totales = len(cuotas_todas)
         
-        for c in cuotas:
+        idx_pendiente = next((i for i, c in enumerate(cuotas_todas) if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE), -1)
+        
+        if idx_pendiente != -1:
+            start_idx = max(0, idx_pendiente - 5)
+            end_idx = start_idx + 20
+            if end_idx > cuotas_totales:
+                end_idx = cuotas_totales
+                start_idx = max(0, end_idx - 20)
+            cuotas_a_mostrar = cuotas_todas[start_idx:end_idx]
+        else:
+            cuotas_a_mostrar = cuotas_todas[-20:] if cuotas_totales > 20 else cuotas_todas
+            
+        primera_pendiente = cuotas_todas[idx_pendiente] if idx_pendiente != -1 else None
+        
+        for c in cuotas_a_mostrar:
             c.is_disponible_pago = cuota_disponible_pago(c, ahorro.frecuencia, primera_pendiente=primera_pendiente)
+            c.numero_real = cuotas_todas.index(c) + 1
+
+        cuotas_ocultas = cuotas_totales - len(cuotas_a_mostrar)
 
         return render(request, "ahorros/aporte.html", {
             "ahorro": ahorro,
-            "cuotas": cuotas,
+            "cuotas": cuotas_a_mostrar,
+            "cuotas_totales": cuotas_totales,
+            "cuotas_ocultas": cuotas_ocultas,
             "pagadas": pagadas,
             "perdidas": perdidas,
             "pendientes": pendientes,
