@@ -165,9 +165,20 @@
   .stats-hero {
     grid-template-columns: 1fr;
   }
-  .hero-stats { grid-template-columns: 1fr; }
-  .hero-stat { border-right: none; border-bottom: 1px solid #e2e8f0; padding: 1rem; }
-  .hero-stat:last-child { border-bottom: none; }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-stat {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem;
+  }
+
+  .hero-stat:last-child {
+    border-bottom: none;
+  }
 }
 
 /* ── Toolbar ──────────────────────────────────────── */
@@ -281,6 +292,7 @@
   color: #fff;
   border-color: #eab308;
 }
+
 .ahorros-scope .btn-primary:hover,
 #app-content .btn-primary-ahorro:hover {
   background: #ca8a04;
@@ -307,6 +319,7 @@
     transform 0.15s,
     box-shadow 0.15s;
 }
+
 .btn-amber:hover {
   background: #ca8a04;
   transform: translateY(-1px);
@@ -320,6 +333,7 @@
   flex-direction: column;
   gap: 0.3rem;
 }
+
 .form-ahorros label {
   font-size: 0.78rem;
   font-weight: 700;
@@ -327,6 +341,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
 .form-ahorros input[type="text"],
 .form-ahorros input[type="number"],
 .form-ahorros input[type="date"],
@@ -347,6 +362,7 @@
   box-sizing: border-box;
   font-family: "DM Sans", sans-serif;
 }
+
 .form-ahorros input:focus,
 .form-ahorros select:focus,
 .form-ahorros textarea:focus {
@@ -354,6 +370,7 @@
   border-color: #eab308;
   box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
 }
+
 .form-ahorros .errorlist {
   color: #ef4444;
   font-size: 0.78rem;
@@ -362,11 +379,13 @@
   padding-left: 0;
   list-style: none;
 }
+
 .form-ahorros .helptext {
   font-size: 0.72rem;
   color: #94a3b8;
   margin-top: 0.15rem;
 }
+
 .form-ahorros__errors {
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -377,6 +396,7 @@
   gap: 0.625rem;
   margin-bottom: 1rem;
 }
+
 .form-ahorros__errors-text {
   font-size: 0.82rem;
   color: #991b1b;
@@ -398,11 +418,13 @@
   text-align: left;
   font-family: "DM Sans", sans-serif;
 }
+
 .picker-cat-btn:hover {
   border-color: #eab308;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.14);
 }
+
 .picker-cat-btn.selected {
   border-color: #eab308;
   background: #fefce8;
@@ -419,10 +441,12 @@
   flex-shrink: 0;
   transition: background 0.18s, color 0.18s;
 }
+
 .picker-trigger-icon svg {
   width: 14px;
   height: 14px;
 }
+
 .picker-cat-btn.selected .picker-trigger-icon {
   background: #eab308;
   color: #fff;
@@ -435,6 +459,7 @@
   color: #94a3b8;
   transition: color 0.18s;
 }
+
 .picker-cat-btn.selected .picker-cat-label {
   color: #0f172a;
   font-weight: 600;
@@ -447,12 +472,15 @@
   display: grid;
   place-items: center;
 }
+
 .picker-cat-btn.selected .picker-trigger-arrow {
   color: #eab308;
 }
+
 .picker-cat-btn:hover .picker-trigger-arrow {
   transform: translateX(2px);
 }
+
 .picker-cat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -462,6 +490,7 @@
   flex: 1;
   background: #f8fafc;
 }
+
 .picker-cat-card {
   display: flex;
   flex-direction: column;
@@ -479,16 +508,19 @@
   font-family: "DM Sans", sans-serif;
   text-align: center;
 }
+
 .picker-cat-card:hover {
   border-color: #eab308;
   box-shadow: 0 2px 12px rgba(234, 179, 8, 0.15);
   transform: translateY(-1px);
 }
+
 .picker-cat-card.selected {
   border-color: #eab308;
   background: #fffbeb;
   box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.15);
 }
+
 .picker-cat-icon {
   width: 2rem;
   height: 2rem;
@@ -499,10 +531,12 @@
   place-items: center;
   flex-shrink: 0;
 }
+
 .picker-cat-icon svg {
   width: 1rem;
   height: 1rem;
 }
+
 .picker-cat-nombre {
   font-size: 0.78rem;
   font-weight: 600;
@@ -514,15 +548,14 @@
 .modal--meta {
   width: min(620px, 95vw);
   max-width: none;
-  max-height: 90vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
+
 .modal--meta .modal__body {
-  overflow-y: auto;
   flex: 1;
 }
+
 .modal--picker {
   width: min(520px, 95vw);
   max-width: none;
@@ -531,12 +564,15 @@
   flex-direction: column;
   overflow: hidden;
 }
+
 .modal--eliminar {
   width: min(420px, 95vw);
 }
+
 .modal-overlay--z1100 {
   z-index: 1100;
 }
+
 .modal-overlay--z1200 {
   z-index: 1200;
 }
@@ -662,13 +698,18 @@
   display: none !important;
 }
 
+.modal-overlay--top {
+  align-items: flex-start;
+  padding-top: 3rem;
+  overflow-y: auto;
+}
+
 .modal {
   background: white;
   border-radius: 1.25rem;
   width: 100%;
   max-width: 480px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
   animation: modalIn 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
@@ -677,6 +718,7 @@
     opacity: 0;
     transform: scale(0.95) translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -741,6 +783,16 @@
 }
 
 /* ── Form fields ──────────────────────────────────── */
+
+.frecuencia-option {
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.frecuencia-option:hover {
+  background-color: #fefce8;
+  color: #b45309 !important;
+}
+
 .field-label {
   display: block;
   font-size: 0.75rem;
@@ -779,6 +831,7 @@
     transform: rotate(360deg);
   }
 }
+
 .spin {
   animation: spin 0.7s linear infinite;
   display: inline-block;
@@ -801,6 +854,7 @@
 .card-action-btn--edit {
   color: #64748b;
 }
+
 .card-action-btn--edit:hover {
   background: #f0fdf4;
   border-color: #86efac;
@@ -810,6 +864,7 @@
 .card-action-btn--delete {
   color: #ef4444;
 }
+
 .card-action-btn--delete:hover {
   background: #fef2f2;
   border-color: #fecaca;
@@ -1096,7 +1151,7 @@
   }
 
   .btn-export span,
-  .btn-export i + * {
+  .btn-export i+* {
     display: none;
   }
 
@@ -1113,22 +1168,28 @@
   .stats-hero {
     grid-template-columns: 1fr;
   }
+
   .hero-total {
     padding: .75rem 1rem;
   }
+
   .hero-total__value {
     font-size: 1.8rem;
   }
+
   .hero-stats {
     grid-template-columns: 1fr;
   }
+
   .hero-stat {
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
   }
+
   .hero-stat:last-child {
     border-bottom: none;
   }
+
   .categorias-grid {
     grid-template-columns: 1fr;
   }
@@ -1136,6 +1197,7 @@
 
 /* ── Responsive: pantallas grandes (≥ 1280px) ────── */
 @media (min-width: 1280px) {
+
   /* Cards de metas: 4 columnas fijas en desktop */
   .categorias-grid {
     grid-template-columns: repeat(4, 1fr);
@@ -1150,6 +1212,7 @@
   .modal--picker {
     width: min(800px, 92vw);
   }
+
   .modal--picker .picker-cat-grid {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
@@ -1161,6 +1224,7 @@
 }
 
 @media (min-width: 1536px) {
+
   /* Ultra-wide: cards aún más anchas */
   .categorias-grid {
     grid-template-columns: repeat(4, 1fr);
@@ -1184,6 +1248,7 @@
   filter: grayscale(1);
   opacity: 0.75;
 }
+
 .categoria-card[data-activo="false"]:hover {
   filter: grayscale(0.85);
   opacity: 0.9;
@@ -1295,8 +1360,15 @@
 }
 
 @keyframes panelIn {
-  from { opacity: 0; transform: translateY(3px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .plazo-panel label {

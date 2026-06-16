@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
+from django.core.paginator import Paginator
 
 from categorias.models import Categoria
 from movimientos.models import Movimiento
@@ -121,15 +122,15 @@ def admin_home(request):
         'top_usuarios':        top_usuarios,
         'ultimos_usuarios':    ultimos_usuarios,
         
-        # Datos para los gráficos pasados como JSON strings
-        'chart_activity_labels': json.dumps(chart_activity_labels),
-        'chart_activity_data':   json.dumps(chart_activity_data),
-        'chart_ingresos_labels': json.dumps(chart_ingresos_labels),
-        'chart_ingresos_data':   json.dumps(chart_ingresos_data),
-        'chart_egresos_labels':  json.dumps(chart_egresos_labels),
-        'chart_egresos_data':    json.dumps(chart_egresos_data),
-        'chart_ahorros_labels':  json.dumps(chart_ahorros_labels),
-        'chart_ahorros_data':    json.dumps(chart_ahorros_data),
+        # Datos para los gráficos pasados como listas nativas para json_script
+        'chart_activity_labels': chart_activity_labels,
+        'chart_activity_data':   chart_activity_data,
+        'chart_ingresos_labels': chart_ingresos_labels,
+        'chart_ingresos_data':   chart_ingresos_data,
+        'chart_egresos_labels':  chart_egresos_labels,
+        'chart_egresos_data':    chart_egresos_data,
+        'chart_ahorros_labels':  chart_ahorros_labels,
+        'chart_ahorros_data':    chart_ahorros_data,
         
         'seccion':             'home',
     }
@@ -198,8 +199,13 @@ def admin_usuarios(request):
         num_mov=Count('movimientos', filter=Q(movimientos__activo=True))
     )
 
+    paginator = Paginator(usuarios, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'usuarios':   usuarios,
+        'usuarios':   page_obj,
+        'page_obj':   page_obj,
         'q':          q,
         'rol_fil':    rol,
         'estado_fil': estado,
@@ -408,8 +414,14 @@ def admin_categorias(request):
     categorias = categorias.annotate(
         num_mov=Count('movimientos', filter=Q(movimientos__activo=True))
     )
+
+    paginator = Paginator(categorias, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'categorias':  categorias,
+        'categorias':  page_obj,
+        'page_obj':    page_obj,
         'q':           q,
         'tipo_fil':    tipo,
         'estado_fil':  estado,

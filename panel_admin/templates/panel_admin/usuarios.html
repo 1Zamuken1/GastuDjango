@@ -21,7 +21,7 @@
 </div>
 
 <!-- Filtros -->
-<form method="get" id="filter-form" class="flex items-center gap-4 flex-wrap mb-6">
+<form method="get" id="filter-form" class="admin-filters">
   <!-- Buscador -->
   <div class="relative flex-1 min-w-[240px] max-w-xs">
     <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
@@ -31,29 +31,29 @@
   </div>
 
   <!-- Filtro Rol -->
-  <div class="flex items-center gap-1 bg-slate-100/80 border border-slate-200/60 p-1 rounded-xl">
+  <div class="admin-filter-group">
     <input type="hidden" name="rol" id="filter-rol-val" value="{{ rol_fil }}" />
-    <button type="button" data-val="" class="js-rol-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if not rol_fil %}bg-white text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+    <button type="button" data-val="" class="admin-filter-btn js-rol-btn {% if not rol_fil %}active active-indigo{% endif %}">
       Todos los roles
     </button>
-    <button type="button" data-val="USER" class="js-rol-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if rol_fil == 'USER' %}bg-white text-emerald-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+    <button type="button" data-val="USER" class="admin-filter-btn js-rol-btn {% if rol_fil == 'USER' %}active active-emerald{% endif %}">
       Usuarios
     </button>
-    <button type="button" data-val="ADMIN" class="js-rol-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if rol_fil == 'ADMIN' %}bg-white text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+    <button type="button" data-val="ADMIN" class="admin-filter-btn js-rol-btn {% if rol_fil == 'ADMIN' %}active active-indigo{% endif %}">
       Admins
     </button>
   </div>
 
   <!-- Filtro Estado -->
-  <div class="flex items-center gap-1 bg-slate-100/80 border border-slate-200/60 p-1 rounded-xl">
+  <div class="admin-filter-group">
     <input type="hidden" name="estado" id="filter-estado-val" value="{{ estado_fil }}" />
-    <button type="button" data-val="" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if not estado_fil %}bg-white text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+    <button type="button" data-val="" class="admin-filter-btn js-estado-btn {% if not estado_fil %}active active-indigo{% endif %}">
       Todos los estados
     </button>
-    <button type="button" data-val="activo" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if estado_fil == 'activo' %}bg-white text-emerald-600 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+    <button type="button" data-val="activo" class="admin-filter-btn js-estado-btn {% if estado_fil == 'activo' %}active active-emerald{% endif %}">
       Activos
     </button>
-    <button type="button" data-val="inactivo" class="js-estado-btn px-3 py-1.5 text-xs font-700 rounded-lg transition {% if estado_fil == 'inactivo' %}bg-white text-slate-500 shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">
+    <button type="button" data-val="inactivo" class="admin-filter-btn js-estado-btn {% if estado_fil == 'inactivo' %}active active-slate{% endif %}">
       Inactivos
     </button>
   </div>
@@ -71,7 +71,7 @@
 <!-- Tabla -->
 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
   <div class="overflow-x-auto">
-    <table class="w-full text-sm" id="tabla-usuarios">
+    <table class="w-full text-sm admin-table" id="tabla-usuarios">
       <thead>
         <tr class="bg-slate-50 border-b border-slate-200">
           <th class="px-4 py-3 text-left text-xs font-700 uppercase tracking-wider text-slate-400">Usuario</th>
@@ -93,18 +93,17 @@
                 {% if u.rol == 'ADMIN' %}bg-indigo-600{% else %}bg-emerald-500{% endif %}">
                 {{ u.username|first|upper }}
               </div>
-              <span class="font-600 text-slate-700">{{ u.username }}</span>
+              <span class="font-600 text-slate-700 cell-truncate">{{ u.username }}</span>
             </div>
           </td>
           <!-- Email -->
-          <td class="px-4 py-3 text-slate-500">{{ u.email|default:"—" }}</td>
+          <td class="px-4 py-3 text-slate-500 cell-truncate">{{ u.email|default:"—" }}</td>
           <!-- Teléfono -->
           <td class="px-4 py-3 text-slate-500 hidden md:table-cell">{{ u.telefono|default:"—" }}</td>
           <!-- Rol badge -->
           <td class="px-4 py-3">
             <span id="badge-rol-{{ u.id }}"
-              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-700
-              {% if u.rol == 'ADMIN' %}bg-indigo-100 text-indigo-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+              class="badge {% if u.rol == 'ADMIN' %}badge--indigo{% else %}badge--slate{% endif %}">
               {% if u.rol == 'ADMIN' %}Admin{% else %}Usuario{% endif %}
             </span>
           </td>
@@ -122,18 +121,18 @@
           <!-- Acciones -->
           <td class="px-4 py-3">
             <div class="flex items-center gap-1.5">
-              <button class="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all js-btn-editar-usuario"
+              <button class="action-btn action-btn--edit js-btn-editar-usuario"
                 data-id="{{ u.id }}" title="Editar">
                 <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
               </button>
               {% if u != request.user %}
-              <button class="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all js-cambiar-rol"
+              <button class="action-btn action-btn--edit js-cambiar-rol"
                 data-id="{{ u.id }}"
                 title="{% if u.rol == 'ADMIN' %}Quitar admin{% else %}Hacer admin{% endif %}">
                 <i data-lucide="{% if u.rol == 'ADMIN' %}shield-off{% else %}shield-check{% endif %}" class="w-3.5 h-3.5"></i>
               </button>
               {% if u.rol != 'ADMIN' %}
-              <button class="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all js-eliminar-usuario"
+              <button class="action-btn action-btn--danger js-eliminar-usuario"
                 data-id="{{ u.id }}" data-username="{{ u.username }}" title="Eliminar">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
@@ -153,6 +152,41 @@
       </tbody>
     </table>
   </div>
+  
+  {% if page_obj.has_other_pages %}
+  <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between flex-wrap gap-4">
+    <p class="text-sm text-slate-500">
+      Mostrando <span class="font-600 text-slate-700">{{ page_obj.start_index }}</span> a 
+      <span class="font-600 text-slate-700">{{ page_obj.end_index }}</span> de 
+      <span class="font-600 text-slate-700">{{ page_obj.paginator.count }}</span>
+    </p>
+    <div class="flex items-center gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if rol_fil %}&rol={{ rol_fil }}{% endif %}{% if estado_fil %}&estado={{ estado_fil }}{% endif %}" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition">
+        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+      </a>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="w-8 h-8 flex items-center justify-center rounded-lg border border-indigo-600 bg-indigo-600 text-white font-600 text-sm">
+          {{ num }}
+        </span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}{% if rol_fil %}&rol={{ rol_fil }}{% endif %}{% if estado_fil %}&estado={{ estado_fil }}{% endif %}" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-500 text-sm transition">
+          {{ num }}
+        </a>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if rol_fil %}&rol={{ rol_fil }}{% endif %}{% if estado_fil %}&estado={{ estado_fil }}{% endif %}" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition">
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <!-- ── Modal crear usuario ─────────────────────────────────────── -->
