@@ -6,8 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function postForm(url, fd) {
+    let isEmpty = true;
+    for (let key of fd.keys()) { isEmpty = false; break; }
+    if (isEmpty) fd.append('_dummy_field', '1');
+
     return fetch(url, {
       method:  'POST',
+      credentials: 'same-origin',
       headers: { 'X-CSRFToken': getCsrf() },
       body:    fd,
     }).then(r => r.json());
