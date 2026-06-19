@@ -15,6 +15,9 @@ ALLOWED_HOSTS = ['10.1.164.209', 'localhost', '127.0.0.1', '.onrender.com']
 # CSRF Trusted Origins para producción
 CSRF_TRUSTED_ORIGINS = ['https://gastu.onrender.com']
 
+# Forzar HTTPS cuando se está detrás del proxy de Render (necesario para OAuth)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 INSTALLED_APPS = [
     'daphne',
     'django.contrib.admin',
