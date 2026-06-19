@@ -52,6 +52,7 @@ class AporteAhorro(models.Model):
     estado_ap=models.CharField(max_length=15, choices=EstadoAp.choices, null=False)
     fecha_registro = models.DateField(auto_now_add=True, null=False)
     ahorro=models.ForeignKey(AhorroMeta, on_delete=models.CASCADE, null=False)
+    es_extraordinario = models.BooleanField(default=False)
     
     
     

@@ -485,6 +485,17 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
       document.getElementById('editar-descripcion').value = a.descripcion;
       document.getElementById('editar-categoria').value = a.categoria_id;
 
+      const inputCuotas = document.getElementById('editar-cuotas');
+      if (inputCuotas) {
+        if (a.cuotas_minimas > 0) {
+          inputCuotas.min = a.cuotas_minimas;
+          inputCuotas.title = `Mínimo ${a.cuotas_minimas} (ya aportadas)`;
+        } else {
+          inputCuotas.min = 1;
+          inputCuotas.title = '';
+        }
+      }
+
       const catLbl = document.getElementById('editar-cat-label');
       catLbl.textContent = a.categoria_nombre || 'Seleccionar categoría';
       const catBtn = document.getElementById('editar-cat-btn');
@@ -496,13 +507,10 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
       modalEditar.removeAttribute('hidden');
       lucide.createIcons();
 
-      // Inicializar el toggle con los valores existentes del ahorro.
-      // Si el ahorro tiene fecha_meta Y cantidad_cuotas (siempre los tendrá por el modelo),
-      // el criterio es: si el usuario originalmente usó fecha → mostrar panel fecha;
-      // si usó cuotas → mostrar panel cuotas.
-      // Como el backend siempre calcula el campo que faltaba, usamos la heurística:
-      // si fecha_meta existe, mostramos fecha; el usuario puede cambiar.
-      initPlazoToggle('editar', a.fecha_meta || null, a.cantidad_cuotas || null);
+      // Siempre iniciar en modo cuotas con el valor existente.
+      // No se precarga fecha_meta para evitar que el backend reciba ambos campos
+      // al mismo tiempo y lance el error de validación del form.
+      initPlazoToggle('editar', null, a.cantidad_cuotas || null);
       modalEditar.querySelector('.modal__body').scrollTop = 0;
 
     } catch {

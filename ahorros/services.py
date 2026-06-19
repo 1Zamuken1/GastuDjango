@@ -173,14 +173,14 @@ def recalcular_aportes(ahorro):
     todas = list(AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite'))
     aportadas = [
         a for a in todas
-        if a.estado_ap == AporteAhorro.EstadoAp.APORTADO
+        if a.estado_ap == AporteAhorro.EstadoAp.APORTADO and not a.es_extraordinario
     ]
     pendientes = [
         a for a in todas
         if a.estado_ap in [
             AporteAhorro.EstadoAp.PENDIENTE,
             AporteAhorro.EstadoAp.PERDIDO,
-        ]
+        ] and not a.es_extraordinario
     ]
 
     if pendientes:
@@ -200,6 +200,32 @@ def recalcular_aportes(ahorro):
 
     if cuotas_a_registrar:
         AporteAhorro.objects.bulk_create(cuotas_a_registrar)
+    else:
+        total_aportado = sum(a.aporte for a in aportadas if a.aporte)
+        extra_aportado = sum(a.aporte for a in todas if a.es_extraordinario and a.estado_ap == AporteAhorro.EstadoAp.APORTADO and a.aporte)
+        restante = (ahorro.monto_meta or Decimal('0.00')) - total_aportado - extra_aportado
+        
+        if restante > Decimal('0.00'):
+            cuotas_extras_necesarias = max(1, ahorro.cantidad_cuotas - cuotas_aportadas_count)
+            if ahorro.cantidad_cuotas == cuotas_aportadas_count:
+                ahorro.cantidad_cuotas += 1
+                ahorro.save(update_fields=['cantidad_cuotas'])
+                cuotas_extras_necesarias = 1
+                
+            hoy = date.today()
+            fecha = hoy
+            nuevas_extras = []
+            for i in range(cuotas_extras_necesarias):
+                fecha = sumar_frecuencia(fecha, ahorro.frecuencia)
+                nuevas_extras.append(AporteAhorro(
+                    ahorro=ahorro,
+                    estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+                    fecha_limite=fecha,
+                    aporte_asignado=Decimal('0.00'),
+                    es_extraordinario=False,
+                ))
+            if nuevas_extras:
+                AporteAhorro.objects.bulk_create(nuevas_extras)
 
     recalcular_aportes_restantes(ahorro)
 
@@ -211,7 +237,7 @@ def recalcular_fechas_cuotas(ahorro):
     """
     cuotas = list(
         AporteAhorro.objects
-        .filter(ahorro=ahorro)
+        .filter(ahorro=ahorro, es_extraordinario=False)
         .order_by('fecha_limite')
     )
     nuevas = generar_cuotas_preview(ahorro)
@@ -236,6 +262,7 @@ def pasar_cuotas_a_perdidas(ahorro):
         ahorro=ahorro,
         estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
         fecha_limite__lt=hoy,
+        es_extraordinario=False,
     ).update(estado_ap=AporteAhorro.EstadoAp.PERDIDO)
 
 
@@ -244,7 +271,7 @@ def abandono_ahorro(ahorro):
     Si las ultimas 3 cuotas son PERDIDO, marca la meta como ABANDONADO.
     Solo aplica si hay al menos 3 cuotas.
     """
-    todas = list(AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite'))
+    todas = list(AporteAhorro.objects.filter(ahorro=ahorro, es_extraordinario=False).order_by('fecha_limite'))
 
     if len(todas) < 3:
         return
@@ -313,4 +340,4 @@ def find_cuota_disponible(meta_id, usuario):
 def obtener_aportes_por_meta(meta_id, usuario):
     """Retorna los aportes de una meta ordenados por fecha limite."""
     meta = get_object_or_404(AhorroMeta, id=meta_id, usuario=usuario)
-    return AporteAhorro.objects.filter(ahorro=meta).order_by('fecha_limite')
+    return AporteAhorro.objects.filter(ahorro=meta).order_by('-es_extraordinario', 'fecha_limite')
