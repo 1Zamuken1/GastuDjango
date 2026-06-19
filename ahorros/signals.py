@@ -51,7 +51,7 @@ def historial_ahorro_eliminado(sender, instance, **kwargs):
             f"Se elimino la meta '{categoria_nombre}'"
             f"{' -- ' + instance.descripcion if instance.descripcion else ''}."
             f" Tu aportado en esta meta (${total_acumulado:,.0f})"
-            f" ya se encuentra en utilidad mensual"
+            f" ya se encuentra en disponible"
         )
     else:
         descripcion = (
@@ -135,4 +135,4 @@ def actualizar_resumen_aporte_eliminado(sender, instance, **kwargs):
             usuario=instance.ahorro.usuario,
             mes=instance.fecha_registro.month,
             anio=instance.fecha_registro.year
-        )
+        )
