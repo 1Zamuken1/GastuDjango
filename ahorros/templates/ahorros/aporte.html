@@ -133,10 +133,21 @@
               {% for cuota in cuotas %}
               <tr>
                 <td class="cuotas-table__num">
+                  {% if cuota.es_extraordinario %}
+                  <span style="color:#3b82f6; font-size:0.75rem; font-weight:600;">
+                    <i data-lucide="zap" style="width:12px;height:12px;vertical-align:-1px;"></i>
+                    Aporte extra
+                  </span>
+                  {% else %}
                   {{ cuota.numero_real|stringformat:"02d" }}/{{ cuotas_totales|stringformat:"02d" }}
+                  {% endif %}
                 </td>
                 <td class="cuotas-table__monto">
+                  {% if cuota.es_extraordinario %}
+                  <span style="color:#94a3b8;"> </span>
+                  {% else %}
                   ${{ cuota.aporte_asignado|floatformat:"2g" }}
+                  {% endif %}
                 </td>
                 <td>
                   {% if cuota.estado_ap == 'PENDIENTE' and cuota.is_disponible_pago %}
@@ -196,7 +207,11 @@
                   --
                 </td>
                 <td class="cuotas-table__fecha">
+                  {% if cuota.es_extraordinario %}
+                  <span style="color:#94a3b8;"> </span>
+                  {% else %}
                   {{ cuota.fecha_limite|date:"d/m/Y" }}
+                  {% endif %}
                 </td>
                 <td>
                   {% if cuota.estado_ap == 'APORTADO' %}
