@@ -148,6 +148,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let anioVisto  = parseInt(navEl?.dataset.anio || new Date().getFullYear());
   let primerMes  = mesVisto;
   let primerAnio = anioVisto;
+  
+  // Estado de filtros avanzados
+  let currentFiltros = {
+    min_monto: document.getElementById('filtro-min-monto')?.value || '',
+    max_monto: document.getElementById('filtro-max-monto')?.value || '',
+    categoria_id: document.getElementById('filtro-categoria')?.value || '',
+    tipo: ''
+  };
 
   const hoy       = new Date();
   const MES_HOY   = hoy.getMonth() + 1;
@@ -176,14 +184,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const elPie = document.getElementById('chart-pie');
   let pieChartInst = null;
 
+  let pieRendering = false;
   function renderPie(pieData) {
-    if (!elPie) return;
+    if (!elPie || pieRendering) return;
+    pieRendering = true;
 
     if (pieChartInst) {
       pieChartInst.destroy();
       pieChartInst = null;
-      elPie.innerHTML = '';
+      window.pieChartInst = null;
     }
+    elPie.innerHTML = '';
 
     if (!pieData || pieData.labels.length === 0) {
       elPie.innerHTML = `
@@ -192,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                stroke="#e2e8f0" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
           Sin egresos registrados este mes
         </div>`;
+      pieRendering = false;
       return;
     }
 
@@ -225,6 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
       plotOptions: { pie: { expandOnClick: true } },
     });
     pieChartInst.render();
+    window.pieChartInst = pieChartInst;
+    pieRendering = false;
   }
 
   const pieData = JSON.parse(document.getElementById('data-pie')?.textContent || 'null');
@@ -250,15 +264,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tendenciaChart) {
       tendenciaChart.destroy();
       tendenciaChart = null;
+      window.tendenciaChartInst = null;
       elTendencia.innerHTML = '';
     }
 
     const MES_NOMBRE = document.getElementById('mes-nombre-actual')?.dataset.mes  || '';
     const ANIO_LABEL = document.getElementById('mes-nombre-actual')?.dataset.anio || '';
 
+    let q = `?mes=${mes}&anio=${anio}`;
+    if (currentFiltros.min_monto) q += `&min_monto=${currentFiltros.min_monto}`;
+    if (currentFiltros.max_monto) q += `&max_monto=${currentFiltros.max_monto}`;
+    if (currentFiltros.categoria_id) q += `&categoria_id=${currentFiltros.categoria_id}`;
+    if (currentFiltros.tipo) q += `&tipo=${currentFiltros.tipo}`;
+
     let data;
     try {
-      const res = await fetch(`${URL_TENDENCIA}?mes=${mes}&anio=${anio}`, {
+      const res = await fetch(`${URL_TENDENCIA}${q}`, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
       });
       data = await res.json();
@@ -437,6 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chart = new ApexCharts(elTendencia, buildOpts(labels, ingresos, egresos, ahorros));
         chart.render();
         tendenciaChart = chart;
+        window.tendenciaChartInst = chart;
       }
 
       sincronizarBotones();
@@ -788,13 +810,9 @@ requestAnimationFrame(() => {
       }
     }
 
-    /* ── Actualizar URLs de botones de exportación ── */
-    const btnExcelA = document.getElementById('btn-export-excel');
-    const btnPdfA   = document.getElementById('btn-export-pdf');
-    if (btnExcelA) btnExcelA.href = `/dashboard/exportar/excel/?mes=${data.mes}&anio=${data.anio}`;
-    if (btnPdfA)   btnPdfA.href   = `/dashboard/exportar/pdf/?mes=${data.mes}&anio=${data.anio}`;
-
     /* ── Metas de ahorro ── */
+    const metasCard = document.getElementById('metas-ahorro-card');
+    if (metasCard) metasCard.style.display = data.tiene_filtros ? 'none' : 'block';
     actualizarMetasAhorro(data.metas_ahorro_activas || []);
 
     /* ── Pie chart ── */
@@ -803,16 +821,121 @@ requestAnimationFrame(() => {
     /* Recrear iconos Lucide en nuevo HTML */
     lucide.createIcons();
 
-    /* Rebindear filtro de movimientos */
-    bindFiltroMov();
+    /* ── Sincronizar botones locales de tabla ── */
+    const isGlobalFilterActive = !!currentFiltros.tipo;
+    document.querySelectorAll('.mov-filter-btn').forEach(b => {
+      b.disabled = isGlobalFilterActive;
+      b.style.opacity = isGlobalFilterActive ? '0.5' : '1';
+      b.style.cursor = isGlobalFilterActive ? 'not-allowed' : 'pointer';
+      // Reset visual state if disabled
+      if (isGlobalFilterActive) {
+        b.classList.toggle('active', b.dataset.filtro === 'todos');
+      }
+    });
   }
 
+  /* ── Exportación con Gráficos ── */
+  async function exportarDatos(e, url) {
+    e.preventDefault();
+    if (e.currentTarget.dataset.empty === 'true') {
+      window.GastuAlerts.error('Sin datos', 'No hay movimientos para exportar en este período.');
+      return;
+    }
+
+    let imgTendencia = '';
+    let imgPie = '';
+
+    // Capturar gráfico de Tendencia
+    try {
+      if (window.tendenciaChartInst) {
+        const tUri = await window.tendenciaChartInst.dataURI({ scale: 2 });
+        imgTendencia = tUri.imgURI || '';
+        console.log('Tendencia capturada:', imgTendencia ? 'OK' : 'vacía');
+      } else {
+        console.warn('tendenciaChartInst no encontrado en window');
+      }
+    } catch (err) {
+      console.warn('Error capturando tendencia:', err);
+    }
+
+    // Capturar gráfico Pie
+    try {
+      if (window.pieChartInst) {
+        const pUri = await window.pieChartInst.dataURI({ scale: 2 });
+        imgPie = pUri.imgURI || '';
+        console.log('Pie capturado:', imgPie ? 'OK' : 'vacío');
+      } else {
+        console.warn('pieChartInst no encontrado en window');
+      }
+    } catch (err) {
+      console.warn('Error capturando pie:', err);
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    form.style.display = 'none';
+
+    // CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    if (csrfToken) {
+      const csrfInput = document.createElement('input');
+      csrfInput.name = 'csrfmiddlewaretoken';
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+    }
+
+    const payload = {
+      mes: mesVisto,
+      anio: anioVisto,
+      min_monto: currentFiltros.min_monto,
+      max_monto: currentFiltros.max_monto,
+      categoria_id: currentFiltros.categoria_id,
+      tipo: currentFiltros.tipo || '',
+      img_tendencia: imgTendencia,
+      img_pie: imgPie
+    };
+
+    for (const [k, v] of Object.entries(payload)) {
+      if (v) {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = k;
+        inp.value = v;
+        form.appendChild(inp);
+      }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => form.remove(), 1000);
+  }
+
+  document.getElementById('btn-export-excel')?.addEventListener('click', (e) => {
+    exportarDatos(e, '/dashboard/exportar/excel/');
+  });
+  
+  document.getElementById('btn-export-pdf')?.addEventListener('click', (e) => {
+    exportarDatos(e, '/dashboard/exportar/pdf/');
+  });
+
+  let navegarAbort = null;
   async function navegar(mes, anio) {
+    if (navegarAbort) navegarAbort.abort();
+    navegarAbort = new AbortController();
+    const sig = navegarAbort.signal;
+
     mesVisto  = mes;
     anioVisto = anio;
 
-    const url = `${URL_DASHBOARD}?mes=${mes}&anio=${anio}`;
-    history.pushState({ mes, anio }, '', url);
+    let q = `?mes=${mes}&anio=${anio}`;
+    if (currentFiltros.min_monto) q += `&min_monto=${currentFiltros.min_monto}`;
+    if (currentFiltros.max_monto) q += `&max_monto=${currentFiltros.max_monto}`;
+    if (currentFiltros.categoria_id) q += `&categoria_id=${currentFiltros.categoria_id}`;
+    if (currentFiltros.tipo) q += `&tipo=${currentFiltros.tipo}`;
+
+    const url = `${URL_DASHBOARD}${q}`;
+    history.pushState({ mes, anio, filtros: {...currentFiltros} }, '', url);
 
     const mesNombreSpan = document.getElementById('mes-nombre-actual');
     if (mesNombreSpan) {
@@ -823,16 +946,22 @@ requestAnimationFrame(() => {
     sincronizarNavBotones();
 
     try {
-      const res = await fetch(`${URL_DASHBOARD}?mes=${mes}&anio=${anio}`, {
+      const res = await fetch(`${URL_DASHBOARD}${q}`, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        signal: sig
       });
       const data = await res.json();
+      if (sig.aborted) return;
       if (data.ok) actualizarDOM(data);
     } catch (e) {
-      console.error('navegar error:', e);
+      if (e.name !== 'AbortError') console.error('navegar error:', e);
     }
 
-    iniciarTendencia(mes, anio);
+    try {
+      if (!sig.aborted) await iniciarTendencia(mes, anio);
+    } catch (e) {
+      console.error('tendencia error:', e);
+    }
   }
 
   btnMesActual?.addEventListener('click', () => {
@@ -874,6 +1003,7 @@ requestAnimationFrame(() => {
     if (state && state.mes && state.anio) {
       mesVisto  = state.mes;
       anioVisto = state.anio;
+      if (state.filtros) currentFiltros = state.filtros;
       navegar(state.mes, state.anio);
     } else {
       navegar(MES_HOY, ANIO_HOY);
@@ -896,21 +1026,216 @@ requestAnimationFrame(() => {
 
 
   /* ─────────────────────────────────────────────────────────────
-     ÚLTIMOS MOVIMIENTOS — filtro por tipo
+     ÚLTIMOS MOVIMIENTOS — filtro por tipo (event delegation)
      ─────────────────────────────────────────────────────────── */
-  function bindFiltroMov() {
-    const filterBtns = document.querySelectorAll('.mov-filter-btn');
-    const movRows    = document.querySelectorAll('.mov-row[data-tipo]');
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mov-filter-btn');
+    if (!btn) return;
 
-    filterBtns.forEach(btn => {
+    const filtro = btn.dataset.filtro;
+
+    // Sync ALL local filter buttons with the same value
+    document.querySelectorAll('.mov-filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filtro === filtro);
+    });
+
+    // Client-side filter: show/hide rows
+    document.querySelectorAll('.mov-row[data-tipo]').forEach(row => {
+      row.style.display = (filtro === 'todos' || row.dataset.tipo === filtro) ? '' : 'none';
+    });
+  });
+
+  /* ─────────────────────────────────────────────────────────────
+     FILTROS GLOBALES — filtro por tipo (event delegation)
+     ─────────────────────────────────────────────────────────── */
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.global-filter-btn');
+    if (!btn) return;
+
+    const filtro = btn.dataset.filtro;
+
+    document.querySelectorAll('.global-filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filtro === filtro);
+    });
+
+    currentFiltros.tipo = filtro;
+    
+    const badge = document.getElementById('badge-filtros-activos');
+    const tieneFiltros = currentFiltros.min_monto || currentFiltros.max_monto || currentFiltros.categoria_id || currentFiltros.tipo;
+    if (badge) badge.classList.toggle('filtros-badge--visible', tieneFiltros);
+    
+    navegar(mesVisto, anioVisto);
+  });
+
+  /* ─────────────────────────────────────────────────────────────
+     FILTROS AVANZADOS — Panel y formulario
+     ─────────────────────────────────────────────────────────── */
+  function bindFiltrosAvanzados() {
+    const btnToggle = document.getElementById('btn-toggle-filtros');
+    const panel = document.getElementById('panel-filtros-avanzados');
+    const form = document.getElementById('form-filtros-avanzados');
+    const btnLimpiar = document.getElementById('btn-limpiar-filtros');
+    const btnLimpiarBadge = document.getElementById('btn-limpiar-filtros-badge');
+    const badge = document.getElementById('badge-filtros-activos');
+    const preconfigBtns = document.querySelectorAll('.btn-preconfig');
+
+    if (btnToggle && panel) {
+      btnToggle.addEventListener('click', () => {
+        panel.classList.toggle('filtros-panel--open');
+        btnToggle.classList.toggle('active');
+      });
+    }
+
+    function aplicarFiltrosAvanzados() {
+      currentFiltros.min_monto = document.getElementById('filtro-min-monto').value;
+      currentFiltros.max_monto = document.getElementById('filtro-max-monto').value;
+      currentFiltros.categoria_id = document.getElementById('filtro-categoria').value;
+      
+      const tieneFiltros = currentFiltros.min_monto || currentFiltros.max_monto || currentFiltros.categoria_id || currentFiltros.tipo;
+      if (badge) badge.classList.toggle('filtros-badge--visible', tieneFiltros);
+      
+      navegar(mesVisto, anioVisto);
+    }
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        aplicarFiltrosAvanzados();
+      });
+    }
+
+    const limpiarFiltros = (e) => {
+      if (e) e.preventDefault();
+      if (form) form.reset();
+      currentFiltros = { min_monto: '', max_monto: '', categoria_id: '', tipo: '' };
+      
+      // Limpiar picker de categoría visualmente
+      document.getElementById('filtro-cat-label').textContent = 'Todas las categorías';
+      document.querySelectorAll('#modal-picker-cat-dash .picker-cat-card').forEach(c => c.classList.remove('selected'));
+      const catTodas = document.querySelector('#modal-picker-cat-dash .picker-cat-card[data-id=""]');
+      if (catTodas) catTodas.classList.add('selected');
+
+      const filterBtns = document.querySelectorAll('.mov-filter-btn');
+      filterBtns.forEach(b => b.classList.toggle('active', b.dataset.filtro === 'todos'));
+
+      const globalBtns = document.querySelectorAll('.global-filter-btn');
+      globalBtns.forEach(b => b.classList.toggle('active', b.dataset.filtro === ''));
+
+      // Reset row visibility (client-side filter was showing/hiding rows)
+      document.querySelectorAll('.mov-row[data-tipo]').forEach(row => {
+        row.style.display = '';
+      });
+      
+      if (badge) badge.classList.remove('filtros-badge--visible');
+      if (panel) panel.classList.remove('filtros-panel--open');
+      if (btnToggle) btnToggle.classList.remove('active');
+      
+      navegar(mesVisto, anioVisto);
+    };
+
+    if (btnLimpiar) btnLimpiar.addEventListener('click', limpiarFiltros);
+    if (btnLimpiarBadge) btnLimpiarBadge.addEventListener('click', limpiarFiltros);
+
+    preconfigBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        filterBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const filtro = btn.dataset.filtro;
-        movRows.forEach(row => {
-          row.style.display =
-            filtro === 'todos' || row.dataset.tipo === filtro ? '' : 'none';
+        document.getElementById('filtro-min-monto').value = btn.dataset.min || '';
+        document.getElementById('filtro-max-monto').value = btn.dataset.max || '';
+        document.getElementById('filtro-categoria').value = '';
+        currentFiltros.tipo = btn.dataset.tipo || '';
+        
+        document.getElementById('filtro-cat-label').textContent = 'Todas las categorías';
+        
+        const filterBtns = document.querySelectorAll('.mov-filter-btn');
+        filterBtns.forEach(b => b.classList.toggle('active', b.dataset.filtro === currentFiltros.tipo));
+        
+        aplicarFiltrosAvanzados();
+      });
+    });
+
+    // ── Lógica Picker de Categorías Modal ──
+    const btnAbrirPicker = document.getElementById('btn-abrir-picker-cat');
+    const modalPicker    = document.getElementById('modal-picker-cat-dash');
+    const btnCerrarPicker= document.getElementById('btn-cerrar-picker-cat');
+    const pickerCards    = document.querySelectorAll('#modal-picker-cat-dash .picker-cat-card');
+    const searchInput    = document.getElementById('picker-cat-buscar');
+    const tipoBtns       = document.querySelectorAll('.picker-cat-tipo-btn');
+
+    if (btnAbrirPicker && modalPicker) {
+      btnAbrirPicker.addEventListener('click', () => {
+        modalPicker.hidden = false;
+        if (searchInput) {
+          searchInput.value = '';
+          searchInput.dispatchEvent(new Event('input'));
+          setTimeout(() => searchInput.focus(), 50);
+        }
+      });
+    }
+
+    if (btnCerrarPicker && modalPicker) {
+      btnCerrarPicker.addEventListener('click', () => {
+        modalPicker.hidden = true;
+      });
+    }
+
+    // Cerrar modal al clickear fuera
+    if (modalPicker) {
+      modalPicker.addEventListener('click', (e) => {
+        if (e.target === modalPicker) modalPicker.hidden = true;
+      });
+    }
+
+    pickerCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.id;
+        const nombre = card.dataset.nombre;
+        
+        document.getElementById('filtro-categoria').value = id;
+        document.getElementById('filtro-cat-label').textContent = nombre;
+        
+        pickerCards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        
+        if (modalPicker) modalPicker.hidden = true;
+      });
+    });
+
+    // Búsqueda en el picker
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        pickerCards.forEach(card => {
+          if (!card.dataset.id) return; // 'Todas' card
+          const nombre = card.dataset.nombre.toLowerCase();
+          const visibleTipo = card.style.display !== 'none' || !card.hasAttribute('data-filtered-tipo');
+          
+          if (nombre.includes(term)) {
+            if (!card.hasAttribute('data-filtered-tipo')) card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
         });
+      });
+    }
+
+    // Filtros por tipo en el picker
+    tipoBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tipoBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tipo = btn.dataset.tipo;
+        
+        pickerCards.forEach(card => {
+          if (!card.dataset.id) return; // 'Todas' card
+          if (!tipo || card.dataset.tipo === tipo) {
+            card.removeAttribute('data-filtered-tipo');
+            card.style.display = 'flex';
+          } else {
+            card.setAttribute('data-filtered-tipo', 'true');
+            card.style.display = 'none';
+          }
+        });
+        
+        if (searchInput) searchInput.dispatchEvent(new Event('input')); // re-aplicar búsqueda
       });
     });
   }
@@ -921,6 +1246,6 @@ requestAnimationFrame(() => {
      ─────────────────────────────────────────────────────────── */
   initPrimerMes();
   iniciarTendencia(mesVisto, anioVisto);
-  bindFiltroMov();
+  bindFiltrosAvanzados();
 
 });
