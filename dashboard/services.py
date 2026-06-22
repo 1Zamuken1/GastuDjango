@@ -140,7 +140,7 @@ def _totales_movimiento(user, mes, anio):
 
 # ── Construccion del contexto del dashboard ──────────────────────────────────
 
-def build_dashboard_context(user, mes, anio):
+def build_dashboard_context(user, mes, anio, filtros=None):
     """
     Construye todos los datos del dashboard para un mes/anio dado.
     Fuente principal: ResumenMensual (lectura directa, sin recalculo).
@@ -160,10 +160,14 @@ def build_dashboard_context(user, mes, anio):
     from notificaciones.models import Notificacion
     from django.core.cache import cache
 
+    filtros = filtros or {}
+    tiene_filtros = bool(filtros)
+
     cache_key = f'dashboard_ctx_{user.id}_{mes}_{anio}'
-    ctx = cache.get(cache_key)
-    if ctx:
-        return ctx
+    if not tiene_filtros:
+        ctx = cache.get(cache_key)
+        if ctx:
+            return ctx
 
     hoy           = date.today()
     es_mes_actual = (mes == hoy.month and anio == hoy.year)
@@ -214,9 +218,9 @@ def build_dashboard_context(user, mes, anio):
         .aggregate(t=Sum('aporte'))['t'] or ZERO
     )
 
-    pie_data   = _build_pie_data(user, mes, anio)
+    pie_data   = _build_pie_data(user, mes, anio, filtros)
     metas      = _build_metas_ahorro(user)
-    ultimos    = _build_ultimos_movimientos(user, mes, anio)
+    ultimos    = _build_ultimos_movimientos(user, mes, anio, filtros)
     notif_data = _build_notificaciones(user)
 
     ctx = {
@@ -242,20 +246,27 @@ def build_dashboard_context(user, mes, anio):
         'ultimas_notificaciones':    notif_data['ultimas'],
         'hoy':                       date.today(),
     }
+    ctx['tiene_filtros'] = tiene_filtros
     
-    cache.set(cache_key, ctx, timeout=60*60*24)
+    if not tiene_filtros:
+        cache.set(cache_key, ctx, timeout=60*60*24)
     return ctx
 
 
-def _build_pie_data(user, mes, anio):
+def _build_pie_data(user, mes, anio, filtros=None):
     """Construye datos para el grafico de distribucion de egresos."""
+    filtros = filtros or {}
+    qs = Movimiento.objects.filter(
+        usuario=user, tipo='EGRESO', activo=True,
+        fecha_registro__month=mes,
+        fecha_registro__year=anio,
+    )
+    if filtros.get('min_monto'): qs = qs.filter(monto__gte=filtros['min_monto'])
+    if filtros.get('max_monto'): qs = qs.filter(monto__lte=filtros['max_monto'])
+    if filtros.get('categoria_id'): qs = qs.filter(categoria_id=filtros['categoria_id'])
+
     egresos_cat = (
-        Movimiento.objects
-        .filter(
-            usuario=user, tipo='EGRESO', activo=True,
-            fecha_registro__month=mes,
-            fecha_registro__year=anio,
-        )
+        qs
         .values('categoria__nombre')
         .annotate(total=Sum('monto'))
         .order_by('-total')[:8]
@@ -298,31 +309,50 @@ def _build_metas_ahorro(user):
     return metas
 
 
-def _build_ultimos_movimientos(user, mes, anio):
-    """Obtiene los ultimos movimientos y aportes de ahorro del mes, unificados."""
+def _build_ultimos_movimientos(user, mes, anio, filtros=None):
+    """Obtiene los movimientos y aportes de ahorro del mes, unificados y opcionalmente filtrados."""
     from ahorros.models import AporteAhorro
+    filtros = filtros or {}
+    tiene_filtros = bool(filtros)
 
-    movs_raw = list(
-        Movimiento.objects
-        .filter(
-            usuario=user, activo=True,
-            fecha_registro__month=mes,
-            fecha_registro__year=anio,
-        )
-        .select_related('categoria')
-        .order_by('-fecha_registro')[:15]
+    qs_mov = Movimiento.objects.filter(
+        usuario=user, activo=True,
+        fecha_registro__month=mes, fecha_registro__year=anio,
     )
-    ahorros_raw = list(
-        AporteAhorro.objects
-        .filter(
-            ahorro__usuario=user,
-            estado_ap='APORTADO',
-            fecha_registro__month=mes,
-            fecha_registro__year=anio,
-        )
-        .select_related('ahorro', 'ahorro__categoria')
-        .order_by('-fecha_registro')[:15]
+    qs_ahor = AporteAhorro.objects.filter(
+        ahorro__usuario=user, estado_ap='APORTADO',
+        fecha_registro__month=mes, fecha_registro__year=anio,
     )
+
+    if filtros.get('min_monto'):
+        qs_mov = qs_mov.filter(monto__gte=filtros['min_monto'])
+        qs_ahor = qs_ahor.filter(aporte__gte=filtros['min_monto'])
+    if filtros.get('max_monto'):
+        qs_mov = qs_mov.filter(monto__lte=filtros['max_monto'])
+        qs_ahor = qs_ahor.filter(aporte__lte=filtros['max_monto'])
+    if filtros.get('categoria_id'):
+        qs_mov = qs_mov.filter(categoria_id=filtros['categoria_id'])
+        qs_ahor = qs_ahor.filter(ahorro__categoria_id=filtros['categoria_id'])
+    
+    tipo_filtro = filtros.get('tipo')
+    
+    # Aplicar filtro de tipo si existe y no es "todos"
+    if tipo_filtro and tipo_filtro != 'todos':
+        if tipo_filtro in ['INGRESO', 'EGRESO']:
+            qs_mov = qs_mov.filter(tipo=tipo_filtro)
+            qs_ahor = qs_ahor.none()
+        elif tipo_filtro == 'AHORRO':
+            qs_mov = qs_mov.none()
+
+    if not tiene_filtros:
+        qs_mov = qs_mov.order_by('-fecha_registro')[:15]
+        qs_ahor = qs_ahor.order_by('-fecha_registro')[:15]
+    else:
+        qs_mov = qs_mov.order_by('-fecha_registro')
+        qs_ahor = qs_ahor.order_by('-fecha_registro')
+
+    movs_raw = list(qs_mov.select_related('categoria'))
+    ahorros_raw = list(qs_ahor.select_related('ahorro', 'ahorro__categoria'))
 
     movs_norm = [
         {
@@ -347,11 +377,12 @@ def _build_ultimos_movimientos(user, mes, anio):
         for a in ahorros_raw
     ]
 
-    return sorted(
+    res = sorted(
         movs_norm + ahor_norm,
         key=lambda x: str(x['fecha']),
         reverse=True,
-    )[:10]
+    )
+    return res if tiene_filtros else res[:10]
 
 
 def _build_notificaciones(user):
@@ -373,7 +404,7 @@ def _build_notificaciones(user):
 
 # ── Datos de tendencia mensual ───────────────────────────────────────────────
 
-def build_tendencia_data(user, mes, anio):
+def build_tendencia_data(user, mes, anio, filtros=None):
     """
     Construye los datos de tendencia diaria (ingresos, egresos, ahorros)
     para el grafico del dashboard.
@@ -393,10 +424,14 @@ def build_tendencia_data(user, mes, anio):
     from ahorros.models import AporteAhorro
     from django.core.cache import cache
 
+    filtros = filtros or {}
+    tiene_filtros = bool(filtros)
+
     cache_key = f'tendencia_data_{user.id}_{mes}_{anio}'
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return cached_data
+    if not tiene_filtros:
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return cached_data
 
     hoy           = date.today()
     es_mes_actual = (mes == hoy.month and anio == hoy.year)
@@ -408,6 +443,13 @@ def build_tendencia_data(user, mes, anio):
         fecha_registro__month=mes,
         fecha_registro__year=anio,
     )
+    if filtros.get('min_monto'): qs_base = qs_base.filter(monto__gte=filtros['min_monto'])
+    if filtros.get('max_monto'): qs_base = qs_base.filter(monto__lte=filtros['max_monto'])
+    if filtros.get('categoria_id'): qs_base = qs_base.filter(categoria_id=filtros['categoria_id'])
+    
+    tipo_filtro = filtros.get('tipo')
+    if tipo_filtro == 'AHORRO': qs_base = qs_base.none()
+    elif tipo_filtro in ['INGRESO', 'EGRESO']: qs_base = qs_base.filter(tipo=tipo_filtro)
 
     def _diarios_totales(tipo):
         return {
@@ -443,13 +485,17 @@ def build_tendencia_data(user, mes, anio):
     ing_cat_map = _diarios_por_categoria('INGRESO')
     egr_cat_map = _diarios_por_categoria('EGRESO')
 
-    # Ahorros diarios (solo aportes con estado APORTADO)
     qs_ahorros = AporteAhorro.objects.filter(
         ahorro__usuario=user,
         estado_ap='APORTADO',
         fecha_registro__month=mes,
         fecha_registro__year=anio,
     )
+    if filtros.get('min_monto'): qs_ahorros = qs_ahorros.filter(aporte__gte=filtros['min_monto'])
+    if filtros.get('max_monto'): qs_ahorros = qs_ahorros.filter(aporte__lte=filtros['max_monto'])
+    if filtros.get('categoria_id'): qs_ahorros = qs_ahorros.filter(ahorro__categoria_id=filtros['categoria_id'])
+    
+    if tipo_filtro in ['INGRESO', 'EGRESO']: qs_ahorros = qs_ahorros.none()
 
     ahor_map = {
         row['fecha_registro']: float(row['total'])
@@ -502,7 +548,7 @@ def build_tendencia_data(user, mes, anio):
         for d in rango if d in ahor_cat_map
     }
 
-    return {
+    res = {
         'ok':           True,
         'labels':       [str(d.day) for d in rango],
         'ingresos':     [ing_map.get(d, 0) for d in rango],
@@ -513,11 +559,16 @@ def build_tendencia_data(user, mes, anio):
         'detalle_ahor': detalle_ahor,
         'total_dias':   len(rango),
     }
+    
+    if not tiene_filtros:
+        cache.set(cache_key, res, timeout=60*60*24)
+        
+    return res
 
 
 # ── Datos completos del mes para exportaciones ───────────────────────────────
 
-def obtener_items_completos_mes(user, mes, anio):
+def obtener_items_completos_mes(user, mes, anio, filtros=None):
     """
     Obtiene TODOS los movimientos y aportes de ahorro del mes,
     normalizados en una lista de dicts ordenada por fecha descendente.
@@ -534,18 +585,37 @@ def obtener_items_completos_mes(user, mes, anio):
     """
     from ahorros.models import AporteAhorro
 
-    movs_all = list(
-        Movimiento.objects.filter(
-            usuario=user, activo=True,
-            fecha_registro__month=mes, fecha_registro__year=anio,
-        ).select_related('categoria').order_by('-fecha_registro')
+    filtros = filtros or {}
+
+    qs_mov = Movimiento.objects.filter(
+        usuario=user, activo=True,
+        fecha_registro__month=mes, fecha_registro__year=anio,
     )
-    ahor_all = list(
-        AporteAhorro.objects.filter(
-            ahorro__usuario=user, estado_ap='APORTADO',
-            fecha_registro__month=mes, fecha_registro__year=anio,
-        ).select_related('ahorro', 'ahorro__categoria').order_by('-fecha_registro')
+    qs_ahor = AporteAhorro.objects.filter(
+        ahorro__usuario=user, estado_ap='APORTADO',
+        fecha_registro__month=mes, fecha_registro__year=anio,
     )
+
+    if filtros.get('min_monto'):
+        qs_mov = qs_mov.filter(monto__gte=filtros['min_monto'])
+        qs_ahor = qs_ahor.filter(aporte__gte=filtros['min_monto'])
+    if filtros.get('max_monto'):
+        qs_mov = qs_mov.filter(monto__lte=filtros['max_monto'])
+        qs_ahor = qs_ahor.filter(aporte__lte=filtros['max_monto'])
+    if filtros.get('categoria_id'):
+        qs_mov = qs_mov.filter(categoria_id=filtros['categoria_id'])
+        qs_ahor = qs_ahor.filter(ahorro__categoria_id=filtros['categoria_id'])
+    
+    tipo_filtro = filtros.get('tipo')
+    if tipo_filtro and tipo_filtro != 'todos':
+        if tipo_filtro in ['INGRESO', 'EGRESO']:
+            qs_mov = qs_mov.filter(tipo=tipo_filtro)
+            qs_ahor = qs_ahor.none()
+        elif tipo_filtro == 'AHORRO':
+            qs_mov = qs_mov.none()
+
+    movs_all = list(qs_mov.select_related('categoria').order_by('-fecha_registro'))
+    ahor_all = list(qs_ahor.select_related('ahorro', 'ahorro__categoria').order_by('-fecha_registro'))
 
     return sorted(
         [

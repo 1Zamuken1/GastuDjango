@@ -213,6 +213,57 @@
     </tr>
   </table>
 
+  <!-- Gráficos y Metas del Dashboard -->
+  {% if img_tendencia or img_pie or metas_ahorro %}
+  {% if filtro_tipo != 'INGRESO' and filtro_tipo != 'EGRESO' and filtro_tipo != 'AHORRO' or img_tendencia or img_pie or metas_ahorro %}
+  <p class="section-title">Análisis Gráfico y Metas</p>
+  
+  {% if img_tendencia or img_pie %}
+  <div style="margin-bottom: 20px; text-align: center;">
+    {% if img_tendencia %}
+    <div style="margin-bottom: 25px; text-align: center;">
+      <p style="font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 8px;">Tendencia Financiera</p>
+      <img src="{{ img_tendencia }}" width="520">
+    </div>
+    {% endif %}
+    
+    {% if img_pie %}
+    <div style="margin-bottom: 15px; text-align: center;">
+      <p style="font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 8px;">Distribución de Gastos</p>
+      <img src="{{ img_pie }}" width="380">
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if metas_ahorro and filtro_tipo != 'INGRESO' and filtro_tipo != 'EGRESO' %}
+  <p style="font-size: 10px; font-weight: bold; color: #64748b; margin-bottom: 8px;">Progreso de Metas de Ahorro</p>
+  <table style="width: 100%; margin-bottom: 20px;">
+    {% for meta in metas_ahorro %}
+    <tr>
+      <td style="padding: 10px; border: 1px solid #e2e8f0; background-color: #f8fafc;">
+        <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 2px;">{{ meta.descripcion }}</div>
+        <div style="font-size: 9px; color: #64748b; margin-bottom: 6px;">Objetivo: {{ meta.meta_fmt }} | Acumulado: {{ meta.acumulado_fmt }}</div>
+        
+        <table style="width: 100%; height: 6px; margin-top: 4px; margin-bottom: 4px;">
+          <tr>
+            <td style="width: {{ meta.pct|default:'0' }}%; background-color: #fbbf24; padding: 0;"></td>
+            <td style="background-color: #e2e8f0; padding: 0;"></td>
+          </tr>
+        </table>
+        <div style="text-align: right; font-size: 8px; color: #94a3b8; font-weight: bold;">
+          {{ meta.pct|default:'0' }}% Completado
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <pdf:nextpage />
+  {% endif %}
+  {% endif %}
+
   <!-- Detalle de movimientos -->
   <p class="section-title">Detalle de Movimientos</p>
 
