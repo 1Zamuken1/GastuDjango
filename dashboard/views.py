@@ -39,6 +39,17 @@ def meses_disponibles(request):
         'primer_anio': primer.anio if primer else hoy.year,
     })
 
+def extract_filters(request):
+    """Extrae los filtros avanzados de la query string o del body POST."""
+    filtros = {}
+    req = request.POST if request.method == 'POST' else request.GET
+    if req.get('min_monto'): filtros['min_monto'] = req.get('min_monto')
+    if req.get('max_monto'): filtros['max_monto'] = req.get('max_monto')
+    if req.get('categoria_id'): filtros['categoria_id'] = req.get('categoria_id')
+    if req.get('tipo'): filtros['tipo'] = req.get('tipo')
+    return filtros
+
+
 
 @login_required
 def home_view(request):
@@ -56,7 +67,8 @@ def home_view(request):
         mes, anio = hoy.month, hoy.year
 
     # Permitir navegar a cualquier mes (los meses futuros o pasados sin datos se mostrarán vacíos)
-    ctx = build_dashboard_context(user, mes, anio)
+    filtros = extract_filters(request)
+    ctx = build_dashboard_context(user, mes, anio, filtros=filtros)
 
     # Verificar Onboarding: Si el usuario no tiene movimientos, mostrar modal de saldo inicial
     from movimientos.models import Movimiento
@@ -70,6 +82,10 @@ def home_view(request):
             defaults={'descripcion': 'Ajuste de saldo inicial', 'activo': True, 'es_sistema': True}
         )
         ctx['onboarding_categoria_id'] = cat_ajuste.id
+
+    # Categorías para el filtro
+    ctx['categorias_disponibles'] = Categoria.objects.filter(activo=True).order_by('nombre')
+    ctx['filtros_activos'] = filtros
 
     # Respuesta JSON para requests AJAX (navegacion sin recarga)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -114,6 +130,7 @@ def home_view(request):
             'ultimos_movimientos':      mov_list,
             'notificaciones_count':     ctx['notificaciones_count'],
             'ultimas_notificaciones':   notif_list,
+            'tiene_filtros':            ctx['tiene_filtros'],
         })
 
     return render(request, 'dashboard/home.html', ctx)
@@ -136,7 +153,8 @@ def tendencia_mes(request):
     except (ValueError, TypeError):
         mes, anio = hoy.month, hoy.year
 
-    data = build_tendencia_data(request.user, mes, anio)
+    filtros = extract_filters(request)
+    data = build_tendencia_data(request.user, mes, anio, filtros=filtros)
     return JsonResponse(data)
 
 
@@ -149,11 +167,13 @@ def exportar_excel(request):
 
     hoy  = date.today()
     user = request.user
-    mes  = int(request.GET.get('mes', hoy.month))
-    anio = int(request.GET.get('anio', hoy.year))
-
-    ctx       = build_dashboard_context(user, mes, anio)
-    all_items = obtener_items_completos_mes(user, mes, anio)
+    req  = request.POST if request.method == 'POST' else request.GET
+    mes  = int(req.get('mes', hoy.month))
+    anio = int(req.get('anio', hoy.year))
+    
+    filtros = extract_filters(request)
+    ctx       = build_dashboard_context(user, mes, anio, filtros=filtros)
+    all_items = obtener_items_completos_mes(user, mes, anio, filtros=filtros)
 
     return generar_excel_dashboard(ctx, all_items, mes, anio)
 
@@ -165,11 +185,21 @@ def exportar_pdf(request):
 
     hoy  = date.today()
     user = request.user
-    mes  = int(request.GET.get('mes', hoy.month))
-    anio = int(request.GET.get('anio', hoy.year))
+    req  = request.POST if request.method == 'POST' else request.GET
+    mes  = int(req.get('mes', hoy.month))
+    anio = int(req.get('anio', hoy.year))
+    
+    filtros = extract_filters(request)
+    ctx       = build_dashboard_context(user, mes, anio, filtros=filtros)
+    
+    # Agregar gráficos si vienen en el POST
+    if request.method == 'POST':
+        ctx['img_tendencia'] = request.POST.get('img_tendencia', '')
+        ctx['img_pie'] = request.POST.get('img_pie', '')
 
-    ctx       = build_dashboard_context(user, mes, anio)
-    all_items = obtener_items_completos_mes(user, mes, anio)
+    ctx['filtro_tipo'] = filtros.get('tipo', '')
+
+    all_items = obtener_items_completos_mes(user, mes, anio, filtros=filtros)
 
     return generar_pdf_dashboard(ctx, all_items, mes, anio, user)
 

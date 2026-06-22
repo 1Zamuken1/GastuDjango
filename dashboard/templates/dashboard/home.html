@@ -15,6 +15,7 @@
 
 
 {% block content %}
+{% csrf_token %}
 {% if requiere_onboarding %}
 <!-- Modal Onboarding Saldo Inicial -->
 <div id="modal-onboarding" class="onboarding-overlay">
@@ -360,6 +361,115 @@ function initOnboarding() {
   </div>
 </section>
 
+{# ── Panel Global de Filtros y Acciones ── #}
+<section class="dashboard-filters-wrap" style="margin-bottom: 24px;">
+  <div class="mov-section-header" style="background: #fff; padding: 16px 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; margin-bottom: 0;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div style="background: #f1f5f9; padding: 8px; border-radius: 10px; color: #475569;">
+        <i data-lucide="filter" style="width:20px; height:20px;"></i>
+      </div>
+      <div>
+        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">Filtros Globales</h3>
+        <p style="font-size: 12px; color: #64748b; margin: 0;" id="mov-subtitulo">{{ mes_nombre }} {{ anio }}</p>
+      </div>
+    </div>
+    <div class="mov-section-actions">
+      <!-- Filtros Globales Tipo -->
+      <div class="mov-filter-group" id="global-tipo-filters">
+        <button class="global-filter-btn active" data-filtro="">Todos</button>
+        <button class="global-filter-btn" data-filtro="INGRESO">Ingresos</button>
+        <button class="global-filter-btn" data-filtro="EGRESO">Egresos</button>
+        <button class="global-filter-btn mov-filter-btn--ahorro" data-filtro="AHORRO">Ahorros</button>
+      </div>
+
+      <!-- Botones de Exportación (Globales) -->
+      <div class="mov-action-btns">
+        <a id="btn-export-excel"
+           href="#"
+           data-empty="{% if ultimos_movimientos %}false{% else %}true{% endif %}"
+           title="Descargar Excel" class="mov-action-btn mov-action-btn--excel">
+          <i data-lucide="file-spreadsheet" style="width:14px;height:14px;"></i>
+        </a>
+        <a id="btn-export-pdf"
+           href="#"
+           data-empty="{% if ultimos_movimientos %}false{% else %}true{% endif %}"
+           title="Descargar PDF" class="mov-action-btn mov-action-btn--pdf">
+          <i data-lucide="file-text" style="width:14px;height:14px;"></i>
+        </a>
+      </div>
+
+      <button id="btn-toggle-filtros" class="mov-action-btn mov-action-btn--filtros" title="Filtros avanzados">
+        <i data-lucide="sliders-horizontal" style="width:14px;height:14px;"></i>
+        <span>Filtros Avanzados</span>
+      </button>
+    </div>
+  </div>
+
+  {# Panel de Filtros Avanzados (animado) #}
+  <div id="panel-filtros-avanzados" class="filtros-panel {% if tiene_filtros %}filtros-panel--open{% endif %}" style="margin-top: 12px;">
+    <div class="filtros-panel__inner">
+      <form id="form-filtros-avanzados">
+        <div class="filtros-grid">
+          <div class="filtro-field">
+            <label class="filtro-label">Monto Mínimo</label>
+            <div class="filtro-input-wrap">
+              <span class="filtro-input-prefix">$</span>
+              <input type="number" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="filtro-input">
+            </div>
+          </div>
+          <div class="filtro-field">
+            <label class="filtro-label">Monto Máximo</label>
+            <div class="filtro-input-wrap">
+              <span class="filtro-input-prefix">$</span>
+              <input type="number" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="filtro-input">
+            </div>
+          </div>
+          <div class="filtro-field">
+            <label class="filtro-label">Categoría</label>
+            <button type="button" id="btn-abrir-picker-cat" class="filtro-cat-trigger">
+              <i data-lucide="tag" style="width:14px;height:14px;color:#94a3b8;"></i>
+              <span id="filtro-cat-label">Todas las categorías</span>
+              <i data-lucide="chevron-down" style="width:14px;height:14px;color:#94a3b8;margin-left:auto;"></i>
+            </button>
+            <input type="hidden" name="categoria_id" id="filtro-categoria" value="{{ filtros_activos.categoria_id|default:'' }}">
+          </div>
+        </div>
+
+        <div class="filtros-footer">
+          <div class="filtros-preconfig">
+            <span class="filtros-preconfig__label">
+              <i data-lucide="zap" style="width:12px;height:12px;"></i> Rápidos:
+            </span>
+            <button type="button" class="btn-preconfig" data-min="0" data-max="20000" data-tipo="EGRESO">
+              <i data-lucide="arrow-down-circle" style="width:12px;height:12px;"></i> Hormiga &lt;$20k
+            </button>
+            <button type="button" class="btn-preconfig" data-min="500000" data-max="" data-tipo="EGRESO">
+              <i data-lucide="alert-triangle" style="width:12px;height:12px;"></i> Fuertes &gt;$500k
+            </button>
+            <button type="button" class="btn-preconfig" data-min="100000" data-max="" data-tipo="AHORRO">
+              <i data-lucide="piggy-bank" style="width:12px;height:12px;"></i> Aportes &gt;$100k
+            </button>
+          </div>
+          <div class="filtros-actions">
+            <button type="button" id="btn-limpiar-filtros" class="filtros-btn-limpiar">
+              <i data-lucide="x" style="width:14px;height:14px;"></i> Limpiar
+            </button>
+            <button type="submit" class="filtros-btn-aplicar">
+              <i data-lucide="check" style="width:14px;height:14px;"></i> Aplicar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# Badge de filtros activos #}
+  <div id="badge-filtros-activos" class="filtros-badge {% if tiene_filtros %}filtros-badge--visible{% endif %}" style="margin-top: 12px; margin-bottom: 0;">
+    <i data-lucide="filter" style="width:13px;height:13px;"></i>
+    <span>Mostrando información filtrada a nivel global</span>
+    <a href="#" id="btn-limpiar-filtros-badge" class="filtros-badge__link">Limpiar filtros</a>
+  </div>
+</section>
 
 {# ── Gráficos ────────────────────────────────────────────── #}
 <div class="charts-grid">
@@ -419,43 +529,18 @@ function initOnboarding() {
 
   {# Movimientos unificados (Ingresos + Egresos + Ahorros) #}
   <div class="app-card" style="padding:22px 24px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;
-                margin-bottom:16px;flex-wrap:wrap;gap:.5rem;">
+
+    <div class="mov-section-header">
       <div>
-        <p class="chart-card__title">Movimientos del mes</p>
-        <p class="chart-card__subtitle" id="mov-subtitulo">{{ mes_nombre }} {{ anio }}</p>
+        <p class="chart-card__title">Desglose de Movimientos</p>
+        <p class="chart-card__subtitle">Historial detallado del período actual</p>
       </div>
-      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+      <div class="mov-section-actions">
         <div class="mov-filter-group">
           <button class="mov-filter-btn active" data-filtro="todos">Todos</button>
           <button class="mov-filter-btn" data-filtro="INGRESO">Ingresos</button>
           <button class="mov-filter-btn" data-filtro="EGRESO">Egresos</button>
           <button class="mov-filter-btn mov-filter-btn--ahorro" data-filtro="AHORRO">Ahorros</button>
-        </div>
-        {# Botones de exportación #}
-        <div style="display:flex;align-items:center;gap:.35rem;">
-          <a id="btn-export-excel"
-             href="{% url 'dashboard:exportar_excel' %}?mes={{ mes }}&anio={{ anio }}"
-             onclick="if(!{{ ultimos_movimientos|yesno:'true,false' }}) { event.preventDefault(); window.GastuAlerts.error('Sin datos', 'No hay movimientos para exportar en este período.'); return false; }"
-             title="Descargar Excel"
-             style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
-                    background:#fff;color:#059669;cursor:pointer;display:grid;place-items:center;
-                    transition:background .13s,color .13s,border-color .13s;text-decoration:none;"
-             onmouseover="this.style.background='#ecfdf5';this.style.borderColor='#a7f3d0'"
-             onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">
-            <i data-lucide="file-spreadsheet" style="width:14px;height:14px;"></i>
-          </a>
-          <a id="btn-export-pdf"
-             href="{% url 'dashboard:exportar_pdf' %}?mes={{ mes }}&anio={{ anio }}"
-             onclick="if(!{{ ultimos_movimientos|yesno:'true,false' }}) { event.preventDefault(); window.GastuAlerts.error('Sin datos', 'No hay movimientos para exportar en este período.'); return false; }"
-             title="Descargar PDF"
-             style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
-                    background:#fff;color:#e11d48;cursor:pointer;display:grid;place-items:center;
-                    transition:background .13s,color .13s,border-color .13s;text-decoration:none;"
-             onmouseover="this.style.background='#fef2f2';this.style.borderColor='#fecaca'"
-             onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">
-            <i data-lucide="file-text" style="width:14px;height:14px;"></i>
-          </a>
         </div>
       </div>
     </div>
@@ -495,8 +580,8 @@ function initOnboarding() {
   </div>
 
 
-  {# Metas de ahorro activas — reemplaza Top Gastos #}
-  <div class="app-card" style="padding:22px 24px;" id="metas-ahorro-card">
+  {# Metas de ahorro activas — ocultas si hay filtros #}
+  <div class="app-card" style="padding:22px 24px; {% if tiene_filtros %}display:none;{% endif %}" id="metas-ahorro-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div>
         <p class="chart-card__title">Metas de ahorro</p>
@@ -555,6 +640,49 @@ function initOnboarding() {
 </div>
 
 
+{# ── Modal Picker de Categorías (filtros dashboard) ── #}
+<div id="modal-picker-cat-dash" class="modal-overlay" hidden>
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <div>
+        <h3 class="modal__title">Seleccionar Categoría</h3>
+        <span class="modal__subtitle">Filtrar por categoría específica</span>
+      </div>
+      <button type="button" class="modal__close" id="btn-cerrar-picker-cat">
+        <i data-lucide="x" style="width:16px;height:16px;"></i>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="picker-cat-search" style="margin-bottom:16px;">
+        <input type="text" id="picker-cat-buscar" placeholder="Buscar categoría..." style="width:100%;padding:10px 14px 10px 38px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none;transition:border-color .15s;background:#f8fafc;">
+        <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#94a3b8;pointer-events:none;"></i>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button type="button" class="picker-cat-tipo-btn active" data-tipo="">Todas</button>
+        <button type="button" class="picker-cat-tipo-btn" data-tipo="INGRESO">Ingresos</button>
+        <button type="button" class="picker-cat-tipo-btn" data-tipo="EGRESO">Egresos</button>
+        <button type="button" class="picker-cat-tipo-btn" data-tipo="AHORRO">Ahorros</button>
+      </div>
+      <div id="picker-cat-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;max-height:45vh;overflow-y:auto;padding:4px;">
+        <button type="button" class="picker-cat-card picker-cat-card--default" data-id="" data-nombre="Todas las categorías" data-tipo="">
+          <div class="picker-cat-icon">
+            <i data-lucide="layers" style="width:18px;height:18px;"></i>
+          </div>
+          <span class="picker-cat-nombre">Todas</span>
+        </button>
+        {% for cat in categorias_disponibles %}
+        <button type="button" class="picker-cat-card picker-cat-card--{{ cat.tipo|lower }}" data-id="{{ cat.id }}" data-nombre="{{ cat.nombre }}" data-tipo="{{ cat.tipo }}">
+          <div class="picker-cat-icon">
+            <i data-lucide="{% if cat.tipo == 'INGRESO' %}trending-up{% elif cat.tipo == 'EGRESO' %}trending-down{% else %}piggy-bank{% endif %}" style="width:18px;height:18px;"></i>
+          </div>
+          <span class="picker-cat-nombre">{{ cat.nombre }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
 {# Datos para JS #}
 <script id="data-pie" type="application/json">{{ pie_json|safe }}</script>
 <span id="url-tendencia"       data-url="{% url 'dashboard:tendencia_mes' %}"   hidden></span>
@@ -568,12 +696,13 @@ function initOnboarding() {
 {% block scripts %}
   <script>
     window.CURRENT_MODULE = 'dashboard';
+    window.REQUIRES_ONBOARDING = "{{ requiere_onboarding|yesno:'true,false' }}" === "true";
     document.addEventListener('DOMContentLoaded', () => {
-      {% if requiere_onboarding %}
+      if (window.REQUIRES_ONBOARDING) {
         if (typeof initOnboarding === 'function') initOnboarding();
-      {% else %}
+      } else {
         if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
-      {% endif %}
+      }
     });
   </script>
   <script src="{% static 'dashboard/js/dashboard.js' %}"></script>

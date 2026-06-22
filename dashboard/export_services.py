@@ -142,11 +142,15 @@ def generar_pdf_dashboard(ctx, all_items, mes, anio, user):
         'total_egresos':    float(ctx['total_egresos']),
         'ahorros_mes':      float(ctx['ahorros_mes']),
         'utilidad':         float(ctx['utilidad']),
-        'disponible':       float(ctx['disponible']),
+        'disponible':       float(ctx['disponible_global']),
         'movimientos':      all_items,
         'usuario':          user.username,
         'fecha_generacion': hoy.strftime('%d/%m/%Y %H:%M'),
         'logo_path':        logo_path,
+        'img_tendencia':    ctx.get('img_tendencia', ''),
+        'img_pie':          ctx.get('img_pie', ''),
+        'metas_ahorro':     ctx.get('metas_ahorro_activas', []),
+        'filtro_tipo':      ctx.get('filtro_tipo', ''),
     }
 
     html_string = render_to_string('dashboard/reporte_pdf.html', pdf_ctx)
