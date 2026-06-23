@@ -414,14 +414,14 @@ function initOnboarding() {
             <label class="filtro-label">Monto Mínimo</label>
             <div class="filtro-input-wrap">
               <span class="filtro-input-prefix">$</span>
-              <input type="number" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="filtro-input">
+              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="filtro-input" autocomplete="off">
             </div>
           </div>
           <div class="filtro-field">
             <label class="filtro-label">Monto Máximo</label>
             <div class="filtro-input-wrap">
               <span class="filtro-input-prefix">$</span>
-              <input type="number" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="filtro-input">
+              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="filtro-input" autocomplete="off">
             </div>
           </div>
           <div class="filtro-field">

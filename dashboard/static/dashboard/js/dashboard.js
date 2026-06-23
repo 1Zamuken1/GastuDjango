@@ -148,11 +148,58 @@ document.addEventListener('DOMContentLoaded', () => {
   let anioVisto  = parseInt(navEl?.dataset.anio || new Date().getFullYear());
   let primerMes  = mesVisto;
   let primerAnio = anioVisto;
+
+  function formatearNumero(raw) {
+    if (!raw) return '';
+    const entero = String(raw).split('.')[0].replace(/\D/g, '');
+    if (!entero) return '';
+    return entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  function initFormateoFiltroMonto(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+    if (input.value) {
+      const digitos = input.value.replace(/\D/g, '');
+      input.dataset.raw = digitos;
+      input.value = formatearNumero(digitos);
+    }
+    input.addEventListener('input', function () {
+      const el = this;
+      const oldLen = el.value.length;
+      const start = el.selectionStart;
+      let digitCount = 0;
+      for (let i = 0; i < start; i++) {
+        if (/\d/.test(el.value[i])) digitCount++;
+      }
+      const digitos = el.value.replace(/\D/g, '');
+      if (!digitos) { el.dataset.raw = ''; el.value = ''; return; }
+      const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      el.dataset.raw = digitos;
+      el.value = formatted;
+      let newPos = formatted.length;
+      if (start < oldLen) {
+        let dc = 0;
+        for (let i = 0; i < formatted.length; i++) {
+          if (dc >= digitCount) { newPos = i; break; }
+          if (/\d/.test(formatted[i])) dc++;
+          newPos = i + 1;
+        }
+      }
+      el.setSelectionRange(newPos, newPos);
+    });
+  }
+
+  const getRawValue = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return '';
+    return el.dataset.raw || el.value.replace(/\D/g, '') || '';
+  };
   
   // Estado de filtros avanzados
   let currentFiltros = {
-    min_monto: document.getElementById('filtro-min-monto')?.value || '',
-    max_monto: document.getElementById('filtro-max-monto')?.value || '',
+    min_monto: getRawValue('filtro-min-monto'),
+    max_monto: getRawValue('filtro-max-monto'),
     categoria_id: document.getElementById('filtro-categoria')?.value || '',
     tipo: ''
   };
@@ -1087,8 +1134,10 @@ requestAnimationFrame(() => {
     }
 
     function aplicarFiltrosAvanzados() {
-      currentFiltros.min_monto = document.getElementById('filtro-min-monto').value;
-      currentFiltros.max_monto = document.getElementById('filtro-max-monto').value;
+      const minEl = document.getElementById('filtro-min-monto');
+      const maxEl = document.getElementById('filtro-max-monto');
+      currentFiltros.min_monto = minEl ? (minEl.dataset.raw || minEl.value.replace(/\D/g, '')) : '';
+      currentFiltros.max_monto = maxEl ? (maxEl.dataset.raw || maxEl.value.replace(/\D/g, '')) : '';
       currentFiltros.categoria_id = document.getElementById('filtro-categoria').value;
       
       const tieneFiltros = currentFiltros.min_monto || currentFiltros.max_monto || currentFiltros.categoria_id || currentFiltros.tipo;
@@ -1107,6 +1156,12 @@ requestAnimationFrame(() => {
     const limpiarFiltros = (e) => {
       if (e) e.preventDefault();
       if (form) form.reset();
+      
+      const minInp = document.getElementById('filtro-min-monto');
+      const maxInp = document.getElementById('filtro-max-monto');
+      if (minInp) minInp.dataset.raw = '';
+      if (maxInp) maxInp.dataset.raw = '';
+
       currentFiltros = { min_monto: '', max_monto: '', categoria_id: '', tipo: '' };
       
       // Limpiar picker de categoría visualmente
@@ -1136,10 +1191,25 @@ requestAnimationFrame(() => {
     if (btnLimpiar) btnLimpiar.addEventListener('click', limpiarFiltros);
     if (btnLimpiarBadge) btnLimpiarBadge.addEventListener('click', limpiarFiltros);
 
+    initFormateoFiltroMonto('filtro-min-monto');
+    initFormateoFiltroMonto('filtro-max-monto');
+
     preconfigBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        document.getElementById('filtro-min-monto').value = btn.dataset.min || '';
-        document.getElementById('filtro-max-monto').value = btn.dataset.max || '';
+        const minVal = btn.dataset.min || '';
+        const maxVal = btn.dataset.max || '';
+        
+        const minInp = document.getElementById('filtro-min-monto');
+        const maxInp = document.getElementById('filtro-max-monto');
+        
+        if (minInp) {
+          minInp.value = formatearNumero(minVal);
+          minInp.dataset.raw = minVal;
+        }
+        if (maxInp) {
+          maxInp.value = formatearNumero(maxVal);
+          maxInp.dataset.raw = maxVal;
+        }
         document.getElementById('filtro-categoria').value = '';
         currentFiltros.tipo = btn.dataset.tipo || '';
         
