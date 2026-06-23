@@ -204,8 +204,8 @@ function initOnboarding() {
     </button>
   </div>
 
-  <div class="nav-mes-selector-group" style="display:none !important;align-items:center;gap:.35rem;background:#fff;border:1px solid #e2e8f0;border-radius:.625rem;padding:2px 6px;height:36px;">
-    <select id="select-mes" class="gastu-nav-select" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-right:4px;height:100%;">
+  <div class="nav-mes-selector-group flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 h-9" style="display:none !important;">
+    <select id="select-mes" class="bg-transparent border-0 text-slate-700 text-xs font-bold focus:outline-none cursor-pointer px-2 py-1">
       <option value="1">Enero</option>
       <option value="2">Febrero</option>
       <option value="3">Marzo</option>
@@ -219,15 +219,15 @@ function initOnboarding() {
       <option value="11">Noviembre</option>
       <option value="12">Diciembre</option>
     </select>
-    <span style="color:#cbd5e1;font-weight:300;font-size:12px;">|</span>
-    <select id="select-anio" class="gastu-nav-select" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-left:4px;height:100%;">
+    <span class="text-slate-300 font-light text-xs">|</span>
+    <select id="select-anio" class="bg-transparent border-0 text-slate-700 text-xs font-bold focus:outline-none cursor-pointer px-2 py-1">
       <option value="2024">2024</option>
       <option value="2025">2025</option>
       <option value="2026">2026</option>
       <option value="2027">2027</option>
       <option value="2028">2028</option>
     </select>
-    <button id="btn-filtrar-periodo" class="nav-mes-arrow" title="Filtrar período" style="border:none;background:#f8fafc;color:#10b981;border-radius:6px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;margin-left:4px;transition:all 0.15s;padding:0;">
+    <button id="btn-filtrar-periodo" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg w-7 h-7 flex items-center justify-center transition-colors duration-150" title="Filtrar período">
       <i data-lucide="filter" style="width:12px;height:12px;"></i>
     </button>
   </div>
@@ -581,7 +581,7 @@ function initOnboarding() {
 
 
   {# Metas de ahorro activas — ocultas si hay filtros #}
-  <div class="app-card" style="padding:22px 24px; {% if tiene_filtros %}display:none;{% endif %}" id="metas-ahorro-card">
+  <div class="app-card {% if tiene_filtros %}hidden{% endif %}" style="padding:22px 24px;" id="metas-ahorro-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div>
         <p class="chart-card__title">Metas de ahorro</p>
