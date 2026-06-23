@@ -416,7 +416,7 @@ function initOnboarding() {
             <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Mínimo</label>
             <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
               <span class="pl-3 text-slate-400 font-bold">$</span>
-              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none;">
+              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none !important; outline: none !important; border: none !important;">
             </div>
           </div>
           <!-- Monto Máximo -->
@@ -424,7 +424,7 @@ function initOnboarding() {
             <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Máximo</label>
             <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
               <span class="pl-3 text-slate-400 font-bold">$</span>
-              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none;">
+              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none !important; outline: none !important; border: none !important;">
             </div>
           </div>
           <!-- Categoría -->
