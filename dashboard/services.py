@@ -254,30 +254,64 @@ def build_dashboard_context(user, mes, anio, filtros=None):
 
 
 def _build_pie_data(user, mes, anio, filtros=None):
-    """Construye datos para el grafico de distribucion de egresos."""
+    """Construye datos para el grafico de distribucion de egresos/ingresos/ahorros."""
     filtros = filtros or {}
-    qs = Movimiento.objects.filter(
-        usuario=user, tipo='EGRESO', activo=True,
-        fecha_registro__month=mes,
-        fecha_registro__year=anio,
-    )
-    if filtros.get('min_monto'): qs = qs.filter(monto__gte=filtros['min_monto'])
-    if filtros.get('max_monto'): qs = qs.filter(monto__lte=filtros['max_monto'])
-    if filtros.get('categoria_id'): qs = qs.filter(categoria_id=filtros['categoria_id'])
+    tipo_filtro = filtros.get('tipo', 'EGRESO')
+    if tipo_filtro == 'todos' or not tipo_filtro:
+        tipo_filtro = 'EGRESO'
 
-    egresos_cat = (
-        qs
-        .values('categoria__nombre')
-        .annotate(total=Sum('monto'))
-        .order_by('-total')[:8]
-    )
+    if tipo_filtro in ['INGRESO', 'EGRESO']:
+        qs = Movimiento.objects.filter(
+            usuario=user, tipo=tipo_filtro, activo=True,
+            fecha_registro__month=mes,
+            fecha_registro__year=anio,
+        )
+        if filtros.get('min_monto'): qs = qs.filter(monto__gte=filtros['min_monto'])
+        if filtros.get('max_monto'): qs = qs.filter(monto__lte=filtros['max_monto'])
+        if filtros.get('categoria_id'): qs = qs.filter(categoria_id=filtros['categoria_id'])
 
-    pie_labels  = [item['categoria__nombre'] or 'Sin categoria' for item in egresos_cat]
-    pie_valores = [float(item['total']) for item in egresos_cat]
+        agrupados = (
+            qs
+            .values('categoria__nombre')
+            .annotate(total=Sum('monto'))
+            .order_by('-total')[:8]
+        )
+        pie_labels  = [item['categoria__nombre'] or 'Sin categoria' for item in agrupados]
+        pie_valores = [float(item['total']) for item in agrupados]
+        
+    elif tipo_filtro == 'AHORRO':
+        from ahorros.models import AporteAhorro
+        qs = AporteAhorro.objects.filter(
+            ahorro__usuario=user, estado_ap='APORTADO',
+            fecha_limite__month=mes, fecha_limite__year=anio,
+        )
+        if filtros.get('min_monto'): qs = qs.filter(aporte__gte=filtros['min_monto'])
+        if filtros.get('max_monto'): qs = qs.filter(aporte__lte=filtros['max_monto'])
+        if filtros.get('categoria_id'): qs = qs.filter(ahorro__categoria_id=filtros['categoria_id'])
+
+        # Para ahorros es mas descriptivo agrupar por la descripcion de la meta (ahorro__descripcion)
+        # o por categoria si descripcion es vacia. Vamos a agrupar por descripcion para distinguir metas.
+        agrupados = (
+            qs
+            .values('ahorro__descripcion', 'ahorro__categoria__nombre')
+            .annotate(total=Sum('aporte'))
+            .order_by('-total')[:8]
+        )
+        pie_labels  = [item['ahorro__descripcion'] or item['ahorro__categoria__nombre'] or 'Sin nombre' for item in agrupados]
+        pie_valores = [float(item['total']) for item in agrupados]
+
+    # Paletas de colores específicas por tipo
+    PALETAS = {
+        'INGRESO': ['#10b981', '#34d399', '#6ee7b7', '#059669', '#a7f3d0', '#047857', '#d1fae5', '#065f46'],
+        'EGRESO':  ['#e11d48', '#f43f5e', '#fb7185', '#be123c', '#fda4af', '#9f1239', '#fecdd3', '#881337'],
+        'AHORRO':  ['#d97706', '#f59e0b', '#fbbf24', '#b45309', '#fcd34d', '#92400e', '#fde68a', '#78350f'],
+    }
+    colores_usar = PALETAS.get(tipo_filtro, PALETAS['EGRESO'])
+
     return {
         'labels':  pie_labels,
         'valores': pie_valores,
-        'colores': PIE_COLORES[:len(pie_labels)],
+        'colores': colores_usar[:len(pie_labels)],
     }
 
 
@@ -496,22 +530,23 @@ def build_tendencia_data(user, mes, anio, filtros=None):
     qs_ahorros = AporteAhorro.objects.filter(
         ahorro__usuario=user,
         estado_ap='APORTADO',
-        fecha_limite__month=mes,
-        fecha_limite__year=anio,
+        fecha_registro__month=mes,
+        fecha_registro__year=anio,
     )
     if filtros.get('min_monto'): qs_ahorros = qs_ahorros.filter(aporte__gte=filtros['min_monto'])
     if filtros.get('max_monto'): qs_ahorros = qs_ahorros.filter(aporte__lte=filtros['max_monto'])
     if filtros.get('categoria_id'): qs_ahorros = qs_ahorros.filter(ahorro__categoria_id=filtros['categoria_id'])
-    if filtros.get('fecha_inicio'): qs_ahorros = qs_ahorros.filter(fecha_limite__gte=filtros['fecha_inicio'])
-    if filtros.get('fecha_fin'): qs_ahorros = qs_ahorros.filter(fecha_limite__lte=filtros['fecha_fin'])
+    if filtros.get('fecha_inicio'): qs_ahorros = qs_ahorros.filter(fecha_registro__date__gte=filtros['fecha_inicio'])
+    if filtros.get('fecha_fin'): qs_ahorros = qs_ahorros.filter(fecha_registro__date__lte=filtros['fecha_fin'])
     
     if tipo_filtro in ['INGRESO', 'EGRESO']: qs_ahorros = qs_ahorros.none()
 
     ahor_map = {
-        row['fecha_limite']: float(row['total'])
+        row['fecha']: float(row['total'])
         for row in (
             qs_ahorros
-            .values('fecha_limite')
+            .annotate(fecha=TruncDate('fecha_registro'))
+            .values('fecha')
             .annotate(total=Sum('aporte'))
         )
     }
@@ -519,12 +554,14 @@ def build_tendencia_data(user, mes, anio, filtros=None):
     ahor_cat_map = defaultdict(list)
     for row in (
         qs_ahorros
-        .values('fecha_limite', 'ahorro__categoria__nombre')
+        .annotate(fecha=TruncDate('fecha_registro'))
+        .values('fecha', 'ahorro__descripcion', 'ahorro__categoria__nombre')
         .annotate(total=Sum('aporte'))
-        .order_by('fecha_limite', '-total')
+        .order_by('fecha', '-total')
     ):
-        ahor_cat_map[row['fecha_limite']].append({
-            'nombre': row['ahorro__categoria__nombre'] or 'Sin categoria',
+        nombre_meta = row['ahorro__descripcion'] or row['ahorro__categoria__nombre'] or 'Sin nombre'
+        ahor_cat_map[row['fecha']].append({
+            'nombre': nombre_meta,
             'monto':  float(row['total']),
         })
     ahor_cat_map = dict(ahor_cat_map)

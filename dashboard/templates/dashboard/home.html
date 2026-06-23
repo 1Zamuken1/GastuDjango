@@ -10,6 +10,7 @@
   <meta name="description" content="Panel financiero personal — resumen de ingresos, egresos y tendencia de {{ mes_nombre }} {{ anio }}">
   <meta name="robots" content="noindex, nofollow">
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <link rel="stylesheet" href="{% static 'movimientos/css/datepicker.css' %}">
   <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
 {% endblock %}
 
@@ -415,7 +416,7 @@ function initOnboarding() {
             <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Mínimo</label>
             <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
               <span class="pl-3 text-slate-400 font-bold">$</span>
-              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0" autocomplete="off">
+              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none !important; outline: none !important; border: none !important;">
             </div>
           </div>
           <!-- Monto Máximo -->
@@ -423,7 +424,7 @@ function initOnboarding() {
             <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Máximo</label>
             <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
               <span class="pl-3 text-slate-400 font-bold">$</span>
-              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0" autocomplete="off">
+              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none !important; outline: none !important; border: none !important;">
             </div>
           </div>
           <!-- Categoría -->
@@ -439,16 +440,12 @@ function initOnboarding() {
           <!-- Fecha Inicio -->
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fecha Inicio</label>
-            <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
-              <input type="date" name="fecha_inicio" id="filtro-fecha-inicio" value="{{ filtros_activos.fecha_inicio|default:'' }}" class="w-full bg-transparent border-0 py-2 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-0">
-            </div>
+            <input type="text" name="fecha_inicio" id="filtro-fecha-inicio" value="{{ filtros_activos.fecha_inicio|default:'' }}" readonly>
           </div>
           <!-- Fecha Fin -->
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fecha Fin</label>
-            <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
-              <input type="date" name="fecha_fin" id="filtro-fecha-fin" value="{{ filtros_activos.fecha_fin|default:'' }}" class="w-full bg-transparent border-0 py-2 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-0">
-            </div>
+            <input type="text" name="fecha_fin" id="filtro-fecha-fin" value="{{ filtros_activos.fecha_fin|default:'' }}" readonly>
           </div>
         </div>
 
@@ -457,21 +454,21 @@ function initOnboarding() {
             <span class="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wide whitespace-nowrap">
               <i data-lucide="zap" class="w-3.5 h-3.5"></i> Rápidos:
             </span>
-            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-xs font-semibold whitespace-nowrap transition-colors" data-min="0" data-max="20000" data-tipo="EGRESO">
+            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-600 border border-transparent rounded-full text-xs font-semibold whitespace-nowrap transition-all" data-min="0" data-max="20000" data-tipo="EGRESO">
               <i data-lucide="arrow-down-circle" class="w-3.5 h-3.5 text-rose-500"></i> Hormiga &lt;$20k
             </button>
-            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-xs font-semibold whitespace-nowrap transition-colors" data-min="500000" data-max="" data-tipo="EGRESO">
-              <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-500"></i> Fuertes &gt;$500k
+            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-600 border border-transparent rounded-full text-xs font-semibold whitespace-nowrap transition-all" data-min="500000" data-max="" data-tipo="EGRESO">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-500"></i> Fuertes &gt;$500k
             </button>
-            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-xs font-semibold whitespace-nowrap transition-colors" data-min="100000" data-max="" data-tipo="AHORRO">
-              <i data-lucide="piggy-bank" class="w-3.5 h-3.5 text-emerald-500"></i> Aportes &gt;$100k
+            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 text-slate-600 border border-transparent rounded-full text-xs font-semibold whitespace-nowrap transition-all" data-min="100000" data-max="" data-tipo="AHORRO">
+              <i data-lucide="piggy-bank" class="w-3.5 h-3.5 text-amber-500"></i> Aportes &gt;$100k
             </button>
           </div>
-          <div class="flex items-center gap-3 w-full md:w-auto justify-end">
-            <button type="button" id="btn-limpiar-filtros" class="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
+          <div class="flex items-center gap-3 w-full md:w-auto justify-end mt-4 md:mt-0">
+            <button type="button" id="btn-limpiar-filtros" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 hover:border-slate-300 rounded-lg text-sm font-semibold transition-all flex-1 md:flex-none">
               <i data-lucide="x" class="w-4 h-4"></i> Limpiar
             </button>
-            <button type="submit" class="flex items-center gap-1.5 px-5 py-2 text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20 rounded-lg transition-all active:scale-95">
+            <button type="submit" class="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-semibold shadow-sm shadow-emerald-500/20 transition-all flex-1 md:flex-none">
               <i data-lucide="check" class="w-4 h-4"></i> Aplicar
             </button>
           </div>
@@ -655,6 +652,7 @@ function initOnboarding() {
   </div>
 
 </div>
+<div class="h-24"></div>
 
 
 {# ── Modal Picker de Categorías (filtros dashboard) ── #}
@@ -674,13 +672,13 @@ function initOnboarding() {
         <input type="text" id="picker-cat-buscar" placeholder="Buscar categoría..." style="width:100%;padding:10px 14px 10px 38px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none;transition:border-color .15s;background:#f8fafc;">
         <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#94a3b8;pointer-events:none;"></i>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
         <button type="button" class="picker-cat-tipo-btn active" data-tipo="">Todas</button>
         <button type="button" class="picker-cat-tipo-btn" data-tipo="INGRESO">Ingresos</button>
         <button type="button" class="picker-cat-tipo-btn" data-tipo="EGRESO">Egresos</button>
         <button type="button" class="picker-cat-tipo-btn" data-tipo="AHORRO">Ahorros</button>
       </div>
-      <div id="picker-cat-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;max-height:45vh;overflow-y:auto;padding:4px;">
+      <div id="picker-cat-grid" class="picker-cat-grid">
         <button type="button" class="picker-cat-card picker-cat-card--default" data-id="" data-nombre="Todas las categorías" data-tipo="">
           <div class="picker-cat-icon">
             <i data-lucide="layers" style="width:18px;height:18px;"></i>
@@ -722,5 +720,6 @@ function initOnboarding() {
       }
     });
   </script>
+  <script src="{% static 'movimientos/js/datepicker.js' %}"></script>
   <script src="{% static 'dashboard/js/dashboard.js' %}"></script>
 {% endblock %}
