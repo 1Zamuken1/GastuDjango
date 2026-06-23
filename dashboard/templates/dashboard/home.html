@@ -416,7 +416,7 @@ function initOnboarding() {
             <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Mínimo</label>
             <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
               <span class="pl-3 text-slate-400 font-bold">$</span>
-              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0" autocomplete="off">
+              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none;">
             </div>
           </div>
           <!-- Monto Máximo -->
@@ -424,7 +424,7 @@ function initOnboarding() {
             <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Máximo</label>
             <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
               <span class="pl-3 text-slate-400 font-bold">$</span>
-              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0" autocomplete="off">
+              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none;">
             </div>
           </div>
           <!-- Categoría -->
@@ -465,10 +465,10 @@ function initOnboarding() {
             </button>
           </div>
           <div class="flex items-center gap-3 w-full md:w-auto justify-end">
-            <button type="button" id="btn-limpiar-filtros" class="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
+            <button type="button" id="btn-limpiar-filtros" class="filtros-btn-limpiar">
               <i data-lucide="x" class="w-4 h-4"></i> Limpiar
             </button>
-            <button type="submit" class="flex items-center gap-1.5 px-5 py-2 text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20 rounded-lg transition-all active:scale-95">
+            <button type="submit" class="filtros-btn-aplicar">
               <i data-lucide="check" class="w-4 h-4"></i> Aplicar
             </button>
           </div>

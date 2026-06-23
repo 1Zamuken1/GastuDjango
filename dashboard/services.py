@@ -254,26 +254,52 @@ def build_dashboard_context(user, mes, anio, filtros=None):
 
 
 def _build_pie_data(user, mes, anio, filtros=None):
-    """Construye datos para el grafico de distribucion de egresos."""
+    """Construye datos para el grafico de distribucion de egresos/ingresos/ahorros."""
     filtros = filtros or {}
-    qs = Movimiento.objects.filter(
-        usuario=user, tipo='EGRESO', activo=True,
-        fecha_registro__month=mes,
-        fecha_registro__year=anio,
-    )
-    if filtros.get('min_monto'): qs = qs.filter(monto__gte=filtros['min_monto'])
-    if filtros.get('max_monto'): qs = qs.filter(monto__lte=filtros['max_monto'])
-    if filtros.get('categoria_id'): qs = qs.filter(categoria_id=filtros['categoria_id'])
+    tipo_filtro = filtros.get('tipo', 'EGRESO')
+    if tipo_filtro == 'todos' or not tipo_filtro:
+        tipo_filtro = 'EGRESO'
 
-    egresos_cat = (
-        qs
-        .values('categoria__nombre')
-        .annotate(total=Sum('monto'))
-        .order_by('-total')[:8]
-    )
+    if tipo_filtro in ['INGRESO', 'EGRESO']:
+        qs = Movimiento.objects.filter(
+            usuario=user, tipo=tipo_filtro, activo=True,
+            fecha_registro__month=mes,
+            fecha_registro__year=anio,
+        )
+        if filtros.get('min_monto'): qs = qs.filter(monto__gte=filtros['min_monto'])
+        if filtros.get('max_monto'): qs = qs.filter(monto__lte=filtros['max_monto'])
+        if filtros.get('categoria_id'): qs = qs.filter(categoria_id=filtros['categoria_id'])
 
-    pie_labels  = [item['categoria__nombre'] or 'Sin categoria' for item in egresos_cat]
-    pie_valores = [float(item['total']) for item in egresos_cat]
+        agrupados = (
+            qs
+            .values('categoria__nombre')
+            .annotate(total=Sum('monto'))
+            .order_by('-total')[:8]
+        )
+        pie_labels  = [item['categoria__nombre'] or 'Sin categoria' for item in agrupados]
+        pie_valores = [float(item['total']) for item in agrupados]
+        
+    elif tipo_filtro == 'AHORRO':
+        from ahorros.models import AporteAhorro
+        qs = AporteAhorro.objects.filter(
+            ahorro__usuario=user, estado_ap='APORTADO',
+            fecha_limite__month=mes, fecha_limite__year=anio,
+        )
+        if filtros.get('min_monto'): qs = qs.filter(aporte__gte=filtros['min_monto'])
+        if filtros.get('max_monto'): qs = qs.filter(aporte__lte=filtros['max_monto'])
+        if filtros.get('categoria_id'): qs = qs.filter(ahorro__categoria_id=filtros['categoria_id'])
+
+        # Para ahorros es mas descriptivo agrupar por la descripcion de la meta (ahorro__descripcion)
+        # o por categoria si descripcion es vacia. Vamos a agrupar por descripcion para distinguir metas.
+        agrupados = (
+            qs
+            .values('ahorro__descripcion', 'ahorro__categoria__nombre')
+            .annotate(total=Sum('aporte'))
+            .order_by('-total')[:8]
+        )
+        pie_labels  = [item['ahorro__descripcion'] or item['ahorro__categoria__nombre'] or 'Sin nombre' for item in agrupados]
+        pie_valores = [float(item['total']) for item in agrupados]
+
     return {
         'labels':  pie_labels,
         'valores': pie_valores,

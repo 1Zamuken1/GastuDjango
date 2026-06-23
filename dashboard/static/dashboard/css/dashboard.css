@@ -129,7 +129,7 @@
   margin-bottom: 0;
 }
 .filtros-panel--open {
-  max-height: 300px; opacity: 1; margin-bottom: 16px;
+  max-height: 500px; opacity: 1; margin-bottom: 16px; overflow: visible;
 }
 .filtros-panel__inner {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
