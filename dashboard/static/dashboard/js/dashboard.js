@@ -258,58 +258,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pieChartInst = new ApexCharts(elPie, {
       chart: {
-        type: 'donut',
+        type: 'pie',
         height: window.innerWidth <= 479 ? 220 : window.innerWidth <= 767 ? 240 : 280,
         toolbar:    { show: false },
         fontFamily,
-        animations: { enabled: true, speed: 600, animateScale: true },
+        animations: { enabled: true, speed: 600 },
         background: 'transparent',
-        dropShadow: {
-          enabled: true,
-          top: 4,
-          left: 0,
-          blur: 4,
-          opacity: 0.05
-        }
       },
       series: pieData.valores,
       labels: pieData.labels,
       colors: pieData.colores,
       legend: {
         position: 'bottom',
-        fontSize: '12px',
-        fontWeight: 600,
+        fontSize: '11px',
         fontFamily,
-        labels: { colors: '#475569' },
-        markers:     { width: 10, height: 10, radius: 10 },
+        markers:     { width: 10, height: 10, radius: 3 },
         itemMargin:  { horizontal: 6, vertical: 3 },
       },
       dataLabels: {
         enabled: true,
-        style:   { fontSize: '11px', fontFamily, fontWeight: '700' },
+        style:   { fontSize: '11px', fontFamily, fontWeight: '600' },
         formatter: (val) => val.toFixed(1) + '%',
-        dropShadow: { enabled: true, top: 1, left: 1, blur: 1, opacity: 0.2 },
+        dropShadow: { enabled: false },
       },
-      tooltip: { 
-        theme: 'light', 
-        y: { formatter: formatCOP },
-        style: { fontSize: '12px', fontFamily: fontFamily }
-      },
-      stroke:  { width: 3, colors: ['#ffffff'] },
-      plotOptions: { 
-        pie: { 
-          expandOnClick: true,
-          donut: {
-            size: '55%',
-            labels: {
-              show: true,
-              name: { fontSize: '14px', fontFamily, color: '#64748b' },
-              value: { fontSize: '18px', fontWeight: 800, fontFamily, color: '#0f172a', formatter: formatCOP },
-              total: { show: true, showAlways: true, label: 'Egresos', fontSize: '12px', fontFamily, color: '#64748b', formatter: function (w) { return formatCOP(w.globals.seriesTotals.reduce((a, b) => a + b, 0)) } }
-            }
-          }
-        } 
-      },
+      tooltip: { theme: 'light', y: { formatter: formatCOP } },
+      stroke:  { width: 2, colors: ['#fff'] },
+      plotOptions: { pie: { expandOnClick: true } },
     });
     pieChartInst.render();
     window.pieChartInst = pieChartInst;
@@ -911,7 +885,13 @@ requestAnimationFrame(() => {
     /* ── Metas de ahorro (visibles salvo si filtro tipo es INGRESO o EGRESO) ── */
     const metasCard = document.getElementById('metas-ahorro-card');
     const ocultarMetas = currentFiltros.tipo === 'INGRESO' || currentFiltros.tipo === 'EGRESO';
-    if (metasCard) metasCard.style.display = ocultarMetas ? 'none' : 'block';
+    if (metasCard) {
+      if (ocultarMetas) {
+        metasCard.classList.add('hidden');
+      } else {
+        metasCard.classList.remove('hidden');
+      }
+    }
     actualizarMetasAhorro(data.metas_ahorro_activas || []);
 
     /* ── Pie chart ── */
@@ -1185,6 +1165,16 @@ requestAnimationFrame(() => {
         panel.classList.toggle('filtros-panel--open');
         btnToggle.classList.toggle('active');
       });
+    }
+
+    // Inicializar MiniDatepickers
+    const inputFechaInicio = document.getElementById('filtro-fecha-inicio');
+    const inputFechaFin = document.getElementById('filtro-fecha-fin');
+    if (inputFechaInicio && typeof MiniDatepicker !== 'undefined') {
+      new MiniDatepicker(inputFechaInicio, { acento: 'ingreso' });
+    }
+    if (inputFechaFin && typeof MiniDatepicker !== 'undefined') {
+      new MiniDatepicker(inputFechaFin, { acento: 'egreso' });
     }
 
     // Procedural formatting for inputs

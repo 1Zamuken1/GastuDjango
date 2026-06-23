@@ -95,7 +95,7 @@
 .mov-empty p { font-size: 13px; font-weight: 500; color: #94a3b8; }
 
 /* ── Filtro Ahorros ── */
-.mov-filter-btn.active[data-filtro="AHORRO"] { border-color: #d97706; color: #d97706; }
+.mov-filter-btn.active[data-filtro="AHORRO"], .global-filter-btn.active[data-filtro="AHORRO"] { border-color: #d97706; color: #d97706; }
 
 /* ── Section header de movimientos ── */
 .mov-section-header {
