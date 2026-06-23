@@ -61,6 +61,14 @@ const toursConfig = {
             }
         },
         {
+            element: '#btn-toggle-filtros',
+            popover: {
+                title: 'Filtros Avanzados',
+                description: 'Usa este botón para desplegar u ocultar los filtros avanzados, donde podrás buscar por fechas, montos y categorías de forma precisa.',
+                side: 'bottom', align: 'start'
+            }
+        },
+        {
             element: '.carousel-section',
             popover: {
                 title: 'Tarjetas de Resumen',
