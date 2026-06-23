@@ -1,3 +1,4 @@
+{% load l10n %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -215,7 +216,8 @@
 
   <!-- Gráficos y Metas del Dashboard -->
   {% if img_tendencia or img_pie or metas_ahorro %}
-  {% if filtro_tipo != 'INGRESO' and filtro_tipo != 'EGRESO' and filtro_tipo != 'AHORRO' or img_tendencia or img_pie or metas_ahorro %}
+  {% with mostrar_metas=filtro_tipo|default:"" %}
+  {% if img_tendencia or img_pie or mostrar_metas != 'INGRESO' and mostrar_metas != 'EGRESO' and metas_ahorro %}
   <p class="section-title">Análisis Gráfico y Metas</p>
   
   {% if img_tendencia or img_pie %}
@@ -247,7 +249,7 @@
         
         <table style="width: 100%; height: 6px; margin-top: 4px; margin-bottom: 4px;">
           <tr>
-            <td style="width: {{ meta.pct|default:'0' }}%; background-color: #fbbf24; padding: 0;"></td>
+            <td width="{{ meta.pct|default:'0'|unlocalize }}%" style="background-color: #fbbf24; padding: 0;"></td>
             <td style="background-color: #e2e8f0; padding: 0;"></td>
           </tr>
         </table>
@@ -262,6 +264,7 @@
 
   <pdf:nextpage />
   {% endif %}
+  {% endwith %}
   {% endif %}
 
   <!-- Detalle de movimientos -->

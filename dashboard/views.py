@@ -47,6 +47,8 @@ def extract_filters(request):
     if req.get('max_monto'): filtros['max_monto'] = req.get('max_monto')
     if req.get('categoria_id'): filtros['categoria_id'] = req.get('categoria_id')
     if req.get('tipo'): filtros['tipo'] = req.get('tipo')
+    if req.get('fecha_inicio'): filtros['fecha_inicio'] = req.get('fecha_inicio')
+    if req.get('fecha_fin'): filtros['fecha_fin'] = req.get('fecha_fin')
     return filtros
 
 
