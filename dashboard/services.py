@@ -321,7 +321,7 @@ def _build_ultimos_movimientos(user, mes, anio, filtros=None):
     )
     qs_ahor = AporteAhorro.objects.filter(
         ahorro__usuario=user, estado_ap='APORTADO',
-        fecha_registro__month=mes, fecha_registro__year=anio,
+        fecha_limite__month=mes, fecha_limite__year=anio,
     )
 
     if filtros.get('min_monto'):
@@ -333,6 +333,12 @@ def _build_ultimos_movimientos(user, mes, anio, filtros=None):
     if filtros.get('categoria_id'):
         qs_mov = qs_mov.filter(categoria_id=filtros['categoria_id'])
         qs_ahor = qs_ahor.filter(ahorro__categoria_id=filtros['categoria_id'])
+    if filtros.get('fecha_inicio'):
+        qs_mov = qs_mov.filter(fecha_registro__date__gte=filtros['fecha_inicio'])
+        qs_ahor = qs_ahor.filter(fecha_limite__gte=filtros['fecha_inicio'])
+    if filtros.get('fecha_fin'):
+        qs_mov = qs_mov.filter(fecha_registro__date__lte=filtros['fecha_fin'])
+        qs_ahor = qs_ahor.filter(fecha_limite__lte=filtros['fecha_fin'])
     
     tipo_filtro = filtros.get('tipo')
     
@@ -446,6 +452,8 @@ def build_tendencia_data(user, mes, anio, filtros=None):
     if filtros.get('min_monto'): qs_base = qs_base.filter(monto__gte=filtros['min_monto'])
     if filtros.get('max_monto'): qs_base = qs_base.filter(monto__lte=filtros['max_monto'])
     if filtros.get('categoria_id'): qs_base = qs_base.filter(categoria_id=filtros['categoria_id'])
+    if filtros.get('fecha_inicio'): qs_base = qs_base.filter(fecha_registro__date__gte=filtros['fecha_inicio'])
+    if filtros.get('fecha_fin'): qs_base = qs_base.filter(fecha_registro__date__lte=filtros['fecha_fin'])
     
     tipo_filtro = filtros.get('tipo')
     if tipo_filtro == 'AHORRO': qs_base = qs_base.none()
@@ -488,20 +496,22 @@ def build_tendencia_data(user, mes, anio, filtros=None):
     qs_ahorros = AporteAhorro.objects.filter(
         ahorro__usuario=user,
         estado_ap='APORTADO',
-        fecha_registro__month=mes,
-        fecha_registro__year=anio,
+        fecha_limite__month=mes,
+        fecha_limite__year=anio,
     )
     if filtros.get('min_monto'): qs_ahorros = qs_ahorros.filter(aporte__gte=filtros['min_monto'])
     if filtros.get('max_monto'): qs_ahorros = qs_ahorros.filter(aporte__lte=filtros['max_monto'])
     if filtros.get('categoria_id'): qs_ahorros = qs_ahorros.filter(ahorro__categoria_id=filtros['categoria_id'])
+    if filtros.get('fecha_inicio'): qs_ahorros = qs_ahorros.filter(fecha_limite__gte=filtros['fecha_inicio'])
+    if filtros.get('fecha_fin'): qs_ahorros = qs_ahorros.filter(fecha_limite__lte=filtros['fecha_fin'])
     
     if tipo_filtro in ['INGRESO', 'EGRESO']: qs_ahorros = qs_ahorros.none()
 
     ahor_map = {
-        row['fecha_registro']: float(row['total'])
+        row['fecha_limite']: float(row['total'])
         for row in (
             qs_ahorros
-            .values('fecha_registro')
+            .values('fecha_limite')
             .annotate(total=Sum('aporte'))
         )
     }
@@ -509,11 +519,11 @@ def build_tendencia_data(user, mes, anio, filtros=None):
     ahor_cat_map = defaultdict(list)
     for row in (
         qs_ahorros
-        .values('fecha_registro', 'ahorro__categoria__nombre')
+        .values('fecha_limite', 'ahorro__categoria__nombre')
         .annotate(total=Sum('aporte'))
-        .order_by('fecha_registro', '-total')
+        .order_by('fecha_limite', '-total')
     ):
-        ahor_cat_map[row['fecha_registro']].append({
+        ahor_cat_map[row['fecha_limite']].append({
             'nombre': row['ahorro__categoria__nombre'] or 'Sin categoria',
             'monto':  float(row['total']),
         })
@@ -593,7 +603,7 @@ def obtener_items_completos_mes(user, mes, anio, filtros=None):
     )
     qs_ahor = AporteAhorro.objects.filter(
         ahorro__usuario=user, estado_ap='APORTADO',
-        fecha_registro__month=mes, fecha_registro__year=anio,
+        fecha_limite__month=mes, fecha_limite__year=anio,
     )
 
     if filtros.get('min_monto'):
@@ -605,6 +615,12 @@ def obtener_items_completos_mes(user, mes, anio, filtros=None):
     if filtros.get('categoria_id'):
         qs_mov = qs_mov.filter(categoria_id=filtros['categoria_id'])
         qs_ahor = qs_ahor.filter(ahorro__categoria_id=filtros['categoria_id'])
+    if filtros.get('fecha_inicio'):
+        qs_mov = qs_mov.filter(fecha_registro__date__gte=filtros['fecha_inicio'])
+        qs_ahor = qs_ahor.filter(fecha_limite__gte=filtros['fecha_inicio'])
+    if filtros.get('fecha_fin'):
+        qs_mov = qs_mov.filter(fecha_registro__date__lte=filtros['fecha_fin'])
+        qs_ahor = qs_ahor.filter(fecha_limite__lte=filtros['fecha_fin'])
     
     tipo_filtro = filtros.get('tipo')
     if tipo_filtro and tipo_filtro != 'todos':
@@ -615,7 +631,7 @@ def obtener_items_completos_mes(user, mes, anio, filtros=None):
             qs_mov = qs_mov.none()
 
     movs_all = list(qs_mov.select_related('categoria').order_by('-fecha_registro'))
-    ahor_all = list(qs_ahor.select_related('ahorro', 'ahorro__categoria').order_by('-fecha_registro'))
+    ahor_all = list(qs_ahor.select_related('ahorro', 'ahorro__categoria').order_by('-fecha_limite'))
 
     return sorted(
         [
@@ -630,8 +646,8 @@ def obtener_items_completos_mes(user, mes, anio, filtros=None):
             {
                 'tipo': 'AHORRO', 'descripcion': a.ahorro.descripcion or 'Aporte',
                 'categoria': a.ahorro.categoria.nombre if a.ahorro.categoria else '\u2014',
-                'fecha': a.fecha_registro.strftime('%d/%m/%Y'),
-                'sort_key': str(a.fecha_registro),
+                'fecha': a.fecha_limite.strftime('%d/%m/%Y'),
+                'sort_key': str(a.fecha_limite),
                 'monto': float(a.aporte),
             } for a in ahor_all
         ],

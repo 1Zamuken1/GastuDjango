@@ -409,53 +409,70 @@ function initOnboarding() {
   <div id="panel-filtros-avanzados" class="filtros-panel {% if tiene_filtros %}filtros-panel--open{% endif %}" style="margin-top: 12px;">
     <div class="filtros-panel__inner">
       <form id="form-filtros-avanzados">
-        <div class="filtros-grid">
-          <div class="filtro-field">
-            <label class="filtro-label">Monto Mínimo</label>
-            <div class="filtro-input-wrap">
-              <span class="filtro-input-prefix">$</span>
-              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="filtro-input" autocomplete="off">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Monto Mínimo -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Mínimo</label>
+            <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+              <span class="pl-3 text-slate-400 font-bold">$</span>
+              <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0" autocomplete="off">
             </div>
           </div>
-          <div class="filtro-field">
-            <label class="filtro-label">Monto Máximo</label>
-            <div class="filtro-input-wrap">
-              <span class="filtro-input-prefix">$</span>
-              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="filtro-input" autocomplete="off">
+          <!-- Monto Máximo -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Máximo</label>
+            <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+              <span class="pl-3 text-slate-400 font-bold">$</span>
+              <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0" autocomplete="off">
             </div>
           </div>
-          <div class="filtro-field">
-            <label class="filtro-label">Categoría</label>
-            <button type="button" id="btn-abrir-picker-cat" class="filtro-cat-trigger">
-              <i data-lucide="tag" style="width:14px;height:14px;color:#94a3b8;"></i>
-              <span id="filtro-cat-label">Todas las categorías</span>
-              <i data-lucide="chevron-down" style="width:14px;height:14px;color:#94a3b8;margin-left:auto;"></i>
+          <!-- Categoría -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Categoría</label>
+            <button type="button" id="btn-abrir-picker-cat" class="flex items-center gap-2 w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all">
+              <i data-lucide="tag" class="w-4 h-4 text-slate-400"></i>
+              <span id="filtro-cat-label" class="truncate">Todas las categorías</span>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 ml-auto"></i>
             </button>
             <input type="hidden" name="categoria_id" id="filtro-categoria" value="{{ filtros_activos.categoria_id|default:'' }}">
           </div>
+          <!-- Fecha Inicio -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fecha Inicio</label>
+            <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+              <input type="date" name="fecha_inicio" id="filtro-fecha-inicio" value="{{ filtros_activos.fecha_inicio|default:'' }}" class="w-full bg-transparent border-0 py-2 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-0">
+            </div>
+          </div>
+          <!-- Fecha Fin -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fecha Fin</label>
+            <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+              <input type="date" name="fecha_fin" id="filtro-fecha-fin" value="{{ filtros_activos.fecha_fin|default:'' }}" class="w-full bg-transparent border-0 py-2 px-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-0">
+            </div>
+          </div>
         </div>
 
-        <div class="filtros-footer">
-          <div class="filtros-preconfig">
-            <span class="filtros-preconfig__label">
-              <i data-lucide="zap" style="width:12px;height:12px;"></i> Rápidos:
+        <div class="mt-5 pt-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
+            <span class="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wide whitespace-nowrap">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i> Rápidos:
             </span>
-            <button type="button" class="btn-preconfig" data-min="0" data-max="20000" data-tipo="EGRESO">
-              <i data-lucide="arrow-down-circle" style="width:12px;height:12px;"></i> Hormiga &lt;$20k
+            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-xs font-semibold whitespace-nowrap transition-colors" data-min="0" data-max="20000" data-tipo="EGRESO">
+              <i data-lucide="arrow-down-circle" class="w-3.5 h-3.5 text-rose-500"></i> Hormiga &lt;$20k
             </button>
-            <button type="button" class="btn-preconfig" data-min="500000" data-max="" data-tipo="EGRESO">
-              <i data-lucide="alert-triangle" style="width:12px;height:12px;"></i> Fuertes &gt;$500k
+            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-xs font-semibold whitespace-nowrap transition-colors" data-min="500000" data-max="" data-tipo="EGRESO">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-500"></i> Fuertes &gt;$500k
             </button>
-            <button type="button" class="btn-preconfig" data-min="100000" data-max="" data-tipo="AHORRO">
-              <i data-lucide="piggy-bank" style="width:12px;height:12px;"></i> Aportes &gt;$100k
+            <button type="button" class="btn-preconfig flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-xs font-semibold whitespace-nowrap transition-colors" data-min="100000" data-max="" data-tipo="AHORRO">
+              <i data-lucide="piggy-bank" class="w-3.5 h-3.5 text-emerald-500"></i> Aportes &gt;$100k
             </button>
           </div>
-          <div class="filtros-actions">
-            <button type="button" id="btn-limpiar-filtros" class="filtros-btn-limpiar">
-              <i data-lucide="x" style="width:14px;height:14px;"></i> Limpiar
+          <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+            <button type="button" id="btn-limpiar-filtros" class="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
+              <i data-lucide="x" class="w-4 h-4"></i> Limpiar
             </button>
-            <button type="submit" class="filtros-btn-aplicar">
-              <i data-lucide="check" style="width:14px;height:14px;"></i> Aplicar
+            <button type="submit" class="flex items-center gap-1.5 px-5 py-2 text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20 rounded-lg transition-all active:scale-95">
+              <i data-lucide="check" class="w-4 h-4"></i> Aplicar
             </button>
           </div>
         </div>
@@ -580,8 +597,8 @@ function initOnboarding() {
   </div>
 
 
-  {# Metas de ahorro activas — ocultas si hay filtros #}
-  <div class="app-card {% if tiene_filtros %}hidden{% endif %}" style="padding:22px 24px;" id="metas-ahorro-card">
+  {# Metas de ahorro activas — ocultas solo si el filtro de tipo es INGRESO o EGRESO #}
+  <div class="app-card {% if filtros_activos.tipo == 'INGRESO' or filtros_activos.tipo == 'EGRESO' %}hidden{% endif %}" style="padding:22px 24px;" id="metas-ahorro-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div>
         <p class="chart-card__title">Metas de ahorro</p>
