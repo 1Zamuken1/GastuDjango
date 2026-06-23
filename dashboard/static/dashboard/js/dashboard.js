@@ -148,12 +148,61 @@ document.addEventListener('DOMContentLoaded', () => {
   let anioVisto  = parseInt(navEl?.dataset.anio || new Date().getFullYear());
   let primerMes  = mesVisto;
   let primerAnio = anioVisto;
+
+  function formatearNumero(raw) {
+    if (!raw) return '';
+    const entero = String(raw).split('.')[0].replace(/\D/g, '');
+    if (!entero) return '';
+    return entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  function initFormateoFiltroMonto(idInput) {
+    const input = document.getElementById(idInput);
+    if (!input) return;
+    if (input.value) {
+      const digitos = input.value.replace(/\D/g, '');
+      input.dataset.raw = digitos;
+      input.value = formatearNumero(digitos);
+    }
+    input.addEventListener('input', function () {
+      const el = this;
+      const oldLen = el.value.length;
+      const start = el.selectionStart;
+      let digitCount = 0;
+      for (let i = 0; i < start; i++) {
+        if (/\d/.test(el.value[i])) digitCount++;
+      }
+      const digitos = el.value.replace(/\D/g, '');
+      if (!digitos) { el.dataset.raw = ''; el.value = ''; return; }
+      const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      el.dataset.raw = digitos;
+      el.value = formatted;
+      let newPos = formatted.length;
+      if (start < oldLen) {
+        let dc = 0;
+        for (let i = 0; i < formatted.length; i++) {
+          if (dc >= digitCount) { newPos = i; break; }
+          if (/\d/.test(formatted[i])) dc++;
+          newPos = i + 1;
+        }
+      }
+      el.setSelectionRange(newPos, newPos);
+    });
+  }
+
+  const getRawValue = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return '';
+    return el.dataset.raw || el.value.replace(/\D/g, '') || '';
+  };
   
   // Estado de filtros avanzados
   let currentFiltros = {
-    min_monto: document.getElementById('filtro-min-monto')?.value || '',
-    max_monto: document.getElementById('filtro-max-monto')?.value || '',
+    min_monto: getRawValue('filtro-min-monto'),
+    max_monto: getRawValue('filtro-max-monto'),
     categoria_id: document.getElementById('filtro-categoria')?.value || '',
+    fecha_inicio: document.getElementById('filtro-fecha-inicio')?.value || '',
+    fecha_fin: document.getElementById('filtro-fecha-fin')?.value || '',
     tipo: ''
   };
 
@@ -336,11 +385,18 @@ document.addEventListener('DOMContentLoaded', () => {
           type: 'bar', stacked: true,
           height: window.innerWidth <= 479 ? 200 : window.innerWidth <= 767 ? 220 : 270,
           fontFamily,
-          animations: { enabled: true, speed: 300, easing: 'easeinout' },
+          animations: { enabled: true, speed: 400, easing: 'easeinout' },
           background: 'transparent',
           toolbar:    { show: false },
           selection:  { enabled: false },
           zoom:       { enabled: false },
+          dropShadow: {
+            enabled: true,
+            top: 4,
+            left: 0,
+            blur: 4,
+            opacity: 0.05
+          }
         },
         series: [
           { name: 'Ingresos', data: ingresos },
@@ -352,31 +408,47 @@ document.addEventListener('DOMContentLoaded', () => {
           categories: labels,
           title: {
             text:  `${MES_NOMBRE} ${ANIO_LABEL}`,
-            style: { fontSize: '11px', fontWeight: 600, color: '#64748b', fontFamily },
+            style: { fontSize: '11px', fontWeight: 600, color: '#94a3b8', fontFamily },
           },
-          labels:     { style: axisStyle },
+          labels:     { style: { colors: '#64748b', fontSize: '11px', fontFamily } },
           axisBorder: { show: false },
           axisTicks:  { show: false },
         },
-        yaxis: { labels: { style: axisStyle, formatter: formatCOP } },
-        grid:  { borderColor: '#f1f5f9', strokeDashArray: 4, padding: { left: 4, right: 4 } },
+        yaxis: { 
+          labels: { 
+            style: { colors: '#94a3b8', fontSize: '11px', fontFamily }, 
+            formatter: formatCOP 
+          } 
+        },
+        grid:  { 
+          borderColor: '#f1f5f9', 
+          strokeDashArray: 4, 
+          padding: { top: 0, right: 0, bottom: 0, left: 10 } 
+        },
         dataLabels: { enabled: false },
         plotOptions: {
           bar: {
-            borderRadius: labels.length <= 10 ? 4 : 2,
-            columnWidth:  labels.length <= 7  ? '45%' : labels.length <= 14 ? '60%' : '75%',
+            borderRadius: 6,
+            borderRadiusApplication: 'end',
+            borderRadiusWhenStacked: 'last',
+            columnWidth:  labels.length <= 7  ? '35%' : labels.length <= 14 ? '50%' : '65%',
           },
         },
         legend: {
           position: 'top', horizontalAlign: 'right',
-          fontSize: '12px', fontFamily,
-          markers:    { width: 10, height: 10, radius: 3 },
-          itemMargin: { horizontal: 8 },
+          fontSize: '12px', fontFamily, fontWeight: 600,
+          labels: { colors: '#475569' },
+          markers:    { width: 10, height: 10, radius: 10 },
+          itemMargin: { horizontal: 10, vertical: 0 },
         },
         tooltip: {
           theme: 'light',
           shared: true,
           intersect: false,
+          style: {
+            fontSize: '12px',
+            fontFamily: fontFamily
+          },
           x: { formatter: (val) => `Día ${val} — ${MES_NOMBRE} ${ANIO_LABEL}` },
           custom: ({ series, seriesIndex, dataPointIndex, w }) => {
             const dia      = w.globals.labels[dataPointIndex];
@@ -774,45 +846,23 @@ requestAnimationFrame(() => {
             <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
             <p>${mensajeEmpty}</p>
           </div>`;
-      } else {
-        const header = `
-          <div class="mov-table-header">
-            <span class="mov-table-label">Descripción</span>
-            <span class="mov-table-label">Categoría</span>
-            <span class="mov-table-label">Fecha</span>
-            <span class="mov-table-label mov-table-label--right">Monto</span>
-          </div>`;
-
-        const rows = data.ultimos_movimientos.map(m => {
-          const esI    = m.tipo === 'INGRESO';
-          const esA    = m.tipo === 'AHORRO';
-          const dotCls = esI ? 'mov-dot--income' : esA ? 'mov-dot--saving' : 'mov-dot--expense';
-          const amtCls = esI ? 'mov-amount--income' : esA ? 'mov-amount--saving' : 'mov-amount--expense';
-          const signo  = esI ? '+' : esA ? '↗' : '−';
-          const label  = esI ? 'Ingreso' : esA ? 'Ahorro' : 'Egreso';
-          const montoF = '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(m.monto)));
-          return `
-            <div class="mov-row" data-tipo="${m.tipo}">
-              <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
-                <div class="mov-dot ${dotCls}"></div>
-                <div style="min-width:0;">
-                  <p class="mov-desc">${m.descripcion}</p>
-                  <p class="mov-type">${label}</p>
-                </div>
-              </div>
-              <div class="mov-cat">${m.categoria}</div>
-              <div class="mov-date">${m.fecha}</div>
-              <div class="mov-amount ${amtCls}">${signo}${montoF}</div>
-            </div>`;
-        }).join('');
-
-        movTabla.innerHTML = header + rows;
+        // Paginación de tabla (10 por página)
+        window.currentMovsData = data.ultimos_movimientos;
+        window.currentMovsPage = 1;
+        window.renderMovsTable();
       }
     }
 
-    /* ── Metas de ahorro ── */
+    /* ── Metas de ahorro (visibles salvo si filtro tipo es INGRESO o EGRESO) ── */
     const metasCard = document.getElementById('metas-ahorro-card');
-    if (metasCard) metasCard.style.display = data.tiene_filtros ? 'none' : 'block';
+    const ocultarMetas = currentFiltros.tipo === 'INGRESO' || currentFiltros.tipo === 'EGRESO';
+    if (metasCard) {
+      if (ocultarMetas) {
+        metasCard.classList.add('hidden');
+      } else {
+        metasCard.classList.remove('hidden');
+      }
+    }
     actualizarMetasAhorro(data.metas_ahorro_activas || []);
 
     /* ── Pie chart ── */
@@ -933,6 +983,8 @@ requestAnimationFrame(() => {
     if (currentFiltros.max_monto) q += `&max_monto=${currentFiltros.max_monto}`;
     if (currentFiltros.categoria_id) q += `&categoria_id=${currentFiltros.categoria_id}`;
     if (currentFiltros.tipo) q += `&tipo=${currentFiltros.tipo}`;
+    if (currentFiltros.fecha_inicio) q += `&fecha_inicio=${currentFiltros.fecha_inicio}`;
+    if (currentFiltros.fecha_fin) q += `&fecha_fin=${currentFiltros.fecha_fin}`;
 
     const url = `${URL_DASHBOARD}${q}`;
     history.pushState({ mes, anio, filtros: {...currentFiltros} }, '', url);
@@ -1086,12 +1138,73 @@ requestAnimationFrame(() => {
       });
     }
 
-    function aplicarFiltrosAvanzados() {
-      currentFiltros.min_monto = document.getElementById('filtro-min-monto').value;
-      currentFiltros.max_monto = document.getElementById('filtro-max-monto').value;
-      currentFiltros.categoria_id = document.getElementById('filtro-categoria').value;
+    // Inicializar MiniDatepickers
+    const inputFechaInicio = document.getElementById('filtro-fecha-inicio');
+    const inputFechaFin = document.getElementById('filtro-fecha-fin');
+    if (inputFechaInicio && typeof MiniDatepicker !== 'undefined') {
+      new MiniDatepicker(inputFechaInicio, { acento: 'ingreso' });
+    }
+    if (inputFechaFin && typeof MiniDatepicker !== 'undefined') {
+      new MiniDatepicker(inputFechaFin, { acento: 'egreso' });
+    }
+
+    // Procedural formatting for inputs
+    function setupMontoFormatter(inputId) {
+      const el = document.getElementById(inputId);
+      if (!el) return;
       
-      const tieneFiltros = currentFiltros.min_monto || currentFiltros.max_monto || currentFiltros.categoria_id || currentFiltros.tipo;
+      // Initialize if already has value
+      if (el.value) {
+        const digitos = el.value.replace(/\D/g, '');
+        el.dataset.raw = digitos;
+        if (digitos) el.value = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      el.addEventListener('input', function () {
+        const oldLen = this.value.length;
+        const start = this.selectionStart;
+        let digitCount = 0;
+        for (let i = 0; i < start; i++) {
+          if (/\d/.test(this.value[i])) digitCount++;
+        }
+        
+        const digitos = this.value.replace(/\D/g, '');
+        if (!digitos) { 
+          this.dataset.raw = ''; 
+          this.value = ''; 
+          return; 
+        }
+        
+        const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        this.dataset.raw = digitos;
+        this.value = formatted;
+        
+        let newPos = formatted.length;
+        if (start < oldLen) {
+          let dc = 0;
+          for (let i = 0; i < formatted.length; i++) {
+            if (dc >= digitCount) { newPos = i; break; }
+            if (/\d/.test(formatted[i])) dc++;
+            newPos = i + 1;
+          }
+        }
+        this.setSelectionRange(newPos, newPos);
+      });
+    }
+
+    setupMontoFormatter('filtro-min-monto');
+    setupMontoFormatter('filtro-max-monto');
+
+    function aplicarFiltrosAvanzados() {
+      const minEl = document.getElementById('filtro-min-monto');
+      const maxEl = document.getElementById('filtro-max-monto');
+      currentFiltros.min_monto = minEl ? (minEl.dataset.raw || minEl.value.replace(/\D/g, '')) : '';
+      currentFiltros.max_monto = maxEl ? (maxEl.dataset.raw || maxEl.value.replace(/\D/g, '')) : '';
+      currentFiltros.categoria_id = document.getElementById('filtro-categoria').value;
+      currentFiltros.fecha_inicio = document.getElementById('filtro-fecha-inicio')?.value || '';
+      currentFiltros.fecha_fin = document.getElementById('filtro-fecha-fin')?.value || '';
+      
+      const tieneFiltros = currentFiltros.min_monto || currentFiltros.max_monto || currentFiltros.categoria_id || currentFiltros.tipo || currentFiltros.fecha_inicio || currentFiltros.fecha_fin;
       if (badge) badge.classList.toggle('filtros-badge--visible', tieneFiltros);
       
       navegar(mesVisto, anioVisto);
@@ -1107,7 +1220,13 @@ requestAnimationFrame(() => {
     const limpiarFiltros = (e) => {
       if (e) e.preventDefault();
       if (form) form.reset();
-      currentFiltros = { min_monto: '', max_monto: '', categoria_id: '', tipo: '' };
+      
+      const minInp = document.getElementById('filtro-min-monto');
+      const maxInp = document.getElementById('filtro-max-monto');
+      if (minInp) minInp.dataset.raw = '';
+      if (maxInp) maxInp.dataset.raw = '';
+
+      currentFiltros = { min_monto: '', max_monto: '', categoria_id: '', tipo: '', fecha_inicio: '', fecha_fin: '' };
       
       // Limpiar picker de categoría visualmente
       document.getElementById('filtro-cat-label').textContent = 'Todas las categorías';
@@ -1136,10 +1255,25 @@ requestAnimationFrame(() => {
     if (btnLimpiar) btnLimpiar.addEventListener('click', limpiarFiltros);
     if (btnLimpiarBadge) btnLimpiarBadge.addEventListener('click', limpiarFiltros);
 
+    initFormateoFiltroMonto('filtro-min-monto');
+    initFormateoFiltroMonto('filtro-max-monto');
+
     preconfigBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        document.getElementById('filtro-min-monto').value = btn.dataset.min || '';
-        document.getElementById('filtro-max-monto').value = btn.dataset.max || '';
+        const minVal = btn.dataset.min || '';
+        const maxVal = btn.dataset.max || '';
+        
+        const minInp = document.getElementById('filtro-min-monto');
+        const maxInp = document.getElementById('filtro-max-monto');
+        
+        if (minInp) {
+          minInp.value = formatearNumero(minVal);
+          minInp.dataset.raw = minVal;
+        }
+        if (maxInp) {
+          maxInp.value = formatearNumero(maxVal);
+          maxInp.dataset.raw = maxVal;
+        }
         document.getElementById('filtro-categoria').value = '';
         currentFiltros.tipo = btn.dataset.tipo || '';
         
@@ -1249,3 +1383,82 @@ requestAnimationFrame(() => {
   bindFiltrosAvanzados();
 
 });
+
+/* ── PAGINACIÓN CLIENTE PARA DESGLOSE DE MOVIMIENTOS ── */
+window.MOVS_PER_PAGE = 10;
+window.currentMovsData = [];
+window.currentMovsPage = 1;
+
+window.renderMovsTable = function() {
+  const movTabla = document.getElementById('mov-tabla');
+  if (!movTabla) return;
+
+  if (!window.currentMovsData || window.currentMovsData.length === 0) {
+    movTabla.innerHTML = `
+      <div class="mov-empty">
+        <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
+        <p>No hay movimientos registrados para mostrar.</p>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  const totalPages = Math.ceil(window.currentMovsData.length / window.MOVS_PER_PAGE);
+  const startIdx = (window.currentMovsPage - 1) * window.MOVS_PER_PAGE;
+  const pageData = window.currentMovsData.slice(startIdx, startIdx + window.MOVS_PER_PAGE);
+
+  const header = `
+    <div class="mov-table-header">
+      <span class="mov-table-label">Descripción</span>
+      <span class="mov-table-label">Categoría</span>
+      <span class="mov-table-label">Fecha</span>
+      <span class="mov-table-label mov-table-label--right">Monto</span>
+    </div>`;
+
+  const rows = pageData.map(m => {
+    const esI    = m.tipo === 'INGRESO';
+    const esA    = m.tipo === 'AHORRO';
+    const dotCls = esI ? 'mov-dot--income' : esA ? 'mov-dot--saving' : 'mov-dot--expense';
+    const amtCls = esI ? 'mov-amount--income' : esA ? 'mov-amount--saving' : 'mov-amount--expense';
+    const signo  = esI ? '+' : esA ? '↗' : '−';
+    const label  = esI ? 'Ingreso' : esA ? 'Ahorro' : 'Egreso';
+    const montoF = '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(m.monto)));
+    return `
+      <div class="mov-row" data-tipo="${m.tipo}">
+        <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
+          <div class="mov-dot ${dotCls}"></div>
+          <div style="min-width:0;">
+            <p class="mov-desc">${m.descripcion}</p>
+            <p class="mov-type">${label}</p>
+          </div>
+        </div>
+        <div class="mov-cat">${m.categoria}</div>
+        <div class="mov-date">${m.fecha_fmt || m.fecha}</div>
+        <div class="mov-amount ${amtCls}">${signo}${montoF}</div>
+      </div>`;
+  }).join('');
+
+  let paginationHtml = '';
+  if (totalPages > 1) {
+    paginationHtml = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid #f1f5f9;">
+        <span style="font-size:12px;font-weight:600;color:#64748b;">Página ${window.currentMovsPage} de ${totalPages}</span>
+        <div style="display:flex;gap:8px;">
+          <button onclick="window.dashboardChangePage(${window.currentMovsPage - 1})" ${window.currentMovsPage === 1 ? 'disabled' : ''} style="padding:6px 12px;font-size:12px;font-weight:700;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer;opacity:${window.currentMovsPage === 1 ? '0.5' : '1'};pointer-events:${window.currentMovsPage === 1 ? 'none' : 'auto'};">Anterior</button>
+          <button onclick="window.dashboardChangePage(${window.currentMovsPage + 1})" ${window.currentMovsPage === totalPages ? 'disabled' : ''} style="padding:6px 12px;font-size:12px;font-weight:700;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer;opacity:${window.currentMovsPage === totalPages ? '0.5' : '1'};pointer-events:${window.currentMovsPage === totalPages ? 'none' : 'auto'};">Siguiente</button>
+        </div>
+      </div>
+    `;
+  }
+
+  movTabla.innerHTML = header + rows + paginationHtml;
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.dashboardChangePage = function(newPage) {
+  const totalPages = Math.ceil(window.currentMovsData.length / window.MOVS_PER_PAGE);
+  if (newPage >= 1 && newPage <= totalPages) {
+    window.currentMovsPage = newPage;
+    window.renderMovsTable();
+  }
+};
