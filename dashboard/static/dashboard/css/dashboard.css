@@ -612,7 +612,7 @@
 }
 
 /* ── Modal Picker Categorías Dash Responsive ── */
-#modal-picker-cat-dash .picker-cat-grid {
+.picker-cat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 12px;
@@ -621,8 +621,8 @@
   padding: 4px;
 }
 @media (max-width: 768px) {
-  #modal-picker-cat-dash .picker-cat-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-  #modal-picker-cat-dash .modal-content { width: 95%; padding: 16px; margin: 20px auto; }
+  .picker-cat-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .modal--lg { width: 95vw; margin: 10px auto; max-height: 90vh; }
 }
 
 /* ── Navegacion de meses ─────────────────────────────────── */

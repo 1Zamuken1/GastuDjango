@@ -846,39 +846,10 @@ requestAnimationFrame(() => {
             <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
             <p>${mensajeEmpty}</p>
           </div>`;
-      } else {
-        const header = `
-          <div class="mov-table-header">
-            <span class="mov-table-label">Descripción</span>
-            <span class="mov-table-label">Categoría</span>
-            <span class="mov-table-label">Fecha</span>
-            <span class="mov-table-label mov-table-label--right">Monto</span>
-          </div>`;
-
-        const rows = data.ultimos_movimientos.map(m => {
-          const esI    = m.tipo === 'INGRESO';
-          const esA    = m.tipo === 'AHORRO';
-          const dotCls = esI ? 'mov-dot--income' : esA ? 'mov-dot--saving' : 'mov-dot--expense';
-          const amtCls = esI ? 'mov-amount--income' : esA ? 'mov-amount--saving' : 'mov-amount--expense';
-          const signo  = esI ? '+' : esA ? '↗' : '−';
-          const label  = esI ? 'Ingreso' : esA ? 'Ahorro' : 'Egreso';
-          const montoF = '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(m.monto)));
-          return `
-            <div class="mov-row" data-tipo="${m.tipo}">
-              <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
-                <div class="mov-dot ${dotCls}"></div>
-                <div style="min-width:0;">
-                  <p class="mov-desc">${m.descripcion}</p>
-                  <p class="mov-type">${label}</p>
-                </div>
-              </div>
-              <div class="mov-cat">${m.categoria}</div>
-              <div class="mov-date">${m.fecha}</div>
-              <div class="mov-amount ${amtCls}">${signo}${montoF}</div>
-            </div>`;
-        }).join('');
-
-        movTabla.innerHTML = header + rows;
+        // Paginación de tabla (10 por página)
+        window.currentMovsData = data.ultimos_movimientos;
+        window.currentMovsPage = 1;
+        window.renderMovsTable();
       }
     }
 
@@ -1412,3 +1383,82 @@ requestAnimationFrame(() => {
   bindFiltrosAvanzados();
 
 });
+
+/* ── PAGINACIÓN CLIENTE PARA DESGLOSE DE MOVIMIENTOS ── */
+window.MOVS_PER_PAGE = 10;
+window.currentMovsData = [];
+window.currentMovsPage = 1;
+
+window.renderMovsTable = function() {
+  const movTabla = document.getElementById('mov-tabla');
+  if (!movTabla) return;
+
+  if (!window.currentMovsData || window.currentMovsData.length === 0) {
+    movTabla.innerHTML = `
+      <div class="mov-empty">
+        <i data-lucide="inbox" style="width:40px;height:40px;color:#e2e8f0;"></i>
+        <p>No hay movimientos registrados para mostrar.</p>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  const totalPages = Math.ceil(window.currentMovsData.length / window.MOVS_PER_PAGE);
+  const startIdx = (window.currentMovsPage - 1) * window.MOVS_PER_PAGE;
+  const pageData = window.currentMovsData.slice(startIdx, startIdx + window.MOVS_PER_PAGE);
+
+  const header = `
+    <div class="mov-table-header">
+      <span class="mov-table-label">Descripción</span>
+      <span class="mov-table-label">Categoría</span>
+      <span class="mov-table-label">Fecha</span>
+      <span class="mov-table-label mov-table-label--right">Monto</span>
+    </div>`;
+
+  const rows = pageData.map(m => {
+    const esI    = m.tipo === 'INGRESO';
+    const esA    = m.tipo === 'AHORRO';
+    const dotCls = esI ? 'mov-dot--income' : esA ? 'mov-dot--saving' : 'mov-dot--expense';
+    const amtCls = esI ? 'mov-amount--income' : esA ? 'mov-amount--saving' : 'mov-amount--expense';
+    const signo  = esI ? '+' : esA ? '↗' : '−';
+    const label  = esI ? 'Ingreso' : esA ? 'Ahorro' : 'Egreso';
+    const montoF = '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(m.monto)));
+    return `
+      <div class="mov-row" data-tipo="${m.tipo}">
+        <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
+          <div class="mov-dot ${dotCls}"></div>
+          <div style="min-width:0;">
+            <p class="mov-desc">${m.descripcion}</p>
+            <p class="mov-type">${label}</p>
+          </div>
+        </div>
+        <div class="mov-cat">${m.categoria}</div>
+        <div class="mov-date">${m.fecha_fmt || m.fecha}</div>
+        <div class="mov-amount ${amtCls}">${signo}${montoF}</div>
+      </div>`;
+  }).join('');
+
+  let paginationHtml = '';
+  if (totalPages > 1) {
+    paginationHtml = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid #f1f5f9;">
+        <span style="font-size:12px;font-weight:600;color:#64748b;">Página ${window.currentMovsPage} de ${totalPages}</span>
+        <div style="display:flex;gap:8px;">
+          <button onclick="window.dashboardChangePage(${window.currentMovsPage - 1})" ${window.currentMovsPage === 1 ? 'disabled' : ''} style="padding:6px 12px;font-size:12px;font-weight:700;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer;opacity:${window.currentMovsPage === 1 ? '0.5' : '1'};pointer-events:${window.currentMovsPage === 1 ? 'none' : 'auto'};">Anterior</button>
+          <button onclick="window.dashboardChangePage(${window.currentMovsPage + 1})" ${window.currentMovsPage === totalPages ? 'disabled' : ''} style="padding:6px 12px;font-size:12px;font-weight:700;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer;opacity:${window.currentMovsPage === totalPages ? '0.5' : '1'};pointer-events:${window.currentMovsPage === totalPages ? 'none' : 'auto'};">Siguiente</button>
+        </div>
+      </div>
+    `;
+  }
+
+  movTabla.innerHTML = header + rows + paginationHtml;
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.dashboardChangePage = function(newPage) {
+  const totalPages = Math.ceil(window.currentMovsData.length / window.MOVS_PER_PAGE);
+  if (newPage >= 1 && newPage <= totalPages) {
+    window.currentMovsPage = newPage;
+    window.renderMovsTable();
+  }
+};
