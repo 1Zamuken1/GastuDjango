@@ -92,7 +92,7 @@ def crear_ahorro(request):
             ahorro.total_acumulado = Decimal('0.00')
 
             if not ahorro.estado:
-                ahorro.estado = AhorroMeta.Estado.SIN_INICIAR
+                ahorro.estado = AhorroMeta.Estado.SIN_INICIAR.value
 
             ahorro.save()
             generar_cuotas(ahorro)
@@ -181,9 +181,9 @@ def editar_ahorro(request, id):
 
             # Ajustar estado si el monto_meta editado altera el cumplimiento
             if ahorro.total_acumulado >= ahorro.monto_meta:
-                ahorro.estado = AhorroMeta.Estado.COMPLETADO
+                ahorro.estado = AhorroMeta.Estado.COMPLETADO.value
             elif ahorro.estado == AhorroMeta.Estado.COMPLETADO and ahorro.total_acumulado < ahorro.monto_meta:
-                ahorro.estado = AhorroMeta.Estado.ACTIVO
+                ahorro.estado = AhorroMeta.Estado.ACTIVO.value
 
             ahorro.save()
             recalcular_aportes(ahorro)
@@ -340,7 +340,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if es_extraordinario:
         cuota = AporteAhorro(
             ahorro=ahorro,
-            estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value,
             fecha_limite=hoy,
             aporte_asignado=aporte_ingresado,
             es_extraordinario=True,
@@ -368,7 +368,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
     # Registrar aporte
     cuota.aporte = aporte_ingresado
-    cuota.estado_ap = AporteAhorro.EstadoAp.APORTADO
+    cuota.estado_ap = AporteAhorro.EstadoAp.APORTADO.value
     cuota._es_extraordinario = es_extraordinario
     cuota.save()
     # El signal post_save de AporteAhorro se encarga de actualizar
@@ -389,10 +389,10 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         AhorroMeta.Estado.SIN_INICIAR,
         AhorroMeta.Estado.ABANDONADO,
     ]:
-        ahorro.estado = AhorroMeta.Estado.ACTIVO
+        ahorro.estado = AhorroMeta.Estado.ACTIVO.value
 
     if monto_meta > Decimal('0.00') and total_acumulado >= monto_meta:
-        ahorro.estado = AhorroMeta.Estado.COMPLETADO
+        ahorro.estado = AhorroMeta.Estado.COMPLETADO.value
         pendientes = AporteAhorro.objects.filter(ahorro=ahorro, estado_ap=AporteAhorro.EstadoAp.PENDIENTE, es_extraordinario=False)
         cuotas_eliminadas = pendientes.count()
         if cuotas_eliminadas > 0:
