@@ -130,6 +130,7 @@ def editar_ahorro(request, id):
                 'categoria_id': ahorro.categoria_id,
                 'categoria_nombre': ahorro.categoria.nombre if ahorro.categoria else '',
                 'monto_meta': str(ahorro.monto_meta),
+                'total_acumulado': str(ahorro.total_acumulado),
                 'frecuencia': ahorro.frecuencia,
                 'fecha_meta': ahorro.fecha_meta.strftime('%Y-%m-%d') if ahorro.fecha_meta else '',
                 'cantidad_cuotas': ahorro.cantidad_cuotas,
@@ -146,6 +147,20 @@ def editar_ahorro(request, id):
         form = AhorroMetaForm(request.POST, instance=ahorro)
 
         if form.is_valid():
+            nuevo_monto_meta = form.cleaned_data['monto_meta']
+
+            # Validar que el nuevo monto meta no sea menor al total ya acumulado
+            if nuevo_monto_meta < ahorro.total_acumulado:
+                msg = (
+                    f"El monto meta no puede ser menor al total ya acumulado "
+                    f"(${ahorro.total_acumulado:,.0f}). "
+                    f"Selecciona un monto mayor"
+                )
+                return JsonResponse({
+                    'ok': False,
+                    'errors': {'monto_meta': [msg]}
+                }, status=400)
+
             cuotas_regulares_aportadas = AporteAhorro.objects.filter(
                 ahorro=ahorro,
                 estado_ap=AporteAhorro.EstadoAp.APORTADO,

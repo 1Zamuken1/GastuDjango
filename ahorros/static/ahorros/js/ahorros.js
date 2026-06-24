@@ -473,6 +473,8 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
       const inputEditMonto = document.getElementById('editar-monto-meta');
       inputEditMonto.value = formatearNumeroStr(a.monto_meta);
       inputEditMonto.dataset.raw = a.monto_meta;
+      // Guardamos el acumulado para validar que no bajen el monto por debajo de él
+      inputEditMonto.dataset.minMonto = a.total_acumulado;
 
       document.getElementById('editar-frecuencia').value = a.frecuencia;
       const fLabelEdit = document.getElementById('editar-frecuencia-label');
@@ -527,6 +529,17 @@ document.getElementById('btn-guardar-editar').addEventListener('click', async ()
   const data = new FormData(formEditar);
   const m = document.getElementById('editar-monto-meta');
   if (m && m.dataset.raw) data.set('monto_meta', m.dataset.raw);
+
+  // Validación client-side: el nuevo monto no puede ser menor al acumulado
+  const nuevoMonto    = parseFloat(m?.dataset.raw) || 0;
+  const minMonto      = parseFloat(m?.dataset.minMonto) || 0;
+  if (minMonto > 0 && nuevoMonto < minMonto) {
+    const minFmt = minMonto.toLocaleString('es-CO', { minimumFractionDigits: 0 });
+    mostrarErroresEditar({
+      monto_meta: [`El monto meta no puede ser menor al total ya acumulado ($${minFmt}). Si deseas reducirlo, primero retira los aportes correspondientes.`]
+    });
+    return;
+  }
 
   try {
     const res  = await fetch(_editarUrl, {

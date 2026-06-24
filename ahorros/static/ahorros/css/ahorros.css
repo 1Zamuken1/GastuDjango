@@ -1440,3 +1440,31 @@
   flex-shrink: 0;
   color: #cbd5e1;
 }
+
+/* ── Mejoras UI (COMPLETADO, PERDIDO) ───────────────────────── */
+.categoria-card--completado {
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 3.5px solid #22c55e !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* El ícono del cerdito pasa a verde */
+.categoria-card--completado .categoria-card__icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* La barra de progreso pasa a verde cuando está completa */
+.categoria-card--completado .progress-bar__fill {
+  background: #22c55e;
+}
+
+tr.cuota--perdido {
+  background-color: #fef2f2 !important;
+}
+
+tr.cuota--perdido td:first-child {
+  border-left: 3px solid #ef4444;
+}

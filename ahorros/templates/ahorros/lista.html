@@ -137,7 +137,7 @@
 <div class="categorias-grid" id="grid-metas">
 
   {% for ahorro in ahorros %}
-  <div class="categoria-card" id="meta-card-{{ ahorro.id }}"
+  <div class="categoria-card {% if ahorro.estado == 'COMPLETADO' %}categoria-card--completado{% endif %}" id="meta-card-{{ ahorro.id }}"
     data-search-text="{{ ahorro.categoria.nombre|lower }} {{ ahorro.descripcion|lower }}"
     data-activo="{{ ahorro.categoria.activo|yesno:'true,false' }}">
 
@@ -152,7 +152,11 @@
         <p class="categoria-card__cantidad truncate">{{ ahorro.descripcion|default:"Sin descripción" }}</p>
       </div>
       <div class="categoria-card__icon">
+        {% if ahorro.estado == 'COMPLETADO' %}
+        <i data-lucide="check-circle-2"></i>
+        {% else %}
         <i data-lucide="piggy-bank"></i>
+        {% endif %}
       </div>
     </div>
 
@@ -167,12 +171,20 @@
       <p class="categoria-card__footer">Objetivo: ${{ ahorro.monto_meta|floatformat:"0g" }}</p>
     </div>
 
-    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;position:relative;z-index:2;">
+      {% if ahorro.estado == 'COMPLETADO' %}
+      <button type="button" class="btn-ghost btn-abrir-modal-aporte"
+        data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
+        style="padding:0.4rem 0.8rem;font-size:0.75rem;border-radius:0.5rem;gap:0.25rem;background:#f8fafc;border:1px solid #e2e8f0;">
+        <i data-lucide="eye" style="width:12px;height:12px;"></i> Detalle
+      </button>
+      {% else %}
       <button type="button" class="btn-amber btn-abrir-modal-aporte"
         data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
         style="padding:0.4rem 0.8rem;font-size:0.75rem;border-radius:0.5rem;gap:0.25rem;">
         <i data-lucide="plus-circle" style="width:12px;height:12px;"></i> Aporte
       </button>
+      {% endif %}
       <button type="button" class="btn-editar-meta" data-id="{{ ahorro.id }}"
         data-url="{% url 'ahorros:editar_ahorro' id=ahorro.id %}" style="display:inline-flex;align-items:center;justify-content:center;
                      width:2rem;height:2rem;border-radius:0.5rem;border:1px solid #e2e8f0;
