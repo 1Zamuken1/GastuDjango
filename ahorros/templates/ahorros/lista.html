@@ -572,18 +572,6 @@
     </div>
 
     <div class="picker-cat-grid" id="picker-grid">
-      {% for cat in categorias %}
-      <button type="button" class="picker-cat-card" data-id="{{ cat.id }}" data-nombre="{{ cat.nombre }}">
-        <div class="picker-cat-icon">
-          <i data-lucide="piggy-bank" style="width:1rem;height:1rem;"></i>
-        </div>
-        <span class="picker-cat-nombre">{{ cat.nombre }}</span>
-      </button>
-      {% empty %}
-      <p style="grid-column:1/-1;text-align:center;color:#64748b;font-size:.875rem;padding:2.5rem 0;">
-        Sin categorías de ahorro disponibles
-      </p>
-      {% endfor %}
     </div>
 
     <div class="categoria-btn" style="padding:.875rem 1.25rem;border-top:1px solid #f1f5f9;
@@ -660,6 +648,7 @@
   const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
 </script>
 <script src="{% static 'movimientos/js/datepicker.js' %}?v=1.2"></script>
+<script src="{% static 'js/category-picker.js' %}"></script>
 <script src="{% static 'ahorros/js/ahorros.js' %}?v=1.4"></script>
 <script src="{% static 'historial/js/historial.js' %}"></script>
 {% endblock %}

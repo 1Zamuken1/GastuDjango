@@ -679,20 +679,7 @@ function initOnboarding() {
         <button type="button" class="picker-cat-tipo-btn" data-tipo="AHORRO">Ahorros</button>
       </div>
       <div id="picker-cat-grid" class="picker-cat-grid">
-        <button type="button" class="picker-cat-card picker-cat-card--default" data-id="" data-nombre="Todas las categorías" data-tipo="">
-          <div class="picker-cat-icon">
-            <i data-lucide="layers" style="width:18px;height:18px;"></i>
-          </div>
-          <span class="picker-cat-nombre">Todas</span>
-        </button>
-        {% for cat in categorias_disponibles %}
-        <button type="button" class="picker-cat-card picker-cat-card--{{ cat.tipo|lower }}" data-id="{{ cat.id }}" data-nombre="{{ cat.nombre }}" data-tipo="{{ cat.tipo }}">
-          <div class="picker-cat-icon">
-            <i data-lucide="{% if cat.tipo == 'INGRESO' %}trending-up{% elif cat.tipo == 'EGRESO' %}trending-down{% else %}piggy-bank{% endif %}" style="width:18px;height:18px;"></i>
-          </div>
-          <span class="picker-cat-nombre">{{ cat.nombre }}</span>
-        </button>
-        {% endfor %}
+        <!-- Contenido inyectado por category-picker.js -->
       </div>
     </div>
   </div>
@@ -721,5 +708,6 @@ function initOnboarding() {
     });
   </script>
   <script src="{% static 'movimientos/js/datepicker.js' %}"></script>
+  <script src="{% static 'js/category-picker.js' %}"></script>
   <script src="{% static 'dashboard/js/dashboard.js' %}"></script>
 {% endblock %}

@@ -184,7 +184,7 @@
       <input type="text" id="buscador-categorias" class="form-input"
         placeholder="Buscar categoría..." oninput="filtrarCategorias()"
         style="margin-bottom: 12px;">
-      <div id="lista-categorias" class="categorias-grid"></div>
+      <div id="picker-grid" class="picker-cat-grid categorias-grid"></div>
       <div class="modal-actions modal-actions-categoria" style="margin-top:18px;">
         <button onclick="cerrarModal('modal-categorias')" class="btn-cancelar btn-cancelar-categoria">Cerrar</button>
       </div>
@@ -203,6 +203,7 @@
 
 {% block programaciones_scripts %}
 <script src="{% static 'programaciones/js/datepicker.js' %}"></script>
+<script src="{% static 'js/category-picker.js' %}"></script>
 <script>
       const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
 
@@ -435,54 +436,29 @@
 
       let modalContexto = 'crear'
 
-      let todasLasCategorias = []
-
-    function abrirModalCategorias(contexto) {
-      modalContexto = contexto
-      document.getElementById('buscador-categorias').value = ''
-      document.getElementById('modal-categorias').style.display = 'flex'
-
-      fetch('/api/categorias/', { credentials: 'same-origin' })
-        .then(res => res.json())
-        .then(data => {
-          const categorias = Array.isArray(data) ? data : (data.categorias || data.results || [])
-          todasLasCategorias = categorias.filter(cat => cat.tipo === 'INGRESO' || cat.tipo === 'EGRESO')
-          renderCategorias(todasLasCategorias)
-        })
-        .catch(err => console.error('Error cargando categorías:', err))
-    }
-
-    function filtrarCategorias() {
-      const query = document.getElementById('buscador-categorias').value.toLowerCase()
-      const filtradas = todasLasCategorias.filter(c => c.nombre.toLowerCase().includes(query))
-      renderCategorias(filtradas)
-    }
-
-    function renderCategorias(lista) {
-      const contenedor = document.getElementById('lista-categorias')
-      contenedor.innerHTML = ''
-      if (!lista.length) {
-        contenedor.innerHTML = '<p style="color:#888; font-size:0.9rem;">Sin resultados.</p>'
-        return
+      function abrirModalCategorias(contexto) {
+        modalContexto = contexto
+        
+        if (window.CategoryPicker) {
+          CategoryPicker.init({
+            containerId: 'picker-grid',
+            context: 'programaciones',
+            tipo: '', // Todas
+            onSelect: function(cat) {
+              seleccionarCategoria(cat)
+            }
+          })
+        }
+        
+        document.getElementById('buscador-categorias').value = ''
+        if (window.CategoryPicker) CategoryPicker.filter('')
+        document.getElementById('modal-categorias').style.display = 'flex'
       }
-      lista.forEach(cat => {
-        const div = document.createElement('div')
-        div.className = 'categoria-card'
-        const iconName = cat.tipo === 'INGRESO' ? 'trending-up' : 'trending-down'
-        const tipoClass = cat.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso'
-        const tipoLabel = cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'
-        div.innerHTML = `
-          <div class="categoria-card__icon">
-            <i data-lucide="${iconName}"></i>
-          </div>
-          <span class="categoria-card__nombre">${cat.nombre}</span>
-          <span class="card-badge ${tipoClass}">${tipoLabel}</span>
-        `
-        div.onclick = () => seleccionarCategoria(cat)
-        contenedor.appendChild(div)
-      })
-      if (typeof lucide !== 'undefined') lucide.createIcons()
-    }
+
+      function filtrarCategorias() {
+        const q = document.getElementById('buscador-categorias').value
+        if (window.CategoryPicker) CategoryPicker.filter(q)
+      }
 
       function seleccionarCategoria(cat) {
         if (modalContexto === 'editar') {

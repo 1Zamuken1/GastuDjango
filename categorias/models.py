@@ -27,3 +27,18 @@ class Categoria(models.Model):
 
     def __str__(self):
         return f'{self.nombre} ({self.tipo})'
+
+
+class CategoriaFavorita(models.Model):
+    """Categoría marcada como favorita por un usuario específico."""
+    usuario = models.ForeignKey('usuarios.Usuario', on_delete=models.CASCADE, related_name='categorias_favoritas')
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='favoritos')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [['usuario', 'categoria']]
+        verbose_name = 'Categoría Favorita'
+        verbose_name_plural = 'Categorías Favoritas'
+
+    def __str__(self):
+        return f'{self.usuario.email} - {self.categoria.nombre}'
