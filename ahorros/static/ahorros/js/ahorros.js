@@ -211,46 +211,42 @@ const pickerBuscador       = document.getElementById('picker-buscador');
 const pickerSelLabel       = document.getElementById('picker-seleccionado-label');
 let   _pickerCallback      = null;
 
+if (window.CategoryPicker && modalPicker) {
+  CategoryPicker.init({
+    containerId: 'picker-grid',
+    tipo: 'AHORRO',
+    context: 'ahorros',
+    onSelect: function(cat) {
+      if (_pickerCallback) _pickerCallback(cat.id, cat.nombre);
+      if (pickerSelLabel) pickerSelLabel.textContent = `Seleccionado: ${cat.nombre}`;
+      cerrarPicker();
+    }
+  });
+}
+
 function abrirPicker(callback) {
   _pickerCallback = callback;
   if (pickerBuscador) pickerBuscador.value = '';
-  filtrarPicker('');
+  if (window.CategoryPicker) CategoryPicker.filter('');
   modalPicker.removeAttribute('hidden');
-  pickerGrid.querySelectorAll('.picker-cat-card').forEach(c => c.classList.remove('selected'));
   if (pickerSelLabel) pickerSelLabel.textContent = '';
-  lucide.createIcons();
 }
 
 function cerrarPicker() {
   modalPicker.setAttribute('hidden', '');
 }
 
-function filtrarPicker(q) {
-  pickerGrid.querySelectorAll('.picker-cat-card').forEach(card => {
-    const nombre = (card.dataset.nombre || '').toLowerCase();
-    card.style.display = nombre.includes(q.toLowerCase()) ? '' : 'none';
+if (pickerBuscador) {
+  pickerBuscador.addEventListener('input', () => {
+    if (window.CategoryPicker) CategoryPicker.filter(pickerBuscador.value);
   });
 }
 
-pickerGrid.addEventListener('click', e => {
-  const card = e.target.closest('.picker-cat-card');
-  if (!card) return;
-  const id     = card.dataset.id;
-  const nombre = card.dataset.nombre;
-  pickerGrid.querySelectorAll('.picker-cat-card').forEach(c => c.classList.remove('selected'));
-  card.classList.add('selected');
-  if (pickerSelLabel) pickerSelLabel.textContent = `Seleccionado: ${nombre}`;
-  if (_pickerCallback) _pickerCallback(id, nombre);
-  cerrarPicker();
+document.getElementById('btn-cerrar-picker')?.addEventListener('click', cerrarPicker);
+document.getElementById('btn-cancelar-picker')?.addEventListener('click', cerrarPicker);
+modalPicker?.addEventListener('click', e => {
+  if (e.target === modalPicker) cerrarPicker();
 });
-
-if (pickerBuscador) {
-  pickerBuscador.addEventListener('input', () => filtrarPicker(pickerBuscador.value));
-}
-
-document.getElementById('btn-cerrar-picker').addEventListener('click', cerrarPicker);
-document.getElementById('btn-cancelar-picker').addEventListener('click', cerrarPicker);
-modalPicker.addEventListener('click', e => { if (e.target === modalPicker) cerrarPicker(); });
 
 
 /* ══════════════════════════════════════════════════════════
@@ -473,6 +469,8 @@ document.querySelectorAll('.btn-editar-meta').forEach(btn => {
       const inputEditMonto = document.getElementById('editar-monto-meta');
       inputEditMonto.value = formatearNumeroStr(a.monto_meta);
       inputEditMonto.dataset.raw = a.monto_meta;
+      // Guardamos el acumulado para validar que no bajen el monto por debajo de él
+      inputEditMonto.dataset.minMonto = a.total_acumulado;
 
       document.getElementById('editar-frecuencia').value = a.frecuencia;
       const fLabelEdit = document.getElementById('editar-frecuencia-label');
@@ -527,6 +525,17 @@ document.getElementById('btn-guardar-editar').addEventListener('click', async ()
   const data = new FormData(formEditar);
   const m = document.getElementById('editar-monto-meta');
   if (m && m.dataset.raw) data.set('monto_meta', m.dataset.raw);
+
+  // Validación client-side: el nuevo monto no puede ser menor al acumulado
+  const nuevoMonto    = parseFloat(m?.dataset.raw) || 0;
+  const minMonto      = parseFloat(m?.dataset.minMonto) || 0;
+  if (minMonto > 0 && nuevoMonto < minMonto) {
+    const minFmt = minMonto.toLocaleString('es-CO', { minimumFractionDigits: 0 });
+    mostrarErroresEditar({
+      monto_meta: [`El monto meta no puede ser menor al total ya acumulado ($${minFmt}). Si deseas reducirlo, primero retira los aportes correspondientes.`]
+    });
+    return;
+  }
 
   try {
     const res  = await fetch(_editarUrl, {

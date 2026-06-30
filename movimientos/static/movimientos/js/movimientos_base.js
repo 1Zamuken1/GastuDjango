@@ -431,51 +431,58 @@ class GestorMovimientos {
 
     this._pickerEls = { modalPicker, btnPicker, pickerLabel, inputCat, buscadorPick };
 
-    function abrirPicker() {
-      buscadorPick.value = '';
-      filtrarPicker('');
-      const selId = inputCat.value;
-      document.querySelectorAll('.picker-cat-card').forEach(c => c.classList.toggle('selected', c.dataset.id === selId));
-      const selLabel = document.getElementById('picker-seleccionado-label');
-      if (selLabel) {
-        const sc = document.querySelector(`.picker-cat-card[data-id="${selId}"]`);
-        selLabel.textContent = sc ? `Seleccionado: ${sc.dataset.nombre}` : '';
-      }
-      modalPicker.removeAttribute('hidden');
-      lucide.createIcons();
-      setTimeout(() => buscadorPick.focus(), 50);
-    }
-    function cerrarPicker() { modalPicker.setAttribute('hidden', ''); }
-    function filtrarPicker(q) {
-      const qL = q.toLowerCase().trim();
-      document.querySelectorAll('.picker-cat-card').forEach(c => {
-        c.style.display = c.dataset.nombre.toLowerCase().includes(qL) ? '' : 'none';
+    if (window.CategoryPicker) {
+      CategoryPicker.init({
+        containerId: 'picker-grid',
+        tipo: this.tipo.toUpperCase(),
+        context: 'movimientos',
+        onSelect: (cat) => {
+          inputCat.value = cat.id;
+          pickerLabel.textContent = cat.nombre;
+          pickerLabel.style.color = '#0f172a';
+          cerrarPicker();
+        }
       });
     }
-    function seleccionarCategoria(id, nombre) {
-      inputCat.value = id;
-      pickerLabel.textContent = nombre;
-      pickerLabel.style.color = 'var(--slate-900)';
-      btnPicker.style.borderColor = '';
-      document.querySelectorAll('.picker-cat-card').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
-      cerrarPicker();
+
+    function abrirPicker() {
+      if (buscadorPick) buscadorPick.value = '';
+      if (window.CategoryPicker) CategoryPicker.filter('');
+      
+      const selId = inputCat.value;
+      const selLabel = document.getElementById('picker-seleccionado-label');
+      if (selLabel) {
+        if (selId && window.CategoryPicker) {
+          const cat = window.CategoryPicker.allCategories.find(c => c.id == selId);
+          selLabel.textContent = cat ? `Seleccionado: ${cat.nombre}` : '';
+        } else {
+          selLabel.textContent = '';
+        }
+      }
+      
+      modalPicker.removeAttribute('hidden');
+      setTimeout(() => buscadorPick && buscadorPick.focus(), 50);
+    }
+    
+    function cerrarPicker() { modalPicker.setAttribute('hidden', ''); }
+
+    btnPicker.addEventListener('click', (e) => { e.preventDefault(); abrirPicker(); });
+    document.getElementById('btn-cerrar-picker')?.addEventListener('click', cerrarPicker);
+    document.getElementById('btn-cancelar-picker')?.addEventListener('click', cerrarPicker);
+    modalPicker.addEventListener('click', (e) => { if (e.target === modalPicker) cerrarPicker(); });
+    
+    if (buscadorPick) {
+      buscadorPick.addEventListener('input', (e) => {
+        if (window.CategoryPicker) CategoryPicker.filter(e.target.value);
+      });
     }
 
-    btnPicker.addEventListener('click', (e) => { e.stopPropagation(); abrirPicker(); });
-    document.getElementById('btn-cerrar-picker').addEventListener('click', cerrarPicker);
-    document.getElementById('btn-cancelar-picker').addEventListener('click', cerrarPicker);
-    modalPicker.addEventListener('click', (e) => { if (e.target === modalPicker) cerrarPicker(); });
-    document.getElementById('picker-grid').addEventListener('click', (e) => {
-      const card = e.target.closest('.picker-cat-card');
-      if (card) seleccionarCategoria(card.dataset.id, card.dataset.nombre);
-    });
-    buscadorPick.addEventListener('input', (e) => filtrarPicker(e.target.value));
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !modalPicker.hasAttribute('hidden')) { e.stopImmediatePropagation(); cerrarPicker(); }
     }, true);
 
     /* Nuevo desde registros */
-    document.getElementById('btn-nuevo-desde-registros').addEventListener('click', () => {
+    document.getElementById('btn-nuevo-desde-registros')?.addEventListener('click', () => {
       const catId = self.categoriaActualId;
       const catNombre = document.getElementById('modal-registros-titulo').textContent;
       self.abrirModalNuevo();
@@ -483,7 +490,6 @@ class GestorMovimientos {
         inputCat.value = catId;
         pickerLabel.textContent = catNombre;
         pickerLabel.style.color = 'var(--slate-900)';
-        document.querySelectorAll('.picker-cat-card').forEach(c => c.classList.toggle('selected', c.dataset.id === catId));
       }
     });
   }

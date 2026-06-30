@@ -94,7 +94,7 @@ def generar_cuotas_preview(ahorro):
 
         cuota = AporteAhorro(
             ahorro=ahorro,
-            estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value,
             fecha_limite=fecha,
             aporte_asignado=(
                 monto_base + resto if i == cantidad - 1 else monto_base
@@ -219,7 +219,7 @@ def recalcular_aportes(ahorro):
                 fecha = sumar_frecuencia(fecha, ahorro.frecuencia)
                 nuevas_extras.append(AporteAhorro(
                     ahorro=ahorro,
-                    estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+                    estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value,
                     fecha_limite=fecha,
                     aporte_asignado=Decimal('0.00'),
                     es_extraordinario=False,
@@ -263,7 +263,7 @@ def pasar_cuotas_a_perdidas(ahorro):
         estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
         fecha_limite__lt=hoy,
         es_extraordinario=False,
-    ).update(estado_ap=AporteAhorro.EstadoAp.PERDIDO)
+    ).update(estado_ap=AporteAhorro.EstadoAp.PERDIDO.value)
 
 
 def abandono_ahorro(ahorro):
@@ -279,7 +279,7 @@ def abandono_ahorro(ahorro):
     ultimas_3 = todas[-3:]
     if all(a.estado_ap == AporteAhorro.EstadoAp.PERDIDO for a in ultimas_3):
         if ahorro.estado != AhorroMeta.Estado.ABANDONADO:
-            ahorro.estado = AhorroMeta.Estado.ABANDONADO
+            ahorro.estado = AhorroMeta.Estado.ABANDONADO.value
             ahorro.save()
 
 

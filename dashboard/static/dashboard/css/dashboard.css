@@ -267,6 +267,7 @@
   cursor: pointer;
   transition: border-color .18s, background .18s, transform .18s, box-shadow .18s;
   text-align: center;
+  position: relative;
 }
 .picker-cat-card:hover {
   background: #fff;
@@ -300,6 +301,44 @@
   color: #0f172a;
 }
 
+/* ── Botón de favoritos (corazón) ─────────────────── */
+.picker-cat-fav-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all .2s ease;
+  z-index: 2;
+  background: transparent;
+  /* Expand the click area beyond visual boundaries */
+}
+/* Pseudo-element expands the touch/hover area */
+.picker-cat-fav-btn::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+.picker-cat-fav-btn:hover {
+  background: rgba(244, 63, 94, .1);
+  transform: scale(1.25);
+  color: #f43f5e !important;
+}
+.picker-cat-fav-btn:active {
+  transform: scale(1.1);
+}
+.picker-cat-fav-btn--active {
+  color: #f43f5e !important;
+}
+.picker-cat-fav-btn--active:hover {
+  background: rgba(244, 63, 94, .15);
+}
+
 /* ── Modificadores de color según tipo ── */
 
 /* INGRESO (Verde) */
@@ -325,6 +364,45 @@
 .picker-cat-card--default.selected { border-color: #0f172a; background: #f1f5f9; box-shadow: 0 0 0 3px rgba(15,23,42,.15); }
 .picker-cat-card--default .picker-cat-icon { background: #e2e8f0; color: #0f172a; }
 .picker-cat-card--default:hover .picker-cat-icon, .picker-cat-card--default.selected .picker-cat-icon { background: #0f172a; color: #fff; transform: scale(1.08); }
+
+/* ── Responsive Picker Grid ─────────────────────── */
+
+/* Celular pequeño (< 480px) */
+@media (max-width: 479px) {
+  .picker-cat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; padding: .75rem !important; }
+  .picker-cat-card { padding: .75rem .5rem; }
+  .picker-cat-nombre { font-size: .72rem; }
+  .picker-cat-fav-btn { width: 34px; height: 34px; top: 2px; right: 2px; }
+  .picker-section-header h4 { font-size: 11px; }
+}
+
+/* Celular grande / tablet portrait (480px - 767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+  .picker-cat-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important; }
+  .picker-cat-fav-btn { width: 34px; height: 34px; }
+}
+
+/* Tablet landscape (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .picker-cat-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important; }
+}
+
+/* Desktop (1024px - 1439px) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .picker-cat-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+}
+
+/* Pantalla grande (1440px - 1919px) */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .picker-cat-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; }
+}
+
+/* Pantalla muy grande (≥ 1920px) */
+@media (min-width: 1920px) {
+  .picker-cat-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; }
+  .picker-cat-card { padding: 1.25rem 1rem; }
+  .picker-cat-nombre { font-size: .85rem; }
+}
 
 /* ══════════════════════════════════════════════════════
    METAS DE AHORRO
@@ -753,4 +831,39 @@
 @media (min-width: 1536px) {
   /* Mostrar 5 tarjetas en el carrusel en pantallas ultra anchas */
   .carousel-slide { flex: 0 0 calc((100% - 56px) / 5); }
+}
+
+/* Estilo premium para los MiniDatepickers del panel de filtros avanzados */
+#panel-filtros-avanzados .dp-wrapper {
+  width: 100%;
+}
+#panel-filtros-avanzados .dp-display {
+  background: #f8fafc !important; /* bg-slate-50 */
+  border: 1px solid #e2e8f0 !important; /* border-slate-200 */
+  border-radius: 0.5rem !important; /* rounded-lg */
+  font-weight: 600 !important; /* font-semibold */
+  color: #334155 !important; /* text-slate-700 */
+  padding: 0.58rem 0.75rem !important; /* match height */
+  height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+}
+#panel-filtros-avanzados .dp-display:hover {
+  border-color: #cbd5e1 !important;
+  background: #f1f5f9 !important;
+}
+#panel-filtros-avanzados .dp-display:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.2) !important;
+}
+#panel-filtros-avanzados .dp-display svg {
+  color: #94a3b8 !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+#panel-filtros-avanzados .dp-display-text {
+  font-size: 0.875rem !important;
+  font-family: 'DM Sans', sans-serif !important;
 }

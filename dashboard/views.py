@@ -85,8 +85,7 @@ def home_view(request):
         )
         ctx['onboarding_categoria_id'] = cat_ajuste.id
 
-    # Categorías para el filtro
-    ctx['categorias_disponibles'] = Categoria.objects.filter(activo=True).order_by('nombre')
+    # Categorías ahora se cargan dinámicamente via /api/categorias/enriched/
     ctx['filtros_activos'] = filtros
 
     # Respuesta JSON para requests AJAX (navegacion sin recarga)

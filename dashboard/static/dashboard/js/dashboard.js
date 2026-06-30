@@ -1290,16 +1290,27 @@ requestAnimationFrame(() => {
     const btnAbrirPicker = document.getElementById('btn-abrir-picker-cat');
     const modalPicker    = document.getElementById('modal-picker-cat-dash');
     const btnCerrarPicker= document.getElementById('btn-cerrar-picker-cat');
-    const pickerCards    = document.querySelectorAll('#modal-picker-cat-dash .picker-cat-card');
     const searchInput    = document.getElementById('picker-cat-buscar');
     const tipoBtns       = document.querySelectorAll('.picker-cat-tipo-btn');
+
+    if (window.CategoryPicker && btnAbrirPicker) {
+      CategoryPicker.init({
+        containerId: 'picker-cat-grid',
+        context: 'dashboard',
+        onSelect: function(cat) {
+          document.getElementById('filtro-categoria').value = cat.id;
+          document.getElementById('filtro-cat-label').textContent = cat.nombre;
+          if (modalPicker) modalPicker.hidden = true;
+        }
+      });
+    }
 
     if (btnAbrirPicker && modalPicker) {
       btnAbrirPicker.addEventListener('click', () => {
         modalPicker.hidden = false;
         if (searchInput) {
           searchInput.value = '';
-          searchInput.dispatchEvent(new Event('input'));
+          if (window.CategoryPicker) CategoryPicker.filter('');
           setTimeout(() => searchInput.focus(), 50);
         }
       });
@@ -1311,65 +1322,24 @@ requestAnimationFrame(() => {
       });
     }
 
-    // Cerrar modal al clickear fuera
     if (modalPicker) {
       modalPicker.addEventListener('click', (e) => {
         if (e.target === modalPicker) modalPicker.hidden = true;
       });
     }
 
-    pickerCards.forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.dataset.id;
-        const nombre = card.dataset.nombre;
-        
-        document.getElementById('filtro-categoria').value = id;
-        document.getElementById('filtro-cat-label').textContent = nombre;
-        
-        pickerCards.forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        
-        if (modalPicker) modalPicker.hidden = true;
-      });
-    });
-
-    // Búsqueda en el picker
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        pickerCards.forEach(card => {
-          if (!card.dataset.id) return; // 'Todas' card
-          const nombre = card.dataset.nombre.toLowerCase();
-          const visibleTipo = card.style.display !== 'none' || !card.hasAttribute('data-filtered-tipo');
-          
-          if (nombre.includes(term)) {
-            if (!card.hasAttribute('data-filtered-tipo')) card.style.display = 'flex';
-          } else {
-            card.style.display = 'none';
-          }
-        });
+        if (window.CategoryPicker) CategoryPicker.filter(e.target.value);
       });
     }
 
-    // Filtros por tipo en el picker
     tipoBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         tipoBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const tipo = btn.dataset.tipo;
-        
-        pickerCards.forEach(card => {
-          if (!card.dataset.id) return; // 'Todas' card
-          if (!tipo || card.dataset.tipo === tipo) {
-            card.removeAttribute('data-filtered-tipo');
-            card.style.display = 'flex';
-          } else {
-            card.setAttribute('data-filtered-tipo', 'true');
-            card.style.display = 'none';
-          }
-        });
-        
-        if (searchInput) searchInput.dispatchEvent(new Event('input')); // re-aplicar búsqueda
+        if (window.CategoryPicker) CategoryPicker.loadCategories(tipo);
       });
     });
   }

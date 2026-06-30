@@ -29,6 +29,17 @@
       </div>
 
       <div class="detalle-modal__content">
+        {% if ahorro.estado == 'COMPLETADO' %}
+        <div class="banner-completado" style="background:#fefce8; border:1px solid #fef08a; padding:1rem; border-radius:0.5rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.75rem;">
+          <div style="background:#fef08a; padding:0.5rem; border-radius:50%; color:#ca8a04; flex-shrink:0;">
+            <i data-lucide="trophy" style="width:20px;height:20px;"></i>
+          </div>
+          <div>
+            <h4 style="color:#854d0e; font-weight:600; margin:0 0 0.25rem 0; font-size:0.95rem;">¡Meta completada!</h4>
+            <p style="color:#a16207; font-size:0.8rem; margin:0;">Has alcanzado el objetivo de esta meta de ahorro.</p>
+          </div>
+        </div>
+        {% endif %}
 
         <!-- Especificaciones -->
         <h3 class="field-label" style="margin-bottom:1rem;font-size:.7rem;">Especificaciones</h3>
@@ -75,6 +86,7 @@
         </div>
 
         <!-- Aporte Extraordinario -->
+        {% if ahorro.estado != 'COMPLETADO' %}
         <div class="aporte-extraordinario"
           style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
           <h3 class="field-label" style="margin-bottom:.5rem; font-size:.85rem; color: #3b82f6;">
@@ -99,6 +111,7 @@
             </button>
           </form>
         </div>
+        {% endif %}
 
         <!-- Resumen Cuotas -->
         <div class="cuotas-resumen">
@@ -131,7 +144,7 @@
             </thead>
             <tbody>
               {% for cuota in cuotas %}
-              <tr>
+              <tr {% if cuota.estado_ap == 'PERDIDO' %}class="cuota--perdido"{% endif %}>
                 <td class="cuotas-table__num">
                   {% if cuota.es_extraordinario %}
                   <span style="color:#3b82f6; font-size:0.75rem; font-weight:600;">
@@ -195,6 +208,13 @@
                       style="background:#e2e8f0; cursor:not-allowed; box-shadow:none;">
                       <i data-lucide="lock" style="width:15px;height:15px;stroke-width:3;color:#94a3b8;"></i>
                     </button>
+                  </div>
+                  {% elif cuota.estado_ap == 'PERDIDO' %}
+                  <div class="form-aporte-inline tooltip-wrapper" style="display:flex; align-items:center; justify-content:center; gap:0.35rem; width:fit-content;">
+                    <div style="background:#fee2e2; color:#ef4444; width:34px; height:34px; border-radius:0.35rem; display:flex; align-items:center; justify-content:center; border:1px solid #fca5a5;">
+                      <i data-lucide="x-circle" style="width:18px;height:18px;"></i>
+                    </div>
+                    <span class="tooltip-custom" style="white-space:nowrap; max-width:none;">Cuota vencida</span>
                   </div>
                   {% else %}
                   <span class="cuotas-table__aportado">
