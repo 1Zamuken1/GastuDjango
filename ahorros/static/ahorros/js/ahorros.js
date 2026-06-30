@@ -211,46 +211,42 @@ const pickerBuscador       = document.getElementById('picker-buscador');
 const pickerSelLabel       = document.getElementById('picker-seleccionado-label');
 let   _pickerCallback      = null;
 
+if (window.CategoryPicker && modalPicker) {
+  CategoryPicker.init({
+    containerId: 'picker-grid',
+    tipo: 'AHORRO',
+    context: 'ahorros',
+    onSelect: function(cat) {
+      if (_pickerCallback) _pickerCallback(cat.id, cat.nombre);
+      if (pickerSelLabel) pickerSelLabel.textContent = `Seleccionado: ${cat.nombre}`;
+      cerrarPicker();
+    }
+  });
+}
+
 function abrirPicker(callback) {
   _pickerCallback = callback;
   if (pickerBuscador) pickerBuscador.value = '';
-  filtrarPicker('');
+  if (window.CategoryPicker) CategoryPicker.filter('');
   modalPicker.removeAttribute('hidden');
-  pickerGrid.querySelectorAll('.picker-cat-card').forEach(c => c.classList.remove('selected'));
   if (pickerSelLabel) pickerSelLabel.textContent = '';
-  lucide.createIcons();
 }
 
 function cerrarPicker() {
   modalPicker.setAttribute('hidden', '');
 }
 
-function filtrarPicker(q) {
-  pickerGrid.querySelectorAll('.picker-cat-card').forEach(card => {
-    const nombre = (card.dataset.nombre || '').toLowerCase();
-    card.style.display = nombre.includes(q.toLowerCase()) ? '' : 'none';
+if (pickerBuscador) {
+  pickerBuscador.addEventListener('input', () => {
+    if (window.CategoryPicker) CategoryPicker.filter(pickerBuscador.value);
   });
 }
 
-pickerGrid.addEventListener('click', e => {
-  const card = e.target.closest('.picker-cat-card');
-  if (!card) return;
-  const id     = card.dataset.id;
-  const nombre = card.dataset.nombre;
-  pickerGrid.querySelectorAll('.picker-cat-card').forEach(c => c.classList.remove('selected'));
-  card.classList.add('selected');
-  if (pickerSelLabel) pickerSelLabel.textContent = `Seleccionado: ${nombre}`;
-  if (_pickerCallback) _pickerCallback(id, nombre);
-  cerrarPicker();
+document.getElementById('btn-cerrar-picker')?.addEventListener('click', cerrarPicker);
+document.getElementById('btn-cancelar-picker')?.addEventListener('click', cerrarPicker);
+modalPicker?.addEventListener('click', e => {
+  if (e.target === modalPicker) cerrarPicker();
 });
-
-if (pickerBuscador) {
-  pickerBuscador.addEventListener('input', () => filtrarPicker(pickerBuscador.value));
-}
-
-document.getElementById('btn-cerrar-picker').addEventListener('click', cerrarPicker);
-document.getElementById('btn-cancelar-picker').addEventListener('click', cerrarPicker);
-modalPicker.addEventListener('click', e => { if (e.target === modalPicker) cerrarPicker(); });
 
 
 /* ══════════════════════════════════════════════════════════

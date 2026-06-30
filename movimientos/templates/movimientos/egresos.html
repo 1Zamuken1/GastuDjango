@@ -61,8 +61,8 @@
     <!-- Filtro de Período Custom -->
     <div class="nav-mes-selector-group" style="position:relative;display:inline-flex;align-items:center;gap:.35rem;background:#fff;border:1px solid #e2e8f0;border-radius:.625rem;padding:2px 8px;height:38px;margin-right:auto;">
       
-      <input type="hidden" id="select-mes" value="{{ mes_numero }}">
-      <input type="hidden" id="select-anio" value="{{ anio }}">
+      <input type="hidden" id="select-mes" value="{{ mes_numero }}" data-primer-mes="{{ mes_primer_registro|default:1 }}">
+      <input type="hidden" id="select-anio" value="{{ anio }}" data-primer-anio="{{ anio_primer_registro|default:2024 }}">
 
       <!-- Botón Mes -->
       <button type="button" id="btn-custom-mes" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-right:4px;height:100%;display:flex;align-items:center;gap:2px;">
@@ -71,10 +71,10 @@
       </button>
 
       <!-- Divisor -->
-      <span id="divisor-anio" style="color:#cbd5e1;font-weight:300;font-size:12px;display:{% if anio == 'all' %}none{% else %}inline{% endif %};">|</span>
+      <span id="divisor-anio" class="{% if anio == 'all' %}hidden{% endif %}" style="color:#cbd5e1;font-weight:300;font-size:12px;display:inline;">|</span>
 
       <!-- Botón Año -->
-      <button type="button" id="btn-custom-anio" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-left:4px;height:100%;display:{% if anio == 'all' %}none{% else %}flex{% endif %};align-items:center;gap:2px;">
+      <button type="button" id="btn-custom-anio" class="{% if anio == 'all' %}hidden{% endif %}" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-left:4px;height:100%;display:flex;align-items:center;gap:2px;">
         <span id="label-anio">{{ anio }}</span>
         <i data-lucide="chevron-down" style="width:12px;height:12px;color:#94a3b8;"></i>
       </button>
@@ -187,8 +187,8 @@
     const dropAnio = document.getElementById('dropdown-anio');
 
     if (selectMes && selectAnio) {
-      const userJoinedYear = {{ anio_primer_registro }};
-      const userJoinedMonth = {{ mes_primer_registro }};
+      const userJoinedYear = parseInt(selectAnio.dataset.primerAnio || 2024);
+      const userJoinedMonth = parseInt(selectMes.dataset.primerMes || 1);
       const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
       const aniosList = [2024, 2025, 2026, 2027, 2028];
 
@@ -238,8 +238,8 @@
           selectMes.value = 'all';
           selectAnio.value = 'all';
           labelMes.innerText = 'Todas las fechas';
-          document.getElementById('divisor-anio').style.display = 'none';
-          btnAnio.style.display = 'none';
+          document.getElementById('divisor-anio').classList.add('hidden');
+          btnAnio.classList.add('hidden');
           renderOptions();
           aplicarFiltro();
         });
@@ -263,8 +263,8 @@
                   selectAnio.value = currentYear;
                   labelAnio.innerText = currentYear;
               }
-              document.getElementById('divisor-anio').style.display = 'inline';
-              btnAnio.style.display = 'flex';
+              document.getElementById('divisor-anio').classList.remove('hidden');
+              btnAnio.classList.remove('hidden');
               renderOptions();
               aplicarFiltro();
             });
@@ -320,6 +320,7 @@
   const URL_EXPORTAR_PDF   = "{% url 'movimientos:exportar_pdf' %}";
 </script>
 <script src="{% static 'movimientos/js/datepicker.js' %}"></script>
+<script src="{% static 'js/category-picker.js' %}"></script>
 <script src="{% static 'movimientos/js/movimientos_base.js' %}"></script>
 <script src="{% static 'movimientos/js/egresos.js' %}"></script>
 <script src="{% static 'historial/js/historial.js' %}"></script>
