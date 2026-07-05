@@ -28,7 +28,7 @@
 .hero-total__value { font-size: 2.4rem; font-weight: 900; color: #fff; margin: 0; line-height: 1; }
 .hero-total__footer { display: flex; align-items: center; gap: .4rem; margin-top: .75rem; }
 .hero-total__badge { background: rgba(255,255,255,.2); color: #fff; font-size: .72rem; font-weight: 600; padding: .2rem .55rem; border-radius: 9999px; }
-.hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 0; overflow: hidden; align-items: stretch; }
+.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 0; overflow: hidden; align-items: stretch; }
 .hero-stat { padding: .75rem 1.25rem; display: flex; flex-direction: column; gap: .35rem; border-right: 1px solid var(--border); justify-content: center; align-items: center; text-align: center; transition: background .15s; cursor: default; min-width: 0; overflow: hidden; }
 .hero-stat:last-child { border-right: none; }
 .hero-stat:hover { background: #f8fafc; }
