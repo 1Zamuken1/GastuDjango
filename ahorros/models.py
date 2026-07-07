@@ -24,7 +24,7 @@ class AhorroMeta(models.Model):
     frecuencia=models.CharField(max_length=15, choices=Frecuencia.choices, null=False)
     fecha_creacion = models.DateField(auto_now_add=True, null=False)
     fecha_meta=models.DateField(null=False)
-    estado= models.CharField(max_length=25, choices=Estado.choices, null=False, default=Estado.SIN_INICIAR)
+    estado= models.CharField(max_length=25, choices=Estado.choices, null=False, default=Estado.SIN_INICIAR.value)
     cantidad_cuotas=models.IntegerField(null=False)
     descripcion=models.CharField(max_length=150, blank=True)
     categoria = models.ForeignKey("categorias.categoria", on_delete= models.CASCADE, null=False)

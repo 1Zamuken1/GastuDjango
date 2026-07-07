@@ -25,7 +25,7 @@ class AhorroAnalyzer:
         # Buscamos aportes pendientes del usuario que estén en la ventana de pago
         aportes_pendientes = AporteAhorro.objects.filter(
             ahorro__usuario=self.usuario,
-            estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value,
             fecha_limite__gte=hoy,
             fecha_limite__lte=limite_ventana
         ).select_related('ahorro', 'ahorro__categoria')

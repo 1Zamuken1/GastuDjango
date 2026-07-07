@@ -46,11 +46,11 @@ def listar(request):
     
     total_ahorrado = ahorros.aggregate(total=Sum('total_acumulado'))['total'] or Decimal('0.00')
     cantidad_metas = ahorros.count()
-    metas_completadas = ahorros.filter(estado=AhorroMeta.Estado.COMPLETADO).count()
+    metas_completadas = ahorros.filter(estado=AhorroMeta.Estado.COMPLETADO.value).count()
     
     proxima_meta = AporteAhorro.objects.filter(
         ahorro__usuario=request.user, 
-        estado_ap=AporteAhorro.EstadoAp.PENDIENTE
+        estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value
     ).order_by('fecha_limite').select_related('ahorro', 'ahorro__categoria').first()
     
     categorias_ahorro = Categoria.objects.filter(tipo=Categoria.TipoCategoria.AHORRO, activo=True)
@@ -136,7 +136,7 @@ def editar_ahorro(request, id):
                 'cantidad_cuotas': ahorro.cantidad_cuotas,
                 'cuotas_minimas': AporteAhorro.objects.filter(
                     ahorro=ahorro,
-                    estado_ap=AporteAhorro.EstadoAp.APORTADO,
+                    estado_ap=AporteAhorro.EstadoAp.APORTADO.value,
                     es_extraordinario=False
                 ).count(),
                 'descripcion': ahorro.descripcion or '',
@@ -163,7 +163,7 @@ def editar_ahorro(request, id):
 
             cuotas_regulares_aportadas = AporteAhorro.objects.filter(
                 ahorro=ahorro,
-                estado_ap=AporteAhorro.EstadoAp.APORTADO,
+                estado_ap=AporteAhorro.EstadoAp.APORTADO.value,
                 es_extraordinario=False
             ).count()
 
@@ -197,7 +197,7 @@ def editar_ahorro(request, id):
             # Ajustar estado si el monto_meta editado altera el cumplimiento
             if ahorro.total_acumulado >= ahorro.monto_meta:
                 ahorro.estado = AhorroMeta.Estado.COMPLETADO.value
-            elif ahorro.estado == AhorroMeta.Estado.COMPLETADO and ahorro.total_acumulado < ahorro.monto_meta:
+            elif ahorro.estado == AhorroMeta.Estado.COMPLETADO.value and ahorro.total_acumulado < ahorro.monto_meta:
                 ahorro.estado = AhorroMeta.Estado.ACTIVO.value
 
             ahorro.save()
@@ -261,9 +261,9 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if request.method == "GET":
         
         cuotas_qs = AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite')
-        pagadas = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.APORTADO).count()
-        perdidas = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO).count()
-        pendientes = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE).count()
+        pagadas = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.APORTADO.value).count()
+        perdidas = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PERDIDO.value).count()
+        pendientes = cuotas_qs.filter(estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value).count()
 
         cuotas_todas = list(cuotas_qs)
         cuotas_totales = len(cuotas_todas)
@@ -273,7 +273,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
         def sort_key(c):
             return (
                 not c.es_extraordinario,
-                c.estado_ap != AporteAhorro.EstadoAp.APORTADO,
+                c.estado_ap != AporteAhorro.EstadoAp.APORTADO.value,
                 c.fecha_limite
             )
         cuotas_todas.sort(key=sort_key)
@@ -287,7 +287,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
             else:
                 c.numero_real = None
         
-        idx_pendiente = next((i for i, c in enumerate(cuotas_todas) if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE and not c.es_extraordinario), -1)
+        idx_pendiente = next((i for i, c in enumerate(cuotas_todas) if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE.value and not c.es_extraordinario), -1)
         
         if idx_pendiente != -1:
             start_idx = max(0, idx_pendiente - 5)
@@ -327,7 +327,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     if aporte_ingresado <= Decimal('0.00'):
         return JsonResponse({"ok": False, "error": "El monto del aporte debe ser mayor que cero."})
 
-    if ahorro.estado == AhorroMeta.Estado.COMPLETADO:
+    if ahorro.estado == AhorroMeta.Estado.COMPLETADO.value:
         return JsonResponse({"ok": False, "error": "Esta meta de ahorro ya ha sido completada."})
 
     monto_meta = ahorro.monto_meta or Decimal('0.00')
@@ -372,7 +372,7 @@ def registrar_aporte(request, meta_id, aporte_id=None):
 
         cuota = AporteAhorro.objects.select_for_update().get(id=cuota_temp.id)
 
-    if cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE:
+    if cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE.value:
         return JsonResponse({"ok": False, "error": f"La cuota no esta disponible (estado={cuota.estado_ap})"})
 
     if cuota.aporte is not None:
@@ -401,14 +401,14 @@ def registrar_aporte(request, meta_id, aporte_id=None):
     ahorro.total_acumulado = total_acumulado
 
     if ahorro.estado in [
-        AhorroMeta.Estado.SIN_INICIAR,
-        AhorroMeta.Estado.ABANDONADO,
+        AhorroMeta.Estado.SIN_INICIAR.value,
+        AhorroMeta.Estado.ABANDONADO.value,
     ]:
         ahorro.estado = AhorroMeta.Estado.ACTIVO.value
 
     if monto_meta > Decimal('0.00') and total_acumulado >= monto_meta:
         ahorro.estado = AhorroMeta.Estado.COMPLETADO.value
-        pendientes = AporteAhorro.objects.filter(ahorro=ahorro, estado_ap=AporteAhorro.EstadoAp.PENDIENTE, es_extraordinario=False)
+        pendientes = AporteAhorro.objects.filter(ahorro=ahorro, estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value, es_extraordinario=False)
         cuotas_eliminadas = pendientes.count()
         if cuotas_eliminadas > 0:
             pendientes.delete()

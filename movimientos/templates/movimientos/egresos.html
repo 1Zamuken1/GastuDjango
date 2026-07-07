@@ -47,6 +47,13 @@
       <span class="hero-stat__value font-display">${{ promedio_mes|floatformat:"0g" }}</span>
       <span class="hero-stat__sub">por registro</span>
     </div>
+    <div class="hero-stat">
+      <span class="hero-stat__label">
+        <i data-lucide="wallet"></i> Disponible
+      </span>
+      <span class="hero-stat__value font-display">${{ disponible|floatformat:"0g"|default:"0" }}</span>
+      <span class="hero-stat__sub">total actual</span>
+    </div>
   </div>
 
 </div>
