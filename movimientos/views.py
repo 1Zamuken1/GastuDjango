@@ -100,6 +100,10 @@ def lista_ingresos(request):
     mes_primer_registro = primer_registro.month if primer_registro else request.user.date_joined.month
     anio_primer_registro = primer_registro.year if primer_registro else request.user.date_joined.year
 
+    mes_disp = mes if mes is not None else hoy.month
+    anio_disp = anio if anio is not None else hoy.year
+    disponible = obtener_disponible(request.user, mes_disp, anio_disp)
+
     return render(request, 'movimientos/ingresos.html', {
         'categorias_con_totales': categorias_con_totales,
         'total_mes': total_mes,
@@ -112,6 +116,7 @@ def lista_ingresos(request):
         'hoy': hoy,
         'mes_primer_registro': mes_primer_registro,
         'anio_primer_registro': anio_primer_registro,
+        'disponible': disponible,
     })
 
 

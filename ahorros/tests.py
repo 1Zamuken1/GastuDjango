@@ -36,7 +36,7 @@ class AhorrosViewsTestCase(TestCase):
             frecuencia='MENSUAL',
             fecha_meta=date.today() + timedelta(days=30),
             cantidad_cuotas=3,
-            estado=AhorroMeta.Estado.SIN_INICIAR,
+            estado=AhorroMeta.Estado.SIN_INICIAR.value,
             total_acumulado=Decimal('0.00')
         )
 
@@ -129,7 +129,7 @@ class AhorrosViewsTestCase(TestCase):
             ahorro=self.ahorro,
             fecha_limite=date.today() + timedelta(days=30),
             aporte_asignado=Decimal('300.00'),
-            estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value,
             es_extraordinario=False,
         )
 
@@ -168,7 +168,7 @@ class AhorrosViewsTestCase(TestCase):
             ahorro=self.ahorro,
             fecha_limite=hoy,
             aporte_asignado=Decimal('300.00'),
-            estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value,
             es_extraordinario=False,
         )
 
@@ -191,7 +191,7 @@ class AhorrosViewsTestCase(TestCase):
         resumen.refresh_from_db()
 
         # La cuota debe quedar marcada como APORTADO
-        self.assertEqual(aporte.estado_ap, AporteAhorro.EstadoAp.APORTADO)
+        self.assertEqual(aporte.estado_ap, AporteAhorro.EstadoAp.APORTADO.value)
 
         # El acumulado de la meta debe reflejar el aporte registrado
         self.assertEqual(self.ahorro.total_acumulado, Decimal('300.00'))

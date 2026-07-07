@@ -125,7 +125,7 @@ def recalcular_aportes_restantes(ahorro):
     aportado = sum(
         (a.aporte if a.aporte else Decimal('0.00'))
         for a in aportes
-        if a.estado_ap == AporteAhorro.EstadoAp.APORTADO
+        if a.estado_ap == AporteAhorro.EstadoAp.APORTADO.value
     )
     monto_meta = ahorro.monto_meta or Decimal('0.00')
     restante = monto_meta - aportado
@@ -135,7 +135,7 @@ def recalcular_aportes_restantes(ahorro):
 
     pendientes = [
         a for a in aportes
-        if a.estado_ap == AporteAhorro.EstadoAp.PENDIENTE
+        if a.estado_ap == AporteAhorro.EstadoAp.PENDIENTE.value
     ]
     cuotas_faltantes = len(pendientes)
 
@@ -173,13 +173,13 @@ def recalcular_aportes(ahorro):
     todas = list(AporteAhorro.objects.filter(ahorro=ahorro).order_by('fecha_limite'))
     aportadas = [
         a for a in todas
-        if a.estado_ap == AporteAhorro.EstadoAp.APORTADO and not a.es_extraordinario
+        if a.estado_ap == AporteAhorro.EstadoAp.APORTADO.value and not a.es_extraordinario
     ]
     pendientes = [
         a for a in todas
         if a.estado_ap in [
-            AporteAhorro.EstadoAp.PENDIENTE,
-            AporteAhorro.EstadoAp.PERDIDO,
+            AporteAhorro.EstadoAp.PENDIENTE.value,
+            AporteAhorro.EstadoAp.PERDIDO.value,
         ] and not a.es_extraordinario
     ]
 
@@ -202,7 +202,7 @@ def recalcular_aportes(ahorro):
         AporteAhorro.objects.bulk_create(cuotas_a_registrar)
     else:
         total_aportado = sum(a.aporte for a in aportadas if a.aporte)
-        extra_aportado = sum(a.aporte for a in todas if a.es_extraordinario and a.estado_ap == AporteAhorro.EstadoAp.APORTADO and a.aporte)
+        extra_aportado = sum(a.aporte for a in todas if a.es_extraordinario and a.estado_ap == AporteAhorro.EstadoAp.APORTADO.value and a.aporte)
         restante = (ahorro.monto_meta or Decimal('0.00')) - total_aportado - extra_aportado
         
         if restante > Decimal('0.00'):
@@ -246,7 +246,7 @@ def recalcular_fechas_cuotas(ahorro):
         raise ValueError("No hay suficientes cuotas nuevas para reasignar fechas")
 
     for i, cuota in enumerate(cuotas):
-        if cuota.estado_ap == AporteAhorro.EstadoAp.APORTADO:
+        if cuota.estado_ap == AporteAhorro.EstadoAp.APORTADO.value:
             continue
         cuota.fecha_limite = nuevas[i].fecha_limite
 
@@ -260,7 +260,7 @@ def pasar_cuotas_a_perdidas(ahorro):
     hoy = date.today()
     AporteAhorro.objects.filter(
         ahorro=ahorro,
-        estado_ap=AporteAhorro.EstadoAp.PENDIENTE,
+        estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value,
         fecha_limite__lt=hoy,
         es_extraordinario=False,
     ).update(estado_ap=AporteAhorro.EstadoAp.PERDIDO.value)
@@ -277,8 +277,8 @@ def abandono_ahorro(ahorro):
         return
 
     ultimas_3 = todas[-3:]
-    if all(a.estado_ap == AporteAhorro.EstadoAp.PERDIDO for a in ultimas_3):
-        if ahorro.estado != AhorroMeta.Estado.ABANDONADO:
+    if all(a.estado_ap == AporteAhorro.EstadoAp.PERDIDO.value for a in ultimas_3):
+        if ahorro.estado != AhorroMeta.Estado.ABANDONADO.value:
             ahorro.estado = AhorroMeta.Estado.ABANDONADO.value
             ahorro.save()
 
@@ -291,14 +291,14 @@ def cuota_disponible_pago(cuota, frecuencia, primera_pendiente=None):
     """
     from dateutil.relativedelta import relativedelta
 
-    if cuota is None or cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE:
+    if cuota is None or cuota.estado_ap != AporteAhorro.EstadoAp.PENDIENTE.value:
         return False
         
     # Verificar que esta cuota sea la primera PENDIENTE de la meta
     if primera_pendiente is None:
         primera_pendiente = AporteAhorro.objects.filter(
             ahorro=cuota.ahorro,
-            estado_ap=AporteAhorro.EstadoAp.PENDIENTE
+            estado_ap=AporteAhorro.EstadoAp.PENDIENTE.value
         ).order_by('fecha_limite').first()
 
     if not primera_pendiente or primera_pendiente.id != cuota.id:
@@ -330,7 +330,7 @@ def find_cuota_disponible(meta_id, usuario):
     cuotas = AporteAhorro.objects.filter(ahorro=meta).order_by('fecha_limite')
 
     for c in cuotas:
-        if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE:
+        if c.estado_ap == AporteAhorro.EstadoAp.PENDIENTE.value:
             if cuota_disponible_pago(c, meta.frecuencia, primera_pendiente=c):
                 return c
             break # Si la primera pendiente no está en ventana, ninguna lo estará
