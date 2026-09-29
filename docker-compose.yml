@@ -1,0 +1,87 @@
+services:
+  # ── Base de Datos PostgreSQL ─────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: gastu_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gastu_db}
+      POSTGRES_USER: ${POSTGRES_USER:-gastu_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gastu_password123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gastu_user} -d ${POSTGRES_DB:-gastu_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Servidor Redis para WebSockets (Channels) ────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: gastu_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  # ── Aplicación Django (ASGI con Daphne) ──────────────────────
+  web:
+    build: .
+    container_name: gastu_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py collectstatic --no-input &&
+             python manage.py migrate &&
+             python manage.py shell -c '
+from django.contrib.auth import get_user_model
+import os
+User = get_user_model()
+if not User.objects.filter(is_superuser=True).exists():
+    username = os.getenv(\"DJANGO_SUPERUSER_USERNAME\", \"admin\")
+    email    = os.getenv(\"DJANGO_SUPERUSER_EMAIL\", \"admin@gastuapp.com\")
+    password = os.getenv(\"DJANGO_SUPERUSER_PASSWORD\", \"Admin123!\")
+    User.objects.create_superuser(username=username, email=email, password=password)
+    print(\"Superuser created successfully\")
+' &&
+             daphne -b 0.0.0.0 -p 8000 gastu_django.asgi:application"
+    env_file:
+      - .env
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  # ── Nginx (Reverse Proxy + WebSockets + Estáticos) ────────────
+  nginx:
+    image: nginx:alpine
+    container_name: gastu_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+  certbot_conf:
+  certbot_www:
