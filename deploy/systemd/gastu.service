@@ -1,0 +1,15 @@
+[Unit]
+Description=GastuApp Daphne ASGI Daemon
+After=network.target redis-server.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/GastuDjango
+EnvironmentFile=/home/ubuntu/GastuDjango/.env
+ExecStart=/home/ubuntu/GastuDjango/venv/bin/daphne -b 127.0.0.1 -p 8000 gastu_django.asgi:application
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

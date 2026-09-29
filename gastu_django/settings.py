@@ -10,12 +10,21 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-sr^8%d0t&zht-2qbvnql&_p0a0
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['10.1.164.209', 'localhost', '127.0.0.1', '.onrender.com']
+# ── Hosts y Seguridad ─────────────────────────────────────────
+_allowed_hosts_env = os.getenv('ALLOWED_HOSTS')
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
+else:
+    ALLOWED_HOSTS = ['10.1.164.209', 'localhost', '127.0.0.1', '.onrender.com']
 
 # CSRF Trusted Origins para producción
-CSRF_TRUSTED_ORIGINS = ['https://gastu.onrender.com']
+_csrf_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS')
+if _csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins_env.split(',') if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = ['https://gastu.onrender.com']
 
-# Forzar HTTPS cuando se está detrás del proxy de Render (necesario para OAuth)
+# Forzar HTTPS cuando se está detrás de un proxy (Render, Nginx en OCI, etc.)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
@@ -175,7 +184,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # TAILWIND CSS
 # ──────────────────────────────────────────────────────────────
 TAILWIND_APP_NAME = 'theme'
-NPM_BIN_PATH = r'C:\Program Files\nodejs\npm.cmd'
+NPM_BIN_PATH = os.getenv('NPM_BIN_PATH', r'C:\Program Files\nodejs\npm.cmd' if os.name == 'nt' else 'npm')
 INTERNAL_IPS = ['127.0.0.1']
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
