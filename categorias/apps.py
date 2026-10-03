@@ -11,8 +11,8 @@ class CategoriasConfig(AppConfig):
 
         def cargar_datos(sender, **kwargs):
             try:
-                call_command('loaddata', 'semilla.json')
+                call_command('loaddata', 'categorias_iniciales.json')
             except Exception as e:
-                print(f"Error cargando semilla: {e}")
+                print(f"Error cargando categorias iniciales: {e}")
 
         post_migrate.connect(cargar_datos, sender=self)
