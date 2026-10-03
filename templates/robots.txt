@@ -17,4 +17,4 @@ Disallow: /api/
 Disallow: /admin/
 Disallow: /admin-panel/
 
-Sitemap: https://gastu.onrender.com/sitemap.xml
+Sitemap: https://gastu.duckdns.org/sitemap.xml
