@@ -44,7 +44,7 @@ class PresupuestoViewSet(viewsets.ModelViewSet):
             Presupuesto.objects.filter(usuario=request.user)
         )
         serializer = self.get_serializer(qs, many=True)
-        estados = {a['id']: a for a in obtener_estados_presupuestos(request.user)}
+        estados = {a['id']: a for a in obtener_estados_presupuestos(request.user, solo_activos=False)}
         for item in serializer.data:
             estado = estados.get(item['id'], {})
             item['gastado'] = estado.get('gastado', 0)

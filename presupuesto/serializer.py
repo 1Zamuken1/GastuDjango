@@ -31,11 +31,11 @@ class PresupuestoSerializer(serializers.ModelSerializer):
     def validate(self, data):
         usuario = self.context['request'].user
         categoria = data.get('categoria') or (self.instance.categoria if self.instance else None)
-        isActivo = data.get('isActivo')
+        is_activo = data.get('is_activo')
 
-        if isActivo is True:
+        if is_activo is True:
             queryset = Presupuesto.objects.filter(
-                usuario=usuario, categoria=categoria, isActivo=True
+                usuario=usuario, categoria=categoria, is_activo=True
             )
             if self.instance:
                 queryset = queryset.exclude(id=self.instance.id)
