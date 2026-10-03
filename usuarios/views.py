@@ -39,12 +39,20 @@ def register_view(request):
 #  LOGIN
 # ──────────────────────────────────────────────────────────────
 
+from django_ratelimit.decorators import ratelimit
+
+@ratelimit(key='ip', rate='5/m', block=False)
 def login_view(request):
     """
     Login de usuarios por EMAIL + contrasena.
     Redirige al dashboard si el usuario ya esta autenticado.
     Respeta el parametro ?next= para redireccion post-login.
     """
+    if getattr(request, 'limited', False):
+        messages.error(request, 'Demasiados intentos de inicio de sesión. Por favor intenta más tarde.')
+        form = LoginForm(request)
+        return render(request, 'usuarios/login.html', {'form': form})
+
     if request.user.is_authenticated:
         return redirect(settings.LOGIN_REDIRECT_URL)
 

@@ -40,11 +40,11 @@ def desactivar_presupuestos_vencidos(usuario):
     hoy = timezone.now().date()
     vencidos = Presupuesto.objects.filter(
         usuario=usuario,
-        isActivo=True,
+        is_activo=True,
         fecha_fin__lt=hoy
     )
     desactivados = list(vencidos.values('id', 'fecha_fin', 'categoria__nombre'))
-    vencidos.update(isActivo=False)
+    vencidos.update(is_activo=False)
     return desactivados
 
 
@@ -100,9 +100,10 @@ def obtener_estado_presupuesto(presupuesto):
     }
 
 
-def obtener_estados_presupuestos(usuario):
-    """Retorna todos los presupuestos activos con su alerta en 1 sola consulta SQL."""
-    presupuestos = _qs_con_total_gastado(
-        Presupuesto.objects.filter(usuario=usuario, isActivo=True)
-    )
+def obtener_estados_presupuestos(usuario, solo_activos=True):
+    """Retorna los presupuestos con su alerta en 1 sola consulta SQL."""
+    qs = Presupuesto.objects.filter(usuario=usuario)
+    if solo_activos:
+        qs = qs.filter(is_activo=True)
+    presupuestos = _qs_con_total_gastado(qs)
     return [obtener_estado_presupuesto(p) for p in presupuestos]

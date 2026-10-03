@@ -208,8 +208,8 @@
       }
 
       // ── Mapeo porcentaje → clase de borde superior ────────────────────────────────
-      function claseEstado(alerta, isActivo) {
-        if (!isActivo) return 'estado-inactivo'
+      function claseEstado(alerta, is_activo) {
+        if (!is_activo) return 'estado-inactivo'
         const mapa = {
           nivel_50: 'estado-cuidado', nivel_55: 'estado-cuidado',
           nivel_60: 'estado-alerta',  nivel_65: 'estado-alerta',
@@ -250,7 +250,7 @@
           const presupuestos = response.data
           const contenedor = document.getElementById('cards-presupuesto')
 
-          const activos = presupuestos.filter(p => p.isActivo)
+          const activos = presupuestos.filter(p => p.is_activo)
           const totalLimite  = activos.reduce((s, p) => s + parseFloat(p.limite), 0)
           const totalGastado = activos.reduce((s, p) => s + (p.gastado || 0), 0)
           const enAlerta = activos.filter(p => (p.porcentaje || 0) >= 80).length
@@ -304,7 +304,7 @@
               mensaje = cfg.msg(p.categoria_nombre)
             }
 
-            if (mensaje && p.isActivo && !alertaYaVista(alertaId, alertaStr)) {
+            if (mensaje && p.is_activo && !alertaYaVista(alertaId, alertaStr)) {
               Swal.fire({
                 icon: 'warning',
                 title: p.categoria_nombre,
@@ -318,7 +318,7 @@
               style: 'currency', currency: 'COP', maximumFractionDigits: 0
             })
 
-            const estadoClase = claseEstado(alertaStr, p.isActivo)
+            const estadoClase = claseEstado(alertaStr, p.is_activo)
 
             const card = document.createElement('div')
             card.className = `card-presupuesto ${estadoClase}`
@@ -332,8 +332,8 @@
                   <div class="card-tipo-icon tipo-egreso">
                     <i data-lucide="trending-down" style="width:16px;height:16px;"></i>
                   </div>
-                  <span class="card-badge ${p.isActivo ? 'activo' : 'inactivo'}">
-                    ${p.isActivo ? 'Activo' : 'Inactivo'}
+                  <span class="card-badge ${p.is_activo ? 'activo' : 'inactivo'}">
+                    ${p.is_activo ? 'Activo' : 'Inactivo'}
                   </span>
                 </div>
               </div>
@@ -366,8 +366,8 @@
                 </div>
               </div>
               <div class="card-footer">
-                <button onclick="togglePresupuesto(${p.id}, ${p.isActivo})" class="card-btn toggle">
-                  ${p.isActivo ? 'Desactivar' : 'Activar'}
+                <button onclick="togglePresupuesto(${p.id}, ${p.is_activo})" class="card-btn toggle">
+                  ${p.is_activo ? 'Desactivar' : 'Activar'}
                 </button>
                 <button onclick="editarPresupuesto(${p.id})" class="card-btn">Editar</button>
                 <button onclick="eliminarPresupuesto(${p.id})" class="card-btn danger">Eliminar</button>
@@ -381,12 +381,12 @@
       }
 
       // ── Toggle activo/inactivo ────────────────────────────────────────────────────
-      function togglePresupuesto(id, isActivo) {
+      function togglePresupuesto(id, is_activo) {
         fetch(`/api/presupuestos/${id}/`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
           credentials: 'same-origin',
-          body: JSON.stringify({ isActivo: !isActivo })
+          body: JSON.stringify({ is_activo: !is_activo })
         })
         .then(async r => {
           const data = await r.json()
@@ -394,7 +394,7 @@
           return data
         })
         .then(() => {
-          mostrarToast(isActivo ? 'Presupuesto desactivado' : 'Presupuesto activado')
+          mostrarToast(is_activo ? 'Presupuesto desactivado' : 'Presupuesto activado')
           cargarPresupuestos()
         })
         .catch(err => mostrarToast(err.message || 'No se pudo actualizar.', 'error'))
@@ -488,7 +488,7 @@
           categoria,
           fecha_inicio: fechaIni,
           fecha_fin:    fechaFin,
-          isActivo:     true
+          is_activo:     true
         }
         fetch('/api/presupuestos/', {
           method: 'POST',
