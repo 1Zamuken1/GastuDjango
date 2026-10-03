@@ -1,5 +1,6 @@
 """Generación de alertas financieras personalizadas vía Groq (con fallback sin IA)."""
 
+import os
 import json
 import logging
 from datetime import date
@@ -11,7 +12,7 @@ from .recolector import RecolectorDatos
 
 logger = logging.getLogger(__name__)
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = getattr(settings, "GROQ_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"))
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 TIPOS_ALERTA = {
