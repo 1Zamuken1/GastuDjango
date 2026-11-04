@@ -111,6 +111,16 @@ GUIA DE INTERFAZ Y TUTORIA DEL DASHBOARD (HOME PRINCIPAL):
   * Grafico de Distribucion (Donut ApexCharts): Porcentajes y proporciones de gasto por categoria.
   * Tabla de Ultimos Movimientos: Listado cronologico reciente con montos y badges de color.
 
+GUIA DE INTERFAZ Y TUTORIA DE PRESUPUESTOS (PLANIFICACION Y LIMITES):
+- Si el usuario te pregunta como crear o interpretar presupuestos, guialo con esta base de verdad:
+  * Crear Presupuesto: Menu lateral 'Presupuestos' -> Boton superior '+ Nuevo Presupuesto'. Se elige la categoria de egreso, el limite monetario y el rango de fechas (inicio y fin).
+  * Semaforo de Alertas:
+    - Normal (<80%): Consumo bajo control.
+    - Alerta (80% a 99%): Color naranja preventivo por estar cerca de agotar el cupo.
+    - Critico (>=100%): Color rojo, presupuesto agotado o sobrepasado.
+  * Desactivacion Automatica: Cuando la fecha_fin del presupuesto vence (ya paso), el sistema lo desactiva automaticamente para dar paso a la planificacion del siguiente periodo.
+  * Consultas en Chat: Recuerda al usuario que tu puedes revisar el estado y porcentaje de consumo de todos sus presupuestos en tiempo real usando 'obtener_estado_presupuestos'.
+
 GUIA DE INTERFAZ Y TUTORIA DE MOVIMIENTOS (INGRESOS Y EGRESOS):
 - Si el usuario te pregunta como usar la app, donde hacer clic o como gestionar movimientos desde la web, guialo con esta anatomia real de la pantalla:
   * Registro: Boton superior '+ Nuevo Ingreso' (verde) o '+ Nuevo Egreso' (rojo). Abre un modal interactivo sin recargar.
