@@ -138,7 +138,7 @@ class TestRecolectorDatos:
         Presupuesto.objects.create(limite=Decimal("500000"),
             fecha_inicio=date.today() - timedelta(days=30),
             fecha_fin=date.today() + timedelta(days=30),
-            isActivo=True, categoria=cat_egreso, usuario=usuario)
+            is_activo=True, categoria=cat_egreso, usuario=usuario)
         r = RecolectorDatos(usuario).recolectar_todo()
         assert len(r["presupuestos"]) == 1
         assert r["presupuestos"][0]["categoria"] == "Comida"
@@ -300,7 +300,7 @@ class TestGenerarAlertas:
         Presupuesto.objects.create(limite=Decimal("500000"),
             fecha_inicio=date.today() - timedelta(days=30),
             fecha_fin=date.today() + timedelta(days=30),
-            isActivo=True, categoria=cat_egreso, usuario=usuario)
+            is_activo=True, categoria=cat_egreso, usuario=usuario)
         alertas = generar_alertas(usuario)
         assert isinstance(alertas, list)
 
@@ -314,7 +314,7 @@ class TestGenerarAlertas:
         Presupuesto.objects.create(limite=Decimal("500000"),
             fecha_inicio=date.today() - timedelta(days=30),
             fecha_fin=date.today() + timedelta(days=30),
-            isActivo=True, categoria=cat_egreso, usuario=usuario)
+            is_activo=True, categoria=cat_egreso, usuario=usuario)
         ResumenMensual.objects.create(usuario=usuario,
             mes=date.today().month, anio=date.today().year,
             total_ingresos=Decimal("1000000"), total_egresos=Decimal("0"),

@@ -1,4 +1,7 @@
 from django.shortcuts import render, redirect
+from django_ratelimit.decorators import ratelimit
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib import messages
@@ -16,7 +19,12 @@ from notificaciones.preferencias.service import PreferenciasService
 #  REGISTER
 # ──────────────────────────────────────────────────────────────
 
+@ratelimit(key='ip', rate='10/h', block=False)
 def register_view(request):
+    if getattr(request, 'limited', False):
+        messages.error(request, 'Demasiadas solicitudes de registro. Por favor intenta mas tarde.')
+        form = UsuarioCreationForm()
+        return render(request, 'usuarios/register.html', {'form': form})
     """
     Registro de nuevos usuarios. Guarda en usuarios_usuario.
     La cuenta se identifica por EMAIL (unico), no por username.
@@ -39,7 +47,6 @@ def register_view(request):
 #  LOGIN
 # ──────────────────────────────────────────────────────────────
 
-from django_ratelimit.decorators import ratelimit
 
 @ratelimit(key='ip', rate='5/m', block=False)
 def login_view(request):
@@ -62,7 +69,7 @@ def login_view(request):
             user = form.get_user()
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             next_url = request.POST.get('next') or request.GET.get('next')
-            if next_url:
+            if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
                 return redirect(next_url)
             if user.rol == 'ADMIN' or user.is_staff:
                 return redirect('/admin-panel/')

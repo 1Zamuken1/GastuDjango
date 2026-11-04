@@ -137,7 +137,7 @@ class RecolectorDatos:
     def _presupuestos_activos(self) -> list:
         """Presupuestos activos del usuario. Calcula gastado desde Movimiento en 1 subquery."""
         presupuestos = (
-            Presupuesto.objects.filter(usuario=self.usuario, isActivo=True)
+            Presupuesto.objects.filter(usuario=self.usuario, is_activo=True)
             .select_related("categoria")
             .annotate(
                 _gastado=Coalesce(
