@@ -51,6 +51,7 @@ class EjecutorHerramientas:
             'crear_movimiento': self._crear_movimiento,
             'obtener_estado_ahorros': self._obtener_estado_ahorros,
             'obtener_estado_presupuestos': self._obtener_estado_presupuestos,
+            'preparar_confirmacion_accion': self._preparar_confirmacion_accion,
         }
 
         handler = handlers.get(nombre)
@@ -365,3 +366,78 @@ class EjecutorHerramientas:
         from presupuesto.services import obtener_estados_presupuestos
         presupuestos = obtener_estados_presupuestos(self.usuario, solo_activos=True)
         return {"total_presupuestos": len(presupuestos), "presupuestos": presupuestos}
+
+    # -------------------------------------------------------------------------
+    # Firewall de Confirmación (Human-in-the-Loop)
+    # -------------------------------------------------------------------------
+
+    def _preparar_confirmacion_accion(
+        self,
+        tipo_accion: str,
+        referencia_id: int,
+        detalles_modificacion: dict = None,
+        motivo: str = ""
+    ) -> dict:
+        """
+        Intercepta y valida peticiones de borrado o edición destructiva.
+        Genera un payload seguro que el frontend interpreta para mostrar la tarjeta interactiva de confirmación.
+        """
+        tipo_accion = tipo_accion.upper().strip()
+
+        if tipo_accion in ["ELIMINAR_MOVIMIENTO", "EDITAR_MOVIMIENTO"]:
+            try:
+                mov = Movimiento.objects.select_related("categoria").get(
+                    id=referencia_id, usuario=self.usuario, activo=True
+                )
+            except Movimiento.DoesNotExist:
+                return {
+                    "ok": False,
+                    "error": f"No se encontró un movimiento activo con ID {referencia_id} perteneciente a tu cuenta."
+                }
+
+            if tipo_accion == "ELIMINAR_MOVIMIENTO":
+                return {
+                    "requiere_confirmacion": True,
+                    "tipo_accion": "ELIMINAR_MOVIMIENTO",
+                    "objeto_id": mov.id,
+                    "endpoint": f"/movimientos/api/eliminar/{mov.id}/",
+                    "resumen_accion": f"Eliminar {mov.tipo.lower()} de ${float(mov.monto):,.0f} en '{mov.categoria.nombre}' ({mov.descripcion or 'Sin descripción'})",
+                    "mensaje_al_usuario": f"He preparado la eliminación del {mov.tipo.lower()} por  en '{mov.categoria.nombre}'. Por favor confirma a continuación para procesarlo:"
+                }
+
+            elif tipo_accion == "EDITAR_MOVIMIENTO":
+                detalles = detalles_modificacion or {}
+                return {
+                    "requiere_confirmacion": True,
+                    "tipo_accion": "EDITAR_MOVIMIENTO",
+                    "objeto_id": mov.id,
+                    "endpoint": f"/movimientos/api/editar/{mov.id}/",
+                    "detalles_modificacion": detalles,
+                    "resumen_accion": f"Modificar movimiento ID {mov.id} (Valor actual: ${float(mov.monto):,.0f})",
+                    "mensaje_al_usuario": f"He preparado los cambios para el movimiento en '{mov.categoria.nombre}'. Confirma para aplicarlos:"
+                }
+
+        elif tipo_accion == "ELIMINAR_PRESUPUESTO":
+            try:
+                pres = Presupuesto.objects.select_related("categoria").get(
+                    id=referencia_id, usuario=self.usuario, is_activo=True
+                )
+            except Presupuesto.DoesNotExist:
+                return {
+                    "ok": False,
+                    "error": f"No se encontró un presupuesto activo con ID {referencia_id} perteneciente a tu cuenta."
+                }
+
+            return {
+                "requiere_confirmacion": True,
+                "tipo_accion": "ELIMINAR_PRESUPUESTO",
+                "objeto_id": pres.id,
+                "endpoint": f"/api/presupuestos/{pres.id}/",
+                "resumen_accion": f"Eliminar presupuesto de ${float(pres.limite):,.0f} para '{pres.categoria.nombre}'",
+                "mensaje_al_usuario": f"He preparado la eliminación del presupuesto de '{pres.categoria.nombre}'. Confirma a continuación:"
+            }
+
+        return {
+            "ok": False,
+            "error": f"Tipo de acción '{tipo_accion}' no soportada por el firewall de seguridad."
+        }

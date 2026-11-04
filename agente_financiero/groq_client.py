@@ -120,6 +120,35 @@ TOOLS = [
     },    {
         "type": "function",
         "function": {
+            "name": "preparar_confirmacion_accion",
+            "description": "Intercepta y prepara la confirmacion interactiva (Human-in-the-Loop) obligatoria antes de eliminar o modificar datos sensibles del usuario.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tipo_accion": {
+                        "type": "string",
+                        "enum": ["ELIMINAR_MOVIMIENTO", "EDITAR_MOVIMIENTO", "ELIMINAR_PRESUPUESTO"],
+                        "description": "Tipo de accion destructiva a preparar."
+                    },
+                    "referencia_id": {
+                        "type": "integer",
+                        "description": "ID del movimiento o presupuesto a afectar."
+                    },
+                    "detalles_modificacion": {
+                        "type": "object",
+                        "description": "Diccionario con los campos a alterar si es una edicion (monto, categoria, descripcion)."
+                    },
+                    "motivo": {
+                        "type": "string",
+                        "description": "Explicacion breve de la accion solicitada por el usuario."
+                    }
+                },
+                "required": ["tipo_accion", "referencia_id"]
+            }
+        }
+    },    {
+        "type": "function",
+        "function": {
             "name": "obtener_movimientos",
             "description": (
                 "Consulta los movimientos del usuario aplicando filtros opcionales. "

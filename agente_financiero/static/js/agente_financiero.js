@@ -41,6 +41,70 @@
     return document.querySelector(".agente-avatar__img")?.src || "";
   }
 
+  
+  // ── Renderizado de Tarjeta Interactiva de Confirmacion (Firewall) ───
+  function renderizarTarjetaConfirmacion(datos) {
+    var cardId = 'card_confirm_' + Date.now();
+    var div = document.createElement('div');
+    div.id = cardId;
+    div.className = 'agente-card-confirmacion mt-3 p-3 bg-red-50/80 dark:bg-rose-950/30 border border-red-200 dark:border-rose-900 rounded-xl text-sm shadow-sm';
+    
+    var resumen = escaparHTML(datos.resumen_accion || 'Se requiere tu autorizacion para proceder.');
+    var payloadStr = escaparHTML(JSON.stringify(datos.detalles_modificacion || {}));
+
+    div.innerHTML = '<div class="flex items-start gap-2.5">' +
+      '<div class="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/60 flex items-center justify-center shrink-0 text-red-600 dark:text-red-400 font-bold">&#9888;</div>' +
+      '<div class="flex-1">' +
+        '<p class="font-semibold text-slate-900 dark:text-slate-100 mb-1">Confirmacion de Seguridad Requerida</p>' +
+        '<p class="text-slate-600 dark:text-slate-300 text-xs mb-3">' + resumen + '</p>' +
+        '<div class="flex items-center gap-2">' +
+          '<button type="button" class="btn-confirmar-accion px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow transition-colors flex items-center gap-1.5" data-endpoint="' + datos.endpoint + '" data-payload="' + payloadStr + '">Confirmar Accion</button>' +
+          '<button type="button" class="btn-cancelar-accion px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors">Cancelar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+    var btnConfirmar = div.querySelector('.btn-confirmar-accion');
+    var btnCancelar = div.querySelector('.btn-cancelar-accion');
+
+    btnConfirmar.addEventListener('click', async function() {
+      btnConfirmar.disabled = true;
+      btnCancelar.disabled = true;
+      btnConfirmar.innerText = 'Procesando...';
+
+      try {
+        var payloadData = {};
+        try { payloadData = JSON.parse(btnConfirmar.dataset.payload || '{}'); } catch(e){}
+        var res = await fetch(btnConfirmar.dataset.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+          },
+          body: JSON.stringify(payloadData)
+        });
+
+        if (res.ok) {
+          div.innerHTML = '<div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium text-xs"><span>&#10003;</span> Accion confirmada y ejecutada exitosamente.</div>';
+          if (window.GastuAlerts && window.GastuAlerts.success) {
+            window.GastuAlerts.success('Operacion ejecutada exitosamente');
+          }
+        } else {
+          div.innerHTML = '<p class="text-xs text-red-600 font-medium">No se pudo completar la operacion (Error en el servidor).</p>';
+        }
+      } catch (err) {
+        div.innerHTML = '<p class="text-xs text-red-600 font-medium">Error de conexion al procesar la confirmacion.</p>';
+      }
+    });
+
+    btnCancelar.addEventListener('click', function() {
+      div.innerHTML = '<div class="text-slate-500 dark:text-slate-400 text-xs italic">Operacion cancelada por el usuario. No se modifico ningun dato.</div>';
+    });
+
+    return div;
+  }
+
+
   function agregarMensaje(tipo, html, hora) {
     const h = hora || horaActual();
     const art = document.createElement("article");
@@ -119,7 +183,32 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setTyping(false);
-      agregarMensaje("bot", formatearBot(data.respuesta || "Sin respuesta del agente."));
+
+      var respuestaTexto = data.respuesta || "Sin respuesta del agente.";
+      var confirmacionData = null;
+
+      var jsonMatch = respuestaTexto.match(/\{[\s\S]*"requiere_confirmacion"\s*:\s*true[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          confirmacionData = JSON.parse(jsonMatch[0]);
+          respuestaTexto = respuestaTexto.replace(jsonMatch[0], "").trim();
+          if (!respuestaTexto) {
+            respuestaTexto = confirmacionData.mensaje_al_usuario || "Se requiere confirmacion para proceder:";
+          }
+        } catch (e) {
+          console.warn("[GASTU] Error parseando confirmacion JSON:", e);
+        }
+      }
+
+      var msgEl = agregarMensaje("bot", formatearBot(respuestaTexto));
+
+      if (confirmacionData && msgEl) {
+        var burbuja = msgEl.querySelector(".agente-mensaje__burbuja");
+        if (burbuja) {
+          burbuja.appendChild(renderizarTarjetaConfirmacion(confirmacionData));
+          scrollAlFinal();
+        }
+      }
     } catch (err) {
       setTyping(false);
       agregarMensaje("bot", `<span class="agente-error">Error al procesar tu consulta. Intenta de nuevo.</span>`);

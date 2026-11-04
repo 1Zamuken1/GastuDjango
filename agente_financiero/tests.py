@@ -282,6 +282,23 @@ class TestEjecutorHerramientas:
         assert res["egresos_mes"] == 500000.0
         assert res["saldo_actual"] == 1500000.0
 
+    
+    def test_preparar_confirmacion_accion_movimiento(self, usuario, cat_egreso):
+        mov = Movimiento.objects.create(
+            usuario=usuario, categoria=cat_egreso, tipo="EGRESO",
+            monto=Decimal("60000"), descripcion="Gasto de prueba a borrar",
+            fecha_registro=timezone.now()
+        )
+        e = EjecutorHerramientas(usuario)
+        res = json.loads(e.ejecutar("preparar_confirmacion_accion", {
+            "tipo_accion": "ELIMINAR_MOVIMIENTO",
+            "referencia_id": mov.id
+        }))
+        assert res["requiere_confirmacion"] is True
+        assert res["objeto_id"] == mov.id
+        assert "60.000" in res["resumen_accion"] or "60,000" in res["resumen_accion"] or "60000" in res["resumen_accion"]
+        assert f"/movimientos/api/eliminar/{mov.id}/" == res["endpoint"]
+
     def test_crear_movimiento_via_tool(self, usuario, cat_egreso):
         e = EjecutorHerramientas(usuario)
         res = json.loads(e.ejecutar("crear_movimiento", {
