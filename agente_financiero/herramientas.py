@@ -3,7 +3,8 @@
 import json
 import logging
 from datetime import date
-from decimal import Decimal
+import calendar
+from decimal import Decimal, InvalidOperation
 
 from django.db.models import Q, Sum, Count
 from categorias.models import Categoria
@@ -307,9 +308,15 @@ class EjecutorHerramientas:
         if tipo not in ["INGRESO", "EGRESO"]:
             return {"error": "El tipo debe ser 'INGRESO' o 'EGRESO'."}
 
-        monto_dec = Decimal(str(monto))
+        try:
+            monto_dec = Decimal(str(monto))
+        except (InvalidOperation, TypeError, ValueError):
+            return {"error": "El monto proporcionado no es un número válido."}
+
         if monto_dec <= Decimal('0'):
             return {"error": "El monto debe ser mayor a 0."}
+        if monto_dec > Decimal('9999999999.99'):
+            return {"error": "El monto excede el límite máximo permitido ($9.999.999.999,99)."}
 
         # Buscar categoría más afín
         cat_obj = Categoria.objects.filter(
@@ -324,12 +331,14 @@ class EjecutorHerramientas:
             if not cat_obj:
                 return {"error": f"No se encontró una categoría válida para el tipo {tipo}."}
 
+        desc_limpia = (descripcion or "").strip()[:255] or "Registrado vía asistente GASTU"
+
         mov = Movimiento.objects.create(
             usuario=self.usuario,
             categoria=cat_obj,
             tipo=tipo,
             monto=monto_dec,
-            descripcion=descripcion.strip() or f"Registrado vía asistente GASTU"
+            descripcion=desc_limpia
         )
 
         return {
@@ -401,6 +410,7 @@ class EjecutorHerramientas:
                     "requiere_confirmacion": True,
                     "tipo_accion": "ELIMINAR_MOVIMIENTO",
                     "objeto_id": mov.id,
+                    "metodo": "POST",
                     "endpoint": f"/movimientos/api/eliminar/{mov.id}/",
                     "resumen_accion": f"Eliminar {mov.tipo.lower()} de ${float(mov.monto):,.0f} en '{mov.categoria.nombre}' ({mov.descripcion or 'Sin descripción'})",
                     "mensaje_al_usuario": f"He preparado la eliminación del {mov.tipo.lower()} por  en '{mov.categoria.nombre}'. Por favor confirma a continuación para procesarlo:"
@@ -412,6 +422,7 @@ class EjecutorHerramientas:
                     "requiere_confirmacion": True,
                     "tipo_accion": "EDITAR_MOVIMIENTO",
                     "objeto_id": mov.id,
+                    "metodo": "POST",
                     "endpoint": f"/movimientos/api/editar/{mov.id}/",
                     "detalles_modificacion": detalles,
                     "resumen_accion": f"Modificar movimiento ID {mov.id} (Valor actual: ${float(mov.monto):,.0f})",
@@ -433,6 +444,7 @@ class EjecutorHerramientas:
                 "requiere_confirmacion": True,
                 "tipo_accion": "ELIMINAR_PRESUPUESTO",
                 "objeto_id": pres.id,
+                "metodo": "DELETE",
                 "endpoint": f"/api/presupuestos/{pres.id}/",
                 "resumen_accion": f"Eliminar presupuesto de ${float(pres.limite):,.0f} para '{pres.categoria.nombre}'",
                 "mensaje_al_usuario": f"He preparado la eliminación del presupuesto de '{pres.categoria.nombre}'. Confirma a continuación:"
@@ -466,8 +478,23 @@ class EjecutorHerramientas:
             tipo = "AMBOS"
 
         hoy = self.hoy
-        mes_val = int(mes) if mes else hoy.month
-        anio_val = int(anio) if anio else hoy.year
+        try:
+            mes_val = int(mes) if mes else hoy.month
+            if mes_val < 1 or mes_val > 12:
+                mes_val = hoy.month
+        except (ValueError, TypeError):
+            mes_val = hoy.month
+
+        try:
+            anio_val = int(anio) if anio else hoy.year
+            if anio_val < 2000 or anio_val > 2100:
+                anio_val = hoy.year
+        except (ValueError, TypeError):
+            anio_val = hoy.year
+
+        ultimo_dia = calendar.monthrange(anio_val, mes_val)[1]
+        fecha_desde = f"{anio_val:04d}-{mes_val:02d}-01"
+        fecha_hasta = f"{anio_val:04d}-{mes_val:02d}-{ultimo_dia:02d}"
 
         # Endpoints definidos en movimientos.urls
         endpoints_map = {
@@ -477,7 +504,13 @@ class EjecutorHerramientas:
         }
 
         base_url = endpoints_map.get(formato, "/exportar/excel/")
-        params = [f"tipo={tipo}", f"mes={mes_val}", f"anio={anio_val}"]
+        params = [
+            f"tipo={tipo}",
+            f"fecha_desde={fecha_desde}",
+            f"fecha_hasta={fecha_hasta}",
+            f"mes={mes_val}",
+            f"anio={anio_val}"
+        ]
 
         if categoria:
             cat_obj = Categoria.objects.filter(nombre__icontains=categoria.strip(), activo=True).first()

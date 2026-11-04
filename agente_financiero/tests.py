@@ -492,3 +492,75 @@ class TestAlertasAPI:
     def test_no_autenticado_alertas(self):
         r = Client().get("/api/agente/alertas/")
         assert r.status_code == 401
+
+
+# ── Tests de Hardening y Red Teaming (5 Correcciones) ─────────────────────────
+
+class TestHardeningRedTeamingIA:
+    @pytest.mark.django_db
+    def test_crear_movimiento_validaciones_monto_y_descripcion(self, usuario, cat_egreso):
+        ejecutor = EjecutorHerramientas(usuario)
+        
+        # 1. Monto gigante / overflow (> $9.999.999.999,99)
+        res_overflow = ejecutor._crear_movimiento("EGRESO", cat_egreso.nombre, 10000000000.0)
+        assert "error" in res_overflow
+        assert "excede el límite" in res_overflow["error"]
+
+        # 2. Monto inválido
+        res_invalido = ejecutor._crear_movimiento("EGRESO", cat_egreso.nombre, "no_es_un_numero")
+        assert "error" in res_invalido
+
+        # 3. Descripción larga (>255 chars) truncada limpiamente sin crash
+        desc_larga = "X" * 300
+        res_ok = ejecutor._crear_movimiento("EGRESO", cat_egreso.nombre, 25000.0, descripcion=desc_larga)
+        assert res_ok["ok"] is True
+        mov = Movimiento.objects.get(id=res_ok["id"])
+        assert len(mov.descripcion) == 255
+        assert mov.descripcion == "X" * 255
+
+    @pytest.mark.django_db
+    def test_preparar_confirmacion_accion_metodos_http(self, usuario, cat_egreso):
+        ejecutor = EjecutorHerramientas(usuario)
+        
+        # Movimiento debe usar POST
+        mov = Movimiento.objects.create(
+            usuario=usuario, categoria=cat_egreso, tipo="EGRESO",
+            monto=Decimal("15000"), descripcion="Prueba"
+        )
+        res_mov = ejecutor._preparar_confirmacion_accion("ELIMINAR_MOVIMIENTO", mov.id)
+        assert res_mov["metodo"] == "POST"
+
+        # Presupuesto debe usar DELETE
+        pres = Presupuesto.objects.create(
+            usuario=usuario, categoria=cat_egreso, limite=Decimal("100000"),
+            fecha_inicio=date.today(), fecha_fin=date.today(), is_activo=True
+        )
+        res_pres = ejecutor._preparar_confirmacion_accion("ELIMINAR_PRESUPUESTO", pres.id)
+        assert res_pres["metodo"] == "DELETE"
+        assert "/api/presupuestos/" in res_pres["endpoint"]
+
+    @pytest.mark.django_db
+    def test_generar_reporte_descarga_rango_fechas(self, usuario):
+        ejecutor = EjecutorHerramientas(usuario)
+        res = ejecutor._generar_reporte_descarga(formato="EXCEL", tipo="EGRESO", mes=1, anio=2025)
+        
+        url = res["url_descarga"]
+        assert "fecha_desde=2025-01-01" in url
+        assert "fecha_hasta=2025-01-31" in url
+        assert "tipo=EGRESO" in url
+
+    @pytest.mark.django_db
+    def test_chat_view_ratelimit_header(self, usuario):
+        from django.test import RequestFactory
+        from agente_financiero.api_views import ChatView
+        rf = RequestFactory()
+        req = rf.post("/api/agente/chat/", data=json.dumps({"mensaje": "hola"}), content_type="application/json")
+        req.user = usuario
+        req.limited = True
+        
+        view = ChatView()
+        resp = view.post(req)
+        assert resp.status_code == 429
+        data = json.loads(resp.content.decode("utf-8"))
+        assert data["ok"] is False
+        assert "demasiados mensajes" in data["error"]

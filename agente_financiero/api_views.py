@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 
 from .recolector import RecolectorDatos
 from .prompt_builder import construir_prompt
@@ -21,6 +22,8 @@ MAX_HISTORIAL_RESPUESTA = 50
 
 
 @method_decorator(login_required, name="dispatch")
+@method_decorator(ratelimit(key="user", rate="15/m", method="POST", block=False), name="post")
+@method_decorator(ratelimit(key="ip", rate="30/m", method="POST", block=False), name="post")
 class ChatView(View):
     """API del chat con el agente GASTU."""
 
@@ -44,6 +47,12 @@ class ChatView(View):
         })
 
     def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return JsonResponse({
+                "ok": False,
+                "error": "Has enviado demasiados mensajes. Por favor espera un momento antes de continuar."
+            }, status=429)
+
         if not request.user.is_authenticated:
             return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
 

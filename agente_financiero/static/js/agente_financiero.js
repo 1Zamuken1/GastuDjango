@@ -28,7 +28,8 @@
   }
 
   function formatearBot(texto) {
-    return texto
+    var seguro = escaparHTML(texto || "");
+    return seguro
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
       .replace(/\n/g, "<br>");
   }
@@ -49,6 +50,18 @@
     div.id = cardId;
     div.className = 'agente-card-confirmacion mt-3 p-3 bg-red-50/80 dark:bg-rose-950/30 border border-red-200 dark:border-rose-900 rounded-xl text-sm shadow-sm';
     
+    var endpoint = (datos.endpoint || "").trim();
+    // Validacion de seguridad: whitelist de rutas internas permitidas
+    if (!endpoint.startsWith('/movimientos/api/') && !endpoint.startsWith('/api/presupuestos/')) {
+      console.warn("[GASTU Firewall] Endpoint de confirmacion denegado por seguridad:", endpoint);
+      return div;
+    }
+
+    var metodo = (datos.metodo || "POST").toUpperCase();
+    if (metodo !== "POST" && metodo !== "DELETE") {
+      metodo = "POST";
+    }
+
     var resumen = escaparHTML(datos.resumen_accion || 'Se requiere tu autorizacion para proceder.');
     var payloadStr = escaparHTML(JSON.stringify(datos.detalles_modificacion || {}));
 
@@ -58,7 +71,7 @@
         '<p class="font-semibold text-slate-900 dark:text-slate-100 mb-1">Confirmacion de Seguridad Requerida</p>' +
         '<p class="text-slate-600 dark:text-slate-300 text-xs mb-3">' + resumen + '</p>' +
         '<div class="flex items-center gap-2">' +
-          '<button type="button" class="btn-confirmar-accion px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow transition-colors flex items-center gap-1.5" data-endpoint="' + datos.endpoint + '" data-payload="' + payloadStr + '">Confirmar Accion</button>' +
+          '<button type="button" class="btn-confirmar-accion px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow transition-colors flex items-center gap-1.5" data-endpoint="' + escaparHTML(endpoint) + '" data-metodo="' + metodo + '" data-payload="' + payloadStr + '">Confirmar Accion</button>' +
           '<button type="button" class="btn-cancelar-accion px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors">Cancelar</button>' +
         '</div>' +
       '</div>' +
@@ -73,16 +86,21 @@
       btnConfirmar.innerText = 'Procesando...';
 
       try {
-        var payloadData = {};
-        try { payloadData = JSON.parse(btnConfirmar.dataset.payload || '{}'); } catch(e){}
-        var res = await fetch(btnConfirmar.dataset.endpoint, {
-          method: 'POST',
+        var metodoHTTP = btnConfirmar.dataset.metodo || 'POST';
+        var reqOptions = {
+          method: metodoHTTP,
           headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCsrfToken()
-          },
-          body: JSON.stringify(payloadData)
-        });
+          }
+        };
+        if (metodoHTTP !== 'DELETE') {
+          var payloadData = {};
+          try { payloadData = JSON.parse(btnConfirmar.dataset.payload || '{}'); } catch(e){}
+          reqOptions.body = JSON.stringify(payloadData);
+        }
+
+        var res = await fetch(btnConfirmar.dataset.endpoint, reqOptions);
 
         if (res.ok) {
           div.innerHTML = '<div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium text-xs"><span>&#10003;</span> Accion confirmada y ejecutada exitosamente.</div>';
@@ -123,6 +141,11 @@
       iconEmoji = '📁';
     }
 
+    var urlDescarga = (datos.url_descarga || "").trim();
+    if (!urlDescarga.startsWith('/exportar/')) {
+      urlDescarga = '#';
+    }
+
     div.innerHTML = '<div class="flex items-center justify-between gap-3">' +
       '<div class="flex items-center gap-2.5">' +
         '<span class="text-xl">' + iconEmoji + '</span>' +
@@ -131,7 +154,7 @@
           '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ' + colorBadge + '">' + formato + '</span>' +
         '</div>' +
       '</div>' +
-      '<a href="' + datos.url_descarga + '" download class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition-colors flex items-center gap-1.5 shrink-0">' +
+      '<a href="' + escaparHTML(urlDescarga) + '" download class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition-colors flex items-center gap-1.5 shrink-0">' +
         'Descargar' +
       '</a>' +
     '</div>';
