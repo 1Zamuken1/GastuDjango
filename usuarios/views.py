@@ -24,7 +24,7 @@ def register_view(request):
     if getattr(request, 'limited', False):
         messages.error(request, 'Demasiadas solicitudes de registro. Por favor intenta mas tarde.')
         form = UsuarioCreationForm()
-        return render(request, 'usuarios/register.html', {'form': form})
+        return render(request, 'usuarios/register.html', {'form': form}, status=429)
     """
     Registro de nuevos usuarios. Guarda en usuarios_usuario.
     La cuenta se identifica por EMAIL (unico), no por username.
@@ -58,7 +58,7 @@ def login_view(request):
     if getattr(request, 'limited', False):
         messages.error(request, 'Demasiados intentos de inicio de sesión. Por favor intenta más tarde.')
         form = LoginForm(request)
-        return render(request, 'usuarios/login.html', {'form': form})
+        return render(request, 'usuarios/login.html', {'form': form}, status=429)
 
     if request.user.is_authenticated:
         return redirect(settings.LOGIN_REDIRECT_URL)
