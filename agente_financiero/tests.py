@@ -250,6 +250,50 @@ class TestEjecutorHerramientas:
 
 # ── AlertasService ────────────────────────────────────────────────────────────
 
+
+    # -------------------------------------------------------------------------
+    # Tests de Superpoderes Matemáticos y CRUD
+    # -------------------------------------------------------------------------
+
+    def test_calcular_ritmo_gasto(self, usuario, cat_egreso):
+        hoy = date.today()
+        Movimiento.objects.create(
+            usuario=usuario, categoria=cat_egreso, tipo="EGRESO",
+            monto=Decimal("150000"), fecha_registro=timezone.now()
+        )
+        e = EjecutorHerramientas(usuario)
+        res = json.loads(e.ejecutar("calcular_ritmo_gasto", {"categoria": cat_egreso.nombre}))
+        assert "gasto_diario_promedio" in res
+        assert "gasto_proyectado_fin_mes" in res
+        assert res["total_gastado_a_la_fecha"] == 150000.0
+
+    def test_calcular_capacidad_disponible(self, usuario, cat_ingreso, cat_egreso):
+        Movimiento.objects.create(
+            usuario=usuario, categoria=cat_ingreso, tipo="INGRESO",
+            monto=Decimal("2000000"), fecha_registro=timezone.now()
+        )
+        Movimiento.objects.create(
+            usuario=usuario, categoria=cat_egreso, tipo="EGRESO",
+            monto=Decimal("500000"), fecha_registro=timezone.now()
+        )
+        e = EjecutorHerramientas(usuario)
+        res = json.loads(e.ejecutar("calcular_capacidad_disponible", {}))
+        assert res["ingresos_mes"] == 2000000.0
+        assert res["egresos_mes"] == 500000.0
+        assert res["saldo_actual"] == 1500000.0
+
+    def test_crear_movimiento_via_tool(self, usuario, cat_egreso):
+        e = EjecutorHerramientas(usuario)
+        res = json.loads(e.ejecutar("crear_movimiento", {
+            "tipo": "EGRESO",
+            "categoria": cat_egreso.nombre,
+            "monto": 45000.0,
+            "descripcion": "Almuerzo de trabajo"
+        }))
+        assert res["ok"] is True
+        assert res["monto"] == 45000.0
+        assert Movimiento.objects.filter(usuario=usuario, monto=Decimal("45000")).exists()
+
 class TestDetectarSituaciones:
     def test_balance_negativo(self):
         datos = {"resumen_mensual": {"disponible": -50000, "total_ingresos": 100000, "total_egresos": 150000, "total_ahorrado": 0},

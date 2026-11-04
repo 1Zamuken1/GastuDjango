@@ -17,6 +17,109 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "calcular_proyeccion_meta",
+            "description": "Calcula matematicamente el avance, cuotas restantes y fecha estimada para cumplir una meta de ahorro especifica.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "meta_id": {
+                        "type": "integer",
+                        "description": "ID numerico de la meta de ahorro."
+                    },
+                    "aporte_adicional_mensual": {
+                        "type": "number",
+                        "description": "Monto voluntario adicional a aportar para acelerar el cumplimiento (opcional)."
+                    }
+                },
+                "required": ["meta_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "calcular_ritmo_gasto",
+            "description": "Calcula con precision matematica el gasto diario promedio y la proyeccion de cierre a fin de mes para evitar sobregastos.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "categoria": {
+                        "type": "string",
+                        "description": "Nombre parcial de la categoria a evaluar (opcional, omitir para evaluar el gasto global)."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "calcular_capacidad_disponible",
+            "description": "Calcula con formulas exactas en Python el disponible libre del usuario deduciendo compromisos fijos y cuotas de ahorro.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "crear_movimiento",
+            "description": "Registra un nuevo gasto o ingreso en la cuenta del usuario autenticado de forma segura.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tipo": {
+                        "type": "string",
+                        "enum": ["INGRESO", "EGRESO"],
+                        "description": "Tipo de movimiento a registrar."
+                    },
+                    "categoria": {
+                        "type": "string",
+                        "description": "Nombre de la categoria (ej. Alimentacion, Transporte, Salario, etc.)."
+                    },
+                    "monto": {
+                        "type": "number",
+                        "description": "Valor monetario del movimiento (debe ser mayor a cero)."
+                    },
+                    "descripcion": {
+                        "type": "string",
+                        "description": "Detalle explicativo breve opcional del movimiento."
+                    }
+                },
+                "required": ["tipo", "categoria", "monto"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "obtener_estado_ahorros",
+            "description": "Consulta todas las metas de ahorro activas del usuario, sus montos acumulados y estados de cuotas.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "obtener_estado_presupuestos",
+            "description": "Consulta todos los presupuestos activos del usuario con sus limites, gastos actuales y porcentajes consumidos.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },    {
+        "type": "function",
+        "function": {
             "name": "obtener_movimientos",
             "description": (
                 "Consulta los movimientos del usuario aplicando filtros opcionales. "
