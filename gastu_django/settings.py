@@ -17,6 +17,7 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("SECRET_KEY no configurada en las variables de entorno.")
 
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')
 
 # ── Hosts y Seguridad ─────────────────────────────────────────
 _allowed_hosts_env = os.getenv('ALLOWED_HOSTS')
