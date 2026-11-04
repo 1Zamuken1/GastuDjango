@@ -40,13 +40,15 @@
         <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA">
       </div>
       <div class="agente-mensaje__burbuja">
-        <p>Hola, <strong class="name-user">{{ user.first_name|default:user.username }}</strong>. Soy tu asistente financiero personal.</p>
-        <p>Puedo ayudarte a analizar tus movimientos, revisar presupuestos, consultar metas de ahorro y mucho más. Pregúntame lo que necesites.</p>
-        <div class="agente-sugerencias">
-          <button class="agente-sugerencia" data-pregunta="¿Cuál es mi resumen financiero de este mes?">Resumen del mes</button>
-          <button class="agente-sugerencia" data-pregunta="¿Cómo van mis metas de ahorro?">Metas de ahorro</button>
-          <button class="agente-sugerencia" data-pregunta="¿Qué movimientos recientes tengo?">Últimos movimientos</button>
-          <button class="agente-sugerencia" data-pregunta="¿En qué categorías gasto más?">Gastos por categoría</button>
+        <div class="agente-mensaje__cuerpo">
+          <p>Hola, <strong class="name-user">{{ user.first_name|default:user.username }}</strong>. Soy tu asistente financiero personal.</p>
+          <p>Puedo ayudarte a analizar tus movimientos, revisar presupuestos, consultar metas de ahorro y mucho más. Pregúntame lo que necesites.</p>
+          <div class="agente-sugerencias">
+            <button class="agente-sugerencia" data-pregunta="¿Cuál es mi resumen financiero de este mes?">Resumen del mes</button>
+            <button class="agente-sugerencia" data-pregunta="¿Cómo van mis metas de ahorro?">Metas de ahorro</button>
+            <button class="agente-sugerencia" data-pregunta="¿Qué movimientos recientes tengo?">Últimos movimientos</button>
+            <button class="agente-sugerencia" data-pregunta="¿En qué categorías gasto más?">Gastos por categoría</button>
+          </div>
         </div>
       </div>
     </div>

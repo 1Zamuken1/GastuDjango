@@ -496,3 +496,259 @@
     padding: 12px 14px 14px;
   }
 }
+
+
+/* ── Formateo Enriquecido, Tablas y Artifacts del Agente ──────── */
+
+/* Artifact Container (Tablas y Widgets) */
+.agente-artifact-card {
+  margin: 14px 0 10px 0;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.agente-artifact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.agente-artifact-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.agente-artifact-title svg {
+  width: 14px;
+  height: 14px;
+  color: #38bdf8;
+}
+
+.agente-btn-copiar-tabla {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.agente-btn-copiar-tabla:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.agente-btn-copiar-tabla.copiado {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+.agente-artifact-table-wrapper {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.agente-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.agente-tabla th {
+  padding: 8px 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+
+.agente-tabla td {
+  padding: 8px 12px;
+  color: #f1f5f9;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.agente-tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.agente-tabla tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Callouts / Alertas */
+.agente-callout {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.agente-callout__icon {
+  font-size: 1rem;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.agente-callout__content {
+  flex: 1;
+}
+
+.agente-callout--tip,
+.agente-callout--success {
+  background: rgba(34, 197, 94, 0.12);
+  border-left: 4px solid #22c55e;
+  color: #dcfce7;
+}
+
+.agente-callout--warning {
+  background: rgba(245, 158, 11, 0.12);
+  border-left: 4px solid #f59e0b;
+  color: #fef3c7;
+}
+
+.agente-callout--danger,
+.agente-callout--alert {
+  background: rgba(239, 68, 68, 0.12);
+  border-left: 4px solid #ef4444;
+  color: #fee2e2;
+}
+
+.agente-callout--note,
+.agente-callout--info {
+  background: rgba(14, 165, 233, 0.12);
+  border-left: 4px solid #0284c7;
+  color: #e0f2fe;
+}
+
+/* Badges */
+.agente-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  vertical-align: middle;
+}
+
+.agente-badge--verde {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.agente-badge--rojo {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.agente-badge--naranja {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fde047;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.agente-badge--azul {
+  background: rgba(14, 165, 233, 0.2);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+/* Colores de texto inline */
+.agente-color--verde {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.agente-color--rojo {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.agente-color--naranja {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.agente-color--azul {
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+/* Código en línea */
+.agente-codigo-inline {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82em;
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Footer de Mensajes Bot con Botón Copiar */
+.agente-mensaje__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.agente-btn-copiar-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.agente-btn-copiar-msg:hover {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.agente-btn-copiar-msg.copiado {
+  color: #86efac;
+}
+
+.agente-btn-copiar-msg svg,
+.agente-btn-copiar-tabla svg {
+  flex-shrink: 0;
+}

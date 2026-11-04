@@ -564,3 +564,24 @@ class TestHardeningRedTeamingIA:
         data = json.loads(resp.content.decode("utf-8"))
         assert data["ok"] is False
         assert "demasiados mensajes" in data["error"]
+
+
+    def test_skill_formato_visual_en_prompt(self, usuario):
+        from agente_financiero.prompt_builder import construir_prompt
+        datos = {
+            "usuario": {"nombre": usuario.nombre_usuario},
+            "resumen_mensual": {"total_ingresos": 0, "total_egresos": 0, "disponible": 0, "total_ahorrado": 0},
+            "metas_ahorro": [],
+            "presupuestos": [],
+            "programaciones": [],
+            "mes": 1,
+            "anio": 2026,
+            "ultimos_movimientos": [],
+        }
+        mensajes = construir_prompt(datos, "¿Cómo van mis finanzas?")
+        system_prompt = mensajes[0]["content"]
+        assert "GUIA DE ESTILO Y FORMATEO VISUAL ENRIQUECIDO" in system_prompt
+        assert "TABLAS MARKDOWN" in system_prompt
+        assert "[badge:verde" in system_prompt
+        assert "> [!TIP]" in system_prompt
+        assert "Copiar tabla" in system_prompt

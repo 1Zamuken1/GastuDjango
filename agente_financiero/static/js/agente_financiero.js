@@ -27,11 +27,177 @@
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
   }
 
+  // ── Formateo Enriquecido de Contenidos Inline ─────────────────────
+  function formatearContenidoInline(str) {
+    if (!str) return "";
+    return str
+      // Badges de color: [badge:verde Texto], [badge:rojo Texto], etc.
+      .replace(/\[badge:(verde|rojo|azul|naranja)\s+(.*?)\]/gi, function(match, color, cont) {
+        return '<span class="agente-badge agente-badge--' + color.toLowerCase() + '">' + cont + '</span>';
+      })
+      // Colores de texto inline: [color:verde Texto], etc.
+      .replace(/\[color:(verde|rojo|azul|naranja)\s+(.*?)\]/gi, function(match, color, cont) {
+        return '<span class="agente-color--' + color.toLowerCase() + '">' + cont + '</span>';
+      })
+      // Codigo en linea: `codigo`
+      .replace(/`([^`]+)`/g, '<code class="agente-codigo-inline">$1</code>')
+      // Negrita: **texto**
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Cursiva: *texto* (no pegado a palabras internas)
+      .replace(/(^|[^\*])\*([^\*]+)\*([^\*]|$)/g, '$1<em>$2</em>$3');
+  }
+
+  // ── Procesador de Tablas Markdown como Artifacts ───────────────────
+  function procesarTablasMarkdown(texto) {
+    var lineas = texto.split(/\r?\n/);
+    var resultado = [];
+    var i = 0;
+
+    while (i < lineas.length) {
+      var linea = lineas[i];
+      // Detectar inicio de tabla: linea con pipes y siguiente con |--|
+      if (linea.includes('|') && i + 1 < lineas.length && /^\s*\|?\s*:?-+:?\s*(\|?\s*:?-+:?\s*)+\|?\s*$/.test(lineas[i + 1])) {
+        var headerLinea = linea;
+        var headers = headerLinea.split('|')
+          .map(function(s) { return s.trim(); })
+          .filter(function(s, idx, arr) {
+            if ((idx === 0 || idx === arr.length - 1) && s === '') return false;
+            return true;
+          });
+
+        var filas = [];
+        var tsvRows = [];
+        tsvRows.push(headers.join('\t'));
+
+        i += 2; // saltar encabezado y separador
+
+        while (i < lineas.length && lineas[i].includes('|') && lineas[i].trim() !== '') {
+          var celdas = lineas[i].split('|')
+            .map(function(s) { return s.trim(); })
+            .filter(function(s, idx, arr) {
+              if ((idx === 0 || idx === arr.length - 1) && s === '') return false;
+              return true;
+            });
+
+          if (celdas.length > 0) {
+            filas.push(celdas);
+            // Para TSV limpiamos posibles etiquetas y markdown para copiar limpio
+            var celdasLimpias = celdas.map(function(c) {
+              return c.replace(/\[badge:\w+\s+(.*?)\]/gi, '$1')
+                      .replace(/\[color:\w+\s+(.*?)\]/gi, '$1')
+                      .replace(/\*\*(.*?)\*\*/g, '$1')
+                      .replace(/`([^`]+)`/g, '$1');
+            });
+            tsvRows.push(celdasLimpias.join('\t'));
+          }
+          i++;
+        }
+
+        var tsvData = tsvRows.join('\n');
+        var tsvEncoded = encodeURIComponent(tsvData);
+
+        var tableHtml = '<div class="agente-artifact-card" data-artifact="tabla">' +
+          '<div class="agente-artifact-header">' +
+            '<span class="agente-artifact-title">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>' +
+              'Tabla de Datos' +
+            '</span>' +
+            '<button type="button" class="agente-btn-copiar-tabla" data-tsv="' + tsvEncoded + '" title="Copiar datos para Excel o Hojas de Cálculo">' +
+              '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>' +
+              '<span>Copiar tabla</span>' +
+            '</button>' +
+          '</div>' +
+          '<div class="agente-artifact-table-wrapper">' +
+            '<table class="agente-tabla">' +
+              '<thead><tr>' +
+                headers.map(function(h) { return '<th>' + formatearContenidoInline(h) + '</th>'; }).join('') +
+              '</tr></thead>' +
+              '<tbody>' +
+                filas.map(function(fila) {
+                  return '<tr>' + fila.map(function(c) { return '<td>' + formatearContenidoInline(c) + '</td>'; }).join('') + '</tr>';
+                }).join('') +
+              '</tbody>' +
+            '</table>' +
+          '</div>' +
+        '</div>';
+
+        resultado.push(tableHtml);
+      } else {
+        resultado.push(linea);
+        i++;
+      }
+    }
+
+    return resultado.join('\n');
+  }
+
+  // ── Procesador de Callouts / Bloques de Alerta ─────────────────────
+  function procesarCallouts(texto) {
+    var lineas = texto.split(/\r?\n/);
+    var resultado = [];
+    var i = 0;
+
+    while (i < lineas.length) {
+      var linea = lineas[i];
+      var matchCallout = linea.match(/^&gt;\s*\[!(NOTE|INFO|TIP|SUCCESS|WARNING|DANGER|ALERT)\]\s*(.*)$/i);
+      if (matchCallout) {
+        var tipo = matchCallout[1].toLowerCase();
+        var icon = '💡';
+        if (tipo === 'warning') icon = '⚠️';
+        else if (tipo === 'danger' || tipo === 'alert') icon = '🚨';
+        else if (tipo === 'note' || tipo === 'info') icon = 'ℹ️';
+
+        var calloutLineas = [];
+        if (matchCallout[2].trim()) {
+          calloutLineas.push(matchCallout[2].trim());
+        }
+
+        i++;
+        while (i < lineas.length && lineas[i].startsWith('&gt;') && !lineas[i].match(/^&gt;\s*\[!(?:NOTE|INFO|TIP|SUCCESS|WARNING|DANGER|ALERT)\]/i)) {
+          var textoCont = lineas[i].replace(/^&gt;\s*/, '').trim();
+          if (textoCont) calloutLineas.push(textoCont);
+          i++;
+        }
+
+        var contenidoHtml = calloutLineas.map(function(c) { return formatearContenidoInline(c); }).join('<br>');
+        resultado.push(
+          '<div class="agente-callout agente-callout--' + tipo + '">' +
+            '<div class="agente-callout__icon">' + icon + '</div>' +
+            '<div class="agente-callout__content">' + contenidoHtml + '</div>' +
+          '</div>'
+        );
+      } else {
+        resultado.push(linea);
+        i++;
+      }
+    }
+
+    return resultado.join('\n');
+  }
+
+  // ── Formateador Principal del Bot ─────────────────────────────────
   function formatearBot(texto) {
     var seguro = escaparHTML(texto || "");
-    return seguro
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\n/g, "<br>");
+    
+    // 1. Tablas Markdown (Artifacts)
+    seguro = procesarTablasMarkdown(seguro);
+
+    // 2. Callouts
+    seguro = procesarCallouts(seguro);
+
+    // 3. Contenidos inline (badges, colores, negritas, cursivas, codigo)
+    seguro = formatearContenidoInline(seguro);
+
+    // 4. Listas con viñetas
+    seguro = seguro.replace(/^[ \t]*[-\*]\s+(.+)$/gm, '<div class="flex items-start gap-1.5 my-0.5"><span class="text-emerald-400">•</span><span>$1</span></div>');
+
+    // 5. Normalizar saltos de linea sin romper estructuras de bloques
+    seguro = seguro
+      .replace(/<\/div>\s*\n/g, '</div>')
+      .replace(/\n\s*<div/g, '<div')
+      .replace(/\n/g, '<br>');
+
+    return seguro;
   }
 
   function horaActual() {
@@ -172,12 +338,27 @@
       ? `<div class="agente-mensaje__avatar"><img src="${logoSrc()}" alt="Gastu IA"></div>`
       : `<div class="agente-mensaje__avatar">${INICIAL}</div>`;
 
-    art.innerHTML = `
-      ${avatarHTML}
-      <div class="agente-mensaje__burbuja">
-        ${html}
-        <span class="agente-mensaje__hora">${h}</span>
-      </div>`;
+    if (tipo === "bot") {
+      art.innerHTML = `
+        ${avatarHTML}
+        <div class="agente-mensaje__burbuja">
+          <div class="agente-mensaje__cuerpo">${html}</div>
+          <div class="agente-mensaje__footer">
+            <button type="button" class="agente-btn-copiar-msg" title="Copiar mensaje">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <span>Copiar</span>
+            </button>
+            <span class="agente-mensaje__hora">${h}</span>
+          </div>
+        </div>`;
+    } else {
+      art.innerHTML = `
+        ${avatarHTML}
+        <div class="agente-mensaje__burbuja">
+          <div class="agente-mensaje__cuerpo">${html}</div>
+          <span class="agente-mensaje__hora">${h}</span>
+        </div>`;
+    }
 
     chatContainer.appendChild(art);
     scrollAlFinal();
@@ -275,17 +456,17 @@
       var msgEl = agregarMensaje("bot", formatearBot(respuestaTexto));
 
       if (descargaData && msgEl) {
-        var burbujaDescarga = msgEl.querySelector(".agente-mensaje__burbuja");
-        if (burbujaDescarga) {
-          burbujaDescarga.appendChild(renderizarTarjetaDescarga(descargaData));
+        var contenedorDescarga = msgEl.querySelector(".agente-mensaje__cuerpo") || msgEl.querySelector(".agente-mensaje__burbuja");
+        if (contenedorDescarga) {
+          contenedorDescarga.appendChild(renderizarTarjetaDescarga(descargaData));
           scrollAlFinal();
         }
       }
 
       if (confirmacionData && msgEl) {
-        var burbuja = msgEl.querySelector(".agente-mensaje__burbuja");
-        if (burbuja) {
-          burbuja.appendChild(renderizarTarjetaConfirmacion(confirmacionData));
+        var contenedorConf = msgEl.querySelector(".agente-mensaje__cuerpo") || msgEl.querySelector(".agente-mensaje__burbuja");
+        if (contenedorConf) {
+          contenedorConf.appendChild(renderizarTarjetaConfirmacion(confirmacionData));
           scrollAlFinal();
         }
       }
@@ -369,3 +550,55 @@
   cargarHistorial();
 
 })();
+  // ── Delegación de Eventos para Copiar Mensajes y Artifacts (Tablas) ──
+  chatContainer.addEventListener("click", function(e) {
+    // 1. Copiar mensaje completo del bot
+    var btnCopiarMsg = e.target.closest(".agente-btn-copiar-msg");
+    if (btnCopiarMsg) {
+      var burbuja = btnCopiarMsg.closest(".agente-mensaje__burbuja");
+      var cuerpo = burbuja ? burbuja.querySelector(".agente-mensaje__cuerpo") : null;
+      if (cuerpo) {
+        var textoACopiar = (cuerpo.innerText || cuerpo.textContent || "").trim();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(textoACopiar).then(function() {
+            var span = btnCopiarMsg.querySelector("span");
+            var textoOrig = span ? span.textContent : "Copiar";
+            btnCopiarMsg.classList.add("copiado");
+            if (span) span.textContent = "¡Copiado! ✓";
+            setTimeout(function() {
+              btnCopiarMsg.classList.remove("copiado");
+              if (span) span.textContent = textoOrig;
+            }, 2000);
+          }).catch(function(err) {
+            console.warn("[GASTU] Error al copiar:", err);
+          });
+        }
+      }
+      return;
+    }
+
+    // 2. Copiar solo el Artifact (Tabla de datos)
+    var btnCopiarTabla = e.target.closest(".agente-btn-copiar-tabla");
+    if (btnCopiarTabla) {
+      var tsvEncoded = btnCopiarTabla.getAttribute("data-tsv") || "";
+      var tsvData = decodeURIComponent(tsvEncoded);
+      if (tsvData && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tsvData).then(function() {
+          var span = btnCopiarTabla.querySelector("span");
+          var textoOrig = span ? span.textContent : "Copiar tabla";
+          btnCopiarTabla.classList.add("copiado");
+          if (span) span.textContent = "✓ ¡Copiado!";
+          if (window.GastuAlerts && window.GastuAlerts.success) {
+            window.GastuAlerts.success("Tabla copiada al portapapeles. ¡Lista para pegar en Excel!");
+          }
+          setTimeout(function() {
+            btnCopiarTabla.classList.remove("copiado");
+            if (span) span.textContent = textoOrig;
+          }, 2000);
+        }).catch(function(err) {
+          console.warn("[GASTU] Error al copiar tabla:", err);
+        });
+      }
+      return;
+    }
+  });
