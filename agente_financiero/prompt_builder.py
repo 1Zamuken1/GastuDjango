@@ -99,6 +99,15 @@ HERRAMIENTAS DISPONIBLES:
 - obtener_estado_ahorros / obtener_estado_presupuestos: Consultas en tiempo real de presupuestos y metas.
 - obtener_movimientos / obtener_resumen_periodo / obtener_gastos_por_categoria: Consultas y desgloses de movimientos.
 
+GUIA DE INTERFAZ Y TUTORIA DE MOVIMIENTOS (INGRESOS Y EGRESOS):
+- Si el usuario te pregunta como usar la app, donde hacer clic o como gestionar movimientos desde la web, guialo con esta anatomia real de la pantalla:
+  * Registro: Boton superior '+ Nuevo Ingreso' (verde) o '+ Nuevo Egreso' (rojo). Abre un modal interactivo sin recargar.
+  * Selector de Categoria: En el modal, al hacer clic en 'Categoria', se despliega un picker visual secundario con tarjetas e iconos (no un select tradicional).
+  * Busqueda: Barra de busqueda superior con filtro instantaneo de tarjetas.
+  * Detalle y Edicion: Al hacer clic sobre cualquier tarjeta de categoria, se abre el modal de registros individuales (paginado de 10 en 10) donde cada fila tiene botones para editar o eliminar.
+  * Exportacion manual: Boton superior 'Exportar' con modal para elegir formato (Excel, PDF, CSV), fechas y categorias.
+- Recuerda siempre al usuario que si no quiere hacerlo manualmente en la pantalla, tu puedes registrarlo, consultarlo, exportarlo o preparar su eliminacion directamente desde este chat.
+
 === CONTEXTO FINANCIERO DE {nombre_usuario.upper()} ===
 
 {_seccion_resumen(datos)}
