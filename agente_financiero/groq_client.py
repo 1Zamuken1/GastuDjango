@@ -149,6 +149,40 @@ TOOLS = [
     },    {
         "type": "function",
         "function": {
+            "name": "generar_reporte_descarga",
+            "description": "Genera el enlace de descarga directa de reportes oficiales de movimientos en Excel (.xlsx), PDF (.pdf) o CSV (.csv).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "formato": {
+                        "type": "string",
+                        "enum": ["EXCEL", "PDF", "CSV"],
+                        "description": "Formato del documento solicitado. Por defecto usa EXCEL."
+                    },
+                    "tipo": {
+                        "type": "string",
+                        "enum": ["INGRESO", "EGRESO", "AMBOS"],
+                        "description": "Filtro de movimientos: INGRESO, EGRESO o AMBOS (por defecto)."
+                    },
+                    "mes": {
+                        "type": "integer",
+                        "description": "Numero del mes (1-12). Por defecto usa el mes actual."
+                    },
+                    "anio": {
+                        "type": "integer",
+                        "description": "Ano de 4 digitos. Por defecto usa el ano actual."
+                    },
+                    "categoria": {
+                        "type": "string",
+                        "description": "Nombre de categoria opcional para filtrar el reporte."
+                    }
+                },
+                "required": []
+            }
+        }
+    },    {
+        "type": "function",
+        "function": {
             "name": "obtener_movimientos",
             "description": (
                 "Consulta los movimientos del usuario aplicando filtros opcionales. "

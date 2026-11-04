@@ -52,6 +52,7 @@ class EjecutorHerramientas:
             'obtener_estado_ahorros': self._obtener_estado_ahorros,
             'obtener_estado_presupuestos': self._obtener_estado_presupuestos,
             'preparar_confirmacion_accion': self._preparar_confirmacion_accion,
+            'generar_reporte_descarga': self._generar_reporte_descarga,
         }
 
         handler = handlers.get(nombre)
@@ -440,4 +441,62 @@ class EjecutorHerramientas:
         return {
             "ok": False,
             "error": f"Tipo de acción '{tipo_accion}' no soportada por el firewall de seguridad."
+        }
+    # -------------------------------------------------------------------------
+    # Herramienta de Exportación Documental (Excel, PDF, CSV)
+    # -------------------------------------------------------------------------
+
+    def _generar_reporte_descarga(
+        self,
+        formato: str = "EXCEL",
+        tipo: str = "AMBOS",
+        mes: int = None,
+        anio: int = None,
+        categoria: str = None
+    ) -> dict:
+        """
+        Construye la URL y metadatos para la descarga inmediata de reportes oficiales (Excel, PDF, CSV).
+        """
+        formato = formato.upper().strip()
+        if formato not in ["EXCEL", "PDF", "CSV"]:
+            formato = "EXCEL"
+
+        tipo = tipo.upper().strip()
+        if tipo not in ["INGRESO", "EGRESO", "AMBOS"]:
+            tipo = "AMBOS"
+
+        hoy = self.hoy
+        mes_val = int(mes) if mes else hoy.month
+        anio_val = int(anio) if anio else hoy.year
+
+        # Endpoints definidos en movimientos.urls
+        endpoints_map = {
+            "EXCEL": "/exportar/excel/",
+            "PDF": "/exportar/pdf/",
+            "CSV": "/exportar/csv/",
+        }
+
+        base_url = endpoints_map.get(formato, "/exportar/excel/")
+        params = [f"tipo={tipo}", f"mes={mes_val}", f"anio={anio_val}"]
+
+        if categoria:
+            cat_obj = Categoria.objects.filter(nombre__icontains=categoria.strip(), activo=True).first()
+            if cat_obj:
+                params.append(f"categorias={cat_obj.id}")
+
+        query_str = "&".join(params)
+        url_descarga = f"{base_url}?{query_str}"
+        mes_nombre = MESES_ES.get(mes_val, str(mes_val))
+        periodo_str = f"{mes_nombre} {anio_val}"
+
+        ext_map = {"EXCEL": ".xlsx", "PDF": ".pdf", "CSV": ".csv"}
+        nombre_archivo = f"Reporte_Movimientos_{mes_nombre}_{anio_val}{ext_map.get(formato, '.xlsx')}"
+
+        return {
+            "es_archivo_descarga": True,
+            "formato": formato,
+            "url_descarga": url_descarga,
+            "nombre_archivo": nombre_archivo,
+            "periodo": periodo_str,
+            "mensaje_al_usuario": f"He generado tu reporte de movimientos de {periodo_str} en formato {formato}. Haz clic en el botón a continuación para descargarlo:"
         }

@@ -283,6 +283,22 @@ class TestEjecutorHerramientas:
         assert res["saldo_actual"] == 1500000.0
 
     
+    
+    def test_generar_reporte_descarga(self, usuario):
+        e = EjecutorHerramientas(usuario)
+        res = json.loads(e.ejecutar("generar_reporte_descarga", {
+            "formato": "EXCEL",
+            "tipo": "EGRESO",
+            "mes": 3,
+            "anio": 2026
+        }))
+        assert res["es_archivo_descarga"] is True
+        assert res["formato"] == "EXCEL"
+        assert "/exportar/excel/" in res["url_descarga"]
+        assert "tipo=EGRESO" in res["url_descarga"]
+        assert "mes=3" in res["url_descarga"]
+        assert "Reporte_Movimientos_marzo_2026.xlsx" == res["nombre_archivo"]
+
     def test_preparar_confirmacion_accion_movimiento(self, usuario, cat_egreso):
         mov = Movimiento.objects.create(
             usuario=usuario, categoria=cat_egreso, tipo="EGRESO",

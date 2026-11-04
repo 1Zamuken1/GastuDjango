@@ -105,6 +105,41 @@
   }
 
 
+  
+  // ── Renderizado de Tarjeta de Descarga Documental ──────────────────
+  function renderizarTarjetaDescarga(datos) {
+    var div = document.createElement('div');
+    div.className = 'agente-card-descarga mt-3 p-3 bg-emerald-50/90 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm shadow-sm';
+
+    var formato = (datos.formato || 'EXCEL').toUpperCase();
+    var colorBadge = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300';
+    var iconEmoji = '📊';
+
+    if (formato === 'PDF') {
+      colorBadge = 'bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300';
+      iconEmoji = '📄';
+    } else if (formato === 'CSV') {
+      colorBadge = 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300';
+      iconEmoji = '📁';
+    }
+
+    div.innerHTML = '<div class="flex items-center justify-between gap-3">' +
+      '<div class="flex items-center gap-2.5">' +
+        '<span class="text-xl">' + iconEmoji + '</span>' +
+        '<div>' +
+          '<p class="font-semibold text-slate-900 dark:text-slate-100 text-xs">' + escaparHTML(datos.nombre_archivo || 'Reporte_Financiero') + '</p>' +
+          '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ' + colorBadge + '">' + formato + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<a href="' + datos.url_descarga + '" download class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition-colors flex items-center gap-1.5 shrink-0">' +
+        'Descargar' +
+      '</a>' +
+    '</div>';
+
+    return div;
+  }
+
+
   function agregarMensaje(tipo, html, hora) {
     const h = hora || horaActual();
     const art = document.createElement("article");
@@ -200,7 +235,29 @@
         }
       }
 
+      var descargaData = null;
+      var jsonDescargaMatch = respuestaTexto.match(/\{[\s\S]*"es_archivo_descarga"\s*:\s*true[\s\S]*\}/);
+      if (jsonDescargaMatch) {
+        try {
+          descargaData = JSON.parse(jsonDescargaMatch[0]);
+          respuestaTexto = respuestaTexto.replace(jsonDescargaMatch[0], "").trim();
+          if (!respuestaTexto) {
+            respuestaTexto = descargaData.mensaje_al_usuario || "Tu reporte esta listo para descargar:";
+          }
+        } catch (e) {
+          console.warn("[GASTU] Error parseando JSON de descarga:", e);
+        }
+      }
+
       var msgEl = agregarMensaje("bot", formatearBot(respuestaTexto));
+
+      if (descargaData && msgEl) {
+        var burbujaDescarga = msgEl.querySelector(".agente-mensaje__burbuja");
+        if (burbujaDescarga) {
+          burbujaDescarga.appendChild(renderizarTarjetaDescarga(descargaData));
+          scrollAlFinal();
+        }
+      }
 
       if (confirmacionData && msgEl) {
         var burbuja = msgEl.querySelector(".agente-mensaje__burbuja");
