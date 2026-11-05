@@ -17,6 +17,8 @@
   let esperandoRespuesta = false;
 
   function getCsrfToken() {
+    const inputCsrf = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (inputCsrf && inputCsrf.value) return inputCsrf.value;
     const cookie = document.cookie.split("; ").find(r => r.startsWith("csrftoken="));
     return cookie ? cookie.split("=")[1] : "";
   }
@@ -544,12 +546,6 @@
     scrollAlFinal();
   });
 
-  // ── Init ──────────────────────────────────────────────────
-
-  setTyping(false);
-  cargarHistorial();
-
-})();
   // ── Delegación de Eventos para Copiar Mensajes y Artifacts (Tablas) ──
   chatContainer.addEventListener("click", function(e) {
     // 1. Copiar mensaje completo del bot
@@ -602,3 +598,10 @@
       return;
     }
   });
+
+  // ── Init ──────────────────────────────────────────────────
+
+  setTyping(false);
+  cargarHistorial();
+
+})();
