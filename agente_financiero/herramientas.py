@@ -354,7 +354,7 @@ class EjecutorHerramientas:
 
     def _obtener_estado_ahorros(self) -> dict:
         """Retorna las metas de ahorro activas del usuario con su progreso exacto."""
-        metas = AhorroMeta.objects.filter(usuario=self.usuario, activo=True).select_related('categoria')
+        metas = AhorroMeta.objects.filter(usuario=self.usuario, estado__in=['ACTIVO', 'SIN_INICIAR']).select_related('categoria')
         resultado = []
         for m in metas:
             acumulado = m.aportes.filter(estado_ap='APORTADO').aggregate(total=Sum('aporte'))['total'] or Decimal('0')
@@ -362,7 +362,7 @@ class EjecutorHerramientas:
             resultado.append({
                 "id": m.id,
                 "categoria": m.categoria.nombre if m.categoria else "General",
-                "descripcion": m.descripcion_corta or "",
+                "descripcion": m.descripcion or "",
                 "monto_meta": float(m.monto_meta),
                 "acumulado": float(acumulado),
                 "cuotas_pendientes": pendientes,

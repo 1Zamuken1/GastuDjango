@@ -28,7 +28,7 @@ TOOLS = [
                         "description": "ID numerico de la meta de ahorro."
                     },
                     "aporte_adicional_mensual": {
-                        "type": "number",
+                        "type": ["number", "null"],
                         "description": "Monto voluntario adicional a aportar para acelerar el cumplimiento (opcional)."
                     }
                 },
@@ -45,8 +45,8 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "categoria": {
-                        "type": "string",
-                        "description": "Nombre parcial de la categoria a evaluar (opcional, omitir para evaluar el gasto global)."
+                        "type": ["string", "null"],
+                        "description": "Nombre parcial de la categoria a evaluar (opcional o null para gasto global)."
                     }
                 },
                 "required": []
@@ -199,16 +199,16 @@ TOOLS = [
                         "description": "Filtrar por tipo de movimiento. Usa TODOS si no se especifica.",
                     },
                     "mes": {
-                        "type": "integer",
-                        "description": "Número de mes (1-12). Omitir si no se especifica.",
+                        "type": ["integer", "null"],
+                        "description": "Número de mes (1-12). Omitir o null si no se especifica.",
                     },
                     "anio": {
-                        "type": "integer",
-                        "description": "Año de 4 dígitos. Omitir si no se especifica.",
+                        "type": ["integer", "null"],
+                        "description": "Año de 4 dígitos. Omitir o null si no se especifica.",
                     },
                     "categoria": {
-                        "type": "string",
-                        "description": "Nombre parcial de la categoría a filtrar (búsqueda por contenido).",
+                        "type": ["string", "null"],
+                        "description": "Nombre parcial de la categoría a filtrar (opcional o null).",
                     },
                     "limite": {
                         "type": "integer",
@@ -256,8 +256,8 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "mes": {
-                        "type": "integer",
-                        "description": "Número de mes (1-12). Omitir para todos los meses del año.",
+                        "type": ["integer", "null"],
+                        "description": "Número de mes (1-12). Omitir o null para todo el año.",
                     },
                     "anio": {
                         "type": "integer",
@@ -270,9 +270,8 @@ TOOLS = [
     },
 ]
 
-def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 1024) -> str:
-    """Envía mensajes a Groq, maneja tool calls y retorna la respuesta final del asistente."""
-   
+def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 1024, max_vueltas: int = 3) -> str:
+    """Envía mensajes a Groq, maneja tool calling en bucle iterativo y retorna la respuesta final."""
     api_key = getattr(settings, "GROQ_API_KEY", None)
     if not api_key:
         raise GroqError(
@@ -285,63 +284,55 @@ def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 
         "Content-Type": "application/json",
     }
 
-    # primera llamada valida si necesita las herramientas o no
-    payload = {
-        "model": GROQ_MODEL,
-        "messages": mensajes,
-        "tools": TOOLS,
-        "tool_choice": "auto",
-        "max_tokens": max_tokens,
-        "temperature": 0.4,
-        "top_p": 0.9,
-        "stream": False,
-    }
+    mensajes_actuales = list(mensajes)
 
-    response = _hacer_request(headers, payload)
-    data = response.json()
-    choice = data["choices"][0]
-    mensaje_asistente = choice["message"]
-    finish_reason = choice.get("finish_reason", "")
+    for vuelta in range(max_vueltas):
+        es_ultima = (vuelta == max_vueltas - 1)
 
-    # Si el modelo NO invocó herramienta, retornar directo
-    if finish_reason != "tool_calls" or not mensaje_asistente.get("tool_calls"):
-        return (mensaje_asistente.get("content") or "").strip()
+        payload = {
+            "model": GROQ_MODEL,
+            "messages": mensajes_actuales,
+            "tools": TOOLS,
+            "tool_choice": "auto",
+            "max_tokens": max_tokens,
+            "temperature": 0.4,
+            "top_p": 0.9,
+            "stream": False,
+        }
 
-    # el modelo utiliza las herramientas
-    # Agregamos el mensaje del asistente con el llamado a la herramineta al historial
-    mensajes_con_tool = list(mensajes) + [mensaje_asistente]
+        response = _hacer_request(headers, payload)
+        data = response.json()
+        choice = data["choices"][0]
+        mensaje_asistente = choice["message"]
+        finish_reason = choice.get("finish_reason", "")
 
-    for tool_call in mensaje_asistente["tool_calls"]:
-        nombre = tool_call["function"]["name"]
-        try:
-            argumentos = json.loads(tool_call["function"]["arguments"])
-        except json.JSONDecodeError:
-            argumentos = {}
+        # Si el modelo NO invocó herramientas o terminó, retornar el contenido
+        if finish_reason != "tool_calls" or not mensaje_asistente.get("tool_calls"):
+            return (mensaje_asistente.get("content") or "").strip()
 
-        # Ejecutar la herramienta en Django
-        resultado_json = ejecutar_herramienta_fn(nombre, argumentos)
+        # Adjuntar llamada del asistente al historial de la conversación
+        mensajes_actuales.append(mensaje_asistente)
 
-        # Adjuntar resultado al historial
-        mensajes_con_tool.append({
-            "role": "tool",
-            "tool_call_id": tool_call["id"],
-            "content": resultado_json,
-        })
+        # Ejecutar cada herramienta solicitada
+        for tool_call in mensaje_asistente["tool_calls"]:
+            nombre = tool_call["function"]["name"]
+            try:
+                argumentos = json.loads(tool_call["function"]["arguments"])
+            except json.JSONDecodeError:
+                argumentos = {}
 
-    # segunda llamada recibe los resultados de la herramienta y da la respuesta
-    payload2 = {
-        "model": GROQ_MODEL,
-        "messages": mensajes_con_tool,
-        "max_tokens": max_tokens,
-        "temperature": 0.4,
-        "top_p": 0.9,
-        "stream": False,
-    }
+            # Limpiar argumentos con valor None para no causar problemas internos
+            argumentos_limpios = {k: v for k, v in argumentos.items() if v is not None}
 
-    response2 = _hacer_request(headers, payload2)
-    data2 = response2.json()
-    texto_final = data2["choices"][0]["message"].get("content", "")
-    return texto_final.strip()
+            resultado_json = ejecutar_herramienta_fn(nombre, argumentos_limpios)
+
+            mensajes_actuales.append({
+                "role": "tool",
+                "tool_call_id": tool_call["id"],
+                "content": resultado_json,
+            })
+
+    return (mensaje_asistente.get("content") or "").strip()
 
 
 def _hacer_request(headers: dict, payload: dict, max_intentos: int = 2) -> requests.Response:
