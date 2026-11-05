@@ -270,7 +270,7 @@ TOOLS = [
     },
 ]
 
-def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 1024, max_vueltas: int = 3) -> str:
+def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 2048, max_vueltas: int = 3) -> str:
     """Envía mensajes a Groq, maneja tool calling en bucle iterativo y retorna la respuesta final."""
     api_key = getattr(settings, "GROQ_API_KEY", None)
     if not api_key:
