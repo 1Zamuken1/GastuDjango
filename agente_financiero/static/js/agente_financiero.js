@@ -421,7 +421,14 @@
         headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrfToken() },
         body: JSON.stringify({ mensaje: texto }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        let msg = "Error al procesar tu consulta. Intenta de nuevo.";
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) msg = errData.error;
+        } catch (_) {}
+        throw new Error(msg);
+      }
       const data = await res.json();
       setTyping(false);
 
@@ -474,7 +481,8 @@
       }
     } catch (err) {
       setTyping(false);
-      agregarMensaje("bot", `<span class="agente-error">Error al procesar tu consulta. Intenta de nuevo.</span>`);
+      var textoError = (err && err.message) ? err.message : "Error al procesar tu consulta. Intenta de nuevo.";
+      agregarMensaje("bot", `<span class="agente-error">${escaparHTML(textoError)}</span>`);
     } finally {
       esperandoRespuesta = false;
       btnEnviar.disabled = input.value.trim() === "";

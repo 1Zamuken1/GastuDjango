@@ -344,25 +344,58 @@ def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 
     return texto_final.strip()
 
 
-def _hacer_request(headers: dict, payload: dict) -> requests.Response:
-    """POST a GroqCloud. Lanza GroqError si hay timeout, conexión o error HTTP."""
-    try:
-        response = requests.post(
-            GROQ_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=30,
-        )
-    except requests.exceptions.Timeout:
-        raise GroqError("La solicitud a GroqCloud tardo demasiado. Intenta de nuevo.")
-    except requests.exceptions.ConnectionError:
-        raise GroqError("No se pudo conectar a GroqCloud. Verifica tu conexión a internet.")
+def _hacer_request(headers: dict, payload: dict, max_intentos: int = 2) -> requests.Response:
+    """POST a GroqCloud con manejo de reintentos ante rate limits (429) y timeout."""
+    import time
+    import re
 
-    if response.status_code != 200:
+    intento = 0
+    while intento < max_intentos:
+        intento += 1
+        try:
+            response = requests.post(
+                GROQ_API_URL,
+                headers=headers,
+                json=payload,
+                timeout=30,
+            )
+        except requests.exceptions.Timeout:
+            raise GroqError("La solicitud a GroqCloud tardó demasiado. Intenta de nuevo.")
+        except requests.exceptions.ConnectionError:
+            raise GroqError("No se pudo conectar a GroqCloud. Verifica tu conexión a internet.")
+
+        if response.status_code == 200:
+            return response
+
+        # Manejo de Rate Limit (HTTP 429)
+        if response.status_code == 429 and intento < max_intentos:
+            try:
+                error_detail = response.json().get("error", {}).get("message", response.text)
+            except Exception:
+                error_detail = response.text
+
+            # Extraer tiempo sugerido por Groq (ej: "Please try again in 4.2s")
+            match = re.search(r'try again in ([\d\.]+)s', error_detail)
+            espera = 5.0
+            if match:
+                try:
+                    espera = min(float(match.group(1)) + 0.5, 8.0)
+                except ValueError:
+                    pass
+            time.sleep(espera)
+            continue
+
+        # Si no fue 200 y no se pudo reintentar
         try:
             error_detail = response.json().get("error", {}).get("message", response.text)
         except Exception:
             error_detail = response.text
-        raise GroqError(f"Error de GroqCloud ({response.status_code}): {error_detail}")
+
+        if response.status_code == 429:
+            match = re.search(r'try again in ([\d\.]+)s', error_detail)
+            segundos = f" unos {int(float(match.group(1)))} segundos" if match else " un momento"
+            raise GroqError(f"Límite de consultas alcanzado temporalmente. Por favor espera{segundos} antes de volver a preguntar.")
+
+        raise GroqError(f"Error del servicio de IA ({response.status_code}): {error_detail}")
 
     return response

@@ -17,7 +17,7 @@ from .models import MensajeChat
 
 logger = logging.getLogger(__name__)
 
-MAX_HISTORIAL_CONTEXTO = 10
+MAX_HISTORIAL_CONTEXTO = 4
 MAX_HISTORIAL_RESPUESTA = 50
 
 
@@ -68,11 +68,12 @@ class ChatView(View):
             return JsonResponse({"ok": False, "error": "Mensaje demasiado largo (máximo 1000 caracteres)."}, status=400)
 
         # Guardar mensaje del usuario antes de llamar a Groq para que aparezca en contexto
-        MensajeChat.objects.create(usuario=request.user, rol="user", contenido=pregunta)
+        msg_usuario = MensajeChat.objects.create(usuario=request.user, rol="user", contenido=pregunta)
 
         try:
             datos = RecolectorDatos(request.user).recolectar_todo()
         except Exception as e:
+            msg_usuario.delete()
             logger.error(f"[GASTU] Error recolectando datos usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error al obtener tus datos financieros."}, status=500)
 
@@ -84,6 +85,7 @@ class ChatView(View):
             historial_previo.reverse()
             mensajes = construir_prompt(datos, pregunta, historial_previo)
         except Exception as e:
+            msg_usuario.delete()
             logger.error(f"[GASTU] Error construyendo prompt usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error interno al preparar la consulta."}, status=500)
 
@@ -91,9 +93,11 @@ class ChatView(View):
         try:
             respuesta = preguntar_a_groq(mensajes, ejecutor.ejecutar)
         except GroqError as e:
+            msg_usuario.delete()
             logger.error(f"[GASTU] GroqError usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": str(e)}, status=503)
         except Exception as e:
+            msg_usuario.delete()
             logger.error(f"[GASTU] Error inesperado Groq usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error al conectar con el asistente."}, status=500)
 
