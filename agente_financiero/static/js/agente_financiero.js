@@ -1,17 +1,21 @@
 /**
- * agente_financiero.js
+ * agente_financiero.js — Rediseño Premium GastuApp
+ * Manejo conversacional, formateo visual, artifacts y componentes
  */
 
 (function () {
   "use strict";
 
   const chatContainer     = document.getElementById("agenteChat");
+  const scrollArea        = document.getElementById("agenteScroll");
   const form              = document.getElementById("agenteForm");
   const input             = document.getElementById("agenteInput");
   const btnEnviar         = document.getElementById("agenteBtnEnviar");
   const typingIndicator   = document.getElementById("agenteTyping");
+  const typingFrase       = document.getElementById("agenteTypingFrase");
   const btnLimpiar        = document.getElementById("btnLimpiarChat");
   const mensajeBienvenida = document.getElementById("mensajeBienvenida");
+  const heroSaludo        = document.getElementById("heroSaludo");
 
   const INICIAL = window.GASTU_USER_INICIAL || "U";
   let esperandoRespuesta = false;
@@ -24,9 +28,24 @@
   }
 
   function escaparHTML(texto) {
+    if (!texto) return "";
     return texto
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
+  }
+
+  // ── Saludo Dinámico según Hora Local ─────────────────────────────
+  function actualizarSaludoHero() {
+    if (!heroSaludo) return;
+    const hora = new Date().getHours();
+    let saludo = "Buenos días";
+    if (hora >= 12 && hora < 19) {
+      saludo = "Buenas tardes";
+    } else if (hora >= 19 || hora < 5) {
+      saludo = "Buenas noches";
+    }
+    const nombre = window.GASTU_USER_NAME || "Demo";
+    heroSaludo.textContent = `${saludo}, ${nombre}`;
   }
 
   // ── Formateo Enriquecido de Contenidos Inline ─────────────────────
@@ -41,11 +60,11 @@
       .replace(/\[color:(verde|rojo|azul|naranja)\s+(.*?)\]/gi, function(match, color, cont) {
         return '<span class="agente-color--' + color.toLowerCase() + '">' + cont + '</span>';
       })
-      // Codigo en linea: `codigo`
+      // Código en línea: `codigo`
       .replace(/`([^`]+)`/g, '<code class="agente-codigo-inline">$1</code>')
       // Negrita: **texto**
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Cursiva: *texto* (no pegado a palabras internas)
+      // Cursiva: *texto*
       .replace(/(^|[^\*])\*([^\*]+)\*([^\*]|$)/g, '$1<em>$2</em>$3');
   }
 
@@ -57,73 +76,59 @@
 
     while (i < lineas.length) {
       var linea = lineas[i];
-      // Detectar inicio de tabla: linea con pipes y siguiente con |--|
       if (linea.includes('|') && i + 1 < lineas.length && /^\s*\|?\s*:?-+:?\s*(\|?\s*:?-+:?\s*)+\|?\s*$/.test(lineas[i + 1])) {
         var headerLinea = linea;
-        var headers = headerLinea.split('|')
-          .map(function(s) { return s.trim(); })
-          .filter(function(s, idx, arr) {
-            if ((idx === 0 || idx === arr.length - 1) && s === '') return false;
-            return true;
-          });
+        var separatorLinea = lineas[i + 1];
+        i += 2;
 
+        var parseFila = function(str) {
+          var trimmed = str.trim();
+          if (trimmed.startsWith('|')) trimmed = trimmed.substring(1);
+          if (trimmed.endsWith('|')) trimmed = trimmed.substring(0, trimmed.length - 1);
+          return trimmed.split('|').map(function(c) { return c.trim(); });
+        };
+
+        var headers = parseFila(headerLinea);
         var filas = [];
-        var tsvRows = [];
-        tsvRows.push(headers.join('\t'));
 
-        i += 2; // saltar encabezado y separador
-
-        while (i < lineas.length && lineas[i].includes('|') && lineas[i].trim() !== '') {
-          var celdas = lineas[i].split('|')
-            .map(function(s) { return s.trim(); })
-            .filter(function(s, idx, arr) {
-              if ((idx === 0 || idx === arr.length - 1) && s === '') return false;
-              return true;
-            });
-
-          if (celdas.length > 0) {
-            filas.push(celdas);
-            // Para TSV limpiamos posibles etiquetas y markdown para copiar limpio
-            var celdasLimpias = celdas.map(function(c) {
-              return c.replace(/\[badge:\w+\s+(.*?)\]/gi, '$1')
-                      .replace(/\[color:\w+\s+(.*?)\]/gi, '$1')
-                      .replace(/\*\*(.*?)\*\*/g, '$1')
-                      .replace(/`([^`]+)`/g, '$1');
-            });
-            tsvRows.push(celdasLimpias.join('\t'));
-          }
+        while (i < lineas.length && lineas[i].trim().includes('|') && lineas[i].trim() !== '') {
+          filas.push(parseFila(lineas[i]));
           i++;
         }
 
-        var tsvData = tsvRows.join('\n');
-        var tsvEncoded = encodeURIComponent(tsvData);
+        var tsvRows = [];
+        tsvRows.push(headers.join('\t'));
+        filas.forEach(function(f) {
+          tsvRows.push(f.join('\t'));
+        });
+        var tsvData = encodeURIComponent(tsvRows.join('\n'));
 
-        var tableHtml = '<div class="agente-artifact-card" data-artifact="tabla">' +
-          '<div class="agente-artifact-header">' +
-            '<span class="agente-artifact-title">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>' +
-              'Tabla de Datos' +
-            '</span>' +
-            '<button type="button" class="agente-btn-copiar-tabla" data-tsv="' + tsvEncoded + '" title="Copiar datos para Excel o Hojas de Cálculo">' +
-              '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>' +
-              '<span>Copiar tabla</span>' +
-            '</button>' +
-          '</div>' +
-          '<div class="agente-artifact-table-wrapper">' +
-            '<table class="agente-tabla">' +
-              '<thead><tr>' +
-                headers.map(function(h) { return '<th>' + formatearContenidoInline(h) + '</th>'; }).join('') +
-              '</tr></thead>' +
-              '<tbody>' +
-                filas.map(function(fila) {
-                  return '<tr>' + fila.map(function(c) { return '<td>' + formatearContenidoInline(c) + '</td>'; }).join('') + '</tr>';
-                }).join('') +
-              '</tbody>' +
-            '</table>' +
-          '</div>' +
-        '</div>';
+        var htmlTabla = '<div class="agente-artifact-card" data-tipo="tabla">';
+        htmlTabla += '  <div class="agente-artifact-header">';
+        htmlTabla += '    <span class="agente-artifact-tag"><i data-lucide="table"></i> TABLA DE DATOS</span>';
+        htmlTabla += '    <button type="button" class="agente-btn-copiar-tabla" data-tsv="' + tsvData + '" title="Copiar datos para Excel o Hojas de Cálculo">';
+        htmlTabla += '      <i data-lucide="copy"></i> <span>Copiar tabla</span>';
+        htmlTabla += '    </button>';
+        htmlTabla += '  </div>';
+        htmlTabla += '  <div class="agente-tabla-wrap">';
+        htmlTabla += '    <table class="agente-tabla">';
+        htmlTabla += '      <thead><tr>';
+        headers.forEach(function(h) {
+          htmlTabla += '        <th>' + formatearContenidoInline(h) + '</th>';
+        });
+        htmlTabla += '      </tr></thead><tbody>';
+        filas.forEach(function(f) {
+          htmlTabla += '      <tr>';
+          f.forEach(function(c) {
+            htmlTabla += '        <td>' + formatearContenidoInline(c) + '</td>';
+          });
+          htmlTabla += '      </tr>';
+        });
+        htmlTabla += '    </tbody></table>';
+        htmlTabla += '  </div>';
+        htmlTabla += '</div>';
 
-        resultado.push(tableHtml);
+        resultado.push(htmlTabla);
       } else {
         resultado.push(linea);
         i++;
@@ -133,41 +138,54 @@
     return resultado.join('\n');
   }
 
-  // ── Procesador de Callouts / Bloques de Alerta ─────────────────────
+  // ── Procesador de Callouts ─────────────────────────────────────────
   function procesarCallouts(texto) {
     var lineas = texto.split(/\r?\n/);
     var resultado = [];
     var i = 0;
 
+    var tipoCalloutMap = {
+      'TIP':     { clase: 'agente-callout--tip',     icono: 'lightbulb' },
+      'WARNING': { clase: 'agente-callout--warning', icono: 'alert-triangle' },
+      'NOTE':    { clase: 'agente-callout--note',    icono: 'info' },
+      'DANGER':  { clase: 'agente-callout--danger',  icono: 'alert-octagon' }
+    };
+
     while (i < lineas.length) {
       var linea = lineas[i];
-      var matchCallout = linea.match(/^&gt;\s*\[!(NOTE|INFO|TIP|SUCCESS|WARNING|DANGER|ALERT)\]\s*(.*)$/i);
-      if (matchCallout) {
-        var tipo = matchCallout[1].toLowerCase();
-        var icon = '💡';
-        if (tipo === 'warning') icon = '⚠️';
-        else if (tipo === 'danger' || tipo === 'alert') icon = '🚨';
-        else if (tipo === 'note' || tipo === 'info') icon = 'ℹ️';
+      var match = linea.match(/^\s*&gt;\s*\[!(TIP|WARNING|NOTE|DANGER)\]\s*(.*)$/i) ||
+                  linea.match(/^\s*>\s*\[!(TIP|WARNING|NOTE|DANGER)\]\s*(.*)$/i);
 
-        var calloutLineas = [];
-        if (matchCallout[2].trim()) {
-          calloutLineas.push(matchCallout[2].trim());
+      if (match) {
+        var tipo = match[1].toUpperCase();
+        var primerContenido = match[2];
+        var info = tipoCalloutMap[tipo] || tipoCalloutMap['NOTE'];
+        var bloqueLineas = [];
+        if (primerContenido && primerContenido.trim()) {
+          bloqueLineas.push(primerContenido.trim());
         }
-
         i++;
-        while (i < lineas.length && lineas[i].startsWith('&gt;') && !lineas[i].match(/^&gt;\s*\[!(?:NOTE|INFO|TIP|SUCCESS|WARNING|DANGER|ALERT)\]/i)) {
-          var textoCont = lineas[i].replace(/^&gt;\s*/, '').trim();
-          if (textoCont) calloutLineas.push(textoCont);
-          i++;
+
+        while (i < lineas.length) {
+          var sig = lineas[i];
+          var contMatch = sig.match(/^\s*&gt;\s?(.*)$/) || sig.match(/^\s*>\s?(.*)$/);
+          if (contMatch) {
+            if (/^\s*\[!(TIP|WARNING|NOTE|DANGER)\]/i.test(contMatch[1])) {
+              break;
+            }
+            bloqueLineas.push(contMatch[1]);
+            i++;
+          } else {
+            break;
+          }
         }
 
-        var contenidoHtml = calloutLineas.map(function(c) { return formatearContenidoInline(c); }).join('<br>');
-        resultado.push(
-          '<div class="agente-callout agente-callout--' + tipo + '">' +
-            '<div class="agente-callout__icon">' + icon + '</div>' +
-            '<div class="agente-callout__content">' + contenidoHtml + '</div>' +
-          '</div>'
-        );
+        var cuerpoCallout = bloqueLineas.join('<br>');
+        var htmlCallout = '<div class="agente-callout ' + info.clase + '">' +
+                          '  <i data-lucide="' + info.icono + '"></i>' +
+                          '  <div class="agente-callout__texto">' + formatearContenidoInline(cuerpoCallout) + '</div>' +
+                          '</div>';
+        resultado.push(htmlCallout);
       } else {
         resultado.push(linea);
         i++;
@@ -177,216 +195,122 @@
     return resultado.join('\n');
   }
 
-  // ── Formateador Principal del Bot ─────────────────────────────────
+  // ── Pipeline Principal de Formateo Markdown ───────────────────────
   function formatearBot(texto) {
-    var seguro = escaparHTML(texto || "");
-    
-    // 1. Tablas Markdown (Artifacts)
-    seguro = procesarTablasMarkdown(seguro);
+    if (!texto) return "";
+    var t = escaparHTML(texto);
 
-    // 2. Callouts
-    seguro = procesarCallouts(seguro);
+    // Titular destacado si empieza con ## o similar
+    t = t.replace(/^##\s+(.*?)$/gm, '<h3 class="agente-lead">$1</h3>');
+    t = t.replace(/^###\s+(.*?)$/gm, '<h4 class="agente-sublead" style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;margin:8px 0 4px;">$1</h4>');
 
-    // 3. Contenidos inline (badges, colores, negritas, cursivas, codigo)
-    seguro = formatearContenidoInline(seguro);
+    // Tablas y Callouts
+    t = procesarTablasMarkdown(t);
+    t = procesarCallouts(t);
 
-    // 4. Listas con viñetas
-    seguro = seguro.replace(/^[ \t]*[-\*]\s+(.+)$/gm, '<div class="flex items-start gap-1.5 my-0.5"><span class="text-emerald-400">•</span><span>$1</span></div>');
-
-    // 5. Normalizar saltos de linea sin romper estructuras de bloques
-    seguro = seguro
-      .replace(/<\/div>\s*\n/g, '</div>')
-      .replace(/\n\s*<div/g, '<div')
-      .replace(/\n/g, '<br>');
-
-    return seguro;
-  }
-
-  function horaActual() {
-    return new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function logoSrc() {
-    return document.querySelector(".agente-avatar__img")?.src || "";
-  }
-
-  
-  // ── Renderizado de Tarjeta Interactiva de Confirmacion (Firewall) ───
-  function renderizarTarjetaConfirmacion(datos) {
-    var cardId = 'card_confirm_' + Date.now();
-    var div = document.createElement('div');
-    div.id = cardId;
-    div.className = 'agente-card-confirmacion mt-3 p-3 bg-red-50/80 dark:bg-rose-950/30 border border-red-200 dark:border-rose-900 rounded-xl text-sm shadow-sm';
-    
-    var endpoint = (datos.endpoint || "").trim();
-    // Validacion de seguridad: whitelist de rutas internas permitidas
-    if (!endpoint.startsWith('/movimientos/api/') && !endpoint.startsWith('/api/presupuestos/')) {
-      console.warn("[GASTU Firewall] Endpoint de confirmacion denegado por seguridad:", endpoint);
-      return div;
-    }
-
-    var metodo = (datos.metodo || "POST").toUpperCase();
-    if (metodo !== "POST" && metodo !== "DELETE") {
-      metodo = "POST";
-    }
-
-    var resumen = escaparHTML(datos.resumen_accion || 'Se requiere tu autorizacion para proceder.');
-    var payloadStr = escaparHTML(JSON.stringify(datos.detalles_modificacion || {}));
-
-    div.innerHTML = '<div class="flex items-start gap-2.5">' +
-      '<div class="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/60 flex items-center justify-center shrink-0 text-red-600 dark:text-red-400 font-bold">&#9888;</div>' +
-      '<div class="flex-1">' +
-        '<p class="font-semibold text-slate-900 dark:text-slate-100 mb-1">Confirmacion de Seguridad Requerida</p>' +
-        '<p class="text-slate-600 dark:text-slate-300 text-xs mb-3">' + resumen + '</p>' +
-        '<div class="flex items-center gap-2">' +
-          '<button type="button" class="btn-confirmar-accion px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow transition-colors flex items-center gap-1.5" data-endpoint="' + escaparHTML(endpoint) + '" data-metodo="' + metodo + '" data-payload="' + payloadStr + '">Confirmar Accion</button>' +
-          '<button type="button" class="btn-cancelar-accion px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors">Cancelar</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-
-    var btnConfirmar = div.querySelector('.btn-confirmar-accion');
-    var btnCancelar = div.querySelector('.btn-cancelar-accion');
-
-    btnConfirmar.addEventListener('click', async function() {
-      btnConfirmar.disabled = true;
-      btnCancelar.disabled = true;
-      btnConfirmar.innerText = 'Procesando...';
-
-      try {
-        var metodoHTTP = btnConfirmar.dataset.metodo || 'POST';
-        var reqOptions = {
-          method: metodoHTTP,
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCsrfToken()
-          }
-        };
-        if (metodoHTTP !== 'DELETE') {
-          var payloadData = {};
-          try { payloadData = JSON.parse(btnConfirmar.dataset.payload || '{}'); } catch(e){}
-          reqOptions.body = JSON.stringify(payloadData);
-        }
-
-        var res = await fetch(btnConfirmar.dataset.endpoint, reqOptions);
-
-        if (res.ok) {
-          div.innerHTML = '<div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-medium text-xs"><span>&#10003;</span> Accion confirmada y ejecutada exitosamente.</div>';
-          if (window.GastuAlerts && window.GastuAlerts.success) {
-            window.GastuAlerts.success('Operacion ejecutada exitosamente');
-          }
-        } else {
-          div.innerHTML = '<p class="text-xs text-red-600 font-medium">No se pudo completar la operacion (Error en el servidor).</p>';
-        }
-      } catch (err) {
-        div.innerHTML = '<p class="text-xs text-red-600 font-medium">Error de conexion al procesar la confirmacion.</p>';
+    // Líneas restantes
+    var partes = t.split(/\n{2,}/);
+    var htmlPartes = partes.map(function(p) {
+      var pTrim = p.trim();
+      if (!pTrim) return "";
+      if (pTrim.startsWith('<div class="agente-artifact-card"') ||
+          pTrim.startsWith('<div class="agente-callout"') ||
+          pTrim.startsWith('<h3 class="agente-lead"') ||
+          pTrim.startsWith('<h4 class="agente-sublead"')) {
+        return pTrim;
       }
+      return '<p>' + formatearContenidoInline(pTrim.replace(/\n/g, '<br>')) + '</p>';
     });
 
-    btnCancelar.addEventListener('click', function() {
-      div.innerHTML = '<div class="text-slate-500 dark:text-slate-400 text-xs italic">Operacion cancelada por el usuario. No se modifico ningun dato.</div>';
-    });
-
-    return div;
+    return htmlPartes.join("");
   }
 
+  // ── Renderizado de Mensajes en el Chat ────────────────────────────
+  function agregarMensaje(rol, htmlContenido, hora, opciones) {
+    opciones = opciones || {};
+    var animo = opciones.animo || "normal";
+    var procedencia = opciones.procedencia || "";
 
-  
-  // ── Renderizado de Tarjeta de Descarga Documental ──────────────────
-  function renderizarTarjetaDescarga(datos) {
-    var div = document.createElement('div');
-    div.className = 'agente-card-descarga mt-3 p-3 bg-emerald-50/90 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm shadow-sm';
+    var h = hora || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    var formato = (datos.formato || 'EXCEL').toUpperCase();
-    var colorBadge = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300';
-    var iconEmoji = '📊';
+    var item = document.createElement("article");
 
-    if (formato === 'PDF') {
-      colorBadge = 'bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300';
-      iconEmoji = '📄';
-    } else if (formato === 'CSV') {
-      colorBadge = 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300';
-      iconEmoji = '📁';
-    }
-
-    var urlDescarga = (datos.url_descarga || "").trim();
-    if (!urlDescarga.startsWith('/exportar/')) {
-      urlDescarga = '#';
-    }
-
-    div.innerHTML = '<div class="flex items-center justify-between gap-3">' +
-      '<div class="flex items-center gap-2.5">' +
-        '<span class="text-xl">' + iconEmoji + '</span>' +
-        '<div>' +
-          '<p class="font-semibold text-slate-900 dark:text-slate-100 text-xs">' + escaparHTML(datos.nombre_archivo || 'Reporte_Financiero') + '</p>' +
-          '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ' + colorBadge + '">' + formato + '</span>' +
-        '</div>' +
-      '</div>' +
-      '<a href="' + escaparHTML(urlDescarga) + '" download class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition-colors flex items-center gap-1.5 shrink-0">' +
-        'Descargar' +
-      '</a>' +
-    '</div>';
-
-    return div;
-  }
-
-
-  function agregarMensaje(tipo, html, hora) {
-    const h = hora || horaActual();
-    const art = document.createElement("article");
-    art.classList.add("agente-mensaje", `agente-mensaje--${tipo}`);
-
-    const avatarHTML = tipo === "bot"
-      ? `<div class="agente-mensaje__avatar"><img src="${logoSrc()}" alt="Gastu IA"></div>`
-      : `<div class="agente-mensaje__avatar">${INICIAL}</div>`;
-
-    if (tipo === "bot") {
-      art.innerHTML = `
-        ${avatarHTML}
-        <div class="agente-mensaje__burbuja">
-          <div class="agente-mensaje__cuerpo">${html}</div>
-          <div class="agente-mensaje__footer">
-            <button type="button" class="agente-btn-copiar-msg" title="Copiar mensaje">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-              <span>Copiar</span>
-            </button>
-            <span class="agente-mensaje__hora">${h}</span>
-          </div>
-        </div>`;
+    if (rol === "user") {
+      item.className = "agente-me";
+      item.innerHTML = `
+        <div class="agente-me__burbuja">${htmlContenido}</div>
+        <span class="agente-me__hora">${h}</span>
+      `;
     } else {
-      art.innerHTML = `
-        ${avatarHTML}
-        <div class="agente-mensaje__burbuja">
-          <div class="agente-mensaje__cuerpo">${html}</div>
-          <span class="agente-mensaje__hora">${h}</span>
-        </div>`;
+      // Mensaje de la IA — Directo en el lienzo sin burbuja contenedora
+      item.className = "agente-ai";
+      item.setAttribute("data-animo", animo);
+
+      var staticUrl = window.GASTU_STATIC_URL || "/static/";
+      var avatarClase = "agente-avatar agente-avatar--msg";
+      if (animo === "alerta") avatarClase += " agente-avatar--alerta";
+      else if (animo === "critico") avatarClase += " agente-avatar--critico";
+
+      var procedenciaHtml = procedencia ? `<span class="agente-procedencia">${escaparHTML(procedencia)}</span>` : "";
+
+      item.innerHTML = `
+        <div class="${avatarClase}">
+          <img src="${staticUrl}img/gastu_logo_rostro.png" alt="Gastu IA" class="agente-avatar__img">
+        </div>
+        <div class="agente-tx">
+          <div class="agente-mensaje__cuerpo">${htmlContenido}</div>
+          <div class="agente-meta-bar">
+            <div class="agente-meta-bar__left">
+              <button type="button" class="agente-btn-action agente-btn-copiar-msg" title="Copiar respuesta" aria-label="Copiar respuesta completa">
+                <i data-lucide="copy"></i>
+              </button>
+            </div>
+            ${procedenciaHtml}
+          </div>
+        </div>
+      `;
     }
 
-    chatContainer.appendChild(art);
+    chatContainer.appendChild(item);
+
+    if (window.lucide) {
+      window.lucide.createIcons({ root: item });
+    }
+
     scrollAlFinal();
-    return art;
+    return item;
   }
 
-  function setTyping(activo) {
-    typingIndicator.style.display = activo ? "flex" : "none";
+  function setTyping(activo, frase) {
+    if (!typingIndicator) return;
+    typingIndicator.style.display = activo ? "block" : "none";
     typingIndicator.setAttribute("aria-hidden", activo ? "false" : "true");
+    if (typingFrase && frase) {
+      typingFrase.textContent = frase;
+    } else if (typingFrase) {
+      typingFrase.textContent = "Revisando tus datos financieros";
+    }
     if (activo) scrollAlFinal();
   }
 
   function scrollAlFinal() {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    if (scrollArea) {
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
   }
 
-  // ── Cargar historial ──────────────────────────────────────
-
+  // ── Cargar Historial ──────────────────────────────────────────────
   async function cargarHistorial() {
     try {
       const res = await fetch("/api/agente/chat/", { method: "GET" });
       if (!res.ok) return;
       const data = await res.json();
-      if (!data.ok || !data.mensajes.length) return;
+      if (!data.ok || !data.mensajes.length) {
+        if (mensajeBienvenida) mensajeBienvenida.style.display = "";
+        return;
+      }
 
-      mensajeBienvenida.style.display = "none";
+      if (mensajeBienvenida) mensajeBienvenida.style.display = "none";
       data.mensajes.forEach(m => {
         agregarMensaje(
           m.rol === "user" ? "user" : "bot",
@@ -399,21 +323,20 @@
     }
   }
 
-  // ── Envío ─────────────────────────────────────────────────
-
+  // ── Envío de Mensajes ─────────────────────────────────────────────
   async function enviarMensaje(texto) {
     if (!texto || esperandoRespuesta) return;
     texto = texto.trim();
     if (!texto) return;
 
-    mensajeBienvenida.style.display = "none";
+    if (mensajeBienvenida) mensajeBienvenida.style.display = "none";
     esperandoRespuesta = true;
     btnEnviar.disabled = true;
     input.value = "";
     ajustarAltura();
 
     agregarMensaje("user", escaparHTML(texto));
-    setTyping(true);
+    setTyping(true, "Consultando tus finanzas");
 
     try {
       const res = await fetch("/api/agente/chat/", {
@@ -433,65 +356,23 @@
       setTyping(false);
 
       var respuestaTexto = data.respuesta || "Sin respuesta del agente.";
-      var confirmacionData = null;
+      agregarMensaje("bot", formatearBot(respuestaTexto));
 
-      var jsonMatch = respuestaTexto.match(/\{[\s\S]*"requiere_confirmacion"\s*:\s*true[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          confirmacionData = JSON.parse(jsonMatch[0]);
-          respuestaTexto = respuestaTexto.replace(jsonMatch[0], "").trim();
-          if (!respuestaTexto) {
-            respuestaTexto = confirmacionData.mensaje_al_usuario || "Se requiere confirmacion para proceder:";
-          }
-        } catch (e) {
-          console.warn("[GASTU] Error parseando confirmacion JSON:", e);
-        }
-      }
-
-      var descargaData = null;
-      var jsonDescargaMatch = respuestaTexto.match(/\{[\s\S]*"es_archivo_descarga"\s*:\s*true[\s\S]*\}/);
-      if (jsonDescargaMatch) {
-        try {
-          descargaData = JSON.parse(jsonDescargaMatch[0]);
-          respuestaTexto = respuestaTexto.replace(jsonDescargaMatch[0], "").trim();
-          if (!respuestaTexto) {
-            respuestaTexto = descargaData.mensaje_al_usuario || "Tu reporte esta listo para descargar:";
-          }
-        } catch (e) {
-          console.warn("[GASTU] Error parseando JSON de descarga:", e);
-        }
-      }
-
-      var msgEl = agregarMensaje("bot", formatearBot(respuestaTexto));
-
-      if (descargaData && msgEl) {
-        var contenedorDescarga = msgEl.querySelector(".agente-mensaje__cuerpo") || msgEl.querySelector(".agente-mensaje__burbuja");
-        if (contenedorDescarga) {
-          contenedorDescarga.appendChild(renderizarTarjetaDescarga(descargaData));
-          scrollAlFinal();
-        }
-      }
-
-      if (confirmacionData && msgEl) {
-        var contenedorConf = msgEl.querySelector(".agente-mensaje__cuerpo") || msgEl.querySelector(".agente-mensaje__burbuja");
-        if (contenedorConf) {
-          contenedorConf.appendChild(renderizarTarjetaConfirmacion(confirmacionData));
-          scrollAlFinal();
-        }
-      }
     } catch (err) {
       setTyping(false);
       var textoError = (err && err.message) ? err.message : "Error al procesar tu consulta. Intenta de nuevo.";
-      agregarMensaje("bot", `<span class="agente-error">${escaparHTML(textoError)}</span>`);
+      agregarMensaje("bot", `<span class="agente-error" style="color:var(--agente-danger);font-weight:500;">${escaparHTML(textoError)}</span>`);
     } finally {
       esperandoRespuesta = false;
       btnEnviar.disabled = input.value.trim() === "";
     }
   }
 
-  // ── Formulario ────────────────────────────────────────────
-
-  form.addEventListener("submit", e => { e.preventDefault(); enviarMensaje(input.value); });
+  // ── Formulario y Ajuste de Altura ─────────────────────────────────
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    enviarMensaje(input.value);
+  });
 
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -507,43 +388,53 @@
 
   function ajustarAltura() {
     input.style.height = "auto";
-    input.style.height = Math.min(input.scrollHeight, 140) + "px";
+    input.style.height = Math.min(input.scrollHeight, 132) + "px";
   }
 
-  // ── Sugerencias ───────────────────────────────────────────
-
+  // ── Botones del Hero de Estado Vacío ──────────────────────────────
   document.addEventListener("click", e => {
-    const s = e.target.closest(".agente-sugerencia");
-    if (!s) return;
-    const p = s.dataset.pregunta;
-    if (!p) return;
-    s.closest(".agente-sugerencias")?.remove();
-    enviarMensaje(p);
+    const askBtn = e.target.closest(".agente-ask-btn");
+    if (!askBtn) return;
+    const pregunta = askBtn.dataset.pregunta;
+    if (pregunta) {
+      enviarMensaje(pregunta);
+    }
   });
 
-  // ── Limpiar ───────────────────────────────────────────────
-
+  // ── Botón Limpiar con GastuAlerts (SweetAlert2) ────────────────────
   btnLimpiar.addEventListener("click", async () => {
+    let confirmado = true;
+
+    if (window.GastuAlerts && window.GastuAlerts.confirm) {
+      confirmado = await window.GastuAlerts.confirm(
+        "¿Vaciar conversación?",
+        "Se borrará todo el historial del chat de forma permanente.",
+        "Sí, vaciar",
+        "Cancelar"
+      );
+    } else {
+      confirmado = confirm("¿Estás seguro de que deseas vaciar toda la conversación?");
+    }
+
+    if (!confirmado) return;
+
     try {
       await fetch("/api/agente/limpiar/", {
         method: "POST",
         headers: { "X-CSRFToken": getCsrfToken() },
       });
-    } catch (e) { console.warn("[GASTU] Error limpiando:", e); }
+      if (window.GastuAlerts && window.GastuAlerts.toastSuccess) {
+        window.GastuAlerts.toastSuccess("Conversación vaciada correctamente.");
+      }
+    } catch (e) {
+      console.warn("[GASTU] Error limpiando:", e);
+    }
 
-    chatContainer.querySelectorAll(".agente-mensaje:not(#mensajeBienvenida)").forEach(m => m.remove());
-    mensajeBienvenida.style.display = "";
-
-    if (!mensajeBienvenida.querySelector(".agente-sugerencias")) {
-      const div = document.createElement("div");
-      div.className = "agente-sugerencias";
-      div.innerHTML = `
-        <button class="agente-sugerencia" data-pregunta="¿Cuál es mi resumen financiero de este mes?">Resumen del mes</button>
-        <button class="agente-sugerencia" data-pregunta="¿Cómo van mis metas de ahorro?">Metas de ahorro</button>
-        <button class="agente-sugerencia" data-pregunta="¿Qué movimientos recientes tengo?">Últimos movimientos</button>
-        <button class="agente-sugerencia" data-pregunta="¿En qué categorías gasto más?">Gastos por categoría</button>
-      `;
-      mensajeBienvenida.querySelector(".agente-mensaje__burbuja").appendChild(div);
+    // Limpiar mensajes y mostrar el Hero
+    chatContainer.querySelectorAll(".agente-me, .agente-ai").forEach(m => m.remove());
+    if (mensajeBienvenida) {
+      mensajeBienvenida.style.display = "";
+      actualizarSaludoHero();
     }
 
     esperandoRespuesta = false;
@@ -554,25 +445,19 @@
     scrollAlFinal();
   });
 
-  // ── Delegación de Eventos para Copiar Mensajes y Artifacts (Tablas) ──
+  // ── Delegación de Eventos para Copiar Mensajes y Tablas ───────────
   chatContainer.addEventListener("click", function(e) {
     // 1. Copiar mensaje completo del bot
     var btnCopiarMsg = e.target.closest(".agente-btn-copiar-msg");
     if (btnCopiarMsg) {
-      var burbuja = btnCopiarMsg.closest(".agente-mensaje__burbuja");
-      var cuerpo = burbuja ? burbuja.querySelector(".agente-mensaje__cuerpo") : null;
+      var cuerpo = btnCopiarMsg.closest(".agente-tx")?.querySelector(".agente-mensaje__cuerpo");
       if (cuerpo) {
         var textoACopiar = (cuerpo.innerText || cuerpo.textContent || "").trim();
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(textoACopiar).then(function() {
-            var span = btnCopiarMsg.querySelector("span");
-            var textoOrig = span ? span.textContent : "Copiar";
-            btnCopiarMsg.classList.add("copiado");
-            if (span) span.textContent = "¡Copiado! ✓";
-            setTimeout(function() {
-              btnCopiarMsg.classList.remove("copiado");
-              if (span) span.textContent = textoOrig;
-            }, 2000);
+            if (window.GastuAlerts && window.GastuAlerts.toastSuccess) {
+              window.GastuAlerts.toastSuccess("Respuesta copiada al portapapeles.");
+            }
           }).catch(function(err) {
             console.warn("[GASTU] Error al copiar:", err);
           });
@@ -581,7 +466,7 @@
       return;
     }
 
-    // 2. Copiar solo el Artifact (Tabla de datos)
+    // 2. Copiar solo el Artifact (Tabla de datos en TSV)
     var btnCopiarTabla = e.target.closest(".agente-btn-copiar-tabla");
     if (btnCopiarTabla) {
       var tsvEncoded = btnCopiarTabla.getAttribute("data-tsv") || "";
@@ -592,8 +477,8 @@
           var textoOrig = span ? span.textContent : "Copiar tabla";
           btnCopiarTabla.classList.add("copiado");
           if (span) span.textContent = "✓ ¡Copiado!";
-          if (window.GastuAlerts && window.GastuAlerts.success) {
-            window.GastuAlerts.success("Tabla copiada al portapapeles. ¡Lista para pegar en Excel!");
+          if (window.GastuAlerts && window.GastuAlerts.toastSuccess) {
+            window.GastuAlerts.toastSuccess("Tabla copiada (formato TSV para Excel).");
           }
           setTimeout(function() {
             btnCopiarTabla.classList.remove("copiado");
@@ -607,8 +492,8 @@
     }
   });
 
-  // ── Init ──────────────────────────────────────────────────
-
+  // ── Init ──────────────────────────────────────────────────────────
+  actualizarSaludoHero();
   setTyping(false);
   cargarHistorial();
 

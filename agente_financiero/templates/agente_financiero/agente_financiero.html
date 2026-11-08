@@ -3,6 +3,15 @@
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/agente_financiero.css' %}">
+  <style>
+    /* Full bleed para el agente en base_app: anular padding y controlar scroll interno */
+    #app-content {
+      padding: 0 !important;
+      overflow: hidden !important;
+      height: calc(100vh - var(--topbar-h)) !important;
+      min-height: calc(100vh - var(--topbar-h)) !important;
+    }
+  </style>
 {% endblock %}
 
 {% block title %}Agente Financiero — GastuApp{% endblock %}
@@ -12,77 +21,128 @@
 {% block nav_agente %}active{% endblock %}
 
 {% block content %}
-<div class="agente-wrapper">
+<div class="agente-wrapper" id="agenteWrapper">
 
-  <!-- Header -->
-  <div class="agente-header">
-    <div class="agente-header__info">
-      <div class="agente-avatar">
+  <!-- Header plano -->
+  <header class="agente-header">
+    <div class="agente-header__avatar-wrap">
+      <div class="agente-avatar agente-avatar--header">
         <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA" class="agente-avatar__img">
-        <span class="agente-avatar__status"></span>
-      </div>
-      <div class="agente-header__text">
-        <h2 class="agente-header__nombre">Gastu</h2>
-        <p class="agente-header__desc">Basado en tus datos financieros reales</p>
+        <span class="agente-avatar__dot" aria-label="En línea"></span>
       </div>
     </div>
-    <button class="agente-btn-limpiar" id="btnLimpiarChat" title="Limpiar conversación">
-      <i data-lucide="trash-2"></i>
-      <span>Limpiar</span>
-    </button>
-  </div>
+    <div class="agente-header__text">
+      <h2 class="agente-header__nombre">Gastu</h2>
+      <p class="agente-header__desc" title="Consulta tus datos reales; nunca los modifica">
+        Consulta tus datos reales; nunca los modifica
+      </p>
+    </div>
+    <div class="agente-header__actions">
+      <button class="agente-btn-limpiar" id="btnLimpiarChat" title="Limpiar conversación">
+        <i data-lucide="trash-2"></i>
+        <span>Limpiar conversación</span>
+      </button>
+    </div>
+  </header>
 
-  <!-- Chat -->
-  <div class="agente-chat" id="agenteChat">
+  <!-- Zona de conversación (Scroll) -->
+  <main class="agente-conv" id="agenteScroll" aria-live="polite">
+    <div class="agente-col" id="agenteChat">
 
-    <div class="agente-mensaje agente-mensaje--bot" id="mensajeBienvenida">
-      <div class="agente-mensaje__avatar">
-        <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA">
-      </div>
-      <div class="agente-mensaje__burbuja">
-        <div class="agente-mensaje__cuerpo">
-          <p>Hola, <strong class="name-user">{{ user.first_name|default:user.username }}</strong>. Soy tu asistente financiero personal.</p>
-          <p>Puedo ayudarte a analizar tus movimientos, revisar presupuestos, consultar metas de ahorro y mucho más. Pregúntame lo que necesites.</p>
-          <div class="agente-sugerencias">
-            <button class="agente-sugerencia" data-pregunta="¿Cuál es mi resumen financiero de este mes?">Resumen del mes</button>
-            <button class="agente-sugerencia" data-pregunta="¿Cómo van mis metas de ahorro?">Metas de ahorro</button>
-            <button class="agente-sugerencia" data-pregunta="¿Qué movimientos recientes tengo?">Últimos movimientos</button>
-            <button class="agente-sugerencia" data-pregunta="¿En qué categorías gasto más?">Gastos por categoría</button>
+      <!-- Estado vacío (Hero inicial) -->
+      <section class="agente-hero" id="mensajeBienvenida">
+        <div class="agente-hero__avatar-wrap">
+          <div class="agente-avatar agente-avatar--hero">
+            <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA" class="agente-avatar__img">
           </div>
         </div>
+        <h1 class="agente-hero__saludo" id="heroSaludo">
+          Hola, {{ user.first_name|default:user.username }}
+        </h1>
+        <p class="agente-hero__sub">
+          Pregúntame sobre tus ingresos, presupuestos o gastos de este mes.
+        </p>
+
+        <div class="agente-ask">
+          <button type="button" class="agente-ask-btn" data-pregunta="¿Cuánto he ingresado este mes?">
+            <span class="agente-ask-icon agente-ask-icon--ingresos">
+              <i data-lucide="trending-up"></i>
+            </span>
+            <span class="agente-ask-text">
+              <b>Cuánto he ingresado este mes</b>
+              <span>Revisa el total recibido y su balance frente a gastos</span>
+            </span>
+          </button>
+
+          <button type="button" class="agente-ask-btn" data-pregunta="¿En qué categoría gasto más?">
+            <span class="agente-ask-icon agente-ask-icon--egresos">
+              <i data-lucide="trending-down"></i>
+            </span>
+            <span class="agente-ask-text">
+              <b>En qué categoría gasto más</b>
+              <span>Desglose ordenado de tus mayores salidas de dinero</span>
+            </span>
+          </button>
+
+          <button type="button" class="agente-ask-btn" data-pregunta="¿Cómo van mis presupuestos?">
+            <span class="agente-ask-icon agente-ask-icon--presupuestos">
+              <i data-lucide="target"></i>
+            </span>
+            <span class="agente-ask-text">
+              <b>Cómo van mis presupuestos</b>
+              <span>Semáforo de consumo y límites en riesgo</span>
+            </span>
+          </button>
+
+          <button type="button" class="agente-ask-btn" data-pregunta="¿Cómo van mis metas de ahorro?">
+            <span class="agente-ask-icon agente-ask-icon--ahorros">
+              <i data-lucide="piggy-bank"></i>
+            </span>
+            <span class="agente-ask-text">
+              <b>Cómo van mis metas de ahorro</b>
+              <span>Progreso de cuotas y fechas estimadas de cumplimiento</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Estado Revisando / Typing -->
+  <div class="agente-typing-bar" id="agenteTyping" aria-hidden="true" style="display: none;">
+    <div class="agente-typing-inner">
+      <div class="agente-avatar agente-avatar--msg agente-avatar--pensando">
+        <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA" class="agente-avatar__img">
+      </div>
+      <div class="agente-typing-text">
+        <span id="agenteTypingFrase">Revisando tus datos financieros</span>
+        <span class="agente-typing-dots">
+          <span></span><span></span><span></span>
+        </span>
       </div>
     </div>
-
   </div>
 
-  <!-- Typing -->
-  <div class="agente-typing" id="agenteTyping" aria-hidden="true">
-    <div class="agente-mensaje__avatar">
-      <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA">
+  <!-- Compositor flotante -->
+  <footer class="agente-composer">
+    <div class="agente-composer__box">
+      <form class="agente-fld" id="agenteForm" autocomplete="off">
+        {% csrf_token %}
+        <textarea
+          class="agente-input"
+          id="agenteInput"
+          placeholder="Pregunta algo sobre tus finanzas..."
+          rows="1"
+          maxlength="1000"
+          aria-label="Escribe tu mensaje para Gastu"
+        ></textarea>
+        <button type="submit" class="agente-btn-enviar" id="agenteBtnEnviar" disabled aria-label="Enviar pregunta">
+          <i data-lucide="send"></i>
+        </button>
+      </form>
     </div>
-    <div class="agente-typing__burbuja">
-      <span></span><span></span><span></span>
-    </div>
-  </div>
-
-  <!-- Input -->
-  <div class="agente-input-wrapper">
-    <form class="agente-input-form" id="agenteForm" autocomplete="off">
-      {% csrf_token %}
-      <textarea
-        class="agente-input"
-        id="agenteInput"
-        placeholder="Escribe tu pregunta..."
-        rows="1"
-        maxlength="1000"
-        aria-label="Escribe tu mensaje"
-      ></textarea>
-      <button type="submit" class="agente-btn-enviar" id="agenteBtnEnviar" disabled>
-        <i data-lucide="send"></i>
-      </button>
-    </form>
-    <p class="agente-disclaimer">Gastu solo consulta tus datos, nunca los modifica.</p>
-  </div>
+  </footer>
 
 </div>
 {% endblock %}
@@ -93,7 +153,8 @@
     window.CURRENT_MODULE = 'agente';
     if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
 
-    // Exponer inicial del usuario para el avatar
+    // Exponer nombre e inicial del usuario
+    window.GASTU_USER_NAME = "{{ user.first_name|default:user.username }}";
     window.GASTU_USER_INICIAL = "{{ user.first_name|default:user.username|first|upper }}";
   </script>
   <script src="{% static 'js/agente_financiero.js' %}"></script>
