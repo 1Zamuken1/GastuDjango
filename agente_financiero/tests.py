@@ -585,3 +585,129 @@ class TestHardeningRedTeamingIA:
         assert "[badge:verde" in system_prompt
         assert "> [!TIP]" in system_prompt
         assert "Copiar tabla" in system_prompt
+
+    @pytest.mark.django_db
+    def test_calcular_metricas_presupuesto(self, usuario, cat_egreso):
+        from presupuesto.models import Presupuesto
+        from movimientos.models import Movimiento
+        from agente_financiero.servicios_bloques import calcular_metricas_presupuesto
+        from datetime import date
+        from decimal import Decimal
+
+        hoy = date.today()
+        # Crear presupuesto de $500.000
+        pres = Presupuesto.objects.create(
+            usuario=usuario, categoria=cat_egreso,
+            limite=Decimal("500000"),
+            fecha_inicio=date(hoy.year, hoy.month, 1),
+            fecha_fin=date(hoy.year, hoy.month, 28),
+            is_activo=True
+        )
+        # Crear movimiento de $400.000 (80% consumo)
+        Movimiento.objects.create(
+            usuario=usuario, categoria=cat_egreso,
+            monto=Decimal("400000"), tipo="EGRESO",
+            fecha_registro=hoy, activo=True
+        )
+
+        metricas = calcular_metricas_presupuesto(usuario, categoria_nombre=cat_egreso.nombre)
+        assert metricas is not None
+        assert metricas["categoria"] == cat_egreso.nombre
+        assert metricas["limite"] == 500000
+        assert metricas["gastado"] == 400000
+        assert metricas["disponible"] == 100000
+        assert metricas["consumo_pct"] == 80
+        assert metricas["estado"] == "alerta"
+        assert metricas["animo"] == "alerta"
+
+    @pytest.mark.django_db
+    def test_ensamblar_bloques_presupuesto_esquema(self, usuario, cat_egreso):
+        from presupuesto.models import Presupuesto
+        from movimientos.models import Movimiento
+        from agente_financiero.servicios_bloques import ensamblar_bloques_presupuesto
+        from datetime import date
+        from decimal import Decimal
+
+        hoy = date.today()
+        Presupuesto.objects.create(
+            usuario=usuario, categoria=cat_egreso,
+            limite=Decimal("200000"),
+            fecha_inicio=date(hoy.year, hoy.month, 1),
+            fecha_fin=date(hoy.year, hoy.month, 28),
+            is_activo=True
+        )
+        Movimiento.objects.create(
+            usuario=usuario, categoria=cat_egreso,
+            monto=Decimal("50000"), tipo="EGRESO",
+            fecha_registro=hoy, descripcion="Almuerzo ejecutivo", activo=True
+        )
+
+        bloques, animo, procedencia = ensamblar_bloques_presupuesto(
+            usuario, categoria_nombre=cat_egreso.nombre, consejo_texto="Mantén este ritmo controlado."
+        )
+        assert animo == "positivo"
+        assert "Cifras calculadas" in procedencia
+
+        tipos = [b["tipo"] for b in bloques]
+        assert "titular" in tipos
+        assert "medidor" in tipos
+        assert "cifras" in tipos
+        assert "consejo" in tipos
+        assert "libreta" in tipos
+        assert "procedencia" in tipos
+        assert "siguientes" in tipos
+
+        medidor = next(b for b in bloques if b["tipo"] == "medidor")
+        assert medidor["limite"] == 200000
+        assert medidor["gastado"] == 50000
+        assert medidor["consumo_pct"] == 25
+
+        cifras = next(b for b in bloques if b["tipo"] == "cifras")
+        assert len(cifras["columnas"]) == 2
+        assert cifras["columnas"][0]["valor"] == 150000
+
+        libreta = next(b for b in bloques if b["tipo"] == "libreta")
+        assert libreta["total"]["valor"] == 50000
+        assert len(libreta["filas"]) == 1
+        assert libreta["filas"][0]["concepto"] == "Almuerzo ejecutivo"
+
+    @pytest.mark.django_db
+    def test_chat_view_fallback_determinista(self, usuario, cat_egreso):
+        from django.test import RequestFactory
+        from unittest.mock import patch
+        from presupuesto.models import Presupuesto
+        from agente_financiero.api_views import ChatView
+        from agente_financiero.groq_client import GroqError
+        from datetime import date
+        from decimal import Decimal
+
+        hoy = date.today()
+        Presupuesto.objects.create(
+            usuario=usuario, categoria=cat_egreso,
+            limite=Decimal("300000"),
+            fecha_inicio=date(hoy.year, hoy.month, 1),
+            fecha_fin=date(hoy.year, hoy.month, 28),
+            is_activo=True
+        )
+
+        rf = RequestFactory()
+        req = rf.post(
+            "/api/agente/chat/",
+            data=json.dumps({"mensaje": f"¿Cómo va mi presupuesto de {cat_egreso.nombre}?"}),
+            content_type="application/json"
+        )
+        req.user = usuario
+
+        view = ChatView()
+        # Simular fallo de Groq (ej: 429 rate limit o servicio caído)
+        with patch("agente_financiero.api_views.preguntar_a_groq", side_effect=GroqError("Rate limit reached")):
+            resp = view.post(req)
+
+        assert resp.status_code == 200
+        data = json.loads(resp.content.decode("utf-8"))
+        assert data["ok"] is True
+        assert "bloques" in data
+        assert len(data["bloques"]) > 0
+        tipos = [b["tipo"] for b in data["bloques"]]
+        assert "medidor" in tipos
+        assert "cifras" in tipos

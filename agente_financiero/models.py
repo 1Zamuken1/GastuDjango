@@ -16,6 +16,9 @@ class MensajeChat(models.Model):
     )
     rol = models.CharField(max_length=10, choices=ROL_CHOICES)
     contenido = models.TextField()
+    bloques = models.JSONField(null=True, blank=True)
+    animo = models.CharField(max_length=20, null=True, blank=True)
+    procedencia = models.CharField(max_length=100, null=True, blank=True)
     creado_en = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
