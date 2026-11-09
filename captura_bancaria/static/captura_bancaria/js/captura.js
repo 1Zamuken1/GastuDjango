@@ -17,6 +17,7 @@
     reglas: app.dataset.urlReglas,
     baseDetectado: app.dataset.urlBaseDetectado,
     baseRegla: app.dataset.urlBaseRegla,
+    reglaCrear: app.dataset.urlReglaCrear,
   };
 
   var ICONO_OPERACION = {
@@ -34,6 +35,8 @@
     tabActiva: 'pendientes',
     cargado: { historial: false, reglas: false },
     sondeo: null,
+    direccion: '',
+    direccionVisible: false,
   };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -138,7 +141,8 @@
 
     if (!activo) return;
 
-    $('buzon-direccion').textContent = r.buzon.direccion;
+    estado.direccion = r.buzon.direccion;
+    pintarDireccion();
     var mostrarCodigo = !!r.buzon.codigo_reenvio_gmail && !r.pasos.primera_alerta;
     $('buzon-codigo').classList.toggle('cap-oculto', !mostrarCodigo);
     $('buzon-codigo-valor').textContent = r.buzon.codigo_reenvio_gmail || '';
@@ -151,13 +155,8 @@
       ? 'Último correo ' + haceCuanto(r.buzon.ultimo_correo_en) + '.'
       : 'Esperando un correo de tu banco.';
 
-    var bancos = $('lista-bancos');
-    bancos.innerHTML = '';
-    r.bancos.forEach(function (nombre, i) {
-      var chip = el('span', 'cap-banco' + (i === 0 ? ' cap-banco--destacado' : ''), nombre);
-      chip.title = i === 0 ? 'Lectura exacta con reglas' : 'Lectura con IA; revisa los datos antes de confirmar';
-      bancos.appendChild(chip);
-    });
+    pintarBancos(r.bancos);
+    actualizarGuia();
 
     // Mientras falte configuracion, revisar cada 10 s si llego el codigo o la primera alerta.
     var completo = r.pasos.primera_alerta;
@@ -171,6 +170,54 @@
 
   function cargarResumen() {
     return pedir(URL.resumen).then(pintarResumen);
+  }
+
+  // ── Bancos compatibles ─────────────────────────────────────
+  function iniciales(nombre) {
+    var palabras = nombre.replace(/^Banco (de )?/i, '').split(/\s+/).filter(Boolean);
+    var txt = palabras.length > 1 ? palabras[0][0] + palabras[1][0] : palabras[0].slice(0, 2);
+    return txt.toUpperCase();
+  }
+
+  function tonoDe(nombre) {
+    var h = 0;
+    for (var i = 0; i < nombre.length; i++) h = (h * 31 + nombre.charCodeAt(i)) % 360;
+    return h;
+  }
+
+  function avatarBanco(nombre, grande) {
+    var a = el('span', 'cap-banco-avatar' + (grande ? ' cap-banco-avatar--grande' : ''), iniciales(nombre));
+    if (!grande) a.style.setProperty('--tono', tonoDe(nombre));
+    a.setAttribute('aria-hidden', 'true');
+    return a;
+  }
+
+  function pintarBancos(bancos) {
+    var exactos = $('bancos-exactos');
+    var conIa = $('bancos-ia');
+    exactos.innerHTML = '';
+    conIa.innerHTML = '';
+    bancos.forEach(function (b) {
+      if (b.lectura === 'EXACTA') {
+        var fila = el('div', 'cap-banco-destacado');
+        fila.appendChild(avatarBanco(b.nombre, true));
+        var info = el('div', 'cap-banco-destacado__info');
+        info.appendChild(el('p', 'cap-banco-destacado__nombre', b.nombre));
+        var det = el('p', 'cap-banco-destacado__detalle');
+        det.appendChild(icono('shield-check'));
+        det.appendChild(document.createTextNode('Lectura exacta y firma verificada'));
+        info.appendChild(det);
+        fila.appendChild(info);
+        exactos.appendChild(fila);
+      } else {
+        var ficha = el('div', 'cap-banco-ficha');
+        ficha.title = b.nombre + ': lectura con IA';
+        ficha.appendChild(avatarBanco(b.nombre, false));
+        ficha.appendChild(el('span', 'cap-banco-ficha__nombre', b.nombre));
+        conIa.appendChild(ficha);
+      }
+    });
+    iconos();
   }
 
   // ── Pendientes ─────────────────────────────────────────────
@@ -188,10 +235,10 @@
     ic.innerHTML = '';
     ic.appendChild(icono(ICONO_OPERACION[d.operacion] || 'circle-dollar-sign'));
 
-    nodo.querySelector('.cap-item__comercio').textContent = d.comercio;
+    nodo.querySelector('.cap-item__comercio').textContent = d.apodo || d.comercio;
     nodo.querySelector('.cap-item__monto').textContent = (esIngreso ? '+' : '-') + d.monto_formateado;
 
-    var meta = [capitalizar(d.operacion), d.banco];
+    var meta = d.apodo ? [d.comercio, d.banco] : [capitalizar(d.operacion), d.banco];
     if (d.producto) meta.push(d.producto);
     meta.push(modo === 'historial' ? fechaCorta(d.fecha_transaccion) + ', ' + hora(d.fecha_transaccion) : hora(d.fecha_transaccion));
     nodo.querySelector('.cap-item__meta').textContent = meta.join(' · ');
@@ -364,37 +411,48 @@
   });
 
   // ── Selector de categoria ──────────────────────────────────
-  var detectadoEnSelector = null;
+  var pilaModales = [];
 
   function abrirModal(id) {
     $(id).classList.remove('cap-oculto');
+    if (pilaModales.indexOf(id) === -1) pilaModales.push(id);
     document.body.style.overflow = 'hidden';
   }
 
-  function cerrarModales() {
-    document.querySelectorAll('.cap-modal').forEach(function (m) { m.classList.add('cap-oculto'); });
-    document.body.style.overflow = '';
-    detectadoEnSelector = null;
+  function cerrarModal(id) {
+    $(id).classList.add('cap-oculto');
+    pilaModales = pilaModales.filter(function (m) { return m !== id; });
+    if (!pilaModales.length) document.body.style.overflow = '';
+    if (id === 'modal-guia') detenerSondeoGuia();
   }
 
-  function abrirSelector(d) {
+  function cerrarModales() {
+    pilaModales.slice().forEach(cerrarModal);
+  }
+
+  /** Abre el selector visual de categorias del tipo dado y llama a alElegir({id, nombre}). */
+  function elegirCategoria(tipo, alElegir) {
     if (!window.CategoryPicker) return;
-    detectadoEnSelector = d;
-    $('modal-categorias-titulo').textContent = d.tipo === 'INGRESO' ? 'Categoría del ingreso' : 'Categoría del egreso';
+    $('modal-categorias-titulo').textContent = tipo === 'INGRESO' ? 'Categoría del ingreso' : 'Categoría del egreso';
     $('buscador-categorias').value = '';
     window.CategoryPicker.init({
       containerId: 'picker-grid',
       context: 'captura',
-      tipo: d.tipo,
+      tipo: tipo,
       onSelect: function (cat) {
-        if (!detectadoEnSelector) return;
-        estado.categoriaElegida[detectadoEnSelector.id] = { id: cat.id, nombre: cat.nombre };
-        cerrarModales();
-        pintarPendientes();
+        cerrarModal('modal-categorias');
+        alElegir({ id: cat.id, nombre: cat.nombre });
       },
     });
     abrirModal('modal-categorias');
     setTimeout(function () { $('buscador-categorias').focus(); }, 50);
+  }
+
+  function abrirSelector(d) {
+    elegirCategoria(d.tipo, function (cat) {
+      estado.categoriaElegida[d.id] = cat;
+      pintarPendientes();
+    });
   }
 
   $('buscador-categorias').addEventListener('input', function (e) {
@@ -403,10 +461,12 @@
 
   document.querySelectorAll('.cap-modal').forEach(function (modal) {
     modal.addEventListener('click', function (e) {
-      if (e.target === modal || e.target.closest('[data-cerrar-modal]')) cerrarModales();
+      if (e.target === modal || e.target.closest('[data-cerrar-modal]')) cerrarModal(modal.id);
     });
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarModales(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && pilaModales.length) cerrarModal(pilaModales[pilaModales.length - 1]);
+  });
 
   // ── Historial ──────────────────────────────────────────────
   function cargarHistorial() {
@@ -418,21 +478,57 @@
   }
 
   // ── Reglas ─────────────────────────────────────────────────
+  function inicialesRegla(r) {
+    if (!r.apodo) return null;
+    var p = r.apodo.trim().split(/\s+/);
+    return (p.length > 1 ? p[0][0] + p[1][0] : p[0].slice(0, 2)).toUpperCase();
+  }
+
+  function actualizarRegla(r, cambios, mensaje) {
+    return pedir(URL.baseRegla + r.id + '/actualizar/', { method: 'POST', body: cambios })
+      .then(function (data) {
+        if (mensaje) aviso('ok', mensaje);
+        return data.regla;
+      });
+  }
+
   function crearRegla(r) {
-    var fila = el('div', 'cap-regla');
-    var ic = el('div', 'cap-item__icono');
-    ic.style.width = '2.2rem';
-    ic.style.height = '2.2rem';
-    if (r.tipo === 'INGRESO') fila.classList.add('cap-item--ingreso');
-    ic.appendChild(icono('store'));
-    fila.appendChild(ic);
+    var fila = el('article', 'cap-regla' + (r.tipo === 'INGRESO' ? ' cap-regla--ingreso' : ''));
+
+    var avatar = el('div', 'cap-regla__avatar');
+    var ini = inicialesRegla(r);
+    if (ini) avatar.textContent = ini;
+    else avatar.appendChild(icono(/cuenta \*\d{4}/.test(r.comercio) ? 'arrow-left-right' : 'store'));
+    fila.appendChild(avatar);
 
     var cuerpo = el('div', 'cap-regla__cuerpo');
-    cuerpo.appendChild(el('p', 'cap-regla__comercio', r.comercio.replace(/ cta(\d{4})/, ' *$1')));
+    cuerpo.appendChild(el('p', 'cap-regla__nombre', r.nombre_visible));
+    cuerpo.appendChild(el('p', 'cap-regla__origen', r.apodo ? r.comercio : (r.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso') + ' · usa el lápiz para ponerle un nombre'));
+
+    var linea = el('div', 'cap-regla__linea');
+    var flecha = el('span', 'cap-regla__flecha');
+    flecha.appendChild(icono('corner-down-right'));
+    linea.appendChild(flecha);
+    var chip = el('button', 'cap-chip-categoria');
+    chip.type = 'button';
+    chip.title = 'Cambiar categoría';
+    chip.appendChild(icono('tag'));
+    chip.appendChild(el('span', '', r.categoria.nombre));
+    chip.appendChild(icono('chevron-down'));
+    chip.addEventListener('click', function () {
+      elegirCategoria(r.tipo, function (cat) {
+        actualizarRegla(r, { categoria_id: cat.id }, 'Categoría actualizada')
+          .then(function (nueva) { fila.replaceWith(crearRegla(nueva)); iconos(); })
+          .catch(function (e) { aviso('error', e.message); });
+      });
+    });
+    linea.appendChild(chip);
     var veces = r.veces_usada === 1 ? '1 vez' : r.veces_usada + ' veces';
-    cuerpo.appendChild(el('p', 'cap-regla__meta', r.categoria.nombre + ' · confirmado ' + veces));
+    linea.appendChild(el('span', 'cap-regla__veces', r.veces_usada ? 'Confirmado ' + veces : 'Precargada'));
+    cuerpo.appendChild(linea);
     fila.appendChild(cuerpo);
 
+    var acciones = el('div', 'cap-regla__acciones');
     var sw = el('label', 'cap-switch');
     var input = document.createElement('input');
     input.type = 'checkbox';
@@ -440,26 +536,40 @@
     sw.appendChild(input);
     sw.appendChild(el('span', 'cap-switch__pista'));
     sw.appendChild(document.createTextNode('Automático'));
-    sw.title = 'Registrar sin preguntar los próximos movimientos de este comercio (solo si el banco firma el correo)';
+    sw.title = 'Registrar sin preguntar los próximos (solo si el banco firma el correo)';
     input.addEventListener('change', function () {
-      pedir(URL.baseRegla + r.id + '/actualizar/', { method: 'POST', body: { auto_confirmar: input.checked } })
-        .then(function () {
-          aviso('ok', input.checked ? 'Los próximos se registrarán solos' : 'Te preguntaremos antes de registrar');
-        })
+      actualizarRegla(r, { auto_confirmar: input.checked },
+        input.checked ? 'Los próximos se registrarán solos' : 'Te preguntaremos antes de registrar')
+        .then(function (nueva) { r = nueva; })
         .catch(function (e) { input.checked = !input.checked; aviso('error', e.message); });
     });
-    fila.appendChild(sw);
+    acciones.appendChild(sw);
+
+    var editar = el('button', 'cap-btn-icono cap-btn-editar');
+    editar.type = 'button';
+    editar.title = 'Editar nombre';
+    editar.appendChild(icono('pencil'));
+    editar.addEventListener('click', function () { abrirFormRegla(r); });
+    acciones.appendChild(editar);
 
     var borrar = el('button', 'cap-btn-icono cap-btn-descartar');
     borrar.type = 'button';
-    borrar.title = 'Olvidar esta regla';
+    borrar.title = 'Eliminar regla';
     borrar.appendChild(icono('trash-2'));
     borrar.addEventListener('click', function () {
-      pedir(URL.baseRegla + r.id + '/eliminar/', { method: 'POST' })
-        .then(function () { fila.remove(); aviso('ok', 'Regla olvidada'); cargarResumen(); revisarReglasVacias(); })
-        .catch(function (e) { aviso('error', e.message); });
+      var pregunta = window.GastuAlerts
+        ? window.GastuAlerts.confirmar('¿Eliminar esta regla?',
+            'Gastu olvidará la categoría de ' + r.nombre_visible + '. Los movimientos ya registrados no cambian.', 'Sí, eliminar')
+        : Promise.resolve(true);
+      pregunta.then(function (ok) {
+        if (!ok) return;
+        pedir(URL.baseRegla + r.id + '/eliminar/', { method: 'POST' })
+          .then(function () { fila.remove(); aviso('ok', 'Regla eliminada'); cargarResumen(); revisarReglasVacias(); })
+          .catch(function (e) { aviso('error', e.message); });
+      });
     });
-    fila.appendChild(borrar);
+    acciones.appendChild(borrar);
+    fila.appendChild(acciones);
     return fila;
   }
 
@@ -479,6 +589,121 @@
     });
   }
 
+  // ── Formulario de regla (nueva o editar) ───────────────────
+  var formRegla = { editando: null, tipo: 'EGRESO', categoria: null };
+
+  function nombreDesdeEntrada(texto, tipo) {
+    var limpio = (texto || '').trim();
+    var m = limpio.match(/^\*?\s*(\d{4,})$/);
+    if (m) {
+      var ult = m[1].slice(-4);
+      return (tipo === 'EGRESO' ? 'Transferencia a cuenta *' : 'Transferencia de cuenta *') + ult;
+    }
+    return limpio;
+  }
+
+  function pintarTipoRegla() {
+    $('regla-tipo').querySelectorAll('button').forEach(function (b) {
+      var activo = b.dataset.tipo === formRegla.tipo;
+      b.classList.toggle('activo', activo);
+      b.setAttribute('aria-checked', activo ? 'true' : 'false');
+    });
+  }
+
+  function pintarCategoriaRegla() {
+    $('regla-categoria').querySelector('span').textContent = formRegla.categoria ? formRegla.categoria.nombre : 'Elegir categoría';
+  }
+
+  function pintarVistaPrevia() {
+    var caja = $('regla-vista-previa');
+    caja.innerHTML = '';
+    var nombre = formRegla.editando ? formRegla.editando.comercio : nombreDesdeEntrada($('regla-comercio').value, formRegla.tipo);
+    if (!nombre || !formRegla.categoria) return;
+    var apodo = $('regla-apodo').value.trim();
+    caja.appendChild(icono('wand-2'));
+    caja.appendChild(document.createTextNode('Cuando llegue '));
+    caja.appendChild(el('strong', '', nombre));
+    caja.appendChild(document.createTextNode(apodo ? ' (' + apodo + ')' : ''));
+    caja.appendChild(document.createTextNode(' se registrará en '));
+    caja.appendChild(el('strong', '', formRegla.categoria.nombre));
+    caja.appendChild(document.createTextNode($('regla-auto').checked ? ', sin preguntarte.' : ', para que lo confirmes.'));
+    iconos();
+  }
+
+  function abrirFormRegla(regla) {
+    formRegla.editando = regla || null;
+    formRegla.tipo = regla ? regla.tipo : 'EGRESO';
+    formRegla.categoria = regla ? { id: regla.categoria.id, nombre: regla.categoria.nombre } : null;
+    $('modal-regla-titulo').textContent = regla ? 'Editar regla' : 'Nueva regla';
+    $('regla-intro').textContent = regla
+      ? 'Ponle un nombre fácil de reconocer y elige cómo debe registrarse.'
+      : 'Prepara cómo debe registrarse un comercio o una cuenta antes de que llegue su alerta.';
+    $('regla-campo-comercio').classList.toggle('cap-oculto', !!regla);
+    $('regla-tipo').classList.toggle('bloqueado', !!regla);
+    $('regla-comercio').value = '';
+    $('regla-apodo').value = regla ? regla.apodo : '';
+    $('regla-auto').checked = regla ? regla.auto_confirmar : false;
+    pintarTipoRegla();
+    pintarCategoriaRegla();
+    pintarVistaPrevia();
+    abrirModal('modal-regla');
+    setTimeout(function () { (regla ? $('regla-apodo') : $('regla-comercio')).focus(); }, 50);
+  }
+
+  $('btn-nueva-regla').addEventListener('click', function () { abrirFormRegla(null); });
+
+  $('regla-tipo').querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (formRegla.editando || formRegla.tipo === b.dataset.tipo) return;
+      formRegla.tipo = b.dataset.tipo;
+      formRegla.categoria = null;
+      pintarTipoRegla();
+      pintarCategoriaRegla();
+      pintarVistaPrevia();
+    });
+  });
+
+  $('regla-categoria').addEventListener('click', function () {
+    elegirCategoria(formRegla.tipo, function (cat) {
+      formRegla.categoria = cat;
+      pintarCategoriaRegla();
+      pintarVistaPrevia();
+    });
+  });
+
+  ['regla-comercio', 'regla-apodo'].forEach(function (id) { $(id).addEventListener('input', pintarVistaPrevia); });
+  $('regla-auto').addEventListener('change', pintarVistaPrevia);
+
+  $('form-regla').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!formRegla.categoria) { aviso('error', 'Elige una categoría.'); return; }
+    var boton = $('regla-guardar');
+    boton.disabled = true;
+    var cuerpo = {
+      apodo: $('regla-apodo').value.trim(),
+      categoria_id: formRegla.categoria.id,
+      auto_confirmar: $('regla-auto').checked,
+    };
+    var promesa;
+    if (formRegla.editando) {
+      promesa = actualizarRegla(formRegla.editando, cuerpo, 'Regla actualizada');
+    } else {
+      var comercio = $('regla-comercio').value.trim();
+      if (!comercio) { boton.disabled = false; aviso('error', 'Escribe el comercio o la cuenta.'); return; }
+      cuerpo.comercio = comercio;
+      cuerpo.tipo = formRegla.tipo;
+      promesa = pedir(URL.reglaCrear, { method: 'POST', body: cuerpo }).then(function (d) { aviso('ok', 'Regla guardada'); return d.regla; });
+    }
+    promesa.then(function () {
+      cerrarModal('modal-regla');
+      cargarReglas();
+      cargarResumen();
+      cargarPendientes().catch(function () {});
+    }).catch(function (err) {
+      aviso('error', err.message);
+    }).then(function () { boton.disabled = false; });
+  });
+
   // ── Tabs ───────────────────────────────────────────────────
   document.querySelectorAll('.cap-tab').forEach(function (tab) {
     tab.addEventListener('click', function () {
@@ -497,17 +722,43 @@
   $('btn-activar').addEventListener('click', function () {
     pedir(URL.buzon, { method: 'POST' })
       .then(function () { return cargarResumen(); })
-      .then(function () { aviso('ok', 'Captura automática activada'); abrirModal('modal-guia'); })
+      .then(function () { aviso('ok', 'Captura automática activada'); abrirGuia(); })
       .catch(function (e) { aviso('error', e.message); });
   });
 
+  // La direccion se muestra oculta (el alias es lo que la hace privada); el dominio si se ve.
+  function pintarDireccion() {
+    var partes = estado.direccion.split('@');
+    var texto = estado.direccionVisible ? estado.direccion : '•'.repeat(10) + '@' + (partes[1] || '');
+    var nodo = $('buzon-direccion');
+    nodo.textContent = texto;
+    nodo.classList.toggle('cap-direccion__texto--oculta', !estado.direccionVisible);
+    var btn = $('btn-revelar');
+    btn.setAttribute('aria-pressed', estado.direccionVisible ? 'true' : 'false');
+    btn.title = estado.direccionVisible ? 'Ocultar dirección' : 'Mostrar dirección';
+    btn.innerHTML = '';
+    btn.appendChild(icono(estado.direccionVisible ? 'eye-off' : 'eye'));
+    iconos();
+  }
+
+  var temporizadorOcultar = null;
+  $('btn-revelar').addEventListener('click', function () {
+    estado.direccionVisible = !estado.direccionVisible;
+    pintarDireccion();
+    // Se vuelve a ocultar sola despues de 20 s.
+    clearTimeout(temporizadorOcultar);
+    if (estado.direccionVisible) {
+      temporizadorOcultar = setTimeout(function () { estado.direccionVisible = false; pintarDireccion(); }, 20000);
+    }
+  });
+
   $('btn-copiar').addEventListener('click', function () {
-    navigator.clipboard.writeText($('buzon-direccion').textContent)
+    navigator.clipboard.writeText(estado.direccion)
       .then(function () { aviso('ok', 'Dirección copiada'); })
       .catch(function () { aviso('error', 'No se pudo copiar la dirección'); });
   });
 
-  $('btn-guia').addEventListener('click', function () { abrirModal('modal-guia'); });
+  $('btn-guia').addEventListener('click', function () { abrirGuia(); });
 
   $('btn-regenerar').addEventListener('click', function () {
     var pregunta = window.GastuAlerts
@@ -521,6 +772,92 @@
         .then(function () { aviso('ok', 'Dirección actualizada. Recuerda cambiarla en Gmail.'); return cargarResumen(); })
         .catch(function (e) { aviso('error', e.message); });
     });
+  });
+
+  // ── Asistente de configuracion ─────────────────────────────
+  var guia = { paso: 0, total: 5, sondeo: null };
+
+  function pasoSugerido() {
+    var r = estado.resumen;
+    if (!r || !r.buzon.activo) return 0;
+    if (r.pasos.primera_alerta) return 4;
+    if (r.buzon.codigo_reenvio_gmail) return 2;
+    return 0;
+  }
+
+  function irPaso(n) {
+    guia.paso = Math.max(0, Math.min(guia.total - 1, n));
+    document.querySelectorAll('.cap-asistente__paso').forEach(function (p) {
+      p.classList.toggle('cap-oculto', Number(p.dataset.paso) !== guia.paso);
+    });
+    document.querySelectorAll('.cap-asistente__puntos button').forEach(function (b) {
+      var i = Number(b.dataset.irPaso);
+      b.classList.toggle('activo', i === guia.paso);
+      b.classList.toggle('hecho', i < guia.paso);
+    });
+    $('guia-paso-texto').textContent = 'Paso ' + (guia.paso + 1) + ' de ' + guia.total;
+    $('guia-progreso').style.width = ((guia.paso + 1) / guia.total * 100) + '%';
+    $('guia-atras').style.visibility = guia.paso === 0 ? 'hidden' : 'visible';
+    $('guia-siguiente').querySelector('span').textContent = guia.paso === guia.total - 1 ? 'Ir a Por revisar' : 'Siguiente';
+    actualizarGuia();
+  }
+
+  function actualizarGuia() {
+    var r = estado.resumen;
+    if (!r || !r.buzon.activo) return;
+    var partes = r.buzon.direccion.split('@');
+    $('guia-direccion-mock').textContent = '•'.repeat(8) + '@' + (partes[1] || '');
+
+    var codigo = r.buzon.codigo_reenvio_gmail;
+    $('guia-codigo-espera').classList.toggle('cap-oculto', !!codigo);
+    $('guia-codigo-listo').classList.toggle('cap-oculto', !codigo);
+    $('guia-codigo-valor').textContent = codigo || '';
+    $('guia-copiar-codigo').classList.toggle('cap-oculto', !codigo);
+
+    var conectado = r.pasos.primera_alerta;
+    $('guia-final-espera').classList.toggle('cap-oculto', conectado);
+    $('guia-final-listo').classList.toggle('cap-oculto', !conectado);
+  }
+
+  function detenerSondeoGuia() {
+    if (guia.sondeo) { clearInterval(guia.sondeo); guia.sondeo = null; }
+  }
+
+  function abrirGuia() {
+    irPaso(pasoSugerido());
+    abrirModal('modal-guia');
+    // Con la guia abierta se revisa cada 5 s si llego el codigo de Gmail o la primera alerta.
+    detenerSondeoGuia();
+    guia.sondeo = setInterval(function () { cargarResumen().catch(function () {}); }, 5000);
+  }
+
+  function copiar(texto, mensaje) {
+    navigator.clipboard.writeText(texto)
+      .then(function () { aviso('ok', mensaje); })
+      .catch(function () { aviso('error', 'No se pudo copiar'); });
+  }
+
+  $('guia-atras').addEventListener('click', function () { irPaso(guia.paso - 1); });
+  $('guia-siguiente').addEventListener('click', function () {
+    if (guia.paso === guia.total - 1) {
+      cerrarModal('modal-guia');
+      var tab = document.querySelector('.cap-tab[data-tab="pendientes"]');
+      if (tab) tab.click();
+      return;
+    }
+    irPaso(guia.paso + 1);
+  });
+  document.querySelectorAll('.cap-asistente__puntos button').forEach(function (b) {
+    b.addEventListener('click', function () { irPaso(Number(b.dataset.irPaso)); });
+  });
+  document.querySelectorAll('[data-copiar-direccion]').forEach(function (b) {
+    b.addEventListener('click', function () { copiar(estado.direccion, 'Dirección copiada'); });
+  });
+  document.querySelectorAll('[data-copiar]').forEach(function (b) {
+    b.addEventListener('click', function () { copiar(b.dataset.copiar, 'Remitente copiado'); });
+  });
+  $('guia-copiar-codigo').addEventListener('click', function () {
+    copiar(estado.resumen.buzon.codigo_reenvio_gmail, 'Código copiado');
   });
 
   // ── Inicio ─────────────────────────────────────────────────

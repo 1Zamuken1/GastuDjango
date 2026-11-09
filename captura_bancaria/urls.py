@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/resumen/', views.api_resumen, name='api_resumen'),
     path('api/detectados/', views.api_detectados, name='api_detectados'),
     path('api/reglas/', views.api_reglas, name='api_reglas'),
+    path('api/reglas/crear/', views.api_regla_crear, name='api_regla_crear'),
     path('api/reglas/<int:pk>/actualizar/', views.api_regla_actualizar, name='api_regla_actualizar'),
     path('api/reglas/<int:pk>/eliminar/', views.api_regla_eliminar, name='api_regla_eliminar'),
     path('api/detectados/lote/confirmar/', views.api_confirmar_lote, name='api_confirmar_lote'),

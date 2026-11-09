@@ -178,6 +178,14 @@ class ReglaComercio(ModeloBase):
         related_name='reglas_comercio',
     )
     comercio_normalizado = models.CharField(max_length=120)
+    nombre_original = models.CharField(
+        max_length=120, blank=True, default='',
+        help_text='Como aparece en la alerta del banco, ej: "Transferencia a cuenta *5314".',
+    )
+    apodo = models.CharField(
+        max_length=60, blank=True, default='',
+        help_text='Nombre que el usuario le da al destinatario o comercio, ej: "Arriendo" o "Mama".',
+    )
     tipo = models.CharField(max_length=10, choices=MovimientoDetectado.Tipo.choices)
     categoria = models.ForeignKey('categorias.Categoria', on_delete=models.CASCADE, related_name='+')
     auto_confirmar = models.BooleanField(default=False)
@@ -195,3 +203,8 @@ class ReglaComercio(ModeloBase):
 
     def __str__(self):
         return f'{self.comercio_normalizado} -> {self.categoria.nombre}'
+
+    @property
+    def nombre_visible(self):
+        """Apodo si el usuario puso uno; si no, el nombre tal como llega en la alerta."""
+        return self.apodo or self.nombre_original or self.comercio_normalizado

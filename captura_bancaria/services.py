@@ -382,7 +382,9 @@ def confirmar(detectado, usuario, categoria=None, auto_confirmar=None):
             raise ErrorCaptura('Este movimiento ya fue revisado.')
 
         advertencia = _advertencia_disponible(bloqueado)
-        descripcion = f'{bloqueado.comercio} ({bloqueado.banco})'
+        apodo = apodo_de(bloqueado)
+        base = f'{apodo} - {bloqueado.comercio}' if apodo else bloqueado.comercio
+        descripcion = f'{base} ({bloqueado.banco})'
         movimiento = Movimiento.objects.create(
             usuario=usuario, categoria=categoria, tipo=bloqueado.tipo,
             monto=bloqueado.monto, descripcion=descripcion[:255],
@@ -411,9 +413,63 @@ def _aprender_regla(detectado, categoria, auto_confirmar):
     )
     regla.categoria = categoria
     regla.veces_usada += 1
+    if not regla.nombre_original:
+        regla.nombre_original = detectado.comercio[:120]
     if auto_confirmar is not None:
         regla.auto_confirmar = bool(auto_confirmar)
     regla.save()
+
+
+def apodo_de(detectado):
+    """Apodo que el usuario le puso al comercio o destinatario de un detectado, o ''."""
+    regla = ReglaComercio.objects.filter(
+        usuario=detectado.usuario, comercio_normalizado=normalizar_comercio(detectado.comercio),
+        tipo=detectado.tipo, activo=True,
+    ).only('apodo').first()
+    return regla.apodo if regla else ''
+
+
+RE_SOLO_CUENTA = re.compile(r'^\*?\s*(\d{4,})$')
+
+
+def nombre_regla_desde_entrada(texto, tipo):
+    """
+    Convierte lo que el usuario escribe al crear una regla en el nombre que traera la alerta.
+
+    "*5314" o "3229145314" en un egreso -> "Transferencia a cuenta *5314",
+    que es como Bancolombia describe las transferencias.
+    """
+    texto = re.sub(r'\s+', ' ', (texto or '')).strip()[:120]
+    m = RE_SOLO_CUENTA.match(texto)
+    if m:
+        ultimos = m.group(1)[-4:]
+        return f'Transferencia a cuenta *{ultimos}' if tipo == 'EGRESO' else f'Transferencia de cuenta *{ultimos}'
+    return texto
+
+
+def crear_regla(usuario, texto, tipo, categoria, apodo='', auto_confirmar=False):
+    """
+    Crea (o actualiza) una regla antes de que llegue la primera alerta del comercio.
+
+    Raises:
+        ErrorCaptura: si faltan datos o la categoria no corresponde al tipo.
+    """
+    if tipo not in ('INGRESO', 'EGRESO'):
+        raise ErrorCaptura('Tipo de movimiento inválido.')
+    if categoria is None or categoria.tipo != tipo:
+        raise ErrorCaptura('Elige una categoría del mismo tipo del movimiento.')
+    nombre = nombre_regla_desde_entrada(texto, tipo)
+    clave = normalizar_comercio(nombre)
+    if not clave:
+        raise ErrorCaptura('Escribe el comercio o la cuenta tal como aparece en la alerta.')
+    regla, _ = ReglaComercio.objects.update_or_create(
+        usuario=usuario, comercio_normalizado=clave, tipo=tipo,
+        defaults={
+            'categoria': categoria, 'nombre_original': nombre,
+            'apodo': (apodo or '').strip()[:60], 'auto_confirmar': bool(auto_confirmar), 'activo': True,
+        },
+    )
+    return regla
 
 
 def descartar(detectado, usuario):

@@ -20,7 +20,8 @@ from categorias.models import Categoria
 
 from . import services
 from .models import BuzonCaptura, MovimientoDetectado, ReglaComercio
-from .parsers import bancos_soportados
+from .parsers import PARSERS
+from .parsers.base import normalizar_comercio
 
 MAX_CORREO_BYTES = 5 * 1024 * 1024
 MAX_LOTE = 100
@@ -72,10 +73,12 @@ def _buzon_json(buzon):
     }
 
 
-def _detectado_json(d):
+def _detectado_json(d, apodos=None):
     cat = d.categoria_sugerida
+    apodo = (apodos or {}).get((normalizar_comercio(d.comercio), d.tipo), '')
     return {
         'id': d.id,
+        'apodo': apodo,
         'banco': d.banco,
         'tipo': d.tipo,
         'operacion': d.operacion,
@@ -95,7 +98,9 @@ def _detectado_json(d):
 def _regla_json(r):
     return {
         'id': r.id,
-        'comercio': r.comercio_normalizado,
+        'comercio': r.nombre_original or r.comercio_normalizado,
+        'apodo': r.apodo,
+        'nombre_visible': r.nombre_visible,
         'tipo': r.tipo,
         'categoria': {'id': r.categoria_id, 'nombre': r.categoria.nombre},
         'auto_confirmar': r.auto_confirmar,
@@ -175,7 +180,10 @@ def api_resumen(request):
             'confirmados_mes': confirmados_mes,
             'reglas': ReglaComercio.objects.filter(usuario=request.user, activo=True).count(),
         },
-        'bancos': bancos_soportados(),
+        'bancos': [
+            {'nombre': p.NOMBRE, 'lectura': 'IA' if getattr(p, 'USA_IA', False) else 'EXACTA'}
+            for p in PARSERS
+        ],
     })
 
 
@@ -200,10 +208,14 @@ def api_detectados(request):
     else:
         qs = qs.filter(estado=estado)
 
+    apodos = {
+        (r.comercio_normalizado, r.tipo): r.apodo
+        for r in ReglaComercio.objects.filter(usuario=request.user, activo=True).exclude(apodo='')
+    }
     return JsonResponse({
         'ok': True,
         'total': qs.count(),
-        'detectados': [_detectado_json(d) for d in qs[:limite]],
+        'detectados': [_detectado_json(d, apodos) for d in qs[:limite]],
     })
 
 
@@ -213,21 +225,55 @@ def api_reglas(request):
     """Lista las reglas de comercio que el usuario ha ido ensenando a Gastu."""
     reglas = (
         ReglaComercio.objects.filter(usuario=request.user, activo=True)
-        .select_related('categoria').order_by('-veces_usada', 'comercio_normalizado')
+        .select_related('categoria').order_by('-fecha_creacion')
     )
     return JsonResponse({'ok': True, 'reglas': [_regla_json(r) for r in reglas]})
 
 
 @login_required
 @require_POST
+def api_regla_crear(request):
+    """
+    Crea una regla antes de que llegue la alerta.
+    Body JSON: {comercio, tipo, categoria_id, apodo?, auto_confirmar?}.
+    Para una transferencia basta escribir la cuenta: "*5314".
+    """
+    datos = _leer_json(request)
+    if not isinstance(datos, dict):
+        return JsonResponse({'ok': False, 'error': 'Solicitud inválida'}, status=400)
+    categoria = Categoria.objects.filter(pk=datos.get('categoria_id'), activo=True).first()
+    try:
+        regla = services.crear_regla(
+            request.user, datos.get('comercio', ''), datos.get('tipo', ''), categoria,
+            apodo=datos.get('apodo', ''), auto_confirmar=datos.get('auto_confirmar', False),
+        )
+    except services.ErrorCaptura as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    return JsonResponse({'ok': True, 'regla': _regla_json(regla)}, status=201)
+
+
+@login_required
+@require_POST
 def api_regla_actualizar(request, pk):
-    """Activa o desactiva el registro automatico de una regla. Body JSON: {auto_confirmar}."""
+    """Edita una regla. Body JSON parcial: {auto_confirmar?, apodo?, categoria_id?}."""
     regla = get_object_or_404(ReglaComercio, pk=pk, usuario=request.user, activo=True)
     datos = _leer_json(request)
-    if not isinstance(datos, dict) or 'auto_confirmar' not in datos:
-        return JsonResponse({'ok': False, 'error': 'Falta auto_confirmar'}, status=400)
-    regla.auto_confirmar = bool(datos['auto_confirmar'])
-    regla.save(update_fields=['auto_confirmar'])
+    if not isinstance(datos, dict) or not datos:
+        return JsonResponse({'ok': False, 'error': 'Solicitud inválida'}, status=400)
+    campos = []
+    if 'auto_confirmar' in datos:
+        regla.auto_confirmar = bool(datos['auto_confirmar'])
+        campos.append('auto_confirmar')
+    if 'apodo' in datos:
+        regla.apodo = str(datos['apodo'] or '').strip()[:60]
+        campos.append('apodo')
+    if 'categoria_id' in datos:
+        categoria = Categoria.objects.filter(pk=datos['categoria_id'], activo=True).first()
+        if categoria is None or categoria.tipo != regla.tipo:
+            return JsonResponse({'ok': False, 'error': 'Elige una categoría del mismo tipo.'}, status=400)
+        regla.categoria = categoria
+        campos.append('categoria')
+    regla.save(update_fields=campos)
     return JsonResponse({'ok': True, 'regla': _regla_json(regla)})
 
 

@@ -237,7 +237,7 @@ def test_api_resumen_historial_y_reglas(categorias, usuario):
     r = c.get(reverse('captura_bancaria:api_resumen')).json()
     assert r['buzon']['activo'] is False
     assert r['pasos'] == {'direccion': False, 'reenvio_gmail': False, 'primera_alerta': False}
-    assert 'Bancolombia' in r['bancos']
+    assert {'nombre': 'Bancolombia', 'lectura': 'EXACTA'} in r['bancos']
 
     c.post(reverse('captura_bancaria:api_buzon'))
     buzon = BuzonCaptura.objects.get(usuario=usuario)
@@ -278,3 +278,50 @@ def test_reglas_de_otro_usuario_no_se_pueden_tocar(categorias, buzon):
     r = c.post(reverse('captura_bancaria:api_regla_eliminar', args=[regla.id]))
     assert r.status_code == 404
     assert ReglaComercio.objects.filter(pk=regla.id).exists()
+
+
+def test_regla_precargada_por_cuenta_se_aplica_a_la_transferencia(categorias, buzon):
+    alimentacion = Categoria.objects.get(nombre='Alimentación')
+    regla = services.crear_regla(buzon.usuario, '3001234567', 'EGRESO', alimentacion, apodo='Mamá')
+    assert regla.nombre_original == 'Transferencia a cuenta *4567'
+
+    _, d = services.procesar_correo(_raw('real_transferencia_enviada.eml'), buzon.direccion)
+    assert d.categoria_sugerida == alimentacion
+
+    c = Client()
+    c.force_login(buzon.usuario)
+    item = c.get(reverse('captura_bancaria:api_detectados')).json()['detectados'][0]
+    assert item['apodo'] == 'Mamá'
+
+    movimiento, _ = services.confirmar(d, buzon.usuario)
+    assert movimiento.descripcion.startswith('Mamá - Transferencia a cuenta *4567')
+
+
+def test_crear_regla_valida_tipo_de_categoria(categorias, usuario):
+    with pytest.raises(services.ErrorCaptura):
+        services.crear_regla(usuario, '*1234', 'EGRESO', Categoria.objects.get(nombre='Salario'))
+    with pytest.raises(services.ErrorCaptura):
+        services.crear_regla(usuario, '   ', 'EGRESO', Categoria.objects.get(nombre='Vivienda'))
+
+
+def test_api_crear_y_editar_regla(categorias, usuario):
+    c = Client()
+    c.force_login(usuario)
+    vivienda = Categoria.objects.get(nombre='Vivienda')
+    r = c.post(reverse('captura_bancaria:api_regla_crear'), content_type='application/json',
+               data=json.dumps({'comercio': '*5314', 'tipo': 'EGRESO', 'categoria_id': vivienda.id,
+                                'apodo': 'Arriendo', 'auto_confirmar': True}))
+    assert r.status_code == 201
+    regla = r.json()['regla']
+    assert regla['nombre_visible'] == 'Arriendo'
+    assert regla['comercio'] == 'Transferencia a cuenta *5314'
+
+    otra = Categoria.objects.get(nombre='Alimentación')
+    r = c.post(reverse('captura_bancaria:api_regla_actualizar', args=[regla['id']]), content_type='application/json',
+               data=json.dumps({'apodo': '', 'categoria_id': otra.id}))
+    assert r.json()['regla']['categoria']['nombre'] == 'Alimentación'
+    assert r.json()['regla']['nombre_visible'] == 'Transferencia a cuenta *5314'
+
+    r = c.post(reverse('captura_bancaria:api_regla_actualizar', args=[regla['id']]), content_type='application/json',
+               data=json.dumps({'categoria_id': Categoria.objects.get(nombre='Salario').id}))
+    assert r.status_code == 400

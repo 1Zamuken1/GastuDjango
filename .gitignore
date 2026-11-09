@@ -54,3 +54,6 @@ staticfiles/
 
 # Correos bancarios reales (datos personales) usados para probar la captura
 captura_bancaria/tests/correos_reales/
+
+# Credenciales de cuentas de prueba locales
+credenciales_prueba.local.md

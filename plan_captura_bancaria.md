@@ -93,7 +93,12 @@ Hecho y probado en local:
 - Lectura con IA (Groq) para formatos desconocidos y para Davivienda, BBVA, Nequi, Daviplata y otros 9 bancos. La IA solo extrae: se valida el tipo, la operacion y que el monto aparezca en el texto; todo queda pendiente y se marca "Leido con IA".
 - Interfaz renovada: hero con estadisticas, onboarding en 3 pasos, pestanas Por revisar / Historial / Reglas, selector visual de categorias, sellos "Verificado por el banco" y "Leido con IA", checklist de configuracion, guia de Gmail en modal y lista de bancos compatibles.
 - Pestana "Por revisar" en el panel de notificaciones con confirmacion de un toque; las notificaciones de movimientos llevan a `/captura/`.
-- 48 tests en `captura_bancaria/tests/`.
+- Reglas con nombre original de la alerta y apodo del destinatario (ej. "Arriendo" para "Transferencia a cuenta *5314"); se pueden precargar antes de que llegue la alerta escribiendo solo la cuenta (*5314), y editar apodo, categoria y registro automatico.
+- Direccion de captura oculta por defecto, con boton para revelarla (se oculta sola a los 20 s) y para copiarla.
+- Guia de Gmail como asistente de 5 pasos con ilustraciones, codigo de Gmail en vivo y botones para copiar.
+- Paleta fucsia propia (antes cian, muy cercana a Programaciones y Perfil).
+- Componente compartido `static/css/gastu_hero.css` para la card principal del hero, aplicado en Ingresos, Egresos, Ahorros, Programaciones, Presupuestos y Captura, con una decoracion distinta por vista.
+- 51 tests en `captura_bancaria/tests/`.
 
 Como probar en local:
 1. `python manage.py runserver`
@@ -105,7 +110,6 @@ Pendiente:
 - Probado con un correo real de Bancolombia (transferencia enviada, 2026-11-09): parser correcto y firma DKIM valida (`d=ayn.notificacionesbancolombia.com`). Remitente real: `alertasynotificaciones@ayn.notificacionesbancolombia.com`. El original esta en `captura_bancaria/tests/correos_reales/`, ignorado por git.
 - Falta: correos reales de compra con tarjeta, transferencia recibida y retiro, y comprobar en produccion que el DKIM sobrevive al reenvio por filtro de Gmail.
 - Confirmar con correos reales los dominios de los bancos genericos.
-- Las reglas muestran el comercio normalizado (sin tildes); guardar el nombre original para mostrarlo.
 - Produccion: servicio `smtp` en `docker-compose.yml`, puerto 25 abierto en Oracle, `CAPTURA_INGESTA_TOKEN` y `CAPTURA_INGESTA_URL` (red interna, `http://web:8000/captura/api/ingesta/`) en `.env`, decidir el dominio del correo (DuckDNS no permite MX) y bloquear `/captura/api/ingesta/` en nginx.
 - Programar `purgar_correos_captura` (borra textos con mas de 30 dias).
 - Rate limiting de la ingesta.

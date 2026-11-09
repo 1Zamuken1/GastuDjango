@@ -165,6 +165,7 @@
     {% block extra_head %}{% endblock %}
     <link rel="stylesheet" href="{% static 'historial/css/historial.css' %}" />
     <link rel="stylesheet" href="{% static 'captura_bancaria/css/panel_pendientes.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/gastu_hero.css' %}" />
 
     {# Restaurar estado del sidebar ANTES de que el browser pinte — evita el flash de animación #}
     <script>
@@ -815,7 +816,7 @@
     <script>
     (function() {
       var ICON_MAP_DROPDOWN = {
-        MOVIMIENTO_DETECTADO:     { icon: 'mail-check',     color: '#0891b2', bg: '#ecfeff' },
+        MOVIMIENTO_DETECTADO:     { icon: 'mail-check',     color: '#a21caf', bg: '#fdf4ff' },
         DEFICIT:                  { icon: 'trending-down',  color: '#2563eb', bg: '#eff6ff' },
         EGRESO_GRANDE:            { icon: 'arrow-up-right', color: '#e11d48', bg: '#fef2f2' },
         UMBRAL_MENSUAL:           { icon: 'alert-triangle', color: '#d97706', bg: '#fffbeb' },

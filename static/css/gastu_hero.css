@@ -1,0 +1,146 @@
+/* ─────────────────────────────────────────────────────────────
+   Card principal del hero (componente compartido)
+
+   Uso:
+     <div class="... gastu-hero-card gastu-hero-card--ingresos">
+       <div class="gastu-hero-card__icono"><i data-lucide="trending-up"></i></div>
+       <p>LABEL</p> <p>VALOR</p> <span>BADGE</span>
+     </div>
+
+   Cada modulo tiene su degradado y su propia decoracion de fondo.
+   Se carga despues de los CSS de cada app, por eso las reglas usan doble clase.
+   ───────────────────────────────────────────────────────────── */
+.gastu-hero-card.gastu-hero-card {
+  --hero-desde: #047857;
+  --hero-hasta: #10b981;
+  --hero-sombra: 16, 185, 129;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(135deg, var(--hero-desde) 0%, var(--hero-hasta) 100%);
+  border: none;
+  border-radius: .875rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: .3rem;
+  box-shadow: 0 4px 20px rgba(var(--hero-sombra), .28);
+  transition: transform .15s, box-shadow .15s;
+}
+.gastu-hero-card.gastu-hero-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(var(--hero-sombra), .36);
+}
+
+/* Contenido siempre por encima de la decoracion */
+.gastu-hero-card > * { position: relative; z-index: 1; }
+
+.gastu-hero-card__icono {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: .65rem;
+  background: rgba(255, 255, 255, .2);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  margin-bottom: .1rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15);
+}
+.gastu-hero-card__icono svg { width: 1.15rem; height: 1.15rem; }
+
+/* Decoraciones: dos capas por card (::before y ::after) */
+.gastu-hero-card::before,
+.gastu-hero-card::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Ingresos: burbujas que suben desde la esquina inferior derecha */
+.gastu-hero-card--ingresos.gastu-hero-card { --hero-desde: #047857; --hero-hasta: #10b981; --hero-sombra: 16, 185, 129; }
+.gastu-hero-card--ingresos::before {
+  right: -36px; bottom: -46px; width: 150px; height: 150px; border-radius: 50%;
+  background: rgba(255, 255, 255, .09);
+}
+.gastu-hero-card--ingresos::after {
+  right: 54px; top: 14px; width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  box-shadow: -170px 52px 0 -6px rgba(255, 255, 255, .07);
+}
+
+/* Egresos: circulo grande arriba a la izquierda y anillo abajo */
+.gastu-hero-card--egresos.gastu-hero-card { --hero-desde: #9f1239; --hero-hasta: #e11d48; --hero-sombra: 225, 29, 72; }
+.gastu-hero-card--egresos::before {
+  left: -44px; top: -50px; width: 150px; height: 150px; border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+}
+.gastu-hero-card--egresos::after {
+  right: -26px; bottom: -34px; width: 96px; height: 96px; border-radius: 50%;
+  border: 14px solid rgba(255, 255, 255, .08);
+}
+
+/* Ahorros: anillos concentricos, como una moneda */
+.gastu-hero-card--ahorros.gastu-hero-card { --hero-desde: #b45309; --hero-hasta: #eab308; --hero-sombra: 234, 179, 8; }
+.gastu-hero-card--ahorros::before {
+  right: -50px; top: -50px; width: 160px; height: 160px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 0 0 16px rgba(255, 255, 255, .06), 0 0 0 34px rgba(255, 255, 255, .04);
+}
+.gastu-hero-card--ahorros::after {
+  left: -18px; bottom: -18px; width: 58px; height: 58px; border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+}
+
+/* Programaciones: reticula de puntos, como un calendario */
+.gastu-hero-card--programaciones.gastu-hero-card { --hero-desde: #1d4ed8; --hero-hasta: #4da6ff; --hero-sombra: 59, 130, 246; }
+.gastu-hero-card--programaciones::before {
+  right: 10px; top: 10px; width: 92px; height: 70px;
+  background-image: radial-gradient(rgba(255, 255, 255, .28) 1.6px, transparent 1.8px);
+  background-size: 14px 14px;
+  opacity: .75;
+}
+.gastu-hero-card--programaciones::after {
+  left: -40px; bottom: -56px; width: 140px; height: 140px; border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+}
+
+/* Presupuestos: arco de medidor y franjas diagonales */
+.gastu-hero-card--presupuestos.gastu-hero-card { --hero-desde: #5b21b6; --hero-hasta: #8b5cf6; --hero-sombra: 124, 92, 191; }
+.gastu-hero-card--presupuestos::before {
+  right: -40px; bottom: -80px; width: 170px; height: 170px; border-radius: 50%;
+  border: 16px solid rgba(255, 255, 255, .09);
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+  transform: rotate(-45deg);
+}
+.gastu-hero-card--presupuestos::after {
+  left: 0; top: 0; width: 90px; height: 100%;
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .06) 0 6px, transparent 6px 16px);
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent);
+  mask-image: linear-gradient(90deg, #000, transparent);
+}
+
+/* Captura automatica: sobres de correo flotando */
+.gastu-hero-card--captura.gastu-hero-card { --hero-desde: #86198f; --hero-hasta: #d946ef; --hero-sombra: 192, 38, 211; }
+.gastu-hero-card--captura::before {
+  right: -40px; top: -40px; width: 140px; height: 140px; border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+}
+.gastu-hero-card--captura::after {
+  left: 18px; bottom: 16px; width: 30px; height: 22px; border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, .18);
+  background:
+    linear-gradient(35deg, transparent 46%, rgba(255, 255, 255, .18) 47% 53%, transparent 54%) left / 50% 100% no-repeat,
+    linear-gradient(-35deg, transparent 46%, rgba(255, 255, 255, .18) 47% 53%, transparent 54%) right / 50% 100% no-repeat;
+  transform: rotate(-12deg);
+  box-shadow: 54px -34px 0 -4px rgba(255, 255, 255, .05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gastu-hero-card.gastu-hero-card,
+  .gastu-hero-card.gastu-hero-card:hover { transition: none; transform: none; }
+}
