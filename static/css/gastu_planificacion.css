@@ -16,9 +16,6 @@
   --acento-medio: #c4b5fd;
   --acento-anillo: rgba(124, 58, 237, .14);
   --acento-rgb: 124, 58, 237;
-  --acento-borde: #c9bce9;
-  --acento-borde-suave: #ece7f8;
-  --acento-fondo-pie: #faf8ff;
   --verde: #059669;
   --verde-claro: #ecfdf5;
   --rojo: #e11d48;
@@ -37,7 +34,7 @@
   margin-bottom: 1.25rem;
 }
 .hero-total__label { font-size: .78rem; font-weight: 600; color: rgba(255,255,255,.78); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .35rem; }
-.hero-total__value { font-size: 2.3rem; font-weight: 900; color: #fff; margin: 0; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero-total__value { font-size: clamp(1.7rem, 1rem + 1.6vw, 2.3rem); font-weight: 900; color: #fff; margin: 0; line-height: 1; font-variant-numeric: tabular-nums; }
 .hero-total__badge { background: rgba(255,255,255,.2); color: #fff; font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 9999px; margin-top: .25rem; }
 
 .hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); padding: 0; overflow: hidden; align-items: stretch; }
@@ -95,8 +92,33 @@
 .plan-banner__cerrar svg { width: 1rem; height: 1rem; }
 
 /* ── Toolbar ───────────────────────────────────────────────── */
-.plan-modulo .toolbar { display: flex; align-items: center; gap: .75rem; padding: .875rem 1.25rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-.toolbar__search { width: min(320px, 100%); position: relative; }
+/* Grilla con areas: en pantallas medianas la busqueda y las acciones van
+   arriba y los filtros debajo; en pantallas anchas todo en una fila. Los cortes
+   consideran el ancho del sidebar abierto. */
+.plan-modulo .toolbar {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) auto;
+  grid-template-areas: "buscar acciones" "filtros filtros";
+  align-items: center;
+  gap: .75rem 1rem;
+  padding: .875rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.plan-modulo .toolbar__search { grid-area: buscar; width: 100%; max-width: 420px; position: relative; }
+.plan-modulo .toolbar__filtros { grid-area: filtros; justify-self: start; }
+.plan-modulo .toolbar__actions { grid-area: acciones; justify-self: end; margin-left: 0; flex-wrap: nowrap; }
+@media (min-width: 1600px) {
+  .plan-modulo .toolbar {
+    grid-template-columns: minmax(200px, 340px) 1fr auto;
+    grid-template-areas: "buscar filtros acciones";
+  }
+}
+@media (min-width: 1280px) {
+  .plan-modulo .toolbar--simple {
+    grid-template-columns: minmax(200px, 340px) 1fr auto;
+    grid-template-areas: "buscar filtros acciones";
+  }
+}
 .toolbar__search input {
   width: 100%; padding: .5rem .75rem .5rem 2.25rem;
   border: 1px solid var(--border); border-radius: .625rem;
@@ -106,7 +128,7 @@
 .toolbar__search input:focus { border-color: var(--acento); background: #fff; }
 .toolbar__search-icon { position: absolute; left: .65rem; top: 50%; transform: translateY(-50%); color: var(--slate-500); pointer-events: none; width: 1rem; height: 1rem; }
 .toolbar__filtros { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-.toolbar__actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; flex-wrap: wrap; }
+.toolbar__actions { display: flex; align-items: center; gap: .5rem; }
 
 .plan-filtro { display: inline-flex; background: #f1f5f9; border-radius: .625rem; padding: 3px; gap: 2px; }
 .plan-filtro__opcion {
@@ -134,22 +156,23 @@
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-/* Card con identidad del modulo: borde y sombra tenidos con el acento,
-   franja superior de color, cabecera con la cifra principal en el acento,
-   cuerpo con el detalle y pie tintado con acciones de texto. */
+/* Card: superficie neutra, franja superior de color, cifra principal en el
+   acento del modulo y pie oscuro solido con las acciones. El color del modulo
+   se reserva para la cifra y la accion principal, sin tenir bordes ni fondos. */
 .plan-card {
   position: relative;
   display: flex; flex-direction: column;
   background: #fff;
-  border: 1.5px solid var(--acento-borde);
+  border: 1px solid var(--border);
   border-radius: 1.1rem;
   overflow: hidden;
-  box-shadow: 0 3px 12px rgba(var(--acento-rgb), .10), 0 1px 5px rgba(15, 23, 42, .06);
-  transition: transform .2s, box-shadow .2s, border-color .2s;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+  transition: transform .2s, box-shadow .2s;
   animation: plan-aparecer .2s ease both;
+  container-type: inline-size;
 }
 .plan-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: var(--franja, var(--acento)); }
-.plan-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(var(--acento-rgb), .18), 0 3px 10px rgba(15, 23, 42, .08); border-color: var(--acento-medio); }
+.plan-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, .10), 0 2px 6px rgba(15, 23, 42, .05); }
 
 /* Franja por estado (presupuestos) o por tipo (programaciones) */
 .plan-card--normal { --franja: #16a34a; }
@@ -159,26 +182,30 @@
 .plan-card--programado { --franja: var(--acento); }
 .plan-card--ingreso { --franja: #16a34a; }
 .plan-card--egreso { --franja: var(--rojo); }
-.plan-card--inactiva { --franja: #cbd5e1; --acento-borde: #e2e8f0; }
+.plan-card--inactiva { --franja: #cbd5e1; }
 .plan-card--inactiva .plan-card__cifra,
 .plan-card--inactiva .plan-card__icono { filter: grayscale(1); opacity: .6; }
 
 .plan-card__cabecera {
   display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem;
   padding: 1.15rem 1.15rem .9rem;
-  background: linear-gradient(180deg, var(--acento-claro) 0%, #fff 100%);
-  border-bottom: 1px solid var(--acento-borde-suave);
+  background: #fff;
+  border-bottom: 1px solid #f1f5f9;
 }
-.plan-card__principal { min-width: 0; }
+.plan-card__principal { min-width: 0; flex: 1; }
+@container (max-width: 360px) {
+  .plan-card__cifra { font-size: 1.3rem; }
+  .plan-card__cifra small { display: block; margin: .15rem 0 0; }
+}
 .plan-card__cifra { font-size: 1.45rem; font-weight: 800; color: var(--acento); line-height: 1.1; letter-spacing: -.02em; margin: 0; font-variant-numeric: tabular-nums; }
 .plan-card__cifra small { font-family: 'DM Sans', sans-serif; font-size: .74rem; font-weight: 600; color: var(--slate-500); margin-left: .25rem; letter-spacing: 0; }
 .plan-card__etiqueta { font-size: .72rem; font-weight: 700; color: var(--slate-700); text-transform: uppercase; letter-spacing: .06em; margin: .35rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plan-card__sub { font-size: .75rem; color: var(--slate-500); margin: .1rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plan-card__lado { display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; flex-shrink: 0; }
-.plan-card__icono { width: 2rem; height: 2rem; border-radius: .6rem; display: grid; place-items: center; background: #fff; color: var(--acento); box-shadow: inset 0 0 0 1px var(--acento-borde-suave); }
+.plan-card__icono { width: 2rem; height: 2rem; border-radius: .6rem; display: grid; place-items: center; background: #f8fafc; color: var(--slate-500); }
 .plan-card__icono svg { width: 1rem; height: 1rem; }
-.plan-card__icono--ingreso { background: var(--verde-claro); color: var(--verde); box-shadow: none; }
-.plan-card__icono--egreso { background: var(--rojo-claro); color: var(--rojo); box-shadow: none; }
+.plan-card__icono--ingreso { background: var(--verde-claro); color: var(--verde); }
+.plan-card__icono--egreso { background: var(--rojo-claro); color: var(--rojo); }
 
 .plan-card__cuerpo { display: flex; flex-direction: column; gap: .7rem; padding: .9rem 1.15rem 1rem; flex: 1; }
 .plan-card__equivalente { font-size: .74rem; color: var(--slate-500); margin: 0; }
@@ -186,7 +213,7 @@
 .plan-progreso { display: flex; flex-direction: column; gap: .35rem; }
 .plan-progreso__fila { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; font-size: .78rem; color: var(--slate-600, #475569); }
 .plan-progreso__fila b { color: var(--slate-900); font-variant-numeric: tabular-nums; }
-.plan-progreso__barra { height: 7px; background: var(--acento-claro); border-radius: 9999px; overflow: hidden; }
+.plan-progreso__barra { height: 7px; background: #eef2f6; border-radius: 9999px; overflow: hidden; }
 .plan-progreso__relleno { height: 100%; width: 0; border-radius: 9999px; background: var(--franja, var(--verde)); transition: width .5s cubic-bezier(.4, 0, .2, 1); }
 .plan-progreso__pct { font-size: .78rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--franja, var(--verde)); }
 
@@ -199,21 +226,21 @@
 .plan-card__periodo { font-size: .74rem; color: var(--slate-500); display: flex; align-items: center; gap: .3rem; margin: 0; }
 .plan-card__periodo svg { width: .8rem; height: .8rem; flex-shrink: 0; }
 
-.plan-card__pie { display: flex; gap: .45rem; padding: .7rem .85rem; background: var(--acento-fondo-pie); border-top: 1px solid var(--acento-borde-suave); }
+.plan-card__pie { display: flex; gap: .45rem; padding: .65rem .75rem; background: #1e293b; }
 .plan-card-btn {
   flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
-  padding: .45rem .35rem; border-radius: .6rem; border: 1.5px solid var(--acento-borde-suave);
-  background: #fff; color: var(--slate-700); font-size: .76rem; font-weight: 700; cursor: pointer;
+  padding: .45rem .35rem; border-radius: .55rem; border: 1px solid rgba(255, 255, 255, .12);
+  background: transparent; color: #e2e8f0; font-size: .76rem; font-weight: 600; cursor: pointer;
   font-family: 'DM Sans', sans-serif; white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, .06);
-  transition: background .15s, color .15s, border-color .15s, transform .15s, box-shadow .15s;
+  transition: background .15s, color .15s, border-color .15s;
 }
 .plan-card-btn svg { width: .85rem; height: .85rem; flex-shrink: 0; }
-.plan-card-btn:hover { transform: translateY(-1px); border-color: var(--acento-medio); color: var(--acento); box-shadow: 0 3px 8px rgba(15, 23, 42, .08); }
-.plan-card-btn--acento { background: var(--acento-claro); color: var(--acento-oscuro); border-color: var(--acento-medio); }
-.plan-card-btn--acento:hover { background: var(--acento); color: #fff; border-color: var(--acento); box-shadow: 0 3px 10px rgba(var(--acento-rgb), .35); }
-.plan-card-btn--peligro { flex: 0 0 auto; padding: .45rem .55rem; background: #fef2f2; color: #ef4444; border-color: #fecaca; }
-.plan-card-btn--peligro:hover { background: #ef4444; color: #fff; border-color: #ef4444; box-shadow: 0 3px 10px rgba(239, 68, 68, .3); }
+.plan-card-btn:hover { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .22); color: #fff; }
+.plan-card-btn:focus-visible { outline: 2px solid var(--acento-medio); outline-offset: 1px; }
+.plan-card-btn--acento { color: var(--acento-medio); border-color: rgba(var(--acento-rgb), .45); }
+.plan-card-btn--acento:hover { background: var(--acento); border-color: var(--acento); color: #fff; }
+.plan-card-btn--peligro { flex: 0 0 auto; padding: .45rem .6rem; color: #fca5a5; }
+.plan-card-btn--peligro:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
 
 /* Chips de estado */
 .plan-chip { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .55rem; border-radius: 9999px; font-size: .7rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
@@ -355,12 +382,19 @@
   .hero-stat:nth-child(2) { border-right: none; }
   .hero-stat:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
 }
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .plan-modulo .stats-hero { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
   .hero-total__value { font-size: 1.8rem; }
-  .plan-modulo .toolbar { padding: .75rem .875rem; }
-  .toolbar__search { width: 100%; }
-  .toolbar__actions { margin-left: 0; width: 100%; }
+  .plan-modulo .toolbar,
+  .plan-modulo .toolbar--simple {
+    grid-template-columns: 1fr;
+    grid-template-areas: "buscar" "filtros" "acciones";
+    padding: .75rem .875rem;
+  }
+  .plan-modulo .toolbar__search { max-width: none; }
+  .plan-modulo .toolbar__actions { justify-self: stretch; }
   .toolbar__actions .btn-plan { flex: 1; justify-content: center; }
   .plan-grid { grid-template-columns: 1fr; }
   .plan-opciones { grid-template-columns: repeat(2, 1fr); }
@@ -376,5 +410,5 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .plan-card, .plan-banner, .plan-lista__item, .plan-modal { animation: none; }
-  .plan-card:hover, .plan-card-btn:hover { transform: none; }
+  .plan-card:hover { transform: none; }
 }
