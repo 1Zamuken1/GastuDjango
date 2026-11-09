@@ -188,7 +188,6 @@
     const pct = Math.round(p.porcentaje || 0);
     const disponible = p.disponible || 0;
     const vencido = estaVencido(p);
-    const puedeRenovar = !p.is_activo || vencido;
 
     let restante = '—';
     let porDia = '—';
@@ -203,38 +202,45 @@
       restante = 'terminó';
     }
 
+    const id = Number(p.id);
+    const accionPrincipal = vencido
+      ? `<button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="renovar" data-id="${id}"><i data-lucide="refresh-cw"></i> Renovar</button>`
+      : `<button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="toggle" data-id="${id}"><i data-lucide="${p.is_activo ? 'pause' : 'play'}"></i> ${p.is_activo ? 'Desactivar' : 'Activar'}</button>`;
+
     return `
-      <article class="plan-card plan-card--${nivel}" data-id="${Number(p.id)}">
-        <header class="plan-card__header">
-          <div class="plan-card__icono"><i data-lucide="target"></i></div>
-          <div class="plan-card__titulo">
-            <p class="plan-card__nombre" title="${P.esc(p.categoria_nombre)}">${P.esc(p.categoria_nombre)}</p>
-            <p class="plan-card__meta">Límite de ${P.formatMonto(p.limite)}</p>
+      <article class="plan-card plan-card--${nivel}" data-id="${id}">
+        <header class="plan-card__cabecera">
+          <div class="plan-card__principal">
+            <p class="plan-card__cifra font-display">${P.formatMonto(p.limite)}</p>
+            <p class="plan-card__etiqueta" title="${P.esc(p.categoria_nombre)}">${P.esc(p.categoria_nombre)}</p>
+            <p class="plan-card__sub">${P.formatFecha(p.fecha_inicio, true)} – ${P.formatFecha(p.fecha_fin, true)}</p>
           </div>
-          <span class="plan-chip plan-chip--${nivel}">${ETIQUETAS[nivel]}</span>
+          <div class="plan-card__lado">
+            <div class="plan-card__icono plan-card__icono--egreso"><i data-lucide="trending-down"></i></div>
+            <span class="plan-chip plan-chip--${nivel}">${ETIQUETAS[nivel]}</span>
+          </div>
         </header>
 
-        <p class="plan-card__monto font-display">${P.formatMonto(p.gastado)}<small>gastado</small></p>
+        <div class="plan-card__cuerpo">
+          <div class="plan-progreso">
+            <div class="plan-progreso__fila">
+              <span>Gastado <b>${P.formatMonto(p.gastado)}</b></span>
+              <span class="plan-progreso__pct">${pct}%</span>
+            </div>
+            <div class="plan-progreso__barra"><div class="plan-progreso__relleno" data-pct="${pct}"></div></div>
+          </div>
 
-        <div class="plan-progreso">
-          <div class="plan-progreso__barra"><div class="plan-progreso__relleno" data-pct="${pct}"></div></div>
-          <span class="plan-progreso__pct">${pct}%</span>
+          <dl class="plan-card__datos">
+            <div><dt>${disponible < 0 ? 'Excedido' : 'Disponible'}</dt><dd class="${disponible < 0 ? 'is-negativo' : ''}">${P.formatMonto(Math.abs(disponible))}</dd></div>
+            <div><dt>Quedan</dt><dd>${P.esc(restante)}</dd></div>
+            <div><dt>Por día</dt><dd>${porDia}</dd></div>
+          </dl>
         </div>
 
-        <dl class="plan-card__datos">
-          <div><dt>${disponible < 0 ? 'Excedido' : 'Disponible'}</dt><dd class="${disponible < 0 ? 'is-negativo' : ''}">${P.formatMonto(Math.abs(disponible))}</dd></div>
-          <div><dt>Quedan</dt><dd>${P.esc(restante)}</dd></div>
-          <div><dt>Por día</dt><dd>${porDia}</dd></div>
-        </dl>
-
         <footer class="plan-card__pie">
-          <span class="plan-card__periodo"><i data-lucide="calendar"></i>${P.formatFecha(p.fecha_inicio, true)} – ${P.formatFecha(p.fecha_fin, true)}</span>
-          <div class="plan-card__acciones">
-            ${puedeRenovar ? `<button type="button" class="plan-icono-btn plan-icono-btn--destacado" data-accion="renovar" data-id="${Number(p.id)}" title="Renovar para el siguiente período" aria-label="Renovar"><i data-lucide="refresh-cw"></i></button>` : ''}
-            ${!vencido ? `<button type="button" class="plan-icono-btn" data-accion="toggle" data-id="${Number(p.id)}" title="${p.is_activo ? 'Desactivar' : 'Activar'}" aria-label="${p.is_activo ? 'Desactivar' : 'Activar'}"><i data-lucide="${p.is_activo ? 'pause' : 'play'}"></i></button>` : ''}
-            <button type="button" class="plan-icono-btn" data-accion="editar" data-id="${Number(p.id)}" title="Editar" aria-label="Editar"><i data-lucide="pencil"></i></button>
-            <button type="button" class="plan-icono-btn plan-icono-btn--peligro" data-accion="eliminar" data-id="${Number(p.id)}" title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
-          </div>
+          ${accionPrincipal}
+          <button type="button" class="plan-card-btn" data-accion="editar" data-id="${id}"><i data-lucide="pencil"></i> Editar</button>
+          <button type="button" class="plan-card-btn plan-card-btn--peligro" data-accion="eliminar" data-id="${id}" title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
         </footer>
       </article>`;
   }

@@ -178,47 +178,53 @@
     const esIngreso = p.tipo === 'INGRESO';
     const tipoClase = esIngreso ? 'ingreso' : 'egreso';
     const titulo = p.descripcion || p.categoria_nombre;
-    const meta = p.descripcion ? `${p.categoria_nombre} · ${p.frecuencia_label}` : p.frecuencia_label;
-    const equivalente = p.frecuencia !== 'MENSUAL' && p.monto_mensual
+        const equivalente = p.frecuencia !== 'MENSUAL' && p.monto_mensual
       ? `<p class="plan-card__equivalente">Equivale a ${P.formatMonto(p.monto_mensual)} al mes</p>` : '';
 
     let proxima = '—';
     let cuando = '—';
     if (p.activo && p.proxima_ejecucion) {
       proxima = P.formatFecha(p.proxima_ejecucion, true);
-      cuando = est === 'pendiente' ? 'por confirmar' : P.textoRelativo(p.proxima_ejecucion);
+      cuando = est === 'pendiente' ? 'pendiente' : P.textoRelativo(p.proxima_ejecucion);
     }
     const fin = p.fecha_fin ? P.formatFecha(p.fecha_fin, true) : 'Sin fin';
     const id = Number(p.id);
 
+    const accionPrincipal = est === 'pendiente'
+      ? `<button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="revisar-pendientes"><i data-lucide="check"></i> Confirmar</button>`
+      : est !== 'finalizada'
+        ? `<button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="toggle" data-id="${id}"><i data-lucide="${p.activo ? 'pause' : 'play'}"></i> ${p.activo ? 'Pausar' : 'Reanudar'}</button>`
+        : '';
+    const claseEstado = p.activo ? `plan-card--${tipoClase}` : 'plan-card--inactiva';
+
     return `
-      <article class="plan-card ${p.activo ? '' : 'plan-card--inactiva'}" data-id="${id}">
-        <header class="plan-card__header">
-          <div class="plan-card__icono plan-card__icono--${tipoClase}"><i data-lucide="${esIngreso ? 'trending-up' : 'trending-down'}"></i></div>
-          <div class="plan-card__titulo">
-            <p class="plan-card__nombre" title="${P.esc(titulo)}">${P.esc(titulo)}</p>
-            <p class="plan-card__meta">${P.esc(meta)}</p>
+      <article class="plan-card ${claseEstado}" data-id="${id}">
+        <header class="plan-card__cabecera">
+          <div class="plan-card__principal">
+            <p class="plan-card__cifra font-display">${esIngreso ? '+' : '-'}${P.formatMonto(p.monto_programado)}<small>${P.esc(p.frecuencia_label.toLowerCase())}</small></p>
+            <p class="plan-card__etiqueta" title="${P.esc(titulo)}">${P.esc(titulo)}</p>
+            <p class="plan-card__sub">${P.esc(p.descripcion ? p.categoria_nombre : (esIngreso ? 'Ingreso' : 'Egreso'))}</p>
           </div>
-          <span class="plan-chip plan-chip--${chipClase}">${chipTexto}</span>
+          <div class="plan-card__lado">
+            <div class="plan-card__icono plan-card__icono--${tipoClase}"><i data-lucide="${esIngreso ? 'trending-up' : 'trending-down'}"></i></div>
+            <span class="plan-chip plan-chip--${chipClase}">${chipTexto}</span>
+          </div>
         </header>
 
-        <p class="plan-card__monto plan-card__monto--${tipoClase} font-display">${esIngreso ? '+' : '-'}${P.formatMonto(p.monto_programado)}</p>
-        ${equivalente}
-
-        <dl class="plan-card__datos">
-          <div><dt>Próxima</dt><dd>${proxima}</dd></div>
-          <div><dt>Cuándo</dt><dd class="${est === 'pendiente' ? 'is-pendiente' : ''}">${P.esc(cuando)}</dd></div>
-          <div><dt>Termina</dt><dd>${fin}</dd></div>
-        </dl>
+        <div class="plan-card__cuerpo">
+          <dl class="plan-card__datos">
+            <div><dt>Próxima</dt><dd>${proxima}</dd></div>
+            <div><dt>Cuándo</dt><dd class="${est === 'pendiente' ? 'is-pendiente' : ''}">${P.esc(cuando)}</dd></div>
+            <div><dt>Termina</dt><dd>${fin}</dd></div>
+          </dl>
+          ${equivalente}
+          <p class="plan-card__periodo"><i data-lucide="calendar"></i>Desde ${P.formatFecha(p.fecha_inicio, true)}</p>
+        </div>
 
         <footer class="plan-card__pie">
-          <span class="plan-card__periodo"><i data-lucide="calendar"></i>Desde ${P.formatFecha(p.fecha_inicio, true)}</span>
-          <div class="plan-card__acciones">
-            ${est === 'pendiente' ? `<button type="button" class="plan-icono-btn plan-icono-btn--destacado" data-accion="revisar-pendientes" title="Confirmar movimiento" aria-label="Confirmar movimiento"><i data-lucide="check"></i></button>` : ''}
-            ${est !== 'finalizada' ? `<button type="button" class="plan-icono-btn" data-accion="toggle" data-id="${id}" title="${p.activo ? 'Pausar' : 'Reanudar'}" aria-label="${p.activo ? 'Pausar' : 'Reanudar'}"><i data-lucide="${p.activo ? 'pause' : 'play'}"></i></button>` : ''}
-            <button type="button" class="plan-icono-btn" data-accion="editar" data-id="${id}" title="Editar" aria-label="Editar"><i data-lucide="pencil"></i></button>
-            <button type="button" class="plan-icono-btn plan-icono-btn--peligro" data-accion="eliminar" data-id="${id}" title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
-          </div>
+          ${accionPrincipal}
+          <button type="button" class="plan-card-btn" data-accion="editar" data-id="${id}"><i data-lucide="pencil"></i> Editar</button>
+          <button type="button" class="plan-card-btn plan-card-btn--peligro" data-accion="eliminar" data-id="${id}" title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
         </footer>
       </article>`;
   }
