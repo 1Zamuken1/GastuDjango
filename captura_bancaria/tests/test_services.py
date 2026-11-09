@@ -236,7 +236,7 @@ def test_api_resumen_historial_y_reglas(categorias, usuario):
     c.force_login(usuario)
     r = c.get(reverse('captura_bancaria:api_resumen')).json()
     assert r['buzon']['activo'] is False
-    assert r['pasos'] == {'direccion': False, 'reenvio_gmail': False, 'primera_alerta': False}
+    assert r['pasos'] == {'direccion': False, 'reenvio_gmail': False, 'primera_alerta': False, 'reenvio_automatico': False}
     assert {'nombre': 'Bancolombia', 'lectura': 'EXACTA'} in r['bancos']
 
     c.post(reverse('captura_bancaria:api_buzon'))
@@ -246,7 +246,7 @@ def test_api_resumen_historial_y_reglas(categorias, usuario):
     services.procesar_correo(_raw('retiro.eml'), buzon.direccion)
 
     r = c.get(reverse('captura_bancaria:api_resumen')).json()
-    assert r['pasos'] == {'direccion': True, 'reenvio_gmail': True, 'primera_alerta': True}
+    assert r['pasos'] == {'direccion': True, 'reenvio_gmail': True, 'primera_alerta': True, 'reenvio_automatico': False}
     assert r['estadisticas']['pendientes'] == 2
     assert r['estadisticas']['egresos_pendientes'] == '$245.000'
 

@@ -1067,6 +1067,10 @@
           try {
             var data = JSON.parse(e.data);
             if (data.type === 'notificacion') {
+              // Otras vistas (ej. Captura automatica) pueden reaccionar al aviso en vivo.
+              window.dispatchEvent(new CustomEvent('gastu:notificacion', { detail: data.data || {} }));
+              // La prueba de conexion no es una notificacion guardada: no cuenta en la campana.
+              if (data.data && data.data.tipo === 'PRUEBA_CONEXION') return;
               // Incrementar badge
               var btn = document.getElementById('notif-btn');
               if (btn) {

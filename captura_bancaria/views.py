@@ -172,7 +172,9 @@ def api_resumen(request):
             'direccion': buzon is not None,
             'reenvio_gmail': bool(buzon and (buzon.codigo_reenvio_gmail or buzon.verificado)),
             'primera_alerta': bool(buzon and buzon.verificado),
+            'reenvio_automatico': bool(buzon and buzon.reenvio_automatico_en),
         },
+        'prueba': services.estado_prueba(buzon) if buzon else {'estado': 'SIN_PRUEBA'},
         'estadisticas': {
             'pendientes': pendientes['total'] or 0,
             'egresos_pendientes': services.formatear_monto(pendientes['egresos'] or 0),
@@ -185,6 +187,22 @@ def api_resumen(request):
             for p in PARSERS
         ],
     })
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def api_prueba(request):
+    """
+    Prueba de conexion del buzon.
+
+    POST: genera un codigo nuevo de un solo uso (vigente 30 minutos).
+    GET: estado de la prueba (ESPERANDO, RECIBIDA, VENCIDA o SIN_PRUEBA).
+    """
+    buzon = get_object_or_404(BuzonCaptura, usuario=request.user, activo=True)
+    if request.method == 'POST':
+        services.iniciar_prueba(buzon)
+        buzon.refresh_from_db()
+    return JsonResponse({'ok': True, 'direccion': buzon.direccion, 'prueba': services.estado_prueba(buzon)})
 
 
 @login_required

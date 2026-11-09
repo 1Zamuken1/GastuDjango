@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/buzon/', views.api_buzon, name='api_buzon'),
     path('api/buzon/regenerar/', views.api_buzon_regenerar, name='api_buzon_regenerar'),
     path('api/resumen/', views.api_resumen, name='api_resumen'),
+    path('api/prueba/', views.api_prueba, name='api_prueba'),
     path('api/detectados/', views.api_detectados, name='api_detectados'),
     path('api/reglas/', views.api_reglas, name='api_reglas'),
     path('api/reglas/crear/', views.api_regla_crear, name='api_regla_crear'),

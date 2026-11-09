@@ -10,6 +10,7 @@
 
   var URL = {
     resumen: app.dataset.urlResumen,
+    prueba: app.dataset.urlPrueba,
     buzon: app.dataset.urlBuzon,
     regenerar: app.dataset.urlRegenerar,
     detectados: app.dataset.urlDetectados,
@@ -151,6 +152,15 @@
     $('paso-direccion').classList.toggle('hecho', r.pasos.direccion);
     $('paso-reenvio').classList.toggle('hecho', r.pasos.reenvio_gmail);
     $('paso-alerta').classList.toggle('hecho', r.pasos.primera_alerta);
+    var pruebaOk = r.prueba && r.prueba.estado === 'RECIBIDA';
+    $('paso-prueba').classList.toggle('hecho', pruebaOk);
+    $('paso-prueba-detalle').textContent = pruebaOk
+      ? 'Recibimos tu correo de prueba ' + haceCuanto(r.prueba.recibida_en) + '.'
+      : 'Envíate un correo de prueba.';
+    $('paso-filtro').classList.toggle('hecho', r.pasos.reenvio_automatico);
+    $('paso-filtro-detalle').textContent = r.pasos.reenvio_automatico
+      ? 'Gmail está reenviando las alertas solo.'
+      : 'Se confirma cuando Gmail reenvíe una alerta por su cuenta.';
     $('paso-alerta-detalle').textContent = r.buzon.ultimo_correo_en
       ? 'Último correo ' + haceCuanto(r.buzon.ultimo_correo_en) + '.'
       : 'Esperando un correo de tu banco.';
@@ -424,6 +434,7 @@
     pilaModales = pilaModales.filter(function (m) { return m !== id; });
     if (!pilaModales.length) document.body.style.overflow = '';
     if (id === 'modal-guia') detenerSondeoGuia();
+    if (id === 'modal-prueba') detenerPrueba();
   }
 
   function cerrarModales() {
@@ -858,6 +869,98 @@
   });
   $('guia-copiar-codigo').addEventListener('click', function () {
     copiar(estado.resumen.buzon.codigo_reenvio_gmail, 'Código copiado');
+  });
+
+  // ── Prueba de conexion ─────────────────────────────────────
+  var prueba = { sondeo: null, reloj: null, inicio: null, datos: null };
+
+  function detenerPrueba() {
+    clearInterval(prueba.sondeo);
+    clearInterval(prueba.reloj);
+    prueba.sondeo = null;
+    prueba.reloj = null;
+  }
+
+  function mostrarVistaPrueba(nombre) {
+    ['esperando', 'recibida', 'vencida'].forEach(function (v) {
+      $('prueba-' + v).classList.toggle('cap-oculto', v !== nombre);
+    });
+  }
+
+  function pintarPrueba(p, direccion) {
+    prueba.datos = p;
+    if (p.estado === 'RECIBIDA') {
+      detenerPrueba();
+      mostrarVistaPrueba('recibida');
+      var seg = p.segundos;
+      var tardo = seg < 60 ? seg + ' s' : Math.round(seg / 60) + ' min';
+      $('prueba-detalle').textContent = 'Llegó en ' + tardo + ' desde ' + (p.remitente || 'tu correo') + '. Tu dirección de captura recibe correos.';
+      var filtroOk = estado.resumen && estado.resumen.pasos.reenvio_automatico;
+      var caja = $('prueba-filtro');
+      caja.innerHTML = '';
+      caja.className = 'cap-prueba__filtro' + (filtroOk ? ' cap-prueba__filtro--ok' : '');
+      caja.appendChild(icono(filtroOk ? 'check-circle-2' : 'info'));
+      caja.appendChild(el('span', '', filtroOk
+        ? 'El filtro de Gmail también está funcionando: ya recibimos alertas reenviadas automáticamente.'
+        : 'Falta comprobar el filtro del banco. Se confirmará solo con la primera alerta que Gmail reenvíe por su cuenta.'));
+      iconos();
+      cargarResumen().catch(function () {});
+      return;
+    }
+    if (p.estado === 'VENCIDA') {
+      detenerPrueba();
+      mostrarVistaPrueba('vencida');
+      return;
+    }
+    mostrarVistaPrueba('esperando');
+    $('prueba-codigo').textContent = p.codigo;
+    var partes = (direccion || estado.direccion).split('@');
+    $('prueba-direccion').textContent = '•'.repeat(8) + '@' + (partes[1] || '');
+    // mailto: lo abre la app de correo del propio equipo; no pasa por ningun servidor.
+    $('prueba-mailto').href = 'mailto:' + (direccion || estado.direccion)
+      + '?subject=' + encodeURIComponent(p.codigo)
+      + '&body=' + encodeURIComponent('Prueba de conexión de Gastu.');
+  }
+
+  function consultarPrueba() {
+    return pedir(URL.prueba).then(function (d) { pintarPrueba(d.prueba, d.direccion); });
+  }
+
+  function iniciarPrueba() {
+    detenerPrueba();
+    $('prueba-ayuda').classList.add('cap-oculto');
+    mostrarVistaPrueba('esperando');
+    $('prueba-codigo').textContent = '...';
+    return pedir(URL.prueba, { method: 'POST' }).then(function (d) {
+      pintarPrueba(d.prueba, d.direccion);
+      prueba.inicio = Date.now();
+      prueba.reloj = setInterval(function () {
+        var s = Math.floor((Date.now() - prueba.inicio) / 1000);
+        $('prueba-tiempo').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+        if (s === 120) $('prueba-ayuda').classList.remove('cap-oculto');
+      }, 1000);
+      prueba.sondeo = setInterval(function () { consultarPrueba().catch(function () {}); }, 3000);
+    });
+  }
+
+  function abrirPrueba() {
+    cerrarModal('modal-guia');
+    abrirModal('modal-prueba');
+    iniciarPrueba().catch(function (e) { aviso('error', e.message); });
+  }
+
+  $('btn-probar').addEventListener('click', abrirPrueba);
+  document.querySelectorAll('[data-abrir-prueba]').forEach(function (b) { b.addEventListener('click', abrirPrueba); });
+  $('prueba-reintentar').addEventListener('click', function () {
+    iniciarPrueba().catch(function (e) { aviso('error', e.message); });
+  });
+  $('prueba-copiar-codigo').addEventListener('click', function () {
+    if (prueba.datos && prueba.datos.codigo) copiar(prueba.datos.codigo, 'Código copiado');
+  });
+
+  // Aviso en vivo: si llega la prueba por WebSocket, se consulta de inmediato.
+  window.addEventListener('gastu:notificacion', function (e) {
+    if (e.detail && e.detail.tipo === 'PRUEBA_CONEXION' && prueba.sondeo) consultarPrueba().catch(function () {});
   });
 
   // ── Inicio ─────────────────────────────────────────────────

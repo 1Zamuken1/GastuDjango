@@ -13,6 +13,7 @@
 {% block content %}
 <div id="captura-app" class="captura"
      data-url-resumen="{% url 'captura_bancaria:api_resumen' %}"
+     data-url-prueba="{% url 'captura_bancaria:api_prueba' %}"
      data-url-buzon="{% url 'captura_bancaria:api_buzon' %}"
      data-url-regenerar="{% url 'captura_bancaria:api_buzon_regenerar' %}"
      data-url-detectados="{% url 'captura_bancaria:api_detectados' %}"
@@ -183,9 +184,14 @@
         <ol class="cap-checklist">
           <li id="paso-direccion"><span class="cap-check"></span><div><strong>Dirección creada</strong><span>Tu correo de captura está listo.</span></div></li>
           <li id="paso-reenvio"><span class="cap-check"></span><div><strong>Reenvío en Gmail</strong><span>Agrega tu dirección y confirma el código.</span></div></li>
+          <li id="paso-prueba"><span class="cap-check"></span><div><strong>Dirección probada</strong><span id="paso-prueba-detalle">Envíate un correo de prueba.</span></div></li>
           <li id="paso-alerta"><span class="cap-check"></span><div><strong>Primera alerta recibida</strong><span id="paso-alerta-detalle">Esperando un correo de tu banco.</span></div></li>
+          <li id="paso-filtro"><span class="cap-check"></span><div><strong>Filtro automático</strong><span id="paso-filtro-detalle">Se confirma cuando Gmail reenvíe una alerta por su cuenta.</span></div></li>
         </ol>
-        <button type="button" class="btn-ghost cap-btn-bloque" id="btn-guia"><i data-lucide="book-open"></i> Ver guía paso a paso</button>
+        <div class="cap-config__botones">
+          <button type="button" class="btn-primary cap-btn-bloque" id="btn-probar"><i data-lucide="plug-zap"></i> Probar conexión</button>
+          <button type="button" class="btn-ghost cap-btn-bloque" id="btn-guia"><i data-lucide="book-open"></i> Ver guía paso a paso</button>
+        </div>
       </section>
 
       <section class="app-card cap-bancos">
@@ -375,6 +381,7 @@
       <div class="cap-asistente__texto">
         <h4>Listo, ya estás conectado</h4>
         <p>Con tu próxima compra o transferencia, el movimiento aparecerá en <strong>Por revisar</strong> con su categoría sugerida. También te avisaremos en la campana.</p>
+        <button type="button" class="btn-ghost" data-abrir-prueba><i data-lucide="plug-zap"></i> Probar la conexión ahora</button>
       </div>
     </section>
 
@@ -428,6 +435,86 @@
       <button type="submit" class="btn-primary" id="regla-guardar"><i data-lucide="check"></i> Guardar regla</button>
     </div>
   </form>
+</div>
+<!-- Modal: prueba de conexion -->
+<div id="modal-prueba" class="cap-modal cap-oculto" role="dialog" aria-modal="true" aria-labelledby="modal-prueba-titulo">
+  <div class="cap-modal__caja cap-prueba">
+    <div class="cap-modal__cabecera">
+      <h3 class="font-display" id="modal-prueba-titulo">Prueba de conexión</h3>
+      <button type="button" class="cap-btn-icono" data-cerrar-modal title="Cerrar"><i data-lucide="x"></i></button>
+    </div>
+
+    <!-- Esperando el correo -->
+    <div id="prueba-esperando">
+      <p class="cap-texto-sutil">Envíate un correo desde tu Gmail para comprobar que tu dirección de captura recibe mensajes.</p>
+
+      <ol class="cap-prueba__pasos">
+        <li>
+          <span class="cap-prueba__num">1</span>
+          <div>
+            <strong>Escribe un correo a tu dirección de captura</strong>
+            <div class="cap-prueba__fila">
+              <code id="prueba-direccion"></code>
+              <button type="button" class="cap-direccion__btn" data-copiar-direccion title="Copiar dirección"><i data-lucide="copy"></i></button>
+            </div>
+          </div>
+        </li>
+        <li>
+          <span class="cap-prueba__num">2</span>
+          <div>
+            <strong>Pon este código en el asunto</strong>
+            <div class="cap-prueba__fila">
+              <code class="cap-prueba__codigo font-display" id="prueba-codigo"></code>
+              <button type="button" class="cap-direccion__btn" id="prueba-copiar-codigo" title="Copiar código"><i data-lucide="copy"></i></button>
+            </div>
+          </div>
+        </li>
+        <li>
+          <span class="cap-prueba__num">3</span>
+          <div>
+            <strong>Envíalo y espera aquí</strong>
+            <span class="cap-texto-sutil">Suele tardar menos de un minuto.</span>
+          </div>
+        </li>
+      </ol>
+
+      <a class="btn-primary cap-btn-bloque" id="prueba-mailto" href="#"><i data-lucide="send"></i> Abrir mi correo con el mensaje listo</a>
+
+      <div class="cap-prueba__estado">
+        <span class="cap-spinner"></span>
+        <div>
+          <strong>Esperando tu correo...</strong>
+          <span class="cap-texto-sutil" id="prueba-tiempo">0:00</span>
+        </div>
+      </div>
+
+      <div id="prueba-ayuda" class="cap-prueba__ayuda cap-oculto">
+        <p><i data-lucide="life-buoy"></i> <strong>¿No llega?</strong></p>
+        <ul>
+          <li>Revisa que la dirección esté bien escrita (cópiala con el botón).</li>
+          <li>Comprueba que el código esté en el asunto, tal cual.</li>
+          <li>Busca el correo en tu carpeta Enviados: si no salió, vuelve a intentarlo.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Recibido -->
+    <div id="prueba-recibida" class="cap-prueba__resultado cap-oculto">
+      <div class="cap-prueba__ok"><i data-lucide="check"></i></div>
+      <h4 class="font-display">Conexión verificada</h4>
+      <p id="prueba-detalle" class="cap-texto-sutil"></p>
+      <div class="cap-prueba__filtro" id="prueba-filtro"></div>
+      <button type="button" class="btn-primary" data-cerrar-modal>Listo</button>
+    </div>
+
+    <!-- Vencida -->
+    <div id="prueba-vencida" class="cap-prueba__resultado cap-oculto">
+      <div class="cap-prueba__ok cap-prueba__ok--vencida"><i data-lucide="clock"></i></div>
+      <h4 class="font-display">El código venció</h4>
+      <p class="cap-texto-sutil">No recibimos el correo en 30 minutos. Genera un código nuevo e inténtalo otra vez.</p>
+      <button type="button" class="btn-primary" id="prueba-reintentar"><i data-lucide="refresh-cw"></i> Generar otro código</button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

@@ -39,6 +39,7 @@ class Resultado:
     IGNORADO = 'IGNORADO'
     DUPLICADO = 'DUPLICADO'
     BUZON_NO_EXISTE = 'BUZON_NO_EXISTE'
+    PRUEBA_CONEXION = 'PRUEBA_CONEXION'
 
 
 # ── Lectura del correo ──────────────────────────────────────────
@@ -230,6 +231,13 @@ def procesar_correo(raw: bytes, destinatario: str):
         asunto=asunto, texto=texto,
     )
 
+    if es_prueba_conexion(buzon, asunto, texto):
+        registrar_prueba_recibida(buzon, remitente)
+        correo.estado = CorreoEntrante.Estado.PROCESADO
+        correo.detalle = 'Prueba de conexión'
+        correo.save()
+        return Resultado.PRUEBA_CONEXION, None
+
     if remitente == REMITENTE_VERIFICACION_GMAIL:
         _procesar_verificacion_gmail(buzon, texto)
         correo.estado = CorreoEntrante.Estado.PROCESADO
@@ -263,8 +271,13 @@ def procesar_correo(raw: bytes, destinatario: str):
     correo.estado = CorreoEntrante.Estado.PROCESADO
     correo.save()
 
+    cambios = {}
     if not buzon.verificado:
-        BuzonCaptura.objects.filter(pk=buzon.pk).update(verificado=True)
+        cambios['verificado'] = True
+    if reenviado_por_filtro(msg):
+        cambios['reenvio_automatico_en'] = timezone.now()
+    if cambios:
+        BuzonCaptura.objects.filter(pk=buzon.pk).update(**cambios)
 
     usuario = buzon.usuario
     fecha = _fecha_transaccion(datos.fecha)
@@ -291,6 +304,105 @@ def procesar_correo(raw: bytes, destinatario: str):
 
     notificar_detectado(detectado)
     return Resultado.DETECTADO, detectado
+
+
+# ── Prueba de conexion ──────────────────────────────────────────
+
+PRUEBA_VIGENCIA = timedelta(minutes=30)
+ALFABETO_PRUEBA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+
+
+def iniciar_prueba(buzon):
+    """
+    Genera un codigo de un solo uso para que el usuario se envie un correo de prueba.
+
+    Returns:
+        str: codigo, ej. "GASTU-7K3QXP".
+    """
+    import secrets
+
+    codigo = 'GASTU-' + ''.join(secrets.choice(ALFABETO_PRUEBA) for _ in range(6))
+    buzon.prueba_codigo = codigo
+    buzon.prueba_creada_en = timezone.now()
+    buzon.prueba_recibida_en = None
+    buzon.prueba_remitente = ''
+    buzon.save(update_fields=['prueba_codigo', 'prueba_creada_en', 'prueba_recibida_en', 'prueba_remitente'])
+    return codigo
+
+
+def estado_prueba(buzon):
+    """
+    Estado de la ultima prueba de conexion del buzon.
+
+    Returns:
+        dict con estado (SIN_PRUEBA, ESPERANDO, RECIBIDA, VENCIDA), codigo,
+        segundos que tardo y remitente.
+    """
+    if not buzon.prueba_creada_en:
+        return {'estado': 'SIN_PRUEBA'}
+    datos = {
+        'codigo': buzon.prueba_codigo,
+        'creada_en': buzon.prueba_creada_en.isoformat(),
+    }
+    if buzon.prueba_recibida_en:
+        datos.update({
+            'estado': 'RECIBIDA',
+            'segundos': max(0, int((buzon.prueba_recibida_en - buzon.prueba_creada_en).total_seconds())),
+            'remitente': buzon.prueba_remitente,
+            'recibida_en': buzon.prueba_recibida_en.isoformat(),
+        })
+    elif timezone.now() - buzon.prueba_creada_en > PRUEBA_VIGENCIA:
+        datos['estado'] = 'VENCIDA'
+    else:
+        datos['estado'] = 'ESPERANDO'
+    return datos
+
+
+def es_prueba_conexion(buzon, asunto, texto):
+    """True si el correo trae el codigo de una prueba vigente y aun no recibida."""
+    if not buzon.prueba_codigo or buzon.prueba_recibida_en or not buzon.prueba_creada_en:
+        return False
+    if timezone.now() - buzon.prueba_creada_en > PRUEBA_VIGENCIA:
+        return False
+    codigo = buzon.prueba_codigo.upper()
+    return codigo in asunto.upper() or codigo in texto[:2000].upper()
+
+
+def registrar_prueba_recibida(buzon, remitente):
+    """Marca la prueba como recibida y avisa al usuario por WebSocket."""
+    from notificaciones.dispatcher import NotificationDispatcher
+
+    ahora = timezone.now()
+    BuzonCaptura.objects.filter(pk=buzon.pk).update(prueba_recibida_en=ahora, prueba_remitente=remitente[:255])
+    canal = getattr(NotificationDispatcher, '_executor', None)
+    if canal:
+        canal.submit(_avisar_prueba, buzon.usuario_id)
+
+
+def _avisar_prueba(usuario_id):
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+
+    capa = get_channel_layer()
+    if not capa:
+        return
+    try:
+        async_to_sync(capa.group_send)(f'notificaciones_{usuario_id}', {
+            'type': 'notificacion_mensaje',
+            'data': {'tipo': 'PRUEBA_CONEXION', 'titulo': 'Conexión verificada', 'descripcion': ''},
+        })
+    except Exception as exc:
+        logger.info('No se pudo avisar la prueba de conexión: %s', exc)
+
+
+def reenviado_por_filtro(msg):
+    """
+    True si Gmail reenvio el correo automaticamente (filtro o reenvio global).
+
+    Gmail agrega X-Forwarded-For y X-Forwarded-To al reenviar; un correo enviado
+    a mano o reenviado con "Reenviar" no las trae.
+    """
+    return bool(msg.get('X-Forwarded-For') or msg.get('X-Forwarded-To'))
 
 
 # ── Notificacion ────────────────────────────────────────────────

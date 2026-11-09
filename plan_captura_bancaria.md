@@ -98,7 +98,8 @@ Hecho y probado en local:
 - Guia de Gmail como asistente de 5 pasos con ilustraciones, codigo de Gmail en vivo y botones para copiar.
 - Paleta fucsia propia (antes cian, muy cercana a Programaciones y Perfil).
 - Componente compartido `static/css/gastu_hero.css` para la card principal del hero, aplicado en Ingresos, Egresos, Ahorros, Programaciones, Presupuestos y Captura, con una decoracion distinta por vista.
-- 51 tests en `captura_bancaria/tests/`.
+- Prueba de conexion: codigo de un solo uso (30 min) que el usuario se envia desde su correo; Gastu lo detecta, muestra el remitente y cuanto tardo. El filtro de Gmail se confirma aparte con la cabecera X-Forwarded-For de la primera alerta reenviada automaticamente.
+- 57 tests en `captura_bancaria/tests/`.
 
 Como probar en local:
 1. `python manage.py runserver`

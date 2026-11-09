@@ -44,6 +44,17 @@ class BuzonCaptura(ModeloBase):
     enlace_reenvio_gmail = models.URLField(max_length=500, blank=True, default='')
     ultimo_correo_en = models.DateTimeField(null=True, blank=True)
 
+    # Prueba de conexion: el usuario se envia un correo con este codigo.
+    prueba_codigo = models.CharField(max_length=20, blank=True, default='')
+    prueba_creada_en = models.DateTimeField(null=True, blank=True)
+    prueba_recibida_en = models.DateTimeField(null=True, blank=True)
+    prueba_remitente = models.CharField(max_length=255, blank=True, default='')
+
+    reenvio_automatico_en = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Ultima alerta bancaria que llego reenviada por un filtro (cabecera X-Forwarded-For).',
+    )
+
     class Meta:
         verbose_name = 'Buzon de captura'
         verbose_name_plural = 'Buzones de captura'
