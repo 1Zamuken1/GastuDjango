@@ -164,6 +164,7 @@
 
     {% block extra_head %}{% endblock %}
     <link rel="stylesheet" href="{% static 'historial/css/historial.css' %}" />
+    <link rel="stylesheet" href="{% static 'captura_bancaria/css/panel_pendientes.css' %}" />
 
     {# Restaurar estado del sidebar ANTES de que el browser pinte — evita el flash de animación #}
     <script>
@@ -297,6 +298,19 @@
             </div>
           </div>
 
+          <!-- Tabs: notificaciones / movimientos por revisar (captura bancaria) -->
+          <div class="notif-tabs" role="tablist">
+            <button type="button" class="notif-tab activo" data-notif-tab="todas" role="tab">Notificaciones</button>
+            <button type="button" class="notif-tab" data-notif-tab="pendientes" role="tab">
+              Por revisar <span class="notif-tab__contador" id="notif-tab-pendientes" hidden></span>
+            </button>
+          </div>
+
+          <!-- Movimientos bancarios por revisar -->
+          <div id="notif-pendientes" class="notif-dropdown-lista" hidden
+               data-url-detectados="{% url 'captura_bancaria:api_detectados' %}"
+               data-url-captura="{% url 'captura_bancaria:captura' %}"></div>
+
           <!-- Lista de notificaciones recientes -->
           <div id="notif-lista" class="notif-dropdown-lista">
             <div class="notif-dropdown-loading">
@@ -307,7 +321,7 @@
 
           <!-- Footer: ver todas -->
           <div class="notif-dropdown-footer">
-            <a href="/perfil/?tab=notificaciones" class="notif-dropdown-ver-todas">
+            <a href="/perfil/?tab=notificaciones" class="notif-dropdown-ver-todas" id="notif-footer-link">
               <span>Ver todas las notificaciones</span>
               <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
             </a>
@@ -708,6 +722,15 @@
           <span class="nav-label">Agente Financiero</span>
         </a>
 
+        <a
+          href="{% url 'captura_bancaria:captura' %}"
+          class="nav-item nav-item--captura {% block nav_captura %}{% endblock %}"
+          data-tooltip="Captura automática"
+        >
+          <i data-lucide="mail-check" class="nav-icon"></i>
+          <span class="nav-label">Captura automática</span>
+        </a>
+
         <p class="nav-section-label" style="margin-top: 12px">Cuenta</p>
 
         <a
@@ -765,6 +788,7 @@
     <script src="{% static 'js/gastuapp_layout.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{% static 'js/gastu_alerts.js' %}"></script>
+    <script src="{% static 'captura_bancaria/js/panel_pendientes.js' %}" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
     <script src="{% static 'js/tours.js' %}"></script>
     <script>
@@ -791,6 +815,7 @@
     <script>
     (function() {
       var ICON_MAP_DROPDOWN = {
+        MOVIMIENTO_DETECTADO:     { icon: 'mail-check',     color: '#0891b2', bg: '#ecfeff' },
         DEFICIT:                  { icon: 'trending-down',  color: '#2563eb', bg: '#eff6ff' },
         EGRESO_GRANDE:            { icon: 'arrow-up-right', color: '#e11d48', bg: '#fef2f2' },
         UMBRAL_MENSUAL:           { icon: 'alert-triangle', color: '#d97706', bg: '#fffbeb' },
@@ -844,7 +869,7 @@
         var ic = ICON_MAP_DROPDOWN[n.tipo] || { icon: 'bell', color: '#10b981', bg: '#ecfdf5' };
         var cls = n.leida ? '' : ' unread';
         var dot = n.leida ? '' : '<div class="notif-drop-unread-dot"></div>';
-        return '<div class="notif-drop-item' + cls + '" data-notif-id="' + n.id + '" data-leida="' + (n.leida ? '1' : '0') + '">' +
+        return '<div class="notif-drop-item' + cls + '" data-notif-id="' + n.id + '" data-tipo="' + escHtml(n.tipo || '') + '" data-leida="' + (n.leida ? '1' : '0') + '">' +
           '<div class="notif-drop-icon" style="background:' + ic.bg + ';color:' + ic.color + ';">' +
             '<i data-lucide="' + ic.icon + '"></i>' +
           '</div>' +
@@ -937,9 +962,14 @@
                   }).catch(function() {});
                 }
 
-                // Redirigir al perfil con esa notificación destacada
+                // Los movimientos detectados se revisan en Captura automatica;
+                // el resto, en el perfil con la notificacion destacada.
                 cerrarNotifDropdown();
-                window.location.href = '/perfil/?tab=notificaciones&notif=' + id;
+                if (item.getAttribute('data-tipo') === 'MOVIMIENTO_DETECTADO') {
+                  window.location.href = '/captura/';
+                } else {
+                  window.location.href = '/perfil/?tab=notificaciones&notif=' + id;
+                }
               });
             });
           })

@@ -35,6 +35,7 @@ urlpatterns = [
     # Otros
     path('notificaciones/', include('notificaciones.urls', namespace='notificaciones')),
     path('historial/', include('historial.urls', namespace='historial')),
+    path('captura/', include('captura_bancaria.urls', namespace='captura_bancaria')),
 
     # OAuth
     path('auth/', include('allauth.urls')),

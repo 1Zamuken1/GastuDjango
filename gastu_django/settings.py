@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'presupuesto',
     'categorias',
     'historial',
+    'captura_bancaria',
     'channels',
 ]
 
@@ -248,3 +249,15 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'soporte.gastuapp@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# ──────────────────────────────────────────────────────────────
+# CAPTURA BANCARIA (correo reenviado)
+# ──────────────────────────────────────────────────────────────
+# Dominio de las direcciones de captura (alias@CAPTURA_DOMINIO).
+CAPTURA_DOMINIO = os.getenv('CAPTURA_DOMINIO', 'gastu.duckdns.org')
+# URL interna a la que el servidor SMTP entrega cada correo recibido.
+CAPTURA_INGESTA_URL = os.getenv('CAPTURA_INGESTA_URL', 'http://127.0.0.1:8000/captura/api/ingesta/')
+# Secreto compartido entre el servidor SMTP y Django. Obligatorio en produccion.
+CAPTURA_INGESTA_TOKEN = os.getenv('CAPTURA_INGESTA_TOKEN', 'dev-captura-token' if DEBUG else '')
+# Leer con IA (Groq) las alertas que el parser de reglas no reconoce.
+CAPTURA_USAR_IA = os.getenv('CAPTURA_USAR_IA', 'True') == 'True'

@@ -46,6 +46,9 @@ class Notificacion(models.Model):
         EGRESO_SIN_CONCEPTO   = 'EGRESO_SIN_CONCEPTO',   'Egresos sin categorizar'
         INGRESO_INUSUAL       = 'INGRESO_INUSUAL',       'Ingreso inusualmente alto'
 
+        # — Captura bancaria —
+        MOVIMIENTO_DETECTADO  = 'MOVIMIENTO_DETECTADO',  'Movimiento bancario detectado'
+
     class Modulo(models.TextChoices):
         """Clasificacion de notificaciones por modulo que las genera."""
         INGRESOS      = 'INGRESOS',      'Ingresos'

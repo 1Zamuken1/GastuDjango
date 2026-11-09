@@ -51,3 +51,6 @@ seed_meses_anteriores.py
 # Documentación, diagramas y Excel externos al código
 Docs/
 staticfiles/
+
+# Correos bancarios reales (datos personales) usados para probar la captura
+captura_bancaria/tests/correos_reales/
