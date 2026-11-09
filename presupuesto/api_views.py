@@ -1,12 +1,16 @@
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import status
 
 from .models import Presupuesto
 from .serializer import PresupuestoSerializer
 from .services import (
     desactivar_presupuestos_vencidos,
+    obtener_estado_presupuesto,
     obtener_estados_presupuestos,
+    renovar_presupuesto,
+    RenovacionError,
     _qs_con_total_gastado,
 )
 
@@ -40,18 +44,25 @@ class PresupuestoViewSet(viewsets.ModelViewSet):
         Combina la respuesta del serializer con los campos calculados
         ``gastado``, ``porcentaje`` y ``alerta`` en un solo endpoint.
         """
-        qs = _qs_con_total_gastado(
+        presupuestos = list(_qs_con_total_gastado(
             Presupuesto.objects.filter(usuario=request.user)
-        )
-        serializer = self.get_serializer(qs, many=True)
-        estados = {a['id']: a for a in obtener_estados_presupuestos(request.user, solo_activos=False)}
-        for item in serializer.data:
-            estado = estados.get(item['id'], {})
-            item['gastado'] = estado.get('gastado', 0)
-            item['porcentaje'] = estado.get('porcentaje', 0)
-            item['alerta'] = estado.get('alerta', 'baja')
-            item['disponible'] = estado.get('disponible', 0)
-        return Response({"ok": True, "data": serializer.data})
+        ).order_by('-is_activo', 'fecha_fin'))
+        data = []
+        for presupuesto, item in zip(presupuestos, self.get_serializer(presupuestos, many=True).data):
+            estado = obtener_estado_presupuesto(presupuesto)
+            for campo in ('gastado', 'porcentaje', 'alerta', 'disponible', 'dias_restantes', 'gasto_diario'):
+                item[campo] = estado[campo]
+            data.append(item)
+        return Response({"ok": True, "data": data})
+
+    @action(detail=True, methods=['post'])
+    def renovar(self, request, pk=None):
+        """Crea el presupuesto del período siguiente con la misma categoría y límite."""
+        try:
+            nuevo = renovar_presupuesto(self.get_object())
+        except RenovacionError as error:
+            return Response({"ok": False, "error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"ok": True, "data": self.get_serializer(nuevo).data}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'])
     def verificar_vencidos(self, request):

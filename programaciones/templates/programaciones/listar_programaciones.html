@@ -7,675 +7,237 @@
 {% endblock %}
 
 {% block programaciones_content %}
+<div class="plan-modulo plan-modulo--programaciones" id="programaciones-app">
+
+  <!-- Zona 1: Hero -->
   <div class="stats-hero">
+    <div class="hero-total gastu-hero-card gastu-hero-card--programaciones">
+      <div class="gastu-hero-card__icono"><i data-lucide="calendar-range"></i></div>
+      <p class="hero-total__label">Balance mensual programado</p>
+      <p class="hero-total__value font-display" id="stat-balance">$0</p>
+      <span class="hero-total__badge" id="stat-badge">Sin programaciones activas</span>
+    </div>
 
-  <div class="stat-card stat-card-primary gastu-hero-card gastu-hero-card--programaciones">
-    <div class="gastu-hero-card__icono"><i data-lucide="calendar-range"></i></div>
-    <span class="stat-label">Programaciones activas</span>
-    <p class="stat-number" id="stat-activas">0</p>
-    <span class="stat-badge" id="stat-total-badge">de 0 registradas</span>
-  </div>
-
-  <div class="app-card stats-grid">
-    <div class="stat-item">
-      <span class="stat-item-label">Ingresos prog.</span>
-      <span class="stat-item-value green" id="stat-monto-ingresos">0</span>
-      <span class="stat-item-sub">mensual estimado</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-item-label">Egresos prog.</span>
-      <span class="stat-item-value danger" id="stat-monto-egresos">0</span>
-      <span class="stat-item-sub">mensual estimado</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-item-label">Próxima alerta</span>
-      <span class="stat-item-value amber" id="stat-proxima-nombre">—</span>
-      <span class="stat-item-sub" id="stat-proxima-fecha">—</span>
-    </div>
-  </div>
-
-</div>
-<!-- BOTONES CREAR Y HISTORIAL -->
-  <div class="programaciones-header">
-        <button class="btn-historial" id="btn-historial"
-                data-modulo="PROGRAMACIONES"
-                data-tema-accent="#8b5cf6"
-                data-tema-light="#f5f3ff"
-                data-tema-label="Programaciones"
-                data-tema-icon="calendar-range">
-          <i data-lucide="history"></i> Historial
-        </button>
-        <button onclick="abrirModalCrear()" class="btn-crear"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
-          data-lucide="plus" aria-hidden="true" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Nueva programación</button>
-    </div>
-    <!-- DIV DE LAS TARJETAS DE LAS PROGRAMACIONES  -->
-  <div id="cards-programacion-wrap" class="cards-scroll-wrap">
-    <div id="cards-programacion" class="cards-grid">
-    </div>
-  </div>
-  
-  <!-- MODAL CREAR -->
-  <div id="modal-crear" class="modal-overlay" style="display:none;">
-    <div class="modal-container">
-      <h3 class="modal-title">Nueva Programación</h3>
-      <form id="form-crear" class="modal-form">
-        <div class="form-group">
-          <label>Monto programado</label>
-          <div class="monto-field-wrap">
-            <span class="monto-prefix">$</span>
-            <input type="text" inputmode="numeric" id="monto_programado" class="monto-input" placeholder="0" autocomplete="off">
-            <span class="monto-currency-tag">COP</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Categoría</label>
-          <input type="text" id="categoria_nombre" class="form-input"
-            placeholder="Seleccionar categoría" readonly
-            onclick="abrirModalCategorias('crear')">
-          <input type="hidden" id="categoria">
-        </div>
-        <div class="form-group">
-          <label>Frecuencia</label>
-          <input type="hidden" id="frecuencia">
-          <div style="position:relative;">
-            <button type="button" class="picker-frecuencia-btn" id="crear-frecuencia-btn">
-              <span id="crear-frecuencia-label" class="picker-frecuencia-label">Selecciona la frecuencia</span>
-              <i data-lucide="chevron-down" style="width:16px;height:16px;flex-shrink:0;"></i>
-            </button>
-            <div id="crear-frecuencia-menu" class="frecuencia-menu" style="display:none;">
-              <div class="frecuencia-option" data-target="crear" data-value="DIARIO">Diario</div>
-              <div class="frecuencia-option" data-target="crear" data-value="SEMANAL">Semanal</div>
-              <div class="frecuencia-option" data-target="crear" data-value="QUINCENAL">Quincenal</div>
-              <div class="frecuencia-option" data-target="crear" data-value="MENSUAL">Mensual</div>
-              <div class="frecuencia-option" data-target="crear" data-value="BIMESTRAL">Bimestral</div>
-              <div class="frecuencia-option" data-target="crear" data-value="TRIMESTRAL">Trimestral</div>
-              <div class="frecuencia-option" data-target="crear" data-value="SEMESTRAL">Semestral</div>
-              <div class="frecuencia-option" data-target="crear" data-value="ANUAL">Anual</div>
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Descripción <span class="label-opcional">(opcional)</span></label>
-          <input type="text" id="descripcion" class="form-input" placeholder="Ej: Pago de arriendo" maxlength="100">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Fecha inicio</label>
-            <input type="hidden" id="fecha_inicio">
-          </div>
-          <div class="form-group">
-            <label>Fecha fin <span class="label-opcional">(opcional)</span></label>
-            <input type="hidden" id="fecha_fin">
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="submit" class="btn-guardar">Guardar</button>
-          <button type="button" class="btn-cancelar" onclick="cerrarModal('modal-crear')">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL EDITAR -->
-  <div id="modal-editar" class="modal-overlay" style="display:none;">
-    <div class="modal-container">
-      <h3 class="modal-title">Editar Programación</h3>
-      <form id="form-editar" class="modal-form">
-        <input type="hidden" id="editar-id">
-        <div class="form-group">
-          <label>Monto programado</label>
-          <div class="monto-field-wrap">
-            <span class="monto-prefix">$</span>
-            <input type="text" inputmode="numeric" id="editar-monto_programado" class="monto-input" placeholder="0" autocomplete="off">
-            <span class="monto-currency-tag">COP</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Categoría</label>
-          <input type="text" id="editar-categoria_nombre" class="form-input"
-            placeholder="Seleccionar categoría" readonly
-            onclick="abrirModalCategorias('editar')">
-          <input type="hidden" id="editar-categoria">
-        </div>
-        <div class="form-group">
-          <label>Frecuencia</label>
-          <input type="hidden" id="editar-frecuencia">
-          <div style="position:relative;">
-            <button type="button" class="picker-frecuencia-btn" id="editar-frecuencia-btn">
-              <span id="editar-frecuencia-label" class="picker-frecuencia-label">Selecciona la frecuencia</span>
-              <i data-lucide="chevron-down" style="width:16px;height:16px;flex-shrink:0;"></i>
-            </button>
-            <div id="editar-frecuencia-menu" class="frecuencia-menu" style="display:none;">
-              <div class="frecuencia-option" data-target="editar" data-value="DIARIO">Diario</div>
-              <div class="frecuencia-option" data-target="editar" data-value="SEMANAL">Semanal</div>
-              <div class="frecuencia-option" data-target="editar" data-value="QUINCENAL">Quincenal</div>
-              <div class="frecuencia-option" data-target="editar" data-value="MENSUAL">Mensual</div>
-              <div class="frecuencia-option" data-target="editar" data-value="BIMESTRAL">Bimestral</div>
-              <div class="frecuencia-option" data-target="editar" data-value="TRIMESTRAL">Trimestral</div>
-              <div class="frecuencia-option" data-target="editar" data-value="SEMESTRAL">Semestral</div>
-              <div class="frecuencia-option" data-target="editar" data-value="ANUAL">Anual</div>
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Descripción <span class="label-opcional">(opcional)</span></label>
-          <input type="text" id="editar-descripcion" class="form-input" placeholder="Ej: Pago de arriendo" maxlength="100">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Fecha inicio</label>
-            <input type="hidden" id="editar-fecha_inicio">
-          </div>
-          <div class="form-group">
-            <label>Fecha fin <span class="label-opcional">(opcional)</span></label>
-            <input type="hidden" id="editar-fecha_fin">
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="submit" class="btn-guardar">Guardar cambios</button>
-          <button type="button" class="btn-cancelar" onclick="cerrarModal('modal-editar')">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <!-- MODAL CATEGORIAS -->
-  <div id="modal-categorias" class="modal-overlay" style="display:none;">
-    <div class="modal-container modal-categorias-container">
-      <h3 class="modal-title">Seleccionar categoría</h3>
-      <input type="text" id="buscador-categorias" class="form-input"
-        placeholder="Buscar categoría..." oninput="filtrarCategorias()"
-        style="margin-bottom: 12px;">
-      <div id="picker-grid" class="picker-cat-grid categorias-grid"></div>
-      <div class="modal-actions modal-actions-categoria" style="margin-top:18px;">
-        <button onclick="cerrarModal('modal-categorias')" class="btn-cancelar btn-cancelar-categoria">Cerrar</button>
+    <div class="app-card hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="trending-up"></i> Ingresos</span>
+        <span class="hero-stat__value hero-stat__value--verde font-display" id="stat-ingresos">$0</span>
+        <span class="hero-stat__sub">estimado al mes</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="trending-down"></i> Egresos</span>
+        <span class="hero-stat__value hero-stat__value--rojo font-display" id="stat-egresos">$0</span>
+        <span class="hero-stat__sub">estimado al mes</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="calendar-clock"></i> Próxima</span>
+        <span class="hero-stat__value hero-stat__value--texto font-display" id="stat-proxima">Sin fechas</span>
+        <span class="hero-stat__sub" id="stat-proxima-fecha">—</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="bell-ring"></i> Por confirmar</span>
+        <span class="hero-stat__value hero-stat__value--ambar font-display" id="stat-pendientes">0</span>
+        <span class="hero-stat__sub">movimientos de hoy o antes</span>
       </div>
     </div>
   </div>
 
-  <div id="toast-container"
-       style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
-              display:flex;flex-direction:column;gap:.5rem;"></div>
+  <!-- Aviso de pendientes -->
+  <div class="plan-banner plan-banner--info" id="banner-pendientes" hidden>
+    <div class="plan-banner__icono"><i data-lucide="bell-ring"></i></div>
+    <div class="plan-banner__cuerpo">
+      <p class="plan-banner__titulo" id="banner-pendientes-titulo"></p>
+      <p class="plan-banner__texto">Confírmalos para registrarlos como movimientos, u omítelos si esta vez no aplican.</p>
+    </div>
+    <div class="plan-banner__lado">
+      <button type="button" class="btn-plan btn-plan--chico" data-accion="revisar-pendientes">
+        <i data-lucide="list-checks"></i> Revisar
+      </button>
+    </div>
+  </div>
 
+  <!-- Zona 2: Toolbar -->
+  <div class="app-card toolbar">
+    <div class="toolbar__search">
+      <svg class="toolbar__search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="buscador" placeholder="Buscar por categoría o descripción..." autocomplete="off">
+    </div>
+    <div class="toolbar__filtros">
+      <div class="plan-filtro" role="group" aria-label="Filtrar por tipo" id="filtro-tipo">
+        <button type="button" class="plan-filtro__opcion is-activo" data-filtro="todos">Todos</button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="INGRESO">Ingresos</button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="EGRESO">Egresos</button>
+      </div>
+      <div class="plan-filtro" role="group" aria-label="Filtrar por estado" id="filtro-estado">
+        <button type="button" class="plan-filtro__opcion is-activo" data-filtro="activas">Activas<span class="plan-filtro__conteo" data-conteo="activas"></span></button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="inactivas">Inactivas<span class="plan-filtro__conteo" data-conteo="inactivas"></span></button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="todas">Todas<span class="plan-filtro__conteo" data-conteo="todas"></span></button>
+      </div>
+    </div>
+    <div class="toolbar__actions">
+      <button class="btn-ghost" type="button" id="btn-historial"
+              data-modulo="PROGRAMACIONES"
+              data-tema-accent="#2563eb"
+              data-tema-light="#eff6ff"
+              data-tema-label="Programaciones"
+              data-tema-icon="calendar-range">
+        <i data-lucide="history"></i> Historial
+      </button>
+      <button class="btn-plan" type="button" id="btn-nuevo">
+        <i data-lucide="plus"></i> Nueva programación
+      </button>
+    </div>
+  </div>
+
+  <!-- Zona 3: Grilla -->
+  <div id="cards-programacion-wrap">
+    <div class="plan-grid" id="cards-programacion" aria-live="polite">
+      <div class="plan-esqueleto"></div>
+      <div class="plan-esqueleto"></div>
+      <div class="plan-esqueleto"></div>
+    </div>
+  </div>
+
+  <!-- Modal crear / editar -->
+  <div class="modal-overlay" id="modal-programacion" hidden>
+    <div class="plan-modal" role="dialog" aria-modal="true" aria-labelledby="modal-programacion-titulo">
+      <div class="plan-modal__header">
+        <div class="plan-modal__header-izq">
+          <div class="plan-modal__badge"><i data-lucide="calendar-range"></i></div>
+          <div>
+            <p class="plan-modal__titulo font-display" id="modal-programacion-titulo">Nueva programación</p>
+            <p class="plan-modal__subtitulo">Un ingreso o gasto que se repite y te recordamos registrar</p>
+          </div>
+        </div>
+        <button type="button" class="plan-modal__cerrar" data-cerrar-modal="modal-programacion" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="form-programacion" novalidate>
+        <input type="hidden" id="programacion-id">
+        <div class="plan-modal__cuerpo">
+          <div class="fg">
+            <span class="fg-label">Categoría <span class="fg-label-req">*</span></span>
+            <button type="button" class="picker-trigger" id="programacion-categoria-btn">
+              <span class="picker-trigger-icon"><i data-lucide="tag"></i></span>
+              <span class="picker-trigger-text" id="programacion-categoria-texto">Selecciona una categoría</span>
+              <span class="picker-trigger-tipo" id="programacion-categoria-tipo" hidden></span>
+              <i data-lucide="chevron-right" class="picker-trigger-arrow"></i>
+            </button>
+            <input type="hidden" id="programacion-categoria">
+            <span class="fg-hint">El tipo (ingreso o egreso) se toma de la categoría.</span>
+          </div>
+
+          <div class="fg">
+            <label class="fg-label" for="programacion-monto">Monto <span class="fg-label-req">*</span></label>
+            <div class="monto-field-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="text" inputmode="numeric" id="programacion-monto" class="monto-input" placeholder="0" autocomplete="off">
+              <span class="monto-currency-tag">COP</span>
+            </div>
+          </div>
+
+          <div class="fg">
+            <span class="fg-label">Frecuencia <span class="fg-label-req">*</span></span>
+            <div class="plan-opciones" id="programacion-frecuencias">
+              <button type="button" class="plan-opcion" data-frecuencia="DIARIO">Diario</button>
+              <button type="button" class="plan-opcion" data-frecuencia="SEMANAL">Semanal</button>
+              <button type="button" class="plan-opcion" data-frecuencia="QUINCENAL">Quincenal</button>
+              <button type="button" class="plan-opcion" data-frecuencia="MENSUAL">Mensual</button>
+              <button type="button" class="plan-opcion" data-frecuencia="BIMESTRAL">Bimestral</button>
+              <button type="button" class="plan-opcion" data-frecuencia="TRIMESTRAL">Trimestral</button>
+              <button type="button" class="plan-opcion" data-frecuencia="SEMESTRAL">Semestral</button>
+              <button type="button" class="plan-opcion" data-frecuencia="ANUAL">Anual</button>
+            </div>
+            <input type="hidden" id="programacion-frecuencia">
+            <span class="fg-hint fg-hint--acento" id="programacion-equivalente"></span>
+          </div>
+
+          <div class="fg">
+            <label class="fg-label" for="programacion-descripcion">Descripción <span class="fg-label-opt">(opcional)</span></label>
+            <input type="text" id="programacion-descripcion" class="desc-input" placeholder="Ej: Arriendo, Netflix, Salario" maxlength="100" autocomplete="off">
+            <div class="fg-hint-row">
+              <span class="fg-hint">Así la reconocerás en la lista</span>
+              <span class="fg-counter" id="programacion-descripcion-contador">0/100</span>
+            </div>
+          </div>
+
+          <div class="fg-fila">
+            <div class="fg">
+              <span class="fg-label">Primera fecha <span class="fg-label-req">*</span></span>
+              <input type="hidden" id="programacion-inicio">
+            </div>
+            <div class="fg">
+              <span class="fg-label">Termina <span class="fg-label-opt">(opcional)</span></span>
+              <input type="hidden" id="programacion-fin">
+            </div>
+          </div>
+        </div>
+
+        <div class="plan-modal__pie">
+          <button type="button" class="btn-cancel" data-cerrar-modal="modal-programacion">Cancelar</button>
+          <button type="submit" class="btn-save" id="programacion-guardar">
+            <i data-lucide="check"></i> <span id="programacion-guardar-texto">Crear programación</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal pendientes por confirmar -->
+  <div class="modal-overlay" id="modal-pendientes" hidden>
+    <div class="plan-modal plan-modal--ancho" role="dialog" aria-modal="true" aria-labelledby="modal-pendientes-titulo">
+      <div class="plan-modal__header">
+        <div class="plan-modal__header-izq">
+          <div class="plan-modal__badge"><i data-lucide="bell-ring"></i></div>
+          <div>
+            <p class="plan-modal__titulo font-display" id="modal-pendientes-titulo">Movimientos por confirmar</p>
+            <p class="plan-modal__subtitulo">Se registran con la fecha programada</p>
+          </div>
+        </div>
+        <button type="button" class="plan-modal__cerrar" data-cerrar-modal="modal-pendientes" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="plan-modal__cuerpo plan-modal__cuerpo--flush">
+        <ul class="plan-lista" id="lista-pendientes"></ul>
+      </div>
+      <div class="plan-modal__pie plan-modal__pie--entre">
+        <button type="button" class="btn-cancel" data-cerrar-modal="modal-pendientes">Más tarde</button>
+        <button type="button" class="btn-save" id="btn-registrar-todas">
+          <i data-lucide="check-check"></i> Registrar todas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal selector de categorías -->
+  <div class="modal-overlay" id="modal-categorias" hidden>
+    <div class="plan-modal plan-modal--ancho" role="dialog" aria-modal="true" aria-labelledby="modal-categorias-titulo">
+      <div class="plan-modal__header">
+        <div>
+          <p class="plan-modal__titulo font-display" id="modal-categorias-titulo">Seleccionar categoría</p>
+          <p class="plan-modal__subtitulo">Ingresos y egresos</p>
+        </div>
+        <button type="button" class="plan-modal__cerrar" data-cerrar-modal="modal-categorias" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="plan-picker__buscador">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="buscador-categorias" placeholder="Buscar categoría..." autocomplete="off">
+      </div>
+      <div id="picker-grid" class="plan-picker__grid"></div>
+    </div>
+  </div>
+
+</div>
 {% endblock %}
-
-<style>
-@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-</style>
 
 {% block programaciones_scripts %}
 <script src="{% static 'programaciones/js/datepicker.js' %}"></script>
 <script src="{% static 'js/category-picker.js' %}"></script>
-<script>
-      const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
-
-      let dpInicioCrear = null
-      let dpFinCrear = null
-      let dpInicioEditar = null
-      let dpFinEditar = null
-
-      function mostrarToast(mensaje, tipo = 'success') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        const colores = {
-          success: { bg: '#f0fdf4', border: '#86efac', text: '#15803d', icon: 'check-circle' },
-          error:   { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626', icon: 'alert-circle' },
-          info:    { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8', icon: 'info' },
-        };
-        const c = colores[tipo] || colores.info;
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-          background:${c.bg};border:1px solid ${c.border};color:${c.text};
-          padding:.75rem 1rem;border-radius:.75rem;font-size:.85rem;font-weight:600;
-          display:flex;align-items:center;gap:.5rem;
-          box-shadow:0 4px 16px rgba(0,0,0,.08);
-          animation:fadeIn .2s ease;max-width:320px;
-        `;
-        toast.innerHTML = `<i data-lucide="${c.icon}" style="width:16px;height:16px;flex-shrink:0;"></i>${mensaje}`;
-        container.appendChild(toast);
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        setTimeout(() => toast.remove(), 4000);
-      }
-
-      function abrirModal(id)  { document.getElementById(id).style.display = 'flex' }
-      function cerrarModal(id) { document.getElementById(id).style.display = 'none' }
-
-      document.addEventListener('click', function(e) {
-        ['modal-crear', 'modal-editar', 'modal-categorias'].forEach(id => {
-          const overlay = document.getElementById(id)
-          if (e.target === overlay) cerrarModal(id)
-        })
-      })
-
-      function formatMonto(valor) {
-        return parseFloat(valor).toLocaleString('es-CO', {
-          style: 'currency', currency: 'COP', maximumFractionDigits: 0
-        })
-      }
-
-      function formatFecha(iso) {
-        if (!iso || iso === '—') return '—'
-        const [y, m, d] = iso.split('-')
-        return `${d}/${m}/${y}`
-      }
-
-      function cargarProgramaciones() {
-        fetch('/api/programaciones/', { credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(data => {
-            const contenedor = document.getElementById('cards-programacion')
-            contenedor.innerHTML = ''
-            const lista = Array.isArray(data) ? data : (data.results || [])
-
-            // 1. Stats
-            const activas = lista.filter(p => p.activo)
-            const totalIngresos = activas
-              .filter(p => p.tipo === 'INGRESO')
-              .reduce((s, p) => s + parseFloat(p.monto_programado), 0)
-            const totalEgresos = activas
-              .filter(p => p.tipo === 'EGRESO')
-              .reduce((s, p) => s + parseFloat(p.monto_programado), 0)
-
-            // Próxima alerta: la más cercana a hoy entre las activas
-            const hoy = new Date(); hoy.setHours(0,0,0,0)
-            const conFecha = activas
-              .map(p => ({ ...p, _fecha: new Date(p.proxima_ejecucion || p.fecha_inicio) }))
-              .filter(p => p._fecha >= hoy)
-              .sort((a, b) => a._fecha - b._fecha)
-            const proxima = conFecha[0] || null
-
-            document.getElementById('stat-activas').textContent      = activas.length
-            document.getElementById('stat-total-badge').textContent  = `de ${lista.length} registradas`
-            document.getElementById('stat-monto-ingresos').textContent = formatMonto(totalIngresos)
-            document.getElementById('stat-monto-egresos').textContent  = formatMonto(totalEgresos)
-            document.getElementById('stat-proxima-nombre').textContent = proxima
-              ? (proxima.descripcion || proxima.categoria_nombre || '—') : '—'
-            document.getElementById('stat-proxima-fecha').textContent  = proxima
-              ? formatFecha(proxima.proxima_ejecucion || proxima.fecha_inicio) : '—'
-
-
-            if (lista.length === 0) {
-              contenedor.innerHTML = '<p class="sin-resultados">No tienes programaciones registradas.</p>'
-              return
-            }
-
-            lista.forEach(p => {
-              const esIngreso  = p.tipo === 'INGRESO'
-              const iconName   = esIngreso ? 'trending-up' : 'trending-down'
-              const tipoClass  = esIngreso ? 'tipo-ingreso' : 'tipo-egreso'
-              const activoClass = p.activo ? 'badge-activo' : 'badge-inactivo'
-              const activoLabel = p.activo ? 'Activo' : 'Inactivo'
-              const fechaFin    = p.fecha_fin ? formatFecha(p.fecha_fin) : '—'
-              const proximaRaw  = p.proxima_ejecucion || p.fecha_inicio
-              const proximaLabel = formatFecha(proximaRaw)
-
-              const card = document.createElement('div')
-              
-              card.className = 'app-card card-programacion'
-              card.innerHTML = `
-                <div class="card-header">
-                  <div class="card-header-info">
-                    <div class="card-monto">${formatMonto(p.monto_programado)}</div>
-                    <div class="card-categoria">${p.categoria_nombre || '—'}</div>
-                  </div>
-                  <div class="card-badges">
-                    <div class="card-tipo-icon ${tipoClass}">
-                      <i data-lucide="${iconName}" style="width:16px;height:16px;"></i>
-                    </div>
-                    <span class="card-badge ${activoClass}">${activoLabel}</span>
-                  </div>
-                </div>
-                <div class="card-body">
-                  <div class="card-row">
-                    <span class="card-label">Frecuencia</span>
-                    <span class="card-value">${p.frecuencia}</span>
-                  </div>
-                  <div class="card-row">
-                    <span class="card-label">Descripción</span>
-                    <span class="card-value">${p.descripcion || '—'}</span>
-                  </div>
-                  <div class="card-row">
-                    <span class="card-label">Fecha inicio</span>
-                    <span class="card-value">${formatFecha(p.fecha_inicio)}</span>
-                  </div>
-                  <div class="card-row">
-                    <span class="card-label">Fecha fin</span>
-                    <span class="card-value">${fechaFin}</span>
-                  </div>
-                  <div class="card-row">
-                    <span class="card-label">Próxima alerta</span>
-                    <span class="card-value card-proxima">${proximaLabel}</span>
-                  </div>
-                </div>
-                <div class="card-footer">
-                  <button onclick="toggleProgramacion(${p.id}, ${p.activo})" class="card-btn toggle">
-                    ${p.activo ? 'Desactivar' : 'Activar'}
-                  </button>
-                  <button onclick="editarProgramacion(${p.id})" class="card-btn">Editar</button>
-                  <button onclick="eliminarProgramacion(${p.id})" class="card-btn danger">Eliminar</button>
-                </div>
-              `
-              contenedor.appendChild(card)
-            })
-            if (typeof lucide !== 'undefined') lucide.createIcons()
-          })
-          .catch(() => mostrarToast('No se pudieron cargar las programaciones.', 'error'))
-      }
-
-      function verificarPendientes() {
-        fetch('/api/programaciones/pendientes/', { credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(data => {
-            const pendientes = data.pendientes || []
-            if (pendientes.length === 0) return
-            procesarPendiente(pendientes, 0)
-          })
-          .catch(() => {})
-      }
-
-      function procesarPendiente(lista, indice) {
-        if (indice >= lista.length) { cargarProgramaciones(); return }
-        const p = lista[indice]
-        const tipoLabel = p.tipo === 'INGRESO' ? 'ingreso' : 'egreso'
-        const siguiente = () => procesarPendiente(lista, indice + 1)
-
-        Swal.fire({
-          title: 'Programación disponible',
-          html: `
-            <div style="text-align:left; font-size:14px; line-height:1.9;">
-              <div><strong>Categoría:</strong> ${p.categoria_nombre}</div>
-              <div><strong>Tipo:</strong> ${p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'}</div>
-              <div><strong>Monto:</strong> ${formatMonto(p.monto_programado)}</div>
-              <div><strong>Frecuencia:</strong> ${p.frecuencia}</div>
-              ${p.descripcion ? `<div><strong>Descripción:</strong> ${p.descripcion}</div>` : ''}
-              <div><strong>Fecha programada:</strong> ${formatFecha(p.fecha_pendiente)}</div>
-            </div>
-            <p style="margin-top:12px; font-size:13px; color:#4d7a68;">
-              ¿Deseas registrar este ${tipoLabel} ahora?
-            </p>
-          `,
-          icon: 'info',
-          showCancelButton: true,
-          confirmButtonText: 'Aceptar',
-          cancelButtonText: 'Rechazar',
-          confirmButtonColor: '#1a85f5',
-          cancelButtonColor: '#f05252',
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-        }).then(result => {
-          const accion = result.isConfirmed ? 'aceptar' : 'rechazar'
-          fetch(`/api/programaciones/${p.id}/ejecutar/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-            credentials: 'same-origin',
-            body: JSON.stringify({ accion })
-          })
-            .then(r => r.json())
-            .then(res => {
-              if (!res.ok) { Swal.fire({ icon: 'error', title: 'Error', text: res.error || 'No se pudo procesar.' }); return }
-              if (accion === 'aceptar') {
-                Swal.fire({ icon: 'success', title: 'Registrado', text: `Se registró el ${tipoLabel} de ${formatMonto(p.monto_programado)}.`, timer: 1800, showConfirmButton: false }).then(siguiente)
-              } else { siguiente() }
-            })
-            .catch(() => { Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar.' }); siguiente() })
-        })
-      }
-
-      function toggleProgramacion(id, activo) {
-        fetch(`/api/programaciones/${id}/`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          credentials: 'same-origin',
-          body: JSON.stringify({ activo: !activo })
-        })
-          .then(r => r.json())
-          .then(() => {
-            mostrarToast(activo ? 'Programación desactivada' : 'Programación activada')
-            cargarProgramaciones()
-          })
-          .catch(() => mostrarToast('No se pudo actualizar.', 'error'))
-      }
-
-      let modalContexto = 'crear'
-
-      function abrirModalCategorias(contexto) {
-        modalContexto = contexto
-        
-        if (window.CategoryPicker) {
-          CategoryPicker.init({
-            containerId: 'picker-grid',
-            context: 'programaciones',
-            tipo: '', // Todas
-            onSelect: function(cat) {
-              seleccionarCategoria(cat)
-            }
-          })
-        }
-        
-        document.getElementById('buscador-categorias').value = ''
-        if (window.CategoryPicker) CategoryPicker.filter('')
-        document.getElementById('modal-categorias').style.display = 'flex'
-      }
-
-      function filtrarCategorias() {
-        const q = document.getElementById('buscador-categorias').value
-        if (window.CategoryPicker) CategoryPicker.filter(q)
-      }
-
-      function seleccionarCategoria(cat) {
-        if (modalContexto === 'editar') {
-          document.getElementById('editar-categoria').value        = cat.id
-          document.getElementById('editar-categoria_nombre').value = `${cat.nombre} (${cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
-        } else {
-          document.getElementById('categoria').value        = cat.id
-          document.getElementById('categoria_nombre').value = `${cat.nombre} (${cat.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
-        }
-        cerrarModal('modal-categorias')
-      }
-
-
-      function abrirModalCrear() {
-        document.getElementById('form-crear').reset()
-        document.getElementById('crear-frecuencia-label').textContent = 'Selecciona la frecuencia'
-        document.getElementById('frecuencia').value = ''
-        dpInicioCrear?.limpiar()
-        dpFinCrear?.limpiar()
-        abrirModal('modal-crear')
-      }
-
-      document.getElementById('form-crear').addEventListener('submit', function(e) {
-        e.preventDefault()
-        const categoria = document.getElementById('categoria').value
-        const raw       = document.getElementById('monto_programado').dataset.raw
-        const monto     = raw || '0'
-        const frecuencia   = document.getElementById('frecuencia').value
-        const fecha_inicio = document.getElementById('fecha_inicio').value
-
-        if (!monto || parseFloat(monto) <= 0) return mostrarToast('El monto debe ser mayor a 0.', 'info')
-        if (!categoria) return mostrarToast('Debes seleccionar una categoría.', 'info')
-        if (!frecuencia)   return mostrarToast('Debes seleccionar una frecuencia.', 'info')
-        if (!fecha_inicio) return mostrarToast('Debes indicar la fecha de inicio.', 'info')
-
-        const body = {
-          monto_programado: monto,
-          categoria, frecuencia,
-          descripcion:  document.getElementById('descripcion').value || null,
-          fecha_inicio,
-          fecha_fin:    document.getElementById('fecha_fin').value || null,
-          activo:       true
-        }
-        fetch('/api/programaciones/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          credentials: 'same-origin',
-          body: JSON.stringify(body)
-        })
-          .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(Object.values(d).flat().join('\n')); return d })
-          .then(() => {
-            cerrarModal('modal-crear')
-            mostrarToast('Programación creada')
-            cargarProgramaciones()
-          })
-          .catch(err => mostrarToast(err.message || 'No se pudo guardar.', 'error'))
-      })
-
-      function editarProgramacion(id) {
-      fetch(`/api/programaciones/${id}/`, { credentials: 'same-origin' })
-        .then(r => r.json())
-        .then(p => {
-          document.getElementById('editar-id').value               = p.id
-          const rawMonto = String(parseInt(p.monto_programado, 10))
-          document.getElementById('editar-monto_programado').dataset.raw = rawMonto
-          document.getElementById('editar-monto_programado').value       = rawMonto.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-          document.getElementById('editar-frecuencia').value       = p.frecuencia
-          const freqLabel = document.getElementById('editar-frecuencia-label')
-          if (freqLabel) {
-            const freqMap = { DIARIO:'Diario', SEMANAL:'Semanal', QUINCENAL:'Quincenal', MENSUAL:'Mensual', BIMESTRAL:'Bimestral', TRIMESTRAL:'Trimestral', SEMESTRAL:'Semestral', ANUAL:'Anual' }
-            freqLabel.textContent = freqMap[p.frecuencia] || 'Selecciona la frecuencia'
-          }
-          document.getElementById('editar-descripcion').value      = p.descripcion || ''
-          document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
-          document.getElementById('editar-fecha_fin').value        = p.fecha_fin || ''
-          dpInicioEditar?.setValor(p.fecha_inicio)
-          dpFinEditar?.setValor(p.fecha_fin || '')
-          document.getElementById('editar-categoria').value        = p.categoria
-          document.getElementById('editar-categoria_nombre').value = `${p.categoria_nombre} (${p.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso'})`
-          abrirModal('modal-editar')
-        })
-        .catch(() => mostrarToast('No se pudo cargar la programación.', 'error'))
-    }
-
-      document.getElementById('form-editar').addEventListener('submit', function(e) {
-        e.preventDefault()
-        const id   = document.getElementById('editar-id').value
-        const raw  = document.getElementById('editar-monto_programado').dataset.raw
-        const body = {
-          monto_programado: raw || '0',
-          categoria:        document.getElementById('editar-categoria').value,
-          frecuencia:       document.getElementById('editar-frecuencia').value,
-          descripcion:      document.getElementById('editar-descripcion').value || null,
-          fecha_inicio:     document.getElementById('editar-fecha_inicio').value,
-          fecha_fin:        document.getElementById('editar-fecha_fin').value || null
-        }
-        fetch(`/api/programaciones/${id}/`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          credentials: 'same-origin',
-          body: JSON.stringify(body)
-        })
-          .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(Object.values(d).flat().join('\n')); return d })
-          .then(() => {
-            cerrarModal('modal-editar')
-            mostrarToast('Cambios guardados')
-            cargarProgramaciones()
-          })
-          .catch(err => mostrarToast(err.message || 'No se pudo actualizar.', 'error'))
-      })
-
-      function eliminarProgramacion(id) {
-        Swal.fire({
-          title: '¿Eliminar programación?',
-          text: 'Esta acción no se puede deshacer.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, eliminar',
-          cancelButtonText: 'Cancelar',
-          confirmButtonColor: '#f05252'
-        }).then(result => {
-          if (!result.isConfirmed) return
-          fetch(`/api/programaciones/${id}/`, {
-            method: 'DELETE',
-            headers: { 'X-CSRFToken': csrfToken },
-            credentials: 'same-origin'
-          })
-            .then(r => {
-              if (!r.ok) throw new Error()
-              mostrarToast('Programación eliminada')
-              cargarProgramaciones()
-            })
-            .catch(() => mostrarToast('No se pudo eliminar.', 'error'))
-        })
-      }
-
-      document.addEventListener('DOMContentLoaded', () => {
-        window.CURRENT_MODULE = 'programaciones';
-        if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
-
-        if (typeof MiniDatepicker !== 'undefined') {
-          const inpInicioCrear = document.getElementById('fecha_inicio')
-          const inpFinCrear = document.getElementById('fecha_fin')
-          const inpInicioEditar = document.getElementById('editar-fecha_inicio')
-          const inpFinEditar = document.getElementById('editar-fecha_fin')
-          if (inpInicioCrear) {
-            dpInicioCrear = new MiniDatepicker(inpInicioCrear, {})
-            inpInicioCrear.parentNode.appendChild(dpInicioCrear.wrapper)
-          }
-          if (inpFinCrear) {
-            dpFinCrear = new MiniDatepicker(inpFinCrear, {})
-            inpFinCrear.parentNode.appendChild(dpFinCrear.wrapper)
-          }
-          if (inpInicioEditar) {
-            dpInicioEditar = new MiniDatepicker(inpInicioEditar, {})
-            inpInicioEditar.parentNode.appendChild(dpInicioEditar.wrapper)
-          }
-          if (inpFinEditar) {
-            dpFinEditar = new MiniDatepicker(inpFinEditar, {})
-            inpFinEditar.parentNode.appendChild(dpFinEditar.wrapper)
-          }
-        }
-        function initFormateoMonto(inputId) {
-          const inp = document.getElementById(inputId);
-          if (!inp) return;
-          inp.addEventListener('input', function () {
-            const digitos = this.value.replace(/\D/g, '');
-            if (!digitos) { this.dataset.raw = ''; this.value = ''; return; }
-            const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            this.dataset.raw = digitos;
-            this.value = formatted;
-          });
-        }
-        initFormateoMonto('monto_programado')
-        initFormateoMonto('editar-monto_programado')
-        // Picker de frecuencia
-        function inputId(prefix) { return prefix === 'crear' ? 'frecuencia' : 'editar-frecuencia'; }
-
-        document.querySelectorAll('.picker-frecuencia-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const prefix = btn.id === 'crear-frecuencia-btn' ? 'crear' : 'editar';
-            const menu = document.getElementById(`${prefix}-frecuencia-menu`);
-            document.querySelectorAll('.frecuencia-menu').forEach(m => { if (m !== menu) m.style.display = 'none' });
-            if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-          });
-        });
-
-        document.querySelectorAll('.frecuencia-option').forEach(opt => {
-          opt.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const prefix = opt.dataset.target;
-            const val    = opt.dataset.value;
-            const text   = opt.textContent;
-
-            document.getElementById(inputId(prefix)).value = val;
-            const label = document.getElementById(`${prefix}-frecuencia-label`);
-            if (label) label.textContent = text;
-            const menu = document.getElementById(`${prefix}-frecuencia-menu`);
-            if (menu) menu.style.display = 'none';
-          });
-        });
-
-        document.addEventListener('click', (e) => {
-          document.querySelectorAll('.frecuencia-menu').forEach(menu => {
-            const prefix = menu.id.replace('-frecuencia-menu', '');
-            const btn    = document.getElementById(`${prefix}-frecuencia-btn`);
-            if (btn && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
-              menu.style.display = 'none';
-            }
-          });
-        });
-
-        cargarProgramaciones()
-        verificarPendientes()
-      })
-</script>
+<script src="{% static 'js/gastu_planificacion.js' %}"></script>
+<script src="{% static 'programaciones/js/programaciones.js' %}"></script>
 {% endblock %}

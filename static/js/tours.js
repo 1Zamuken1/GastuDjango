@@ -248,7 +248,7 @@ const toursConfig = {
             }
         },
         {
-            element: '.btn-historial',
+            element: '#btn-historial',
             popover: {
                 title: 'Historial de Ejecuciones',
                 description: 'Verifica qué programaciones se han ejecutado automáticamente y cuándo.',
@@ -256,7 +256,7 @@ const toursConfig = {
             }
         },
         {
-            element: '.btn-crear',
+            element: '#btn-nuevo',
             popover: {
                 title: 'Nueva Programación',
                 description: getGastuHtml(gastuImgs.gastu_rostro, 'Haz clic aquí para agregar un nuevo pago frecuente.'),
@@ -346,7 +346,7 @@ const toursConfig = {
             }
         },
         {
-            element: '.btn-crear',
+            element: '#btn-nuevo',
             popover: {
                 title: 'Nuevo Presupuesto',
                 description: getGastuHtml(gastuImgs.gastu_rostro, 'Crea un límite de gasto mensual para la categoría que quieras controlar.'),

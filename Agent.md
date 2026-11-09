@@ -44,8 +44,8 @@ GastuDjango/
 ├── movimientos/           # Modelo Movimiento — CRUD completo — 100%
 ├── categorias/            # Modelo Categoria — CRUD completo — 100%
 ├── ahorros/               # Metas de ahorro y aportes — 95%
-├── programaciones/        # Movimientos recurrentes y programados — 95%
-├── presupuesto/           # Planificación de presupuestos mensuales — 95%
+├── programaciones/        # Movimientos recurrentes y programados — 100%
+├── presupuesto/           # Planificación de presupuestos mensuales — 100%
 ├── notificaciones/        # Alertas automáticas y centro de notificaciones — 80%
 ├── dashboard/             # Vista principal, estadísticas y navegación — 100%
 ├── agente_financiero/     # Integración con IA (Gemini/Groq) para análisis y chat — 97%
@@ -457,7 +457,7 @@ Campos: `username`, `email`, `telefono`, `password1`, `password2`.
 
 ---
 
-## 13. App presupuesto — estado actual (95%)
+## 13. App presupuesto — estado actual (100%)
 
 ### Modelo: `Presupuesto`
 
@@ -466,82 +466,92 @@ Campos: `username`, `email`, `telefono`, `password1`, `password2`.
 | `limite` | `DecimalField` | Máximo permitido para el período |
 | `fecha_inicio` | `DateField` | Inicio del período presupuestal |
 | `fecha_fin` | `DateField` | Fin del período presupuestal |
-| `isActivo` | `BooleanField` | **camelCase** — pendiente de migrar a `is_activo` |
-| `categoria` | FK → `categorias.Categoria` | Categoría asociada |
+| `is_activo` | `BooleanField` | Solo un presupuesto activo por categoría |
+| `categoria` | FK → `categorias.Categoria` | Solo categorías de egreso |
 | `usuario` | FK → `usuarios.Usuario` | Propietario |
 
 ### API REST vía ViewSet (`/api/presupuestos/`)
 
-CRUD completo con `PresupuestoViewSet` + 3 endpoints custom:
+CRUD completo con `PresupuestoViewSet` + 4 endpoints custom:
 - `GET /api/presupuestos/alertas/` — estado de alerta de presupuestos activos
-- `GET /api/presupuestos/con_estado/` — todos con `gastado`, `porcentaje`, `alerta`
-- `POST /api/presupuestos/verificar_vencidos/` — desactiva expirados
+- `GET /api/presupuestos/con_estado/` — todos (activos e inactivos) con `gastado`, `porcentaje`, `alerta`, `disponible`, `dias_restantes`, `gasto_diario`
+- `POST /api/presupuestos/verificar_vencidos/` — desactiva expirados y retorna cuáles
+- `POST /api/presupuestos/{id}/renovar/` — crea el período siguiente con la misma categoría y límite
+
+### Reglas de validación (`serializer.py`)
+
+- `fecha_fin` no puede ser anterior a hoy; al editar solo se valida si cambia (se puede ajustar un presupuesto que termina hoy).
+- No se puede reactivar un presupuesto vencido: se usa Renovar.
+- La categoría debe ser de egreso.
 
 ### Servicios (`services.py`)
 
-- `_qs_con_total_gastado(qs)` — anota gasto real vía subquery de `Movimiento`
+- `_qs_con_total_gastado(qs)` — anota gasto real (egresos activos) vía subquery de `Movimiento`
 - `desactivar_presupuestos_vencidos(usuario)` — desactiva los que tienen `fecha_fin < hoy`
 - `calcular_alerta_presupuesto(p)` — calcula `(total_gastado, porcentaje)`
 - `nivel_alerta(porcentaje)` — mapea % a nivel: baja, nivel_50..95, critica
-- `obtener_estados_presupuestos(usuario)` — estados completos de presupuestos activos
+- `ritmo_presupuesto(p, disponible)` — días restantes y gasto diario sugerido
+- `obtener_estado_presupuesto(p)` / `obtener_estados_presupuestos(usuario, solo_activos)` — dict de estado completo
+- `periodo_siguiente(inicio, fin, hoy)` — meses completos avanzan por meses; otros períodos, por la misma cantidad de días; si se renueva tarde, salta los períodos ya terminados
+- `renovar_presupuesto(p)` — lanza `RenovacionError` si sigue vigente o si la categoría ya tiene otro activo
+
+### Frontend
+
+- `listar_presupuestos.html` sigue el layout de Ingresos/Egresos: hero (`gastu-hero-card--presupuestos`) + `hero-stats`, avisos en banner (alertas >= 80 % y presupuestos que terminaron, con Renovar), toolbar con búsqueda y filtro Activos/Inactivos/Todos, grilla de cards y un único modal de crear/editar con atajos de período.
+- JS en `presupuesto/static/presupuesto/js/presupuestos.js`; CSS de acento en `presupuesto/static/css/presupuesto.css`.
+- Componentes compartidos con Programaciones: `static/css/gastu_planificacion.css` y `static/js/gastu_planificacion.js` (`window.GastuPlan`: API, escape de HTML, formatos, modales, monto, datepicker). Los avisos usan `GastuAlerts`.
 
 ### Señales
 
 - `post_save` → `auditar_presupuesto_guardar` (CREACION / EDICION en `AccionHistorial`)
 - `post_delete` → `auditar_presupuesto_eliminar` (ELIMINACION)
 
-### Tests: 217 líneas, pytest
-
-### Bugs conocidos
-- **Sin `@login_required`** en `views.py` (la vista web es accesible sin autenticación)
-- **`isActivo`** en camelCase — migrar a `is_activo`
-- **`con_estado`** no calcula gastado para presupuestos inactivos (siempre 0)
-- **Admin vacío** — modelo no registrado en `admin.py`
+### Tests: `tests.py` + `test_mejoras.py` (pytest)
 
 ---
 
-## 14. App programaciones — estado actual (95%)
+## 14. App programaciones — estado actual (100%)
 
 ### Modelo: `Programacion`
 
 | Campo | Tipo | Descripción |
 |---|---|---|
 | `monto_programado` | `DecimalField` | Monto a ejecutar |
-| `tipo` | `CharField` | `INGRESO` / `EGRESO` (copiado desde `categoria.tipo`) |
+| `tipo` | `CharField` | `INGRESO` / `EGRESO`, se sincroniza con `categoria.tipo` al crear y al editar |
 | `descripcion` | `CharField` | Opcional, 100 caracteres |
-| `fecha_inicio` | `DateField` | Inicio de la recurrencia |
+| `fecha_inicio` | `DateField` | Primera ocurrencia de la serie |
 | `fecha_fin` | `DateField` | Fin de la recurrencia (opcional) |
 | `frecuencia` | `CharField` | DIARIO, SEMANAL, QUINCENAL, MENSUAL, BIMESTRAL, TRIMESTRAL, SEMESTRAL, ANUAL |
-| `proxima_ejecucion` | `DateField` | Próxima fecha de ejecución calculada |
+| `proxima_ejecucion` | `DateField` | Próxima ocurrencia por confirmar (solo lectura en la API) |
 | `activo` | `BooleanField` | Se desactiva automáticamente al vencer |
 | `categoria` | FK → `categorias.Categoria` | Categoría asociada |
 | `usuario` | FK → `usuarios.Usuario` | Propietario |
 
-### API REST vía ViewSet (`/api/programaciones/`)
+### API REST (`/api/programaciones/`)
 
-CRUD completo con `ProgramacionViewSet` + 2 endpoints custom:
-- `GET /api/programaciones/pendientes/` — lista programaciones listas para ejecutar hoy
+CRUD con `ProgramacionViewSet` (expone además `frecuencia_label` y `monto_mensual`) + 2 endpoints:
+- `GET /api/programaciones/pendientes/` — ocurrencias de hoy o antes, ordenadas por fecha
 - `POST /api/programaciones/{id}/ejecutar/` — acepta o rechaza (`{"accion": "aceptar"|"rechazar"}`)
 
-### Servicios (`services.py`)
+### Reglas de calendario (`services.py`)
 
-- `calcular_proxima_fecha(prog, hoy)` — próxima ejecución usando `relativedelta` según frecuencia
-- `desactivar_si_vencida(prog, hoy)` — desactiva si `fecha_fin` ya pasó
-- `obtener_pendientes(usuario)` — recolecta programaciones listas para ejecutar
-- `ejecutar_programacion(prog, accion, request)` — crea `Movimiento` y avanza `proxima_ejecucion`
-- `DELTA_MAP` — mapeo frecuencia → `relativedelta`
+- Las ocurrencias se calculan siempre desde `fecha_inicio` (`ocurrencia(inicio, frecuencia, n)`), sin corrimiento de fin de mes.
+- Al crear con fecha en el pasado solo queda pendiente el período en curso (`proxima_inicial`).
+- Al editar `fecha_inicio` o `frecuencia` se recalcula la próxima desde hoy; al reactivar se omiten los períodos pausados (`recalcular_tras_edicion`).
+- Al aceptar, el `Movimiento` se registra con la fecha programada y el saldo se valida con `dashboard.services.obtener_disponible`. El historial del movimiento lo crea la señal de `movimientos`.
+- `monto_mensual_estimado` / `FACTOR_MENSUAL` normalizan cada frecuencia a su equivalente mensual.
 
 ### Señales
 
 - `post_save` → `auditar_programacion_guardar`
 - `post_delete` → `auditar_programacion_eliminar`
 
-### Templates: SPA completa
+### Frontend
 
-- `base_programacion.html` → extiende `base_app.html`
-- `listar_programaciones.html` — stats hero, grid de cards, modales CRUD, verificación de pendientes al cargar
+- `listar_programaciones.html` sigue el layout de Ingresos/Egresos: hero con balance mensual programado, banner de pendientes, toolbar con búsqueda y filtros por tipo y estado, grilla de cards, modal de crear/editar con frecuencia en pastillas y modal único de pendientes (registrar, omitir o registrar todas).
+- JS en `programaciones/static/programaciones/js/programaciones.js`; CSS de acento en `programaciones/static/css/programaciones.css`.
 
-### Tests: 20 tests pytest (servicios, serializers, API)
+### Tests: `tests.py` + `test_mejoras.py` (pytest)
 
 ---
 
@@ -633,10 +643,6 @@ Todos los modelos nuevos deben heredar de `ModeloBase`. `ahorros/models.py`, `pr
 | Archivo | Bug | Estado |
 |---|---|---|
 | `notificaciones/services.py` | Código duplicado y comentado al final del archivo | Limpieza pendiente |
-| `presupuesto/views.py` | Falta `@login_required` | Pendiente |
-| `presupuesto/models.py` | Campo `isActivo` en camelCase | Pendiente |
-| `presupuesto/api_views.py` | `con_estado` no calcula gastado para inactivos | Pendiente |
-| `presupuesto/admin.py` | Modelo no registrado en admin | Pendiente |
 | `usuarios/views.py` | Rate limiting en login no implementado | Pendiente |
 | `movimientos/views_api.py` | Decidir approach de seguridad para el Agente (CSRF vs Token) | En discusión |
 
