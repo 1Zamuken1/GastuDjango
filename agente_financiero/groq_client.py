@@ -1,10 +1,11 @@
 """Cliente HTTP para GroqCloud con soporte de tool calling."""
 
+import os
 import json
 import requests
 from django.conf import settings
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = getattr(settings, "GROQ_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"))
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 

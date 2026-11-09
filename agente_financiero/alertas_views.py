@@ -6,8 +6,8 @@ import logging
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 
 from .alertas_service import generar_alertas
 from .models import AlertaDiaria
@@ -15,14 +15,12 @@ from .models import AlertaDiaria
 logger = logging.getLogger(__name__)
 
 
-@method_decorator(csrf_exempt, name="dispatch")
+@method_decorator(login_required, name="dispatch")
 class AlertasView(View):
     """API de alertas financieras diarias (GET para obtener, POST para marcar como vistas)."""
 
     def get(self, request, *args, **kwargs):
         """Retorna alertas vigentes de BD (si <6 h) o genera nuevas con Groq."""
-        if not request.user.is_authenticated:
-            return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
 
         if not AlertaDiaria.debe_mostrar(request.user):
             ultima = AlertaDiaria.objects.filter(usuario=request.user).first()
@@ -50,9 +48,6 @@ class AlertasView(View):
 
     def post(self, request, *args, **kwargs):
         """Marca una alerta como vista. Body: {"registro_id": 123}."""
-        if not request.user.is_authenticated:
-            return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
-
         try:
             body = json.loads(request.body)
             registro_id = body.get("registro_id")
