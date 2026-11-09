@@ -173,9 +173,9 @@
   }
 
   /* ── Datepicker ──────────────────────────────────────────── */
-  function crearDatepicker(input, onChange) {
+  function crearDatepicker(input, onChange, opciones = {}) {
     if (!input || typeof MiniDatepicker === 'undefined') return null;
-    const dp = new MiniDatepicker(input, { onChange });
+    const dp = new MiniDatepicker(input, { ...opciones, onChange });
     input.parentNode.appendChild(dp.wrapper);
     return dp;
   }

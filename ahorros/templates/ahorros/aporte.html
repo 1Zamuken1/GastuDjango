@@ -1,266 +1,155 @@
-<!-- CONTENIDO PARCIAL PARA INYECCION EN MODAL -->
-<div class="modal detalle-modal">
-
-  <!-- Cabecera -->
-  <div class="modal__header">
-    <div>
-      <h2 class="modal__title font-display">Detalle de Meta</h2>
-      <span class="modal__subtitle">
-        {{ ahorro.categoria.nombre|default:"Meta de Ahorro" }}
-        {% if ahorro.descripcion %} — {{ ahorro.descripcion }}{% endif %}
-      </span>
+{# Detalle de una meta: se inyecta en #modal-overlay-aporte desde ahorros.js #}
+<div class="plan-modal plan-modal--ancho ahorro-detalle ahorro-detalle--{{ resumen.estado }}" role="dialog" aria-modal="true" aria-labelledby="detalle-titulo">
+  <div class="plan-modal__header">
+    <div class="plan-modal__header-izq">
+      <div class="plan-modal__badge"><i data-lucide="piggy-bank"></i></div>
+      <div>
+        <p class="plan-modal__titulo font-display" id="detalle-titulo">{{ ahorro.categoria.nombre|default:"Meta de ahorro" }}</p>
+        <p class="plan-modal__subtitulo">{{ ahorro.descripcion|default:"Sin descripción" }}</p>
+      </div>
     </div>
-    <button type="button" class="modal__close btn-cerrar-modal-aporte" aria-label="Cerrar">
+    <button type="button" class="plan-modal__cerrar" data-cerrar-detalle aria-label="Cerrar">
       <i data-lucide="x"></i>
     </button>
   </div>
 
-  <!-- Cuerpo scrollable -->
-  <div class="detalle-modal__body">
+  <div class="plan-modal__cuerpo">
+    <div class="ahorro-alerta" id="detalle-error" role="alert" hidden>
+      <i data-lucide="alert-triangle"></i>
+      <span id="detalle-error-texto"></span>
+    </div>
 
-    <!-- Alerta de error (siempre presente, oculta por defecto) -->
-    {% if not error %}
-    <div class="form-ahorros__errors" id="modal-error-container" style="margin:1.25rem 1.25rem 0;" hidden>
-      {% else %}
-      <div class="form-ahorros__errors" id="modal-error-container" style="margin:1.25rem 1.25rem 0;">
-        {% endif %}
-        <i data-lucide="alert-triangle" style="color:#ef4444;width:18px;height:18px;flex-shrink:0;margin-top:1px;"></i>
-        <div class="form-ahorros__errors-text" id="modal-error-message">{% if error %}{{ error }}{% endif %}</div>
+    {# Avance de la meta #}
+    <section class="ahorro-avance">
+      <div class="ahorro-avance__fila">
+        <div>
+          <p class="ahorro-avance__cifra font-display">${{ ahorro.total_acumulado|floatformat:"0g" }}</p>
+          <p class="ahorro-avance__de">de ${{ ahorro.monto_meta|floatformat:"0g" }} ahorrados</p>
+        </div>
+        <span class="plan-chip plan-chip--{{ resumen.estado }}">{{ resumen.estado_label }}</span>
       </div>
-
-      <div class="detalle-modal__content">
-        {% if ahorro.estado == 'COMPLETADO' %}
-        <div class="banner-completado" style="background:#fefce8; border:1px solid #fef08a; padding:1rem; border-radius:0.5rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.75rem;">
-          <div style="background:#fef08a; padding:0.5rem; border-radius:50%; color:#ca8a04; flex-shrink:0;">
-            <i data-lucide="trophy" style="width:20px;height:20px;"></i>
-          </div>
-          <div>
-            <h4 style="color:#854d0e; font-weight:600; margin:0 0 0.25rem 0; font-size:0.95rem;">¡Meta completada!</h4>
-            <p style="color:#a16207; font-size:0.8rem; margin:0;">Has alcanzado el objetivo de esta meta de ahorro.</p>
-          </div>
-        </div>
+      <div class="plan-progreso">
+        <div class="plan-progreso__barra"><div class="plan-progreso__relleno" data-pct="{{ resumen.porcentaje }}"></div></div>
+      </div>
+      <dl class="plan-card__datos plan-card__datos--4">
+        <div><dt>Falta</dt><dd>${{ resumen.restante|floatformat:"0g" }}</dd></div>
+        <div><dt>Avance</dt><dd>{{ resumen.porcentaje }}%</dd></div>
+        <div><dt>Cuotas</dt><dd>{{ resumen.pagadas }}/{{ resumen.total_cuotas }}</dd></div>
+        <div><dt>Frecuencia</dt><dd>{{ ahorro.get_frecuencia_display }}</dd></div>
+      </dl>
+      <p class="ahorro-avance__nota">
+        <i data-lucide="flag"></i>
+        {% if resumen.estado == 'completada' %}
+          Meta lograda. Ahorraste ${{ ahorro.monto_meta|floatformat:"0g" }}.
+        {% elif resumen.proyeccion %}
+          A tu ritmo actual la completas el {{ resumen.proyeccion|date:"j b Y" }}{% if resumen.proyeccion_tarde %}, después de tu fecha meta ({{ ahorro.fecha_meta|date:"j b Y" }}){% else %}. Fecha meta: {{ ahorro.fecha_meta|date:"j b Y" }}{% endif %}.
+        {% else %}
+          Fecha meta: {{ ahorro.fecha_meta|date:"j b Y" }}.
         {% endif %}
+        {% if resumen.perdidas %}<b class="ahorro-avance__aviso">{{ resumen.perdidas }} cuota{{ resumen.perdidas|pluralize }} vencida{{ resumen.perdidas|pluralize }}.</b>{% endif %}
+      </p>
+    </section>
 
-        <!-- Especificaciones -->
-        <h3 class="field-label" style="margin-bottom:1rem;font-size:.7rem;">Especificaciones</h3>
-
-        <div class="specs-grid">
-          <div>
-            <p class="field-label specs-grid__label">Concepto</p>
-            <p class="specs-grid__value">{{ ahorro.categoria.nombre|default:"Otro" }}</p>
-          </div>
-          <div>
-            <p class="field-label specs-grid__label">Descripcion</p>
-            <p class="specs-grid__value">{{ ahorro.descripcion|default:"Sin descripcion" }}</p>
-          </div>
-          <div>
-            <p class="field-label specs-grid__label">Monto Meta</p>
-            <p class="specs-grid__value">$ {{ ahorro.monto_meta|floatformat:"2g" }}</p>
-          </div>
-          <div>
-            <p class="field-label specs-grid__label">Total Acumulado</p>
-            <p class="specs-grid__value specs-grid__value--accent">$ {{ ahorro.total_acumulado|floatformat:"2g" }}</p>
-          </div>
-          <div>
-            <p class="field-label specs-grid__label">Frecuencia</p>
-            <p class="specs-grid__value" style="text-transform:uppercase;">{{ ahorro.frecuencia }}</p>
-          </div>
-          <div>
-            <p class="field-label specs-grid__label">Fecha Meta</p>
-            <p class="specs-grid__value">{{ ahorro.fecha_meta|date:"d/m/Y" }}</p>
-          </div>
-          <div>
-            <p class="field-label specs-grid__label">Cuotas totales</p>
-            <p class="specs-grid__value">{{ ahorro.cantidad_cuotas }}</p>
-          </div>
-          <div>
-            <p class="field-label specs-grid__label">Estado</p>
-            <span class="badge-estado-meta
-            {% if ahorro.estado == 'ACTIVO' %}badge-estado-meta--activo
-            {% elif ahorro.estado == 'COMPLETADO' %}badge-estado-meta--completado
-            {% elif ahorro.estado == 'ABANDONADO' %}badge-estado-meta--abandonado
-            {% else %}badge-estado-meta--sin-iniciar{% endif %}">
-              {% if ahorro.estado == 'SIN_INICIAR' %}SIN INICIAR{% else %}{{ ahorro.estado }}{% endif %}
-            </span>
-          </div>
-        </div>
-
-        <!-- Aporte Extraordinario -->
-        {% if ahorro.estado != 'COMPLETADO' %}
-        <div class="aporte-extraordinario"
-          style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
-          <h3 class="field-label" style="margin-bottom:.5rem; font-size:.85rem; color: #3b82f6;">
-            <i data-lucide="zap" style="width:14px;height:14px;vertical-align:-2px;margin-right:.25rem;"></i>Aporte
-            Libre / Extraordinario
-          </h3>
-          <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.75rem;">Adelanta capital a tu ahorro sin
-            restricción de fechas.</p>
-          <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
-            class="form-aporte-modal form-aporte-inline">
+    {% if resumen.estado != 'completada' %}
+    <div class="ahorro-acciones">
+      {# Proxima cuota #}
+      <section class="ahorro-bloque ahorro-bloque--principal">
+        <p class="ahorro-bloque__titulo"><i data-lucide="calendar-check"></i> Próxima cuota</p>
+        {% if resumen.proxima and resumen.proxima_disponible and ahorro.categoria.activo %}
+          <p class="ahorro-bloque__texto">
+            Cuota {{ resumen.proxima.numero_real }} de {{ total_regulares }}, vence el {{ resumen.proxima.fecha_limite|date:"j b Y" }}
+          </p>
+          <form class="ahorro-form form-aporte-modal" method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}">
             {% csrf_token %}
-            <input type="hidden" name="extraordinario" value="true">
-            <div class="form-aporte-inline__wrapper" style="width: 100%; max-width: 250px;">
-              <span class="form-aporte-inline__prefix">$</span>
-              <input type="text" inputmode="numeric" name="aporte" id="aporte-extra-monto" data-raw=""
-                placeholder="Ej. 100.000" required class="form-aporte-inline__input" style="width: 100%;"
-                autocomplete="off">
+            <input type="hidden" name="aporte_id" value="{{ resumen.proxima.id }}">
+            <div class="monto-field-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="text" inputmode="numeric" name="aporte" class="monto-input" data-monto
+                     data-inicial="{{ resumen.proxima.aporte_asignado|floatformat:0 }}" autocomplete="off" aria-label="Monto de la cuota">
             </div>
-            <button type="submit" class="form-aporte-inline__submit" style="background: #3b82f6; color: white;"
-              title="Registrar aporte extraordinario">
-              <i data-lucide="arrow-right" style="width:15px;height:15px;stroke-width:2;"></i>
-            </button>
+            <button type="submit" class="btn-save"><i data-lucide="check"></i> Registrar</button>
           </form>
-        </div>
+        {% elif resumen.proxima and not ahorro.categoria.activo %}
+          <p class="ahorro-bloque__texto">La categoría de esta meta está inactiva y no permite aportes.</p>
+        {% elif resumen.proxima %}
+          <p class="ahorro-bloque__texto">
+            La siguiente cuota (${{ resumen.proxima.aporte_asignado|floatformat:"0g" }}) se habilita el {{ resumen.proxima_desde|date:"j b Y" }} y vence el {{ resumen.proxima.fecha_limite|date:"j b Y" }}.
+          </p>
+        {% else %}
+          <p class="ahorro-bloque__texto">No quedan cuotas programadas. Usa un aporte extraordinario para completar la meta.</p>
         {% endif %}
+      </section>
 
-        <!-- Resumen Cuotas -->
-        <div class="cuotas-resumen">
-          <p class="cuotas-resumen__text">
-            <i data-lucide="bar-chart-2" style="width:14px;height:14px;vertical-align:-2px;margin-right:.3rem;"></i>
-            {{ pagadas }} pagadas &nbsp;&middot;&nbsp; {{ perdidas }} perdidas &nbsp;&middot;&nbsp; {{ pendientes }}
-            pendientes
-          </p>
-          {% if cuotas_ocultas > 0 %}
-          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem;">
-            * Mostrando vista rápida de {{ cuotas|length }} cuotas. ({{ cuotas_ocultas }} ocultas).
-          </p>
-          {% endif %}
-        </div>
-
-        <!-- Tabla de Cuotas -->
-        <h3 class="field-label" style="margin-bottom:.875rem;">Cuotas Detalladas</h3>
-
-        <div style="overflow-x:auto;">
-          <table class="cuotas-table">
-            <thead>
-              <tr>
-                <th>Cuota</th>
-                <th class="cuotas-table__monto">Asignado</th>
-                <th class="cuotas-table th--aporte">Aportado</th>
-                <th>Tiempo Restante</th>
-                <th>Limite</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for cuota in cuotas %}
-              <tr {% if cuota.estado_ap == 'PERDIDO' %}class="cuota--perdido"{% endif %}>
-                <td class="cuotas-table__num">
-                  {% if cuota.es_extraordinario %}
-                  <span style="color:#3b82f6; font-size:0.75rem; font-weight:600;">
-                    <i data-lucide="zap" style="width:12px;height:12px;vertical-align:-1px;"></i>
-                    Aporte extra
-                  </span>
-                  {% else %}
-                  {{ cuota.numero_real|stringformat:"02d" }}/{{ cuotas_totales|stringformat:"02d" }}
-                  {% endif %}
-                </td>
-                <td class="cuotas-table__monto">
-                  {% if cuota.es_extraordinario %}
-                  <span style="color:#94a3b8;"> </span>
-                  {% else %}
-                  ${{ cuota.aporte_asignado|floatformat:"2g" }}
-                  {% endif %}
-                </td>
-                <td>
-                  {% if cuota.estado_ap == 'PENDIENTE' and cuota.is_disponible_pago %}
-                  {% if ahorro.categoria.activo %}
-                  <form method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
-                    class="form-aporte-modal form-aporte-inline">
-                    {% csrf_token %}
-                    <input type="hidden" name="aporte_id" value="{{ cuota.id }}">
-                    <div class="form-aporte-inline__wrapper">
-                      <span class="form-aporte-inline__prefix">$</span>
-                      <input type="number" name="aporte" step="0.01" min="0.01"
-                        value="{{ cuota.aporte_asignado|stringformat:'.2f' }}" required
-                        class="form-aporte-inline__input">
-                    </div>
-                    <button type="submit" class="form-aporte-inline__submit" title="Registrar aporte">
-                      <i data-lucide="check" style="width:15px;height:15px;stroke-width:3;"></i>
-                    </button>
-                  </form>
-                  {% else %}
-                  <div class="form-aporte-inline tooltip-wrapper"
-                    style="display:flex; align-items:center; gap:0.35rem; opacity: 0.5;">
-                    <div class="form-aporte-inline__wrapper" style="cursor: not-allowed; background:#f8fafc;">
-                      <span class="form-aporte-inline__prefix" style="color:#94a3b8;">$</span>
-                      <input type="number" disabled value="{{ cuota.aporte_asignado|stringformat:'.2f' }}"
-                        class="form-aporte-inline__input"
-                        style="cursor: not-allowed; background:transparent; color:#94a3b8;">
-                    </div>
-                    <button type="button" disabled class="form-aporte-inline__submit"
-                      style="background:#e2e8f0; cursor:not-allowed; box-shadow:none;">
-                      <i data-lucide="lock" style="width:15px;height:15px;stroke-width:3;color:#94a3b8;"></i>
-                    </button>
-                    <span class="tooltip-custom" style="white-space:normal; max-width:180px;">Categoría inactiva. No
-                      permite aportes.</span>
-                  </div>
-                  {% endif %}
-                  {% elif cuota.estado_ap == 'PENDIENTE' %}
-                  <div class="form-aporte-inline" style="display:flex; align-items:center; gap:0.35rem; opacity: 0.5;">
-                    <div class="form-aporte-inline__wrapper" style="cursor: not-allowed; background:#f8fafc;">
-                      <span class="form-aporte-inline__prefix" style="color:#94a3b8;">$</span>
-                      <input type="number" disabled value="{{ cuota.aporte_asignado|stringformat:'.2f' }}"
-                        class="form-aporte-inline__input"
-                        style="cursor: not-allowed; background:transparent; color:#94a3b8;">
-                    </div>
-                    <button type="button" disabled class="form-aporte-inline__submit" title="No disponible aún"
-                      style="background:#e2e8f0; cursor:not-allowed; box-shadow:none;">
-                      <i data-lucide="lock" style="width:15px;height:15px;stroke-width:3;color:#94a3b8;"></i>
-                    </button>
-                  </div>
-                  {% elif cuota.estado_ap == 'PERDIDO' %}
-                  <div class="form-aporte-inline tooltip-wrapper" style="display:flex; align-items:center; justify-content:center; gap:0.35rem; width:fit-content;">
-                    <div style="background:#fee2e2; color:#ef4444; width:34px; height:34px; border-radius:0.35rem; display:flex; align-items:center; justify-content:center; border:1px solid #fca5a5;">
-                      <i data-lucide="x-circle" style="width:18px;height:18px;"></i>
-                    </div>
-                    <span class="tooltip-custom" style="white-space:nowrap; max-width:none;">Cuota vencida</span>
-                  </div>
-                  {% else %}
-                  <span class="cuotas-table__aportado">
-                    ${% if cuota.aporte %}{{ cuota.aporte|floatformat:"2g" }}{% else %}0.00{% endif %}
-                  </span>
-                  {% endif %}
-                </td>
-                <td class="cuotas-table__tiempo" data-fecha-limite="{{ cuota.fecha_limite|date:'Y-m-d' }}"
-                  data-estado="{{ cuota.estado_ap }}" style="font-size:0.85rem;color:#64748b;font-weight:500;">
-                  --
-                </td>
-                <td class="cuotas-table__fecha">
-                  {% if cuota.es_extraordinario %}
-                  <span style="color:#94a3b8;"> </span>
-                  {% else %}
-                  {{ cuota.fecha_limite|date:"d/m/Y" }}
-                  {% endif %}
-                </td>
-                <td>
-                  {% if cuota.estado_ap == 'APORTADO' %}
-                  <span class="badge-estado badge-estado--aportado">APORTADO</span>
-                  {% elif cuota.estado_ap == 'PENDIENTE' %}
-                  <span class="badge-estado badge-estado--pendiente">PENDIENTE</span>
-                  {% else %}
-                  <span class="badge-estado badge-estado--perdido">{{ cuota.estado_ap }}</span>
-                  {% endif %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr class="cuotas-table__empty">
-                <td colspan="5">
-                  No se han generado cuotas para esta meta.
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-      </div>
+      {# Aporte extraordinario #}
+      {% if ahorro.categoria.activo %}
+      <section class="ahorro-bloque">
+        <p class="ahorro-bloque__titulo"><i data-lucide="zap"></i> Aporte extraordinario</p>
+        <p class="ahorro-bloque__texto">Adelanta dinero cuando quieras. Las cuotas que faltan se ajustan solas.</p>
+        <form class="ahorro-form form-aporte-modal" method="post" action="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="extraordinario" value="true">
+          <div class="monto-field-wrap">
+            <span class="monto-prefix">$</span>
+            <input type="text" inputmode="numeric" name="aporte" class="monto-input" data-monto placeholder="0" autocomplete="off" aria-label="Monto del aporte extraordinario">
+          </div>
+          <button type="submit" class="btn-cancel ahorro-form__secundario"><i data-lucide="plus"></i> Aportar</button>
+        </form>
+      </section>
+      {% endif %}
     </div>
+    {% endif %}
 
-    <!-- Footer pegajoso -->
-    <div class="modal__footer" style="background:#f8fafc;">
-      <button type="button" class="btn-ghost btn-cerrar-modal-aporte">Cerrar</button>
-    </div>
-
+    {# Linea de tiempo de cuotas #}
+    <section>
+      <p class="ahorro-bloque__titulo ahorro-bloque__titulo--lista">
+        <i data-lucide="list-checks"></i> Cuotas
+        <span>{{ resumen.pagadas }} aportadas · {{ resumen.perdidas }} vencidas · {{ resumen.pendientes }} pendientes</span>
+      </p>
+      <ol class="ahorro-cuotas">
+        {% if cuotas_antes %}
+        <li class="ahorro-cuotas__mas">{{ cuotas_antes }} cuota{{ cuotas_antes|pluralize }} anterior{{ cuotas_antes|pluralize:"es" }}</li>
+        {% endif %}
+        {% for cuota in cuotas %}
+        <li class="ahorro-cuota ahorro-cuota--{{ cuota.estado_ap|lower }}{% if cuota.es_proxima %} ahorro-cuota--proxima{% endif %}{% if cuota.es_extraordinario %} ahorro-cuota--extra{% endif %}">
+          <span class="ahorro-cuota__punto" aria-hidden="true"></span>
+          <div class="ahorro-cuota__info">
+            <p class="ahorro-cuota__nombre">
+              {% if cuota.es_extraordinario %}Aporte extraordinario{% else %}Cuota {{ cuota.numero_real|stringformat:"02d" }}{% endif %}
+            </p>
+            <p class="ahorro-cuota__fecha">
+              {% if cuota.es_extraordinario %}
+                {{ cuota.fecha_aporte|default:cuota.fecha_registro|date:"j b Y" }}
+              {% elif cuota.estado_ap == 'APORTADO' %}
+                Aportada{% if cuota.fecha_aporte %} el {{ cuota.fecha_aporte|date:"j b Y" }}{% endif %}
+              {% else %}
+                Vence el {{ cuota.fecha_limite|date:"j b Y" }}
+              {% endif %}
+            </p>
+          </div>
+          <div class="ahorro-cuota__lado">
+            <span class="ahorro-cuota__monto">${% if cuota.aporte %}{{ cuota.aporte|floatformat:"0g" }}{% else %}{{ cuota.aporte_asignado|floatformat:"0g" }}{% endif %}</span>
+            {% if cuota.estado_ap == 'APORTADO' %}
+              <span class="plan-chip plan-chip--normal">Aportada</span>
+            {% elif cuota.estado_ap == 'PERDIDO' %}
+              <span class="plan-chip plan-chip--atrasada">Vencida</span>
+            {% elif cuota.es_proxima and resumen.proxima_disponible %}
+              <span class="plan-chip plan-chip--por_aportar">Habilitada</span>
+            {% else %}
+              <span class="plan-chip plan-chip--inactiva">Pendiente</span>
+            {% endif %}
+          </div>
+        </li>
+        {% empty %}
+        <li class="ahorro-cuotas__mas">Esta meta no tiene cuotas generadas.</li>
+        {% endfor %}
+        {% if cuotas_despues %}
+        <li class="ahorro-cuotas__mas">{{ cuotas_despues }} cuota{{ cuotas_despues|pluralize }} más adelante</li>
+        {% endif %}
+      </ol>
+    </section>
   </div>
-  <!-- FIN CONTENIDO PARCIAL -->
+
+  <div class="plan-modal__pie">
+    <button type="button" class="btn-cancel" data-cerrar-detalle>Cerrar</button>
+  </div>
+</div>

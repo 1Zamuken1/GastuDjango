@@ -9,647 +9,352 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'movimientos/css/datepicker.css' %}">
-<link rel="stylesheet" href="{% static 'ahorros/css/ahorros.css' %}?v=1.5">
+<link rel="stylesheet" href="{% static 'css/gastu_planificacion.css' %}">
+<link rel="stylesheet" href="{% static 'ahorros/css/metas.css' %}">
 {% endblock %}
-
 
 {% block content %}
+<div class="plan-modulo plan-modulo--ahorros" id="ahorros-app"
+     data-url-crear="{% url 'ahorros:crear_ahorro' %}"
+     data-url-exportar-csv="{% url 'ahorros:exportar_csv' %}"
+     data-url-exportar-excel="{% url 'ahorros:exportar_excel' %}"
+     data-url-exportar-pdf="{% url 'ahorros:exportar_pdf' %}">
+  {% csrf_token %}
 
-<style>
-  .categoria-btn {
-    display: flex !important;
-    justify-content: center !important;
-  }
-
-  .btn-ghost.cancelar {
-    border: solid 1px #5e5e5e;
-    color: #353535;
-    transition: all 0.3s ease;
-    padding: 10px 15px;
-  }
-
-  .btn-ghost.cancelar:hover {
-    color: #000000;
-    background-color: #d3d3d3;
-    transform: translateY(-2px);
-  }
-</style>
-
-{# ── STAT CARDS ─────────────────────────────────────────────────────────────── #}
-<div class="stats-hero">
-  <div class="hero-total gastu-hero-card gastu-hero-card--ahorros">
-    <div class="gastu-hero-card__icono"><i data-lucide="piggy-bank"></i></div>
-    <p class="hero-total__label">Total ahorrado</p>
-    <p class="hero-total__value font-display">${{ total_ahorrado|floatformat:"0g" }}</p>
-    <span class="hero-total__badge">En todas las metas activas</span>
-  </div>
-  <div class="app-card hero-stats">
-    <div class="hero-stat">
-      <span class="hero-stat__label">
-        <i data-lucide="piggy-bank"></i> Metas
-      </span>
-      <span class="hero-stat__value font-display">{{ cantidad_metas }}</span>
-      <span class="hero-stat__sub">creadas</span>
+  {# ── Zona 1: Hero ───────────────────────────────────────────────────────── #}
+  <div class="stats-hero">
+    <div class="hero-total gastu-hero-card gastu-hero-card--ahorros">
+      <div class="gastu-hero-card__icono"><i data-lucide="piggy-bank"></i></div>
+      <p class="hero-total__label">Total ahorrado</p>
+      <p class="hero-total__value font-display">${{ total_ahorrado|floatformat:"0g" }}</p>
+      <span class="hero-total__badge">{{ conteos.en_curso }} meta{{ conteos.en_curso|pluralize }} en curso</span>
     </div>
-    <div class="hero-stat">
-      <span class="hero-stat__label">
-        <i data-lucide="check-circle-2"></i> Completadas
-      </span>
-      <span class="hero-stat__value font-display" style="color:#eab308;">{{ metas_completadas }}</span>
-      <span class="hero-stat__sub">logradas con éxito</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat__label">
-        <i data-lucide="calendar-clock"></i> Próxima Cuota
-      </span>
-      {% if proxima_meta %}
-      <span class="hero-stat__value font-display" style="font-size:1.05rem;line-height:1.1;margin-top:.15rem;">
-        {{ proxima_meta.ahorro.descripcion|default:"Ahorro"|truncatechars:18 }}
-      </span>
-      <span class="hero-stat__sub" style="color:#eab308;font-weight:700;">
-        {{ proxima_meta.fecha_limite|date:"d/m/Y" }}
-      </span>
-      {% else %}
-      <span class="hero-stat__value font-display" style="font-size:1.1rem;color:#94a3b8;">N/A</span>
-      <span class="hero-stat__sub">Sin pendientes</span>
-      {% endif %}
-    </div>
-  </div>
-</div>
 
-{# ── TOOLBAR ───────────────────────────────────────────────────────────────── #}
-<div class="app-card toolbar">
-
-  <div class="toolbar__search">
-    <svg class="toolbar__search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-    </svg>
-    <input type="text" id="buscador-metas" placeholder="Buscar meta...">
-  </div>
-
-  <div class="toolbar__actions">
-    <div style="position:relative;display:inline-block;">
-      <button class="btn-ghost" type="button" id="btn-filtro-estado"
-        style="padding:9px 12px;gap:0.25rem;background:#fffbeb;border-color:#fcd34d;color:#b45309;">
-        <i data-lucide="filter"></i> Estado <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
-      </button>
-      <div id="menu-filtro-estado" hidden
-        style="position:absolute;top:100%;left:0;margin-top:.25rem;background:#fff;border:1px solid #e2e8f0;
-                  border-radius:.5rem;min-width:140px;z-index:50;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);padding:.25rem 0;">
-        <a href="?estado=" class="dropdown-item"
-          style="display:block;padding:.5rem .75rem;font-size:.85rem;color:#334155;text-decoration:none;">Todas</a>
-        <a href="?estado=SIN_INICIAR" class="dropdown-item"
-          style="display:block;padding:.5rem .75rem;font-size:.85rem;color:#334155;text-decoration:none;">Sin
-          Iniciar</a>
-        <a href="?estado=ACTIVO" class="dropdown-item"
-          style="display:block;padding:.5rem .75rem;font-size:.85rem;color:#334155;text-decoration:none;">Activo</a>
-        <a href="?estado=COMPLETADO" class="dropdown-item"
-          style="display:block;padding:.5rem .75rem;font-size:.85rem;color:#334155;text-decoration:none;">Completado</a>
-        <a href="?estado=ABANDONADO" class="dropdown-item"
-          style="display:block;padding:.5rem .75rem;font-size:.85rem;color:#334155;text-decoration:none;">Abandonado</a>
+    <div class="app-card hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="target"></i> Por ahorrar</span>
+        <span class="hero-stat__value font-display">${{ falta_abiertas|floatformat:"0g" }}</span>
+        <span class="hero-stat__sub">para las metas en curso</span>
       </div>
-    </div>
-    <button class="btn-ghost" type="button" id="btn-historial" data-modulo="AHORROS" data-tema-accent="#eab308"
-      data-tema-light="#fffbeb" data-tema-label="Ahorros" data-tema-icon="piggy-bank" style="padding:9px 12px;">
-      <i data-lucide="history"></i> Historial
-    </button>
-    <div class="export-group" style="display:flex;gap:0.35rem;">
-      <button class="btn-export btn-export--pdf" type="button" id="btn-export-pdf">
-        <i data-lucide="file-text"></i> PDF
-      </button>
-      <button class="btn-export btn-export--excel" type="button" id="btn-export-excel">
-        <i data-lucide="table-2"></i> Excel
-      </button>
-      <button class="btn-export btn-export--csv" type="button" id="btn-export-csv">
-        <i data-lucide="file-spreadsheet"></i> CSV
-      </button>
-    </div>
-    <button class="btn-amber" type="button" id="btn-nueva-meta">
-      <i data-lucide="plus" style="width:15px;height:15px;"></i>
-      Nueva meta
-    </button>
-  </div>
-
-</div>
-
-{# ── GRID DE METAS ─────────────────────────────────────────────────────────── #}
-<div class="categorias-grid" id="grid-metas">
-
-  {% for ahorro in ahorros %}
-  <div class="categoria-card {% if ahorro.estado == 'COMPLETADO' %}categoria-card--completado{% endif %}" id="meta-card-{{ ahorro.id }}"
-    data-search-text="{{ ahorro.categoria.nombre|lower }} {{ ahorro.descripcion|lower }}"
-    data-activo="{{ ahorro.categoria.activo|yesno:'true,false' }}">
-
-    <div class="categoria-card__header">
-      <div style="flex:1;min-width:0;padding-right:10px;">
-        <p class="categoria-card__nombre truncate">
-          {{ ahorro.categoria.nombre|default:"Meta de Ahorro" }}
-          {% if not ahorro.categoria.activo %}
-          <span class="badge-inactiva">Inactiva</span>
-          {% endif %}
-        </p>
-        <p class="categoria-card__cantidad truncate">{{ ahorro.descripcion|default:"Sin descripción" }}</p>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="trophy"></i> Completadas</span>
+        <span class="hero-stat__value hero-stat__value--verde font-display">{{ conteos.completadas }}</span>
+        <span class="hero-stat__sub">metas logradas</span>
       </div>
-      <div class="categoria-card__icon">
-        {% if ahorro.estado == 'COMPLETADO' %}
-        <i data-lucide="check-circle-2"></i>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="calendar-clock"></i> Próxima cuota</span>
+        {% if proxima_meta %}
+        <span class="hero-stat__value hero-stat__value--texto font-display" title="{{ proxima_meta.descripcion|default:proxima_meta.categoria.nombre }}">{{ proxima_meta.descripcion|default:proxima_meta.categoria.nombre }}</span>
+        <span class="hero-stat__sub">${{ proxima_meta.resumen.proxima.aporte_asignado|floatformat:"0g" }} · {{ proxima_meta.resumen.proxima.fecha_limite|date:"j b" }}</span>
         {% else %}
-        <i data-lucide="piggy-bank"></i>
+        <span class="hero-stat__value hero-stat__value--texto font-display">Sin cuotas</span>
+        <span class="hero-stat__sub">no hay pendientes</span>
         {% endif %}
       </div>
-    </div>
-
-    <p class="categoria-card__monto">${{ ahorro.total_acumulado|floatformat:"0g" }}</p>
-
-    <div class="progress-bar">
-      <div class="progress-bar__fill" id="bar-{{ ahorro.id }}" style="width:0%"
-        data-actual="{{ ahorro.total_acumulado }}" data-objetivo="{{ ahorro.monto_meta }}"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-      <p class="categoria-card__footer" id="pct-{{ ahorro.id }}">0%</p>
-      <p class="categoria-card__footer">Objetivo: ${{ ahorro.monto_meta|floatformat:"0g" }}</p>
-    </div>
-
-    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;position:relative;z-index:2;">
-      {% if ahorro.estado == 'COMPLETADO' %}
-      <button type="button" class="btn-ghost btn-abrir-modal-aporte"
-        data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
-        style="padding:0.4rem 0.8rem;font-size:0.75rem;border-radius:0.5rem;gap:0.25rem;background:#f8fafc;border:1px solid #e2e8f0;">
-        <i data-lucide="eye" style="width:12px;height:12px;"></i> Detalle
-      </button>
-      {% else %}
-      <button type="button" class="btn-amber btn-abrir-modal-aporte"
-        data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
-        style="padding:0.4rem 0.8rem;font-size:0.75rem;border-radius:0.5rem;gap:0.25rem;">
-        <i data-lucide="plus-circle" style="width:12px;height:12px;"></i> Aporte
-      </button>
-      {% endif %}
-      <button type="button" class="btn-editar-meta" data-id="{{ ahorro.id }}"
-        data-url="{% url 'ahorros:editar_ahorro' id=ahorro.id %}" style="display:inline-flex;align-items:center;justify-content:center;
-                     width:2rem;height:2rem;border-radius:0.5rem;border:1px solid #e2e8f0;
-                     color:#64748b;background:transparent;transition:background .15s;cursor:pointer;"
-        title="Editar meta">
-        <i data-lucide="pencil" style="width:12px;height:12px;"></i>
-      </button>
-      <button type="button" class="btn-eliminar-meta" data-id="{{ ahorro.id }}"
-        data-url="{% url 'ahorros:eliminar_ahorro' id=ahorro.id %}" style="display:inline-flex;align-items:center;justify-content:center;
-                     width:2rem;height:2rem;border-radius:0.5rem;border:1px solid #e2e8f0;
-                     color:#ef4444;background:transparent;transition:background .15s;cursor:pointer;"
-        title="Eliminar meta">
-        <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
-      </button>
-    </div>
-
-    {% if ahorro.fecha_meta %}
-    <p class="categoria-card__footer" style="margin-top:0.85rem;color:#eab308;font-weight:600;">
-      <i data-lucide="calendar" style="color:#ca8a04;"></i>
-      Límite: {{ ahorro.fecha_meta|date:"d/m/Y" }}
-    </p>
-    {% endif %}
-
-  </div>
-  {% empty %}
-  <div class="grid-empty">
-    <i data-lucide="piggy-bank" style="width:40px;height:40px;margin:0 auto 10px;color:#cbd5e1;display:block;"></i>
-    <p>No tienes metas de ahorro.</p>
-    <button type="button" class="btn-amber" id="btn-nueva-meta-empty"
-      style="margin-top:10px;padding:0.5rem 1rem;border-radius:0.5rem;">
-      Crear primera meta
-    </button>
-  </div>
-  {% endfor %}
-
-</div>
-
-{# ── MODAL APORTES ─────────────────────────────────────────────────────────── #}
-<div class="modal-overlay" id="modal-overlay-aporte" hidden></div>
-
-{# ── MODAL CREAR META ──────────────────────────────────────────────────────── #}
-<div class="modal-overlay modal-overlay--top" id="modal-crear-meta" hidden>
-  <div class="modal modal--meta">
-    <div class="modal__header">
-      <div>
-        <h2 class="modal__title font-display">Nueva Meta de Ahorro</h2>
-        <span class="modal__subtitle">Completa los datos de tu meta</span>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="bell-ring"></i> Por aportar</span>
+        <span class="hero-stat__value hero-stat__value--ambar font-display">{{ por_aportar|length }}</span>
+        <span class="hero-stat__sub">cuotas habilitadas</span>
       </div>
-      <button class="modal__close" id="btn-cerrar-crear" aria-label="Cerrar">
-        <i data-lucide="x"></i>
-      </button>
     </div>
+  </div>
 
-    <div class="modal__body">
-      <form id="form-crear-meta" class="form-ahorros" novalidate>
-        {% csrf_token %}
+  {# ── Avisos ─────────────────────────────────────────────────────────────── #}
+  {% if atrasadas %}
+  <div class="plan-banner plan-banner--alerta">
+    <div class="plan-banner__icono"><i data-lucide="alert-triangle"></i></div>
+    <div class="plan-banner__cuerpo">
+      <p class="plan-banner__titulo">
+        {% if atrasadas|length == 1 %}Una meta tiene cuotas vencidas{% else %}{{ atrasadas|length }} metas tienen cuotas vencidas{% endif %}
+      </p>
+      <p class="plan-banner__texto">Las cuotas vencidas ya no se pueden pagar, pero puedes ponerte al día con un aporte extraordinario.</p>
+      <div class="plan-banner__items">
+        {% for meta in atrasadas %}
+        <span class="plan-banner__item plan-banner__item--alerta">
+          {{ meta.descripcion|default:meta.categoria.nombre }} <b>{{ meta.resumen.perdidas }} vencida{{ meta.resumen.perdidas|pluralize }}</b>
+          <button type="button" class="plan-banner__accion" data-accion="detalle" data-url="{% url 'ahorros:registrar_aporte' meta_id=meta.id %}">Ver</button>
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
-        {# Categoría: picker visual #}
-        <p>
-          <label for="crear-cat-btn">Categoría</label>
-          <input type="hidden" id="crear-categoria" name="categoria">
-          <button type="button" class="picker-cat-btn" id="crear-cat-btn">
-            <div class="picker-trigger-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
-            </div>
-            <span class="picker-cat-label" id="crear-cat-label">Seleccionar categoría</span>
-            <div class="picker-trigger-arrow">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </div>
-          </button>
+  {% if por_aportar %}
+  <div class="plan-banner plan-banner--info">
+    <div class="plan-banner__icono"><i data-lucide="piggy-bank"></i></div>
+    <div class="plan-banner__cuerpo">
+      <p class="plan-banner__titulo">
+        {% if por_aportar|length == 1 %}Tienes una cuota lista para aportar{% else %}Tienes {{ por_aportar|length }} cuotas listas para aportar{% endif %}
+      </p>
+      <p class="plan-banner__texto">Registra el aporte antes de la fecha límite para no perder la cuota.</p>
+      <div class="plan-banner__items">
+        {% for meta in por_aportar %}
+        <span class="plan-banner__item">
+          {{ meta.descripcion|default:meta.categoria.nombre }} <b>${{ meta.resumen.proxima.aporte_asignado|floatformat:"0g" }} · {{ meta.resumen.proxima.fecha_limite|date:"j b" }}</b>
+          <button type="button" class="plan-banner__accion" data-accion="detalle" data-url="{% url 'ahorros:registrar_aporte' meta_id=meta.id %}">Aportar</button>
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Zona 2: Toolbar ────────────────────────────────────────────────────── #}
+  <div class="app-card toolbar">
+    <div class="toolbar__search">
+      <svg class="toolbar__search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="buscador-metas" placeholder="Buscar meta..." autocomplete="off">
+    </div>
+    <div class="toolbar__filtros">
+      <div class="plan-filtro" role="group" aria-label="Filtrar por estado" id="filtro-estado">
+        <button type="button" class="plan-filtro__opcion is-activo" data-filtro="en_curso">En curso<span class="plan-filtro__conteo">{{ conteos.en_curso }}</span></button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="completadas">Completadas<span class="plan-filtro__conteo">{{ conteos.completadas }}</span></button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="abandonadas">Abandonadas<span class="plan-filtro__conteo">{{ conteos.abandonadas }}</span></button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="todas">Todas<span class="plan-filtro__conteo">{{ conteos.todas }}</span></button>
+      </div>
+    </div>
+    <div class="toolbar__actions">
+      <button class="btn-ghost" type="button" id="btn-historial"
+              data-modulo="AHORROS" data-tema-accent="#d97706" data-tema-light="#fffbeb"
+              data-tema-label="Ahorros" data-tema-icon="piggy-bank">
+        <i data-lucide="history"></i> Historial
+      </button>
+      <div class="export-group">
+        <button class="btn-export btn-export--pdf" type="button" data-exportar="pdf"><i data-lucide="file-text"></i> PDF</button>
+        <button class="btn-export btn-export--excel" type="button" data-exportar="excel"><i data-lucide="table-2"></i> Excel</button>
+        <button class="btn-export btn-export--csv" type="button" data-exportar="csv"><i data-lucide="file-spreadsheet"></i> CSV</button>
+      </div>
+      <button class="btn-plan" type="button" id="btn-nueva-meta"><i data-lucide="plus"></i> Nueva meta</button>
+    </div>
+  </div>
+
+  {# ── Zona 3: Grilla de metas ────────────────────────────────────────────── #}
+  <div class="plan-grid" id="grid-metas">
+    {% for ahorro in ahorros %}
+    {% with r=ahorro.resumen %}
+    <article class="plan-card plan-card--{{ r.estado }}"
+             data-grupo="{% if r.estado == 'completada' %}completadas{% elif r.estado == 'abandonada' %}abandonadas{% else %}en_curso{% endif %}"
+             data-buscar="{{ ahorro.categoria.nombre|lower }} {{ ahorro.descripcion|lower }}">
+      <header class="plan-card__cabecera">
+        <div class="plan-card__principal">
+          <p class="plan-card__cifra font-display">${{ ahorro.total_acumulado|floatformat:"0g" }}<small>ahorrado</small></p>
+          <p class="plan-card__etiqueta" title="{{ ahorro.categoria.nombre }}">{{ ahorro.categoria.nombre|default:"Meta de ahorro" }}</p>
+          <p class="plan-card__sub">{{ ahorro.descripcion|default:"Sin descripción" }}</p>
+        </div>
+        <div class="plan-card__lado">
+          <div class="plan-card__icono"><i data-lucide="{% if r.estado == 'completada' %}trophy{% else %}piggy-bank{% endif %}"></i></div>
+          <span class="plan-chip plan-chip--{{ r.estado }}">{{ r.estado_label }}</span>
+        </div>
+      </header>
+
+      <div class="plan-card__cuerpo">
+        <div class="plan-progreso">
+          <div class="plan-progreso__fila">
+            <span>Meta <b>${{ ahorro.monto_meta|floatformat:"0g" }}</b></span>
+            <span class="plan-progreso__pct">{{ r.porcentaje }}%</span>
+          </div>
+          <div class="plan-progreso__barra"><div class="plan-progreso__relleno" data-pct="{{ r.porcentaje }}"></div></div>
+        </div>
+
+        <dl class="plan-card__datos">
+          {% if r.estado == 'completada' %}
+          <div><dt>Ahorrado</dt><dd>${{ ahorro.monto_meta|floatformat:"0g" }}</dd></div>
+          <div><dt>Cuotas</dt><dd>{{ r.pagadas }}/{{ r.total_cuotas }}</dd></div>
+          <div><dt>Frecuencia</dt><dd>{{ ahorro.get_frecuencia_display }}</dd></div>
+          {% else %}
+          <div><dt>Próxima</dt><dd>{% if r.proxima %}${{ r.proxima.aporte_asignado|floatformat:"0g" }}{% else %}—{% endif %}</dd></div>
+          <div><dt>Vence</dt><dd class="{% if r.proxima_disponible %}is-pendiente{% endif %}">{% if r.proxima %}{% if r.dias_proxima == 0 %}hoy{% else %}{{ r.proxima.fecha_limite|date:"j b" }}{% endif %}{% else %}—{% endif %}</dd></div>
+          <div><dt>Cuotas</dt><dd>{{ r.pagadas }}/{{ r.total_cuotas }}</dd></div>
+          {% endif %}
+        </dl>
+
+        <p class="plan-card__periodo{% if r.proyeccion_tarde or r.perdidas %} plan-card__periodo--aviso{% endif %}">
+          <i data-lucide="flag"></i>
+          {% if r.estado == 'completada' %}
+            Meta lograda
+          {% elif r.perdidas %}
+            {{ r.perdidas }} cuota{{ r.perdidas|pluralize }} vencida{{ r.perdidas|pluralize }} · meta el {{ ahorro.fecha_meta|date:"j b Y" }}
+          {% elif r.proyeccion %}
+            A tu ritmo la completas el {{ r.proyeccion|date:"j b Y" }}
+          {% else %}
+            Meta el {{ ahorro.fecha_meta|date:"j b Y" }}
+          {% endif %}
         </p>
+      </div>
 
-        <p>
-          <label for="crear-monto-meta">Monto Meta</label>
-          <input type="text" inputmode="numeric" id="crear-monto-meta" name="monto_meta" placeholder="0"
-            autocomplete="off" data-raw="">
-        </p>
+      <footer class="plan-card__pie">
+        <button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="detalle" data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}">
+          {% if r.estado == 'completada' %}<i data-lucide="eye"></i> Detalle{% else %}<i data-lucide="plus"></i> Aportar{% endif %}
+        </button>
+        <button type="button" class="plan-card-btn" data-accion="editar" data-url="{% url 'ahorros:editar_ahorro' id=ahorro.id %}"><i data-lucide="pencil"></i> Editar</button>
+        <button type="button" class="plan-card-btn plan-card-btn--peligro" data-accion="eliminar"
+                data-url="{% url 'ahorros:eliminar_ahorro' id=ahorro.id %}"
+                data-nombre="{{ ahorro.descripcion|default:ahorro.categoria.nombre }}"
+                data-acumulado="{{ ahorro.total_acumulado|floatformat:0 }}"
+                title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
+      </footer>
+    </article>
+    {% endwith %}
+    {% endfor %}
 
-        <p>
-          <label for="crear-frecuencia">Frecuencia de ahorro</label>
-          <input type="hidden" id="crear-frecuencia" name="frecuencia">
-        <div style="position:relative;">
-          <button type="button" class="picker-frecuencia-btn" id="crear-frecuencia-btn" style="width:100%;display:flex;align-items:center;justify-content:space-between;
-                           padding:.55rem .75rem;border:1px solid var(--border);border-radius:.5rem;
-                           background:#fff;color:var(--slate-500);font-size:.875rem;cursor:pointer;
-                           transition:border-color .15s;font-family:'DM Sans',sans-serif;"
-            onfocus="this.style.borderColor='#d97706';this.style.boxShadow='0 0 0 3px rgba(217,119,6,0.1)'"
-            onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-            <span id="crear-frecuencia-label" style="flex:1;text-align:left;">Seleccionar Frecuencia</span>
-            <i data-lucide="chevron-down" style="width:14px;height:14px;flex-shrink:0;"></i>
-          </button>
-          <div id="crear-frecuencia-menu" class="frecuencia-menu" style="display:none;position:absolute;top:100%;left:0;width:100%;background:#fff;
-                        border:1px solid #e2e8f0;border-radius:.5rem;margin-top:.25rem;
-                        max-height:180px;overflow-y:auto;z-index:50;
-                        box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);padding:.25rem 0;">
-            <div class="frecuencia-option" data-target="crear" data-value="DIARIA"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Diaria</div>
-            <div class="frecuencia-option" data-target="crear" data-value="SEMANAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Semanal</div>
-            <div class="frecuencia-option" data-target="crear" data-value="QUINCENAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Quincenal</div>
-            <div class="frecuencia-option" data-target="crear" data-value="MENSUAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Mensual</div>
-            <div class="frecuencia-option" data-target="crear" data-value="TRIMESTRAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Trimestral</div>
-            <div class="frecuencia-option" data-target="crear" data-value="SEMESTRAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Semestral</div>
-            <div class="frecuencia-option" data-target="crear" data-value="ANUAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Anual</div>
+    <div class="plan-vacio" id="metas-vacio"{% if ahorros %} hidden{% endif %}>
+      <div class="plan-vacio__icono"><i data-lucide="piggy-bank"></i></div>
+      <p class="plan-vacio__titulo" id="metas-vacio-titulo">{% if ahorros %}Sin resultados{% else %}Aún no tienes metas de ahorro{% endif %}</p>
+      <p class="plan-vacio__texto" id="metas-vacio-texto">{% if ahorros %}No hay metas en este filtro.{% else %}Define cuánto quieres ahorrar y para cuándo, y te ayudamos a repartirlo en cuotas.{% endif %}</p>
+      <button type="button" class="btn-plan btn-plan--chico" data-accion="nueva" id="btn-nueva-meta-empty"{% if ahorros %} hidden{% endif %}><i data-lucide="plus"></i> Crear meta</button>
+    </div>
+  </div>
+
+  {# ── Modal detalle (se llena con ahorros/aporte.html) ───────────────────── #}
+  <div class="modal-overlay" id="modal-overlay-aporte" hidden></div>
+
+  {# ── Modal crear / editar meta ──────────────────────────────────────────── #}
+  <div class="modal-overlay" id="modal-meta" hidden>
+    <div class="plan-modal" role="dialog" aria-modal="true" aria-labelledby="modal-meta-titulo">
+      <div class="plan-modal__header">
+        <div class="plan-modal__header-izq">
+          <div class="plan-modal__badge"><i data-lucide="piggy-bank"></i></div>
+          <div>
+            <p class="plan-modal__titulo font-display" id="modal-meta-titulo">Nueva meta de ahorro</p>
+            <p class="plan-modal__subtitulo" id="modal-meta-subtitulo">Cuánto quieres ahorrar y en cuánto tiempo</p>
           </div>
         </div>
-        </p>
-
-        {# ── PLAZO TOGGLE: cuotas o fecha (nunca ambas) ── #}
-        <p style="margin-bottom:0.5rem;">
-          <label>Plazo</label>
-        </p>
-
-        <div class="plazo-label-row">
-          <div class="plazo-label-line"></div>
-          <span class="plazo-label-text">
-            <i data-lucide="switch-horizontal" style="width:0.85rem;height:0.85rem;color:#eab308;"></i>
-            elige una opción
-          </span>
-          <div class="plazo-label-line"></div>
-        </div>
-
-        <div class="plazo-tabs" role="tablist">
-          <button type="button" class="plazo-tab active" id="tab-crear-cuotas" role="tab" aria-selected="true"
-            aria-controls="panel-crear-cuotas" onclick="switchPlazo('crear', 'cuotas')">
-            <i data-lucide="list-ordered" style="width:0.9rem;height:0.9rem;"></i>
-            Número de cuotas
-          </button>
-          <button type="button" class="plazo-tab" id="tab-crear-fecha" role="tab" aria-selected="false"
-            aria-controls="panel-crear-fecha" onclick="switchPlazo('crear', 'fecha')">
-            <i data-lucide="calendar-check-2" style="width:0.9rem;height:0.9rem;"></i>
-            Fecha límite
-          </button>
-        </div>
-
-        <div class="plazo-panel" id="panel-crear-cuotas" role="tabpanel">
-          <label for="crear-cuotas">¿En cuántas cuotas?</label>
-          <input type="number" id="crear-cuotas" name="cantidad_cuotas" placeholder="Ej: 12" min="1" step="1">
-          <p class="plazo-hint">
-            <i data-lucide="info" style="width:0.75rem;height:0.75rem;color:#cbd5e1;"></i>
-            La fecha límite se calcula automáticamente según la frecuencia.
-          </p>
-        </div>
-
-        <div class="plazo-panel" id="panel-crear-fecha" role="tabpanel" hidden>
-          <label for="crear-fecha-meta">¿Para cuándo quieres lograrlo?</label>
-          <input type="hidden" id="crear-fecha-meta" name="fecha_meta">
-          {# El datepicker de MiniDatepicker se inicializa en ahorros.js y se adjunta aquí #}
-        </div>
-
-        <p>
-          <label for="crear-descripcion">Descripción</label>
-          <textarea id="crear-descripcion" name="descripcion" rows="2"
-            placeholder="¿Para qué es este ahorro?"></textarea>
-        </p>
-      </form>
-    </div>
-
-    <div class="modal__footer" style="background:#f8fafc;flex-direction:column;align-items:stretch;gap:0.625rem;border-radius: 0 0 1.25rem 1.25rem;">
-      <div class="form-ahorros__errors" id="crear-errors" style="display:none;margin:0;">
-        <i data-lucide="alert-circle" style="color:#ef4444;width:18px;height:18px;flex-shrink:0;margin-top:1px;"></i>
-        <div class="form-ahorros__errors-text" id="crear-errors-text"></div>
+        <button type="button" class="plan-modal__cerrar" data-cerrar-modal="modal-meta" aria-label="Cerrar"><i data-lucide="x"></i></button>
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:0.625rem;">
-        <button type="button" class="btn-ghost" id="btn-cancelar-crear">Cancelar</button>
-        <button type="button" class="btn-amber" id="btn-guardar-crear">
-          <i data-lucide="save"></i> Guardar Meta
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
-{# ── MODAL EDITAR META ─────────────────────────────────────────────────────── #}
-<div class="modal-overlay modal-overlay--top" id="modal-editar-meta" hidden>
-  <div class="modal modal--meta">
-    <div class="modal__header">
-      <div>
-        <h2 class="modal__title font-display">Editar Meta de Ahorro</h2>
-        <span class="modal__subtitle" id="editar-subtitulo">—</span>
-      </div>
-      <button class="modal__close" id="btn-cerrar-editar" aria-label="Cerrar">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
+      <form id="form-meta" novalidate>
+        <input type="hidden" id="meta-url">
+        <div class="plan-modal__cuerpo">
+          <div class="ahorro-alerta" id="meta-errores" role="alert" hidden>
+            <i data-lucide="alert-circle"></i>
+            <span id="meta-errores-texto"></span>
+          </div>
 
-    <div class="modal__body">
-      <form id="form-editar-meta" class="form-ahorros" novalidate>
-        {% csrf_token %}
-        <input type="hidden" id="editar-ahorro-id">
+          <div class="fg">
+            <span class="fg-label">Categoría <span class="fg-label-req">*</span></span>
+            <button type="button" class="picker-trigger" id="meta-categoria-btn">
+              <span class="picker-trigger-icon"><i data-lucide="tag"></i></span>
+              <span class="picker-trigger-text" id="meta-categoria-texto">Selecciona una categoría de ahorro</span>
+              <i data-lucide="chevron-right" class="picker-trigger-arrow"></i>
+            </button>
+            <input type="hidden" id="meta-categoria" name="categoria">
+          </div>
 
-        <p>
-          <label>Categoría</label>
-          <input type="hidden" id="editar-categoria" name="categoria">
-          <button type="button" class="picker-cat-btn" id="editar-cat-btn">
-            <div class="picker-trigger-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
+          <div class="fg">
+            <label class="fg-label" for="meta-monto">Monto meta <span class="fg-label-req">*</span></label>
+            <div class="monto-field-wrap">
+              <span class="monto-prefix">$</span>
+              <input type="text" inputmode="numeric" id="meta-monto" class="monto-input" placeholder="0" autocomplete="off">
+              <span class="monto-currency-tag">COP</span>
             </div>
-            <span class="picker-cat-label" id="editar-cat-label">Seleccionar categoría</span>
-            <div class="picker-trigger-arrow">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
+            <span class="fg-hint" id="meta-monto-hint"></span>
+          </div>
+
+          <div class="fg">
+            <span class="fg-label">Frecuencia de ahorro <span class="fg-label-req">*</span></span>
+            <div class="plan-opciones" id="meta-frecuencias">
+              <button type="button" class="plan-opcion" data-frecuencia="DIARIA">Diaria</button>
+              <button type="button" class="plan-opcion" data-frecuencia="SEMANAL">Semanal</button>
+              <button type="button" class="plan-opcion" data-frecuencia="QUINCENAL">Quincenal</button>
+              <button type="button" class="plan-opcion" data-frecuencia="MENSUAL">Mensual</button>
+              <button type="button" class="plan-opcion" data-frecuencia="TRIMESTRAL">Trimestral</button>
+              <button type="button" class="plan-opcion" data-frecuencia="SEMESTRAL">Semestral</button>
+              <button type="button" class="plan-opcion" data-frecuencia="ANUAL">Anual</button>
             </div>
-          </button>
-        </p>
+            <input type="hidden" id="meta-frecuencia" name="frecuencia">
+          </div>
 
-        <p>
-          <label for="editar-monto-meta">Monto Meta</label>
-          <input type="text" inputmode="numeric" id="editar-monto-meta" name="monto_meta" placeholder="0"
-            autocomplete="off" data-raw="">
-        </p>
+          <div class="fg">
+            <span class="fg-label">Plazo <span class="fg-label-req">*</span></span>
+            <div class="plan-filtro ahorro-plazo" role="tablist" id="meta-plazo">
+              <button type="button" class="plan-filtro__opcion is-activo" role="tab" data-plazo="cuotas">Número de cuotas</button>
+              <button type="button" class="plan-filtro__opcion" role="tab" data-plazo="fecha">Fecha meta</button>
+            </div>
+            <div class="ahorro-plazo__panel" id="meta-plazo-cuotas">
+              <input type="number" id="meta-cuotas" class="desc-input" min="1" step="1" placeholder="Ej: 12" aria-label="Número de cuotas">
+            </div>
+            <div class="ahorro-plazo__panel" id="meta-plazo-fecha" hidden>
+              <input type="hidden" id="meta-fecha">
+            </div>
+            <span class="fg-hint fg-hint--acento" id="meta-calendario"></span>
+          </div>
 
-        <p>
-          <label for="editar-frecuencia">Frecuencia de ahorro</label>
-          <input type="hidden" id="editar-frecuencia" name="frecuencia">
-        <div style="position:relative;">
-          <button type="button" class="picker-frecuencia-btn" id="editar-frecuencia-btn" style="width:100%;display:flex;align-items:center;justify-content:space-between;
-                           padding:.55rem .75rem;border:1px solid var(--border);border-radius:.5rem;
-                           background:#fff;color:var(--slate-500);font-size:.875rem;cursor:pointer;
-                           transition:border-color .15s;font-family:'DM Sans',sans-serif;"
-            onfocus="this.style.borderColor='#d97706';this.style.boxShadow='0 0 0 3px rgba(217,119,6,0.1)'"
-            onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-            <span id="editar-frecuencia-label" style="flex:1;text-align:left;">Seleccionar Frecuencia</span>
-            <i data-lucide="chevron-down" style="width:14px;height:14px;flex-shrink:0;"></i>
-          </button>
-          <div id="editar-frecuencia-menu" class="frecuencia-menu" style="display:none;position:absolute;top:100%;left:0;width:100%;background:#fff;
-                        border:1px solid #e2e8f0;border-radius:.5rem;margin-top:.25rem;
-                        max-height:180px;overflow-y:auto;z-index:50;
-                        box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);padding:.25rem 0;">
-            <div class="frecuencia-option" data-target="editar" data-value="DIARIA"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Diaria</div>
-            <div class="frecuencia-option" data-target="editar" data-value="SEMANAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Semanal</div>
-            <div class="frecuencia-option" data-target="editar" data-value="QUINCENAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Quincenal</div>
-            <div class="frecuencia-option" data-target="editar" data-value="MENSUAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Mensual</div>
-            <div class="frecuencia-option" data-target="editar" data-value="TRIMESTRAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Trimestral</div>
-            <div class="frecuencia-option" data-target="editar" data-value="SEMESTRAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Semestral</div>
-            <div class="frecuencia-option" data-target="editar" data-value="ANUAL"
-              style="padding:.5rem .75rem;cursor:pointer;font-size:.875rem;color:var(--slate-700);">Anual</div>
+          <div class="fg">
+            <label class="fg-label" for="meta-descripcion">Descripción <span class="fg-label-opt">(opcional)</span></label>
+            <input type="text" id="meta-descripcion" class="desc-input" maxlength="150" placeholder="Ej: Viaje a Cartagena" autocomplete="off">
+            <div class="fg-hint-row">
+              <span class="fg-hint">Así la reconocerás en la lista</span>
+              <span class="fg-counter" id="meta-descripcion-contador">0/150</span>
+            </div>
           </div>
         </div>
-        </p>
 
-        {# ── PLAZO TOGGLE: cuotas o fecha (nunca ambas) ── #}
-        <p style="margin-bottom:0.5rem;">
-          <label>Plazo</label>
-        </p>
-
-        <div class="plazo-label-row">
-          <div class="plazo-label-line"></div>
-          <span class="plazo-label-text">
-            <i data-lucide="switch-horizontal" style="width:0.85rem;height:0.85rem;color:#eab308;"></i>
-            elige una opción
-          </span>
-          <div class="plazo-label-line"></div>
+        <div class="plan-modal__pie">
+          <button type="button" class="btn-cancel" data-cerrar-modal="modal-meta">Cancelar</button>
+          <button type="submit" class="btn-save" id="meta-guardar"><i data-lucide="check"></i> <span id="meta-guardar-texto">Crear meta</span></button>
         </div>
-
-        <div class="plazo-tabs" role="tablist">
-          <button type="button" class="plazo-tab active" id="tab-editar-cuotas" role="tab" aria-selected="true"
-            aria-controls="panel-editar-cuotas" onclick="switchPlazo('editar', 'cuotas')">
-            <i data-lucide="list-ordered" style="width:0.9rem;height:0.9rem;"></i>
-            Número de cuotas
-          </button>
-          <button type="button" class="plazo-tab" id="tab-editar-fecha" role="tab" aria-selected="false"
-            aria-controls="panel-editar-fecha" onclick="switchPlazo('editar', 'fecha')">
-            <i data-lucide="calendar-check-2" style="width:0.9rem;height:0.9rem;"></i>
-            Fecha límite
-          </button>
-        </div>
-
-        <div class="plazo-panel" id="panel-editar-cuotas" role="tabpanel">
-          <label for="editar-cuotas">¿En cuántas cuotas?</label>
-          <input type="number" id="editar-cuotas" name="cantidad_cuotas" placeholder="Ej: 12" min="1" step="1">
-          <p class="plazo-hint">
-            <i data-lucide="info" style="width:0.75rem;height:0.75rem;color:#cbd5e1;"></i>
-            La fecha límite se calcula automáticamente según la frecuencia.
-          </p>
-        </div>
-
-        <div class="plazo-panel" id="panel-editar-fecha" role="tabpanel" hidden>
-          <label for="editar-fecha-meta">¿Para cuándo quieres lograrlo?</label>
-          <input type="hidden" id="editar-fecha-meta" name="fecha_meta">
-          {# El datepicker de MiniDatepicker se inicializa en ahorros.js y se adjunta aquí #}
-        </div>
-
-        <p>
-          <label for="editar-descripcion">Descripción</label>
-          <textarea id="editar-descripcion" name="descripcion" rows="2"
-            placeholder="¿Para qué es este ahorro?"></textarea>
-        </p>
       </form>
     </div>
+  </div>
 
-    <div class="modal__footer" style="background:#f8fafc;flex-direction:column;align-items:stretch;gap:0.625rem;border-radius: 0 0 1.25rem 1.25rem;">
-      <div class="form-ahorros__errors" id="editar-errors" style="display:none;margin:0;">
-        <i data-lucide="alert-circle" style="color:#ef4444;width:18px;height:18px;flex-shrink:0;margin-top:1px;"></i>
-        <div class="form-ahorros__errors-text" id="editar-errors-text"></div>
+  {# ── Modal selector de categorías ───────────────────────────────────────── #}
+  <div class="modal-overlay" id="modal-categorias" hidden>
+    <div class="plan-modal plan-modal--ancho" role="dialog" aria-modal="true" aria-labelledby="modal-categorias-titulo">
+      <div class="plan-modal__header">
+        <div>
+          <p class="plan-modal__titulo font-display" id="modal-categorias-titulo">Seleccionar categoría</p>
+          <p class="plan-modal__subtitulo">Categorías de ahorro</p>
+        </div>
+        <button type="button" class="plan-modal__cerrar" data-cerrar-modal="modal-categorias" aria-label="Cerrar"><i data-lucide="x"></i></button>
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:0.625rem;">
-        <button type="button" class="btn-ghost" id="btn-cancelar-editar">Cancelar</button>
-        <button type="button" class="btn-amber" id="btn-guardar-editar">
-          <i data-lucide="save"></i> Actualizar Meta
-        </button>
+      <div class="plan-picker__buscador">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="buscador-categorias" placeholder="Buscar categoría..." autocomplete="off">
+      </div>
+      <div id="picker-grid" class="plan-picker__grid"></div>
+    </div>
+  </div>
+
+  {# ── Modal exportar ─────────────────────────────────────────────────────── #}
+  <div class="modal-overlay" id="modal-reporte" hidden>
+    <div class="plan-modal" role="dialog" aria-modal="true" aria-labelledby="modal-reporte-titulo">
+      <div class="plan-modal__header">
+        <div class="plan-modal__header-izq">
+          <div class="plan-modal__badge"><i data-lucide="download"></i></div>
+          <div>
+            <p class="plan-modal__titulo font-display" id="modal-reporte-titulo">Exportar ahorros</p>
+            <p class="plan-modal__subtitulo" id="modal-reporte-formato">Formato</p>
+          </div>
+        </div>
+        <button type="button" class="plan-modal__cerrar" data-cerrar-modal="modal-reporte" aria-label="Cerrar"><i data-lucide="x"></i></button>
+      </div>
+      <div class="plan-modal__cuerpo">
+        <div class="fg">
+          <span class="fg-label">Metas a incluir</span>
+          <div class="plan-opciones plan-opciones--auto" id="reporte-estados">
+            <button type="button" class="plan-opcion is-activo" data-estado="">Todas</button>
+            <button type="button" class="plan-opcion" data-estado="SIN_INICIAR">Sin iniciar</button>
+            <button type="button" class="plan-opcion" data-estado="ACTIVO">Activas</button>
+            <button type="button" class="plan-opcion" data-estado="COMPLETADO">Completadas</button>
+            <button type="button" class="plan-opcion" data-estado="ABANDONADO">Abandonadas</button>
+          </div>
+        </div>
+      </div>
+      <div class="plan-modal__pie">
+        <button type="button" class="btn-cancel" data-cerrar-modal="modal-reporte">Cancelar</button>
+        <button type="button" class="btn-save" id="btn-descargar-reporte"><i data-lucide="download"></i> Descargar</button>
       </div>
     </div>
   </div>
+
 </div>
-
-{# ── MODAL ELIMINAR META ───────────────────────────────────────────────────── #}
-<div class="modal-overlay" id="modal-eliminar-meta" hidden style="z-index:1100;">
-  <div class="modal modal--eliminar">
-    <div class="modal__header">
-      <h2 class="modal__title font-display">Eliminar Meta</h2>
-      <button class="modal__close" id="btn-cerrar-eliminar" aria-label="Cerrar">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-    <div class="modal__body">
-      <p style="color:#475569;font-size:.9rem;margin:0;">
-        Estás a punto de eliminar la meta
-        <strong id="eliminar-nombre-meta" style="color:#0f172a;"></strong>.
-        <br><br>
-        Esta acción <strong>no se puede deshacer</strong> y se perderá todo el historial de aportes.
-        ¿Estás seguro?
-      </p>
-    </div>
-    <div class="modal__footer">
-      <input type="hidden" id="eliminar-ahorro-id">
-      <input type="hidden" id="eliminar-ahorro-url">
-      <button type="button" class="btn-ghost" id="btn-cancelar-eliminar">Cancelar</button>
-      <button type="button" id="btn-confirmar-eliminar" style="background:#ef4444;color:#fff;padding:.5rem 1.1rem;border-radius:.625rem;
-                     border:none;font-size:.875rem;font-weight:600;cursor:pointer;
-                     display:inline-flex;align-items:center;gap:.4rem;transition:background .15s;">
-        <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Eliminar
-      </button>
-    </div>
-  </div>
-</div>
-
-{# ── MODAL PICKER DE CATEGORÍAS ────────────────────────────────────────────── #}
-<div class="modal-overlay modal-overlay--z1200" id="modal-picker-cat" hidden>
-  <div class="modal modal--picker">
-    <div class="modal__header" style="border-bottom:1px solid #f1f5f9;">
-      <div>
-        <h2 class="modal__title font-display">Seleccionar categoría</h2>
-        <p style="font-size:.75rem;color:#64748b;margin-top:.15rem;">Elige la categoría de tu meta de ahorro</p>
-      </div>
-      <button class="modal__close" id="btn-cerrar-picker" aria-label="Cerrar">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-
-    <div style="padding:.875rem 1.25rem;background:#f8fafc;border-bottom:1px solid #f1f5f9;">
-      <div style="position:relative;">
-        <svg style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);
-                    width:14px;height:14px;color:#94a3b8;pointer-events:none;" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-        <input id="picker-buscador" type="text" placeholder="Buscar categoría..." style="width:100%;padding:.55rem .75rem .55rem 2.2rem;
-                      border:1.5px solid #e2e8f0;border-radius:.625rem;
-                      font-size:.875rem;outline:none;background:#fff;
-                      color:#0f172a;font-family:'DM Sans',sans-serif;
-                      transition:border-color .15s,box-shadow .15s;"
-          onfocus="this.style.borderColor='#eab308';this.style.boxShadow='0 0 0 3px rgba(234,179,8,.1)'"
-          onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-      </div>
-    </div>
-
-    <div class="picker-cat-grid" id="picker-grid">
-    </div>
-
-    <div class="categoria-btn" style="padding:.875rem 1.25rem;border-top:1px solid #f1f5f9;
-                background:#fff;display:flex;justify-content:space-between;align-items:center;">
-      <span id="picker-seleccionado-label" style="font-size:.78rem;color:#64748b;font-style:italic;"></span>
-      <button type="button" class="btn-ghost cancelar" id="btn-cancelar-picker">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-{# ── MODAL REPORTE ─────────────────────────────────────────────────────────── #}
-<div class="modal-overlay" id="modal-reporte" hidden style="z-index:1100;">
-  <div class="modal">
-    <div class="modal__header" style="background:linear-gradient(135deg,#0f172a,#1e293b);
-                border-radius:1.25rem 1.25rem 0 0;">
-      <div>
-        <h2 class="modal__title font-display" style="color:#f1f5f9;">
-          Exportar ahorros
-        </h2>
-        <span class="modal__subtitle" id="modal-reporte-formato-label" style="color:#64748b;"></span>
-      </div>
-      <button class="modal__close" id="btn-cerrar-reporte" aria-label="Cerrar"
-        style="border-color:rgba(255,255,255,.2);color:#cbd5e1;background:rgba(255,255,255,.08);">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-
-    <div class="modal__body" style="padding:1.25rem 1.5rem;">
-      <p style="font-size:.8rem;color:#64748b;margin:0 0 1rem;">
-        Se exportarán todas tus metas de ahorro con su progreso actual.
-      </p>
-      <div class="form-group" style="margin:0;">
-        <label class="field-label">Estado a incluir</label>
-        <select id="reporte-estado-filtro" class="field-input">
-          <option value="">Todos los estados</option>
-          <option value="SIN_INICIAR">Sin iniciar</option>
-          <option value="ACTIVO">Activo</option>
-          <option value="COMPLETADO">Completado</option>
-          <option value="ABANDONADO">Abandonado</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="modal__footer" style="justify-content:space-between;align-items:center;
-                background:#f8fafc;border-radius:0 0 1.25rem 1.25rem;">
-      <span style="font-size:.78rem;color:#64748b;" id="reporte-label-formato"></span>
-      <div style="display:flex;gap:.5rem;">
-        <button type="button" class="btn-ghost" id="btn-cancelar-reporte">Cancelar</button>
-        <button type="button" id="btn-descargar-reporte" class="btn-amber">
-          <i data-lucide="download"></i> Descargar
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="toast-container" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
-            display:flex;flex-direction:column;gap:.5rem;"></div>
-
 {% endblock %}
 
-
 {% block scripts %}
-<script>
-  window.CURRENT_MODULE = 'ahorros';
-  if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
-
-  const URL_EXPORTAR_CSV = "{% url 'ahorros:exportar_csv' %}";
-  const URL_EXPORTAR_EXCEL = "{% url 'ahorros:exportar_excel' %}";
-  const URL_EXPORTAR_PDF = "{% url 'ahorros:exportar_pdf' %}";
-  const URL_CREAR_META = "{% url 'ahorros:crear_ahorro' %}";
-  const URL_EDITAR_META = "{% url 'ahorros:editar_ahorro' id=0 %}".replace('/0/', '/');
-  const URL_ELIMINAR_META = "{% url 'ahorros:eliminar_ahorro' id=0 %}".replace('/0/', '/');
-  const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
-</script>
-<script src="{% static 'movimientos/js/datepicker.js' %}?v=1.2"></script>
+<script src="{% static 'movimientos/js/datepicker.js' %}"></script>
 <script src="{% static 'js/category-picker.js' %}"></script>
-<script src="{% static 'ahorros/js/ahorros.js' %}?v=1.4"></script>
+<script src="{% static 'js/gastu_planificacion.js' %}"></script>
+<script src="{% static 'ahorros/js/ahorros.js' %}"></script>
 <script src="{% static 'historial/js/historial.js' %}"></script>
 {% endblock %}
