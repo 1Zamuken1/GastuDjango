@@ -7,29 +7,33 @@ from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 
 from .recolector import RecolectorDatos
 from .prompt_builder import construir_prompt
 from .groq_client import preguntar_a_groq, GroqError
 from .herramientas import EjecutorHerramientas
 from .models import MensajeChat
+from .servicios_bloques import detectar_y_ensamblar_bloques
 
 logger = logging.getLogger(__name__)
 
-MAX_HISTORIAL_CONTEXTO = 10
+MAX_HISTORIAL_CONTEXTO = 4
 MAX_HISTORIAL_RESPUESTA = 50
 
 
 @method_decorator(login_required, name="dispatch")
+@method_decorator(ratelimit(key="user", rate="15/m", method="POST", block=False), name="post")
+@method_decorator(ratelimit(key="ip", rate="30/m", method="POST", block=False), name="post")
 class ChatView(View):
     """API del chat con el agente GASTU."""
 
     def get(self, request, *args, **kwargs):
-        """Últimos N mensajes del historial del usuario."""
+        """Últimos N mensajes del historial del usuario con soporte para bloques estructurados."""
         mensajes = (
             MensajeChat.objects.filter(usuario=request.user)
             .order_by("-creado_en")
-            .values("rol", "contenido", "creado_en")[:MAX_HISTORIAL_RESPUESTA]
+            .values("rol", "contenido", "bloques", "animo", "procedencia", "creado_en")[:MAX_HISTORIAL_RESPUESTA]
         )
         return JsonResponse({
             "ok": True,
@@ -37,6 +41,9 @@ class ChatView(View):
                 {
                     "rol": m["rol"],
                     "contenido": m["contenido"],
+                    "bloques": m["bloques"],
+                    "animo": m["animo"],
+                    "procedencia": m["procedencia"],
                     "hora": m["creado_en"].strftime("%H:%M"),
                 }
                 for m in reversed(mensajes)
@@ -44,6 +51,12 @@ class ChatView(View):
         })
 
     def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return JsonResponse({
+                "ok": False,
+                "error": "Has enviado demasiados mensajes. Por favor espera un momento antes de continuar."
+            }, status=429)
+
         if not request.user.is_authenticated:
             return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
 
@@ -59,11 +72,12 @@ class ChatView(View):
             return JsonResponse({"ok": False, "error": "Mensaje demasiado largo (máximo 1000 caracteres)."}, status=400)
 
         # Guardar mensaje del usuario antes de llamar a Groq para que aparezca en contexto
-        MensajeChat.objects.create(usuario=request.user, rol="user", contenido=pregunta)
+        msg_usuario = MensajeChat.objects.create(usuario=request.user, rol="user", contenido=pregunta)
 
         try:
             datos = RecolectorDatos(request.user).recolectar_todo()
         except Exception as e:
+            msg_usuario.delete()
             logger.error(f"[GASTU] Error recolectando datos usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error al obtener tus datos financieros."}, status=500)
 
@@ -75,22 +89,72 @@ class ChatView(View):
             historial_previo.reverse()
             mensajes = construir_prompt(datos, pregunta, historial_previo)
         except Exception as e:
+            msg_usuario.delete()
             logger.error(f"[GASTU] Error construyendo prompt usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error interno al preparar la consulta."}, status=500)
 
         ejecutor = EjecutorHerramientas(request.user)
         try:
             respuesta = preguntar_a_groq(mensajes, ejecutor.ejecutar)
+            bloques, animo, procedencia = detectar_y_ensamblar_bloques(request.user, pregunta, respuesta_llm=respuesta)
+            if bloques:
+                MensajeChat.objects.create(
+                    usuario=request.user, rol="bot", contenido=respuesta,
+                    bloques=bloques, animo=animo, procedencia=procedencia
+                )
+                return JsonResponse({
+                    "ok": True,
+                    "respuesta": respuesta,
+                    "bloques": bloques,
+                    "animo": animo,
+                    "procedencia": procedencia
+                })
+            else:
+                MensajeChat.objects.create(usuario=request.user, rol="bot", contenido=respuesta)
+                return JsonResponse({"ok": True, "respuesta": respuesta})
+
         except GroqError as e:
+            logger.warning(f"[GASTU] GroqError en consulta '{pregunta[:30]}': {e}. Probando fallback determinista.")
+            # Fallback determinista si la consulta es sobre presupuestos o movimientos
+            bloques_fb, animo_fb, proc_fb = detectar_y_ensamblar_bloques(request.user, pregunta, respuesta_llm=None)
+            if bloques_fb:
+                txt_resp = bloques_fb[0]["texto"]
+                MensajeChat.objects.create(
+                    usuario=request.user, rol="bot", contenido=txt_resp,
+                    bloques=bloques_fb, animo=animo_fb, procedencia=proc_fb
+                )
+                return JsonResponse({
+                    "ok": True,
+                    "respuesta": txt_resp,
+                    "bloques": bloques_fb,
+                    "animo": animo_fb,
+                    "procedencia": proc_fb
+                })
+
+            msg_usuario.delete()
             logger.error(f"[GASTU] GroqError usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": str(e)}, status=503)
+
         except Exception as e:
+            # Fallback determinista también ante errores inesperados si hay bloques disponibles
+            bloques_fb, animo_fb, proc_fb = detectar_y_ensamblar_bloques(request.user, pregunta, respuesta_llm=None)
+            if bloques_fb:
+                txt_resp = bloques_fb[0]["texto"]
+                MensajeChat.objects.create(
+                    usuario=request.user, rol="bot", contenido=txt_resp,
+                    bloques=bloques_fb, animo=animo_fb, procedencia=proc_fb
+                )
+                return JsonResponse({
+                    "ok": True,
+                    "respuesta": txt_resp,
+                    "bloques": bloques_fb,
+                    "animo": animo_fb,
+                    "procedencia": proc_fb
+                })
+
+            msg_usuario.delete()
             logger.error(f"[GASTU] Error inesperado Groq usuario {request.user.id}: {e}")
             return JsonResponse({"ok": False, "error": "Error al conectar con el asistente."}, status=500)
-
-        MensajeChat.objects.create(usuario=request.user, rol="bot", contenido=respuesta)
-
-        return JsonResponse({"ok": True, "respuesta": respuesta})
 
 
 @method_decorator(login_required, name="dispatch")

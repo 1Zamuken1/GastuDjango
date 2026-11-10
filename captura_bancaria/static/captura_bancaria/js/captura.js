@@ -44,6 +44,8 @@
 
   // ── Utilidades ─────────────────────────────────────────────
   function csrf() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
     var m = document.cookie.match(/csrftoken=([^;]+)/);
     return m ? decodeURIComponent(m[1]) : '';
   }

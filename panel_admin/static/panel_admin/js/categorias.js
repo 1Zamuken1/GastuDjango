@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── Helpers ─────────────────────────────────────────────── */
   function getCsrf() {
-    return document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+    return document.querySelector('meta[name="csrf-token"]')?.content
+      || document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
   }
 
   async function postForm(url, fd) {

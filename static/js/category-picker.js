@@ -179,7 +179,7 @@ window.CategoryPicker = {
         }
 
         const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
-        const csrfToken = csrfMatch ? csrfMatch[1] : '';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || (csrfMatch ? csrfMatch[1] : '');
 
         fetch(`/api/categorias/${id}/toggle-favorita/`, {
             method: 'POST',

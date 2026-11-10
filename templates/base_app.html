@@ -3,6 +3,8 @@
 <html lang="es" class="h-full">
   <head>
     <meta charset="UTF-8" />
+    {# Token CSRF para el JS: la cookie csrftoken es HttpOnly (CSRF_COOKIE_HTTPONLY) #}
+    <meta name="csrf-token" content="{{ csrf_token }}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}GastuApp{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'img/gastu_logo_rostro.png' %}" />
@@ -16,13 +18,13 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js" integrity="sha384-ieG+IKD0d/ZPXyCBTMVAbqsQdns8QGJR/e26WMw7M4fkaI/rHcS/YIoi+ah9WGge" crossorigin="anonymous"></script>
 
     <!-- Layout global (topbar, sidebar, cards, responsive) -->
     <link rel="stylesheet" href="{% static 'css/gastuapp_layout.css' %}" />
 
     <!-- Driver.js para los Tours Guiados -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" integrity="sha384-bovbcpDBo0pTIhd7ws6ebPh1PG31ubAHcX2pv8Tcu5EtFHNl5FBciYFtS/e2SN66" crossorigin="anonymous"/>
     <style>
       @keyframes popoverFadeIn {
         0% { opacity: 0; transform: scale(0.96) translateY(8px); }
@@ -787,10 +789,10 @@
       window.GASTU_STATIC_URL = "{% get_static_prefix %}";
     </script>
     <script src="{% static 'js/gastuapp_layout.js' %}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js" integrity="sha384-YB/DdIkloKoRpclWB8bNcYXWakt57USgtQPDzvnIDHYU0lasD5eWlXVo1S4ODukY" crossorigin="anonymous"></script>
     <script src="{% static 'js/gastu_alerts.js' %}"></script>
     <script src="{% static 'captura_bancaria/js/panel_pendientes.js' %}" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js" integrity="sha384-yPK823YWGKpXfBT8wLqUXmrB5ejcI7sgGBIary/01UavNc1bD92AOUBCBzjXQS/s" crossorigin="anonymous"></script>
     <script src="{% static 'js/tours.js' %}"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
@@ -844,7 +846,9 @@
       var CSRF_TOKEN_DROPDOWN = '';
 
       function getCsrf() {
-        // Intentar obtener CSRF del cookie
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.content) return meta.content;
+        // Respaldo: cookie (solo si no es HttpOnly)
         var name = 'csrftoken';
         var cookieValue = '';
         if (document.cookie && document.cookie !== '') {

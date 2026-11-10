@@ -12,6 +12,8 @@
   const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
   function csrf() {
+    const meta = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (meta) return meta;
     const match = document.cookie.match(/csrftoken=([^;]+)/);
     return match ? match[1] : '';
   }
