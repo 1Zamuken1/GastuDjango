@@ -15,3 +15,8 @@
 
 /* La frecuencia ocupa dos filas de cuatro opciones */
 .plan-modulo--programaciones .plan-opciones .plan-opcion { padding: .5rem .35rem; }
+
+/* Monto con el color de su tipo: verde si es ingreso, rojo si es egreso */
+.categoria-card__monto--ingreso { color: #059669; }
+.categoria-card__monto--egreso { color: #e11d48; }
+.categoria-card[data-activo="false"] .categoria-card__monto { color: var(--slate-500); }

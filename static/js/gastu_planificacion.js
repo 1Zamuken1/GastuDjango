@@ -206,6 +206,16 @@
     else alertas.toastSuccess(mensaje);
   }
 
+  /** Las cards clicables (.categoria-card) tambien se abren con Enter o espacio. */
+  function activarCardsTeclado(raiz) {
+    raiz.addEventListener('keydown', e => {
+      const card = e.target.closest?.('.categoria-card');
+      if (!card || e.target !== card || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      card.click();
+    });
+  }
+
   function iconos() {
     if (window.lucide) window.lucide.createIcons();
   }
@@ -221,6 +231,6 @@
   window.GastuPlan = {
     api, esc, formatMonto, formatFecha, parseISO, aISO, hoyISO, diasHasta, textoRelativo, plural,
     abrirModal, cerrarModal, initModales, initMonto, leerMonto, setMonto, crearDatepicker,
-    confirmarEliminar, toast, iconos, leerSesion, guardarSesion,
+    confirmarEliminar, toast, iconos, leerSesion, guardarSesion, activarCardsTeclado,
   };
 })();

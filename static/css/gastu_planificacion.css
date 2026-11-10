@@ -16,6 +16,11 @@
   --acento-medio: #c4b5fd;
   --acento-anillo: rgba(124, 58, 237, .14);
   --acento-rgb: 124, 58, 237;
+  /* La card compartida (css/gastu_card.css) toma el acento del modulo */
+  --card-acento: var(--acento);
+  --card-acento-oscuro: var(--acento-oscuro);
+  --card-acento-claro: var(--acento-claro);
+  --card-acento-rgb: var(--acento-rgb);
   --verde: #059669;
   --verde-claro: #ecfdf5;
   --rojo: #e11d48;
@@ -152,95 +157,23 @@
 /* ── Grilla de cards ───────────────────────────────────────── */
 .plan-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-/* Card: superficie neutra, franja superior de color, cifra principal en el
-   acento del modulo y pie oscuro solido con las acciones. El color del modulo
-   se reserva para la cifra y la accion principal, sin tenir bordes ni fondos. */
-.plan-card {
-  position: relative;
-  display: flex; flex-direction: column;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 1.1rem;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
-  transition: transform .2s, box-shadow .2s;
-  animation: plan-aparecer .2s ease both;
-  container-type: inline-size;
-}
-.plan-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: var(--franja, var(--acento)); }
-.plan-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, .10), 0 2px 6px rgba(15, 23, 42, .05); }
-
-/* Franja por estado (presupuestos) o por tipo (programaciones) */
-.plan-card--normal { --franja: #16a34a; }
-.plan-card--cuidado { --franja: var(--ambar); }
-.plan-card--alerta { --franja: var(--naranja); }
-.plan-card--excedido { --franja: var(--rojo); }
-.plan-card--programado { --franja: var(--acento); }
-.plan-card--ingreso { --franja: #16a34a; }
-.plan-card--egreso { --franja: var(--rojo); }
-.plan-card--inactiva { --franja: #cbd5e1; }
-.plan-card--inactiva .plan-card__cifra,
-.plan-card--inactiva .plan-card__icono { filter: grayscale(1); opacity: .6; }
-
-.plan-card__cabecera {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem;
-  padding: 1.15rem 1.15rem .9rem;
-  background: #fff;
-  border-bottom: 1px solid #f1f5f9;
-}
-.plan-card__principal { min-width: 0; flex: 1; }
-@container (max-width: 360px) {
-  .plan-card__cifra { font-size: 1.3rem; }
-  .plan-card__cifra small { display: block; margin: .15rem 0 0; }
-}
-.plan-card__cifra { font-size: 1.45rem; font-weight: 800; color: var(--acento); line-height: 1.1; letter-spacing: -.02em; margin: 0; font-variant-numeric: tabular-nums; }
-.plan-card__cifra small { font-family: 'DM Sans', sans-serif; font-size: .74rem; font-weight: 600; color: var(--slate-500); margin-left: .25rem; letter-spacing: 0; }
-.plan-card__etiqueta { font-size: .72rem; font-weight: 700; color: var(--slate-700); text-transform: uppercase; letter-spacing: .06em; margin: .35rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.plan-card__sub { font-size: .75rem; color: var(--slate-500); margin: .1rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.plan-card__lado { display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; flex-shrink: 0; }
+/* Las cards de Presupuestos, Programaciones y Ahorros usan el componente
+   compartido css/gastu_card.css. Aqui quedan solo el icono de la lista de
+   pendientes y la cuadricula de datos del detalle de ahorro. */
 .plan-card__icono { width: 2rem; height: 2rem; border-radius: .6rem; display: grid; place-items: center; background: #f8fafc; color: var(--slate-500); }
 .plan-card__icono svg { width: 1rem; height: 1rem; }
 .plan-card__icono--ingreso { background: var(--verde-claro); color: var(--verde); }
 .plan-card__icono--egreso { background: var(--rojo-claro); color: var(--rojo); }
-
-.plan-card__cuerpo { display: flex; flex-direction: column; gap: .7rem; padding: .9rem 1.15rem 1rem; flex: 1; }
-.plan-card__equivalente { font-size: .74rem; color: var(--slate-500); margin: 0; }
-
-.plan-progreso { display: flex; flex-direction: column; gap: .35rem; }
-.plan-progreso__fila { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; font-size: .78rem; color: var(--slate-600, #475569); }
-.plan-progreso__fila b { color: var(--slate-900); font-variant-numeric: tabular-nums; }
-.plan-progreso__barra { height: 7px; background: #eef2f6; border-radius: 9999px; overflow: hidden; }
-.plan-progreso__relleno { height: 100%; width: 0; border-radius: 9999px; background: var(--franja, var(--verde)); transition: width .5s cubic-bezier(.4, 0, .2, 1); }
-.plan-progreso__pct { font-size: .78rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--franja, var(--verde)); }
-
 .plan-card__datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: 0; }
 .plan-card__datos div { min-width: 0; padding: .45rem .55rem; border-radius: .6rem; background: #f8fafc; }
 .plan-card__datos dt { font-size: .64rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: .05em; margin: 0 0 .1rem; }
 .plan-card__datos dd { font-size: .82rem; font-weight: 700; color: var(--slate-900); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .plan-card__datos dd.is-negativo { color: var(--rojo); }
 .plan-card__datos dd.is-pendiente { color: var(--ambar); }
-.plan-card__periodo { font-size: .74rem; color: var(--slate-500); display: flex; align-items: center; gap: .3rem; margin: 0; }
-.plan-card__periodo svg { width: .8rem; height: .8rem; flex-shrink: 0; }
-
-.plan-card__pie { display: flex; gap: .45rem; padding: .65rem .75rem; background: #1e293b; }
-.plan-card-btn {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
-  padding: .45rem .35rem; border-radius: .55rem; border: 1px solid rgba(255, 255, 255, .12);
-  background: transparent; color: #e2e8f0; font-size: .76rem; font-weight: 600; cursor: pointer;
-  font-family: 'DM Sans', sans-serif; white-space: nowrap;
-  transition: background .15s, color .15s, border-color .15s;
-}
-.plan-card-btn svg { width: .85rem; height: .85rem; flex-shrink: 0; }
-.plan-card-btn:hover { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .22); color: #fff; }
-.plan-card-btn:focus-visible { outline: 2px solid var(--acento-medio); outline-offset: 1px; }
-.plan-card-btn--acento { color: var(--acento-medio); border-color: rgba(var(--acento-rgb), .45); }
-.plan-card-btn--acento:hover { background: var(--acento); border-color: var(--acento); color: #fff; }
-.plan-card-btn--peligro { flex: 0 0 auto; padding: .45rem .6rem; color: #fca5a5; }
-.plan-card-btn--peligro:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
 
 /* Chips de estado */
 .plan-chip { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .55rem; border-radius: 9999px; font-size: .7rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
@@ -284,6 +217,20 @@
 .plan-modal__cuerpo--flush { padding: 0; gap: 0; }
 .plan-modal__pie { display: flex; justify-content: flex-end; align-items: center; gap: .75rem; padding: .875rem 1.5rem; border-top: 1px solid #f1f5f9; background: #fafafa; border-radius: 0 0 1rem 1rem; }
 .plan-modal__pie--entre { justify-content: space-between; }
+
+/* Formularios en dos columnas: horizontales en escritorio, una columna en celular.
+   Mismo ancho en todos los modulos para que los modales se sientan iguales. */
+.plan-modal--form { width: min(860px, 95vw); }
+.plan-columnas__col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+@media (min-width: 820px) {
+  .plan-modal__cuerpo.plan-columnas {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.1rem 1.5rem;
+    align-items: start;
+  }
+  .plan-columnas__completa { grid-column: 1 / -1; }
+}
 
 /* Campos */
 .fg { display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
@@ -408,9 +355,9 @@
   .plan-banner { flex-wrap: wrap; }
 }
 @media (min-width: 1280px) {
-  .plan-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .plan-grid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .plan-card, .plan-banner, .plan-lista__item, .plan-modal { animation: none; }
-  .plan-card:hover { transform: none; }
+  
 }

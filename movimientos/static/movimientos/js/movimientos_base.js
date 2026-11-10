@@ -169,7 +169,7 @@ class GestorMovimientos {
         return;
       }
 
-      // Misma estructura que la card del template (ver movimientos/css/categoria_card.css)
+      // Misma estructura que la card del template (ver static/css/gastu_card.css)
       const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
       grid.innerHTML = data.categorias.map(cat => `
         <div class="categoria-card" tabindex="0"

@@ -176,56 +176,51 @@
     const est = estadoDe(p);
     const [chipClase, chipTexto] = CHIP[est];
     const esIngreso = p.tipo === 'INGRESO';
-    const tipoClase = esIngreso ? 'ingreso' : 'egreso';
     const titulo = p.descripcion || p.categoria_nombre;
-        const equivalente = p.frecuencia !== 'MENSUAL' && p.monto_mensual
-      ? `<p class="plan-card__equivalente">Equivale a ${P.formatMonto(p.monto_mensual)} al mes</p>` : '';
-
-    let proxima = '—';
-    let cuando = '—';
-    if (p.activo && p.proxima_ejecucion) {
-      proxima = P.formatFecha(p.proxima_ejecucion, true);
-      cuando = est === 'pendiente' ? 'pendiente' : P.textoRelativo(p.proxima_ejecucion);
-    }
-    const fin = p.fecha_fin ? P.formatFecha(p.fecha_fin, true) : 'Sin fin';
+    const sub = p.descripcion ? `${p.categoria_nombre} · ${p.frecuencia_label}` : p.frecuencia_label;
     const id = Number(p.id);
 
-    const accionPrincipal = est === 'pendiente'
-      ? `<button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="revisar-pendientes"><i data-lucide="check"></i> Confirmar</button>`
+    const extra = p.frecuencia !== 'MENSUAL' && p.monto_mensual
+      ? `${p.frecuencia_label.toLowerCase()} · ${P.formatMonto(p.monto_mensual)}/mes`
+      : p.frecuencia_label.toLowerCase();
+
+    let info;
+    if (est === 'pendiente') {
+      info = `<i data-lucide="bell-ring"></i> Pendiente del <b>${P.formatFecha(p.proxima_ejecucion, true)}</b>`;
+    } else if (est === 'activa' && p.proxima_ejecucion) {
+      info = `<i data-lucide="calendar-clock"></i> Próxima <b>${P.formatFecha(p.proxima_ejecucion, true)}</b> · ${P.textoRelativo(p.proxima_ejecucion)}`;
+    } else if (est === 'finalizada') {
+      info = `<i data-lucide="calendar-x"></i> Terminó${p.fecha_fin ? ` el ${P.formatFecha(p.fecha_fin, true)}` : ''}`;
+    } else {
+      info = `<i data-lucide="pause"></i> Pausada desde ${P.formatFecha(p.fecha_inicio, true)}`;
+    }
+
+    const accion = est === 'pendiente'
+      ? `<button type="button" class="categoria-card__accion" data-accion="revisar-pendientes"><i data-lucide="check"></i><span>Confirmar</span></button>`
       : est !== 'finalizada'
-        ? `<button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="toggle" data-id="${id}"><i data-lucide="${p.activo ? 'pause' : 'play'}"></i> ${p.activo ? 'Pausar' : 'Reanudar'}</button>`
+        ? `<button type="button" class="categoria-card__btn" data-accion="toggle" data-id="${id}" title="${p.activo ? 'Pausar' : 'Reanudar'}" aria-label="${p.activo ? 'Pausar' : 'Reanudar'}"><i data-lucide="${p.activo ? 'pause' : 'play'}"></i></button>`
         : '';
-    const claseEstado = p.activo ? `plan-card--${tipoClase}` : 'plan-card--inactiva';
 
     return `
-      <article class="plan-card ${claseEstado}" data-id="${id}">
-        <header class="plan-card__cabecera">
-          <div class="plan-card__principal">
-            <p class="plan-card__cifra font-display">${esIngreso ? '+' : '-'}${P.formatMonto(p.monto_programado)}<small>${P.esc(p.frecuencia_label.toLowerCase())}</small></p>
-            <p class="plan-card__etiqueta" title="${P.esc(titulo)}">${P.esc(titulo)}</p>
-            <p class="plan-card__sub">${P.esc(p.descripcion ? p.categoria_nombre : (esIngreso ? 'Ingreso' : 'Egreso'))}</p>
+      <article class="categoria-card" data-activo="${p.activo}"
+               tabindex="0" role="button" aria-label="Editar ${P.esc(titulo)}"
+               data-accion="editar" data-id="${id}">
+        <div class="categoria-card__header">
+          <div class="categoria-card__icon"><i data-lucide="${P.esc(p.categoria_icono || (esIngreso ? 'trending-up' : 'trending-down'))}"></i></div>
+          <div class="categoria-card__titulo">
+            <p class="categoria-card__nombre">${P.esc(titulo)}</p>
+            <p class="categoria-card__cantidad">${P.esc(sub)}</p>
           </div>
-          <div class="plan-card__lado">
-            <div class="plan-card__icono plan-card__icono--${tipoClase}"><i data-lucide="${esIngreso ? 'trending-up' : 'trending-down'}"></i></div>
-            <span class="plan-chip plan-chip--${chipClase}">${chipTexto}</span>
-          </div>
-        </header>
-
-        <div class="plan-card__cuerpo">
-          <dl class="plan-card__datos">
-            <div><dt>Próxima</dt><dd>${proxima}</dd></div>
-            <div><dt>Cuándo</dt><dd class="${est === 'pendiente' ? 'is-pendiente' : ''}">${P.esc(cuando)}</dd></div>
-            <div><dt>Termina</dt><dd>${fin}</dd></div>
-          </dl>
-          ${equivalente}
-          <p class="plan-card__periodo"><i data-lucide="calendar"></i>Desde ${P.formatFecha(p.fecha_inicio, true)}</p>
+          <span class="plan-chip plan-chip--${chipClase}">${chipTexto}</span>
         </div>
-
-        <footer class="plan-card__pie">
-          ${accionPrincipal}
-          <button type="button" class="plan-card-btn" data-accion="editar" data-id="${id}"><i data-lucide="pencil"></i> Editar</button>
-          <button type="button" class="plan-card-btn plan-card-btn--peligro" data-accion="eliminar" data-id="${id}" title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
-        </footer>
+        <p class="categoria-card__monto categoria-card__monto--${esIngreso ? 'ingreso' : 'egreso'} font-display">${esIngreso ? '+' : '-'}${P.formatMonto(p.monto_programado)}<small>${P.esc(extra)}</small></p>
+        <div class="categoria-card__pie">
+          <p class="categoria-card__info">${info}</p>
+          <div class="categoria-card__acciones">
+            ${accion}
+            <button type="button" class="categoria-card__btn categoria-card__btn--peligro" data-accion="eliminar" data-id="${id}" title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>
       </article>`;
   }
 
@@ -488,6 +483,7 @@
     });
     $('btn-registrar-todas').addEventListener('click', registrarTodas);
 
+    P.activarCardsTeclado($('programaciones-app'));
     $('programaciones-app').addEventListener('click', e => {
       const btn = e.target.closest('[data-accion]');
       if (!btn) return;

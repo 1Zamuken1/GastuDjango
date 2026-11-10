@@ -10,6 +10,7 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'movimientos/css/datepicker.css' %}">
 <link rel="stylesheet" href="{% static 'css/gastu_planificacion.css' %}">
+<link rel="stylesheet" href="{% static 'css/gastu_card.css' %}">
 <link rel="stylesheet" href="{% static 'ahorros/css/metas.css' %}">
 {% endblock %}
 
@@ -129,49 +130,47 @@
     </div>
   </div>
 
-  {# ── Zona 3: Grilla de metas (cards horizontales, como Ingresos/Egresos) ─ #}
-  <div class="metas-grid" id="grid-metas">
+  {# ── Zona 3: Grilla de metas (card compartida, css/gastu_card.css) ──────── #}
+  <div class="plan-grid" id="grid-metas">
     {% for ahorro in ahorros %}
     {% with r=ahorro.resumen %}
-    <article class="meta-card meta-card--{{ r.estado }}" tabindex="0" role="button"
-             aria-label="Ver detalle de {{ ahorro.categoria.nombre }}"
+    <article class="categoria-card{% if r.estado == 'completada' %} categoria-card--bien{% endif %}"
+             data-activo="{% if r.estado == 'abandonada' %}false{% else %}true{% endif %}"
+             tabindex="0" role="button" aria-label="Ver detalle de {{ ahorro.categoria.nombre }}"
              data-accion="detalle" data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"
              data-grupo="{% if r.estado == 'completada' %}completadas{% elif r.estado == 'abandonada' %}abandonadas{% else %}en_curso{% endif %}"
              data-buscar="{{ ahorro.categoria.nombre|lower }} {{ ahorro.descripcion|lower }}">
-      <div class="meta-card__header">
-        <div class="meta-card__titulo">
-          <p class="meta-card__nombre">{{ ahorro.categoria.nombre|default:"Meta de ahorro" }}</p>
-          <p class="meta-card__sub">{{ ahorro.descripcion|default:"Sin descripción" }}</p>
+      <div class="categoria-card__header">
+        <div class="categoria-card__icon"><i data-lucide="{% if r.estado == 'completada' %}trophy{% else %}{{ ahorro.categoria.icono|default:'piggy-bank' }}{% endif %}"></i></div>
+        <div class="categoria-card__titulo">
+          <p class="categoria-card__nombre">{{ ahorro.categoria.nombre|default:"Meta de ahorro" }}</p>
+          <p class="categoria-card__cantidad">{{ ahorro.descripcion|default:"Sin descripción" }}</p>
         </div>
         <span class="plan-chip plan-chip--{{ r.estado }}">{{ r.estado_label }}</span>
-        <div class="meta-card__icono"><i data-lucide="{% if r.estado == 'completada' %}trophy{% else %}piggy-bank{% endif %}"></i></div>
       </div>
 
-      <p class="meta-card__monto font-display">${{ ahorro.total_acumulado|floatformat:"0g" }}<small>de ${{ ahorro.monto_meta|floatformat:"0g" }}</small></p>
+      <p class="categoria-card__monto font-display">${{ ahorro.total_acumulado|floatformat:"0g" }}<small>de ${{ ahorro.monto_meta|floatformat:"0g" }} · {{ r.porcentaje }}%</small></p>
 
-      <div class="meta-card__progreso">
-        <div class="meta-card__barra"><div class="plan-progreso__relleno" data-pct="{{ r.porcentaje }}"></div></div>
-        <span class="meta-card__pct">{{ r.porcentaje }}%</span>
-      </div>
+      <div class="progress-bar"><div class="progress-bar__fill" data-pct="{{ r.porcentaje }}"></div></div>
 
-      <div class="meta-card__pie">
-        <p class="meta-card__info{% if r.perdidas or r.proyeccion_tarde %} meta-card__info--aviso{% endif %}" title="{{ r.pagadas }} de {{ r.total_cuotas }} cuotas aportadas">
+      <div class="categoria-card__pie">
+        <p class="categoria-card__info{% if r.perdidas or r.proyeccion_tarde %} categoria-card__info--aviso{% endif %}" title="{{ r.pagadas }} de {{ r.total_cuotas }} cuotas aportadas">
           {% if r.estado == 'completada' %}
             <i data-lucide="trophy"></i> Meta lograda
           {% elif r.perdidas %}
-            <i data-lucide="alert-circle"></i> {{ r.perdidas }} vencida{{ r.perdidas|pluralize }} · {{ r.pagadas }}/{{ r.total_cuotas }}
+            <i data-lucide="alert-circle"></i> {{ r.perdidas }} vencida{{ r.perdidas|pluralize }} · <b>{{ r.pagadas }}/{{ r.total_cuotas }}</b>
           {% elif r.proxima %}
-            <i data-lucide="calendar-clock"></i> ${{ r.proxima.aporte_asignado|floatformat:"0g" }} · {% if r.dias_proxima == 0 %}hoy{% else %}{{ r.proxima.fecha_limite|date:"j b" }}{% endif %} · {{ r.pagadas }}/{{ r.total_cuotas }}
+            <i data-lucide="calendar-clock"></i> <b>${{ r.proxima.aporte_asignado|floatformat:"0g" }}</b> · {% if r.dias_proxima == 0 %}hoy{% else %}{{ r.proxima.fecha_limite|date:"j b" }}{% endif %} · {{ r.pagadas }}/{{ r.total_cuotas }}
           {% else %}
             <i data-lucide="flag"></i> Meta el {{ ahorro.fecha_meta|date:"j b Y" }}
           {% endif %}
         </p>
-        <div class="meta-card__acciones">
+        <div class="categoria-card__acciones">
           {% if r.estado != 'completada' %}
-          <button type="button" class="meta-card__aportar" data-accion="detalle" data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"><i data-lucide="plus"></i><span>Aportar</span></button>
+          <button type="button" class="categoria-card__accion" data-accion="detalle" data-url="{% url 'ahorros:registrar_aporte' meta_id=ahorro.id %}"><i data-lucide="plus"></i><span>Aportar</span></button>
           {% endif %}
-          <button type="button" class="meta-card__btn" data-accion="editar" data-url="{% url 'ahorros:editar_ahorro' id=ahorro.id %}" title="Editar" aria-label="Editar"><i data-lucide="pencil"></i></button>
-          <button type="button" class="meta-card__btn meta-card__btn--peligro" data-accion="eliminar"
+          <button type="button" class="categoria-card__btn" data-accion="editar" data-url="{% url 'ahorros:editar_ahorro' id=ahorro.id %}" title="Editar" aria-label="Editar"><i data-lucide="pencil"></i></button>
+          <button type="button" class="categoria-card__btn categoria-card__btn--peligro" data-accion="eliminar"
                   data-url="{% url 'ahorros:eliminar_ahorro' id=ahorro.id %}"
                   data-nombre="{{ ahorro.descripcion|default:ahorro.categoria.nombre }}"
                   data-acumulado="{{ ahorro.total_acumulado|floatformat:0 }}"
@@ -195,7 +194,7 @@
 
   {# ── Modal crear / editar meta (dos columnas en escritorio) ─────────────── #}
   <div class="modal-overlay" id="modal-meta" hidden>
-    <div class="plan-modal ahorro-modal-meta" role="dialog" aria-modal="true" aria-labelledby="modal-meta-titulo">
+    <div class="plan-modal plan-modal--form" role="dialog" aria-modal="true" aria-labelledby="modal-meta-titulo">
       <div class="plan-modal__header">
         <div class="plan-modal__header-izq">
           <div class="plan-modal__badge"><i data-lucide="piggy-bank"></i></div>
@@ -209,13 +208,13 @@
 
       <form id="form-meta" novalidate>
         <input type="hidden" id="meta-url">
-        <div class="plan-modal__cuerpo ahorro-columnas">
-          <div class="ahorro-alerta ahorro-columnas__completa" id="meta-errores" role="alert" hidden>
+        <div class="plan-modal__cuerpo plan-columnas">
+          <div class="ahorro-alerta plan-columnas__completa" id="meta-errores" role="alert" hidden>
             <i data-lucide="alert-circle"></i>
             <span id="meta-errores-texto"></span>
           </div>
 
-          <div class="ahorro-columnas__col">
+          <div class="plan-columnas__col">
             <div class="fg">
               <span class="fg-label">Categoría <span class="fg-label-req">*</span></span>
               <button type="button" class="picker-trigger" id="meta-categoria-btn">
@@ -246,7 +245,7 @@
             </div>
           </div>
 
-          <div class="ahorro-columnas__col">
+          <div class="plan-columnas__col">
             <div class="fg">
               <span class="fg-label">Frecuencia de ahorro <span class="fg-label-req">*</span></span>
               <div class="plan-opciones" id="meta-frecuencias">

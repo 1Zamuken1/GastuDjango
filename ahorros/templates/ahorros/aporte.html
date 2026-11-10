@@ -13,8 +13,8 @@
     </button>
   </div>
 
-  <div class="plan-modal__cuerpo ahorro-columnas ahorro-columnas--detalle">
-    <div class="ahorro-columnas__col">
+  <div class="plan-modal__cuerpo plan-columnas plan-columnas--detalle">
+    <div class="plan-columnas__col">
     <div class="ahorro-alerta" id="detalle-error" role="alert" hidden>
       <i data-lucide="alert-triangle"></i>
       <span id="detalle-error-texto"></span>
@@ -102,7 +102,7 @@
     </div>
 
     {# Linea de tiempo de cuotas #}
-    <section class="ahorro-columnas__col ahorro-detalle__cuotas">
+    <section class="plan-columnas__col ahorro-detalle__cuotas">
       <p class="ahorro-bloque__titulo ahorro-bloque__titulo--lista">
         <i data-lucide="list-checks"></i> Cuotas
         <span>{{ resumen.pagadas }} aportadas · {{ resumen.perdidas }} vencidas · {{ resumen.pendientes }} pendientes</span>

@@ -104,7 +104,7 @@
 
   <!-- Modal crear / editar -->
   <div class="modal-overlay" id="modal-presupuesto" hidden>
-    <div class="plan-modal" role="dialog" aria-modal="true" aria-labelledby="modal-presupuesto-titulo">
+    <div class="plan-modal plan-modal--form" role="dialog" aria-modal="true" aria-labelledby="modal-presupuesto-titulo">
       <div class="plan-modal__header">
         <div class="plan-modal__header-izq">
           <div class="plan-modal__badge"><i data-lucide="target"></i></div>
@@ -120,45 +120,47 @@
 
       <form id="form-presupuesto" novalidate>
         <input type="hidden" id="presupuesto-id">
-        <div class="plan-modal__cuerpo">
-          <div class="fg">
-            <span class="fg-label">Categoría <span class="fg-label-req">*</span></span>
-            <button type="button" class="picker-trigger" id="presupuesto-categoria-btn">
-              <span class="picker-trigger-icon"><i data-lucide="tag"></i></span>
-              <span class="picker-trigger-text" id="presupuesto-categoria-texto">Selecciona una categoría de egreso</span>
-              <i data-lucide="chevron-right" class="picker-trigger-arrow"></i>
-            </button>
-            <input type="hidden" id="presupuesto-categoria">
-          </div>
-
-          <div class="fg">
-            <label class="fg-label" for="presupuesto-limite">Límite <span class="fg-label-req">*</span></label>
-            <div class="monto-field-wrap">
-              <span class="monto-prefix">$</span>
-              <input type="text" inputmode="numeric" id="presupuesto-limite" class="monto-input" placeholder="0" autocomplete="off">
-              <span class="monto-currency-tag">COP</span>
-            </div>
-            <span class="fg-hint fg-hint--acento" id="presupuesto-ritmo"></span>
-          </div>
-
-          <div class="fg">
-            <span class="fg-label">Período <span class="fg-label-req">*</span></span>
-            <div class="plan-opciones plan-opciones--auto" id="presupuesto-atajos">
-              <button type="button" class="plan-opcion" data-atajo="este-mes">Este mes</button>
-              <button type="button" class="plan-opcion" data-atajo="proximo-mes">Próximo mes</button>
-              <button type="button" class="plan-opcion" data-atajo="quincena">Próximos 15 días</button>
-              <button type="button" class="plan-opcion" data-atajo="30-dias">Próximos 30 días</button>
-            </div>
-          </div>
-
-          <div class="fg-fila">
+        <div class="plan-modal__cuerpo plan-columnas">
+          <div class="plan-columnas__col">
             <div class="fg">
-              <span class="fg-label">Desde</span>
-              <input type="hidden" id="presupuesto-inicio">
+              <span class="fg-label">Categoría <span class="fg-label-req">*</span></span>
+              <button type="button" class="picker-trigger" id="presupuesto-categoria-btn">
+                <span class="picker-trigger-icon"><i data-lucide="tag"></i></span>
+                <span class="picker-trigger-text" id="presupuesto-categoria-texto">Selecciona una categoría de egreso</span>
+                <i data-lucide="chevron-right" class="picker-trigger-arrow"></i>
+              </button>
+              <input type="hidden" id="presupuesto-categoria">
             </div>
             <div class="fg">
-              <span class="fg-label">Hasta</span>
-              <input type="hidden" id="presupuesto-fin">
+              <label class="fg-label" for="presupuesto-limite">Límite <span class="fg-label-req">*</span></label>
+              <div class="monto-field-wrap">
+                <span class="monto-prefix">$</span>
+                <input type="text" inputmode="numeric" id="presupuesto-limite" class="monto-input" placeholder="0" autocomplete="off">
+                <span class="monto-currency-tag">COP</span>
+              </div>
+              <span class="fg-hint fg-hint--acento" id="presupuesto-ritmo"></span>
+            </div>
+          </div>
+
+          <div class="plan-columnas__col">
+            <div class="fg">
+              <span class="fg-label">Período <span class="fg-label-req">*</span></span>
+              <div class="plan-opciones plan-opciones--auto" id="presupuesto-atajos">
+                <button type="button" class="plan-opcion" data-atajo="este-mes">Este mes</button>
+                <button type="button" class="plan-opcion" data-atajo="proximo-mes">Próximo mes</button>
+                <button type="button" class="plan-opcion" data-atajo="quincena">Próximos 15 días</button>
+                <button type="button" class="plan-opcion" data-atajo="30-dias">Próximos 30 días</button>
+              </div>
+            </div>
+            <div class="fg-fila">
+              <div class="fg">
+                <span class="fg-label">Desde</span>
+                <input type="hidden" id="presupuesto-inicio">
+              </div>
+              <div class="fg">
+                <span class="fg-label">Hasta</span>
+                <input type="hidden" id="presupuesto-fin">
+              </div>
             </div>
           </div>
         </div>

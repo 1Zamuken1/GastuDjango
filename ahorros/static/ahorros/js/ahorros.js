@@ -67,13 +67,13 @@
 
   /* ── Barras y filtros ────────────────────────────────────── */
   function animarBarras(raiz) {
-    raiz.querySelectorAll('.plan-progreso__relleno').forEach(barra => {
+    raiz.querySelectorAll('.progress-bar__fill, .plan-progreso__relleno').forEach(barra => {
       requestAnimationFrame(() => { barra.style.width = `${Math.min(Number(barra.dataset.pct) || 0, 100)}%`; });
     });
   }
 
   function aplicarFiltros() {
-    const cards = [...app.querySelectorAll('#grid-metas .meta-card')];
+    const cards = [...app.querySelectorAll('#grid-metas .categoria-card')];
     let visibles = 0;
     cards.forEach(card => {
       const pasaEstado = estado.filtro === 'todas' || card.dataset.grupo === estado.filtro;
@@ -363,13 +363,7 @@
         case 'nueva': abrirFormulario(null); break;
       }
     });
-    /* Las cards son clicables como en Ingresos/Egresos; tambien con Enter o espacio */
-    app.addEventListener('keydown', e => {
-      const card = e.target.closest?.('.meta-card');
-      if (!card || e.target !== card || (e.key !== 'Enter' && e.key !== ' ')) return;
-      e.preventDefault();
-      abrirDetalle(card.dataset.url);
-    });
+    P.activarCardsTeclado(app);
   }
 
   document.addEventListener('DOMContentLoaded', () => {

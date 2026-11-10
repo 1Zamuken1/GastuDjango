@@ -27,89 +27,7 @@
 .plan-modulo--ahorros .plan-progreso__relleno { background: var(--acento); }
 .ahorro-detalle--completada .plan-progreso__relleno { background: #16a34a; }
 
-/* ── Cards de metas: mismas proporciones que las de Ingresos/Egresos ──
-   Rectangulo horizontal: nombre e icono arriba, monto, barra y una
-   sola linea con la proxima cuota y las acciones. */
-.metas-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-.meta-card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: .875rem;
-  padding: 1.1rem 1.25rem 1rem;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  transition: box-shadow .15s, transform .15s;
-  animation: plan-aparecer .2s ease both;
-  container-type: inline-size;
-}
-.meta-card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, .08); transform: translateY(-1px); }
-.meta-card:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
-.meta-card[hidden] { display: none; }
-
-.meta-card__header { display: flex; align-items: flex-start; gap: .6rem; margin-bottom: .6rem; }
-.meta-card__titulo { flex: 1; min-width: 0; }
-.meta-card__nombre { font-size: .95rem; font-weight: 700; color: var(--slate-900); margin: 0 0 .15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.meta-card__sub { font-size: .75rem; color: var(--slate-500); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.meta-card__header .plan-chip { margin-top: .1rem; }
-.meta-card__icono { width: 2.25rem; height: 2.25rem; border-radius: .625rem; display: grid; place-items: center; background: var(--acento-claro); color: var(--acento); flex-shrink: 0; }
-.meta-card__icono svg { width: 1.1rem; height: 1.1rem; }
-
-.meta-card__monto { font-size: 1.4rem; font-weight: 800; color: var(--slate-900); margin: 0 0 .45rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.meta-card__monto small { font-family: 'DM Sans', sans-serif; font-size: .78rem; font-weight: 600; color: var(--slate-500); margin-left: .35rem; }
-
-.meta-card__progreso { display: flex; align-items: center; gap: .5rem; margin-bottom: .7rem; }
-.meta-card__barra { flex: 1; height: 6px; border-radius: 9999px; background: #e2e8f0; overflow: hidden; }
-.meta-card__pct { font-size: .72rem; font-weight: 700; color: var(--acento-oscuro); min-width: 2.4rem; text-align: right; font-variant-numeric: tabular-nums; }
-
-.meta-card__pie { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: auto; }
-.meta-card__info { display: flex; align-items: center; gap: .3rem; min-width: 0; margin: 0; font-size: .75rem; color: var(--slate-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.meta-card__info svg { width: .8rem; height: .8rem; flex-shrink: 0; }
-.meta-card__info--aviso { color: var(--rojo); font-weight: 600; }
-.meta-card__acciones { display: flex; align-items: center; gap: .3rem; flex-shrink: 0; }
-.meta-card__aportar {
-  display: inline-flex; align-items: center; gap: .25rem;
-  padding: .3rem .6rem; border-radius: .5rem; border: 1px solid var(--acento-medio);
-  background: var(--acento-claro); color: var(--acento-oscuro);
-  font-size: .74rem; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
-  transition: background .15s, color .15s;
-}
-.meta-card__aportar svg { width: .8rem; height: .8rem; }
-.meta-card__aportar:hover { background: var(--acento); border-color: var(--acento); color: #fff; }
-.meta-card__btn {
-  width: 1.85rem; height: 1.85rem; border-radius: .5rem; border: 1px solid var(--border);
-  background: #fff; color: var(--slate-500); cursor: pointer; display: grid; place-items: center;
-  transition: background .15s, color .15s, border-color .15s;
-}
-.meta-card__btn svg { width: .85rem; height: .85rem; }
-.meta-card__btn:hover { background: #f1f5f9; color: var(--slate-900); }
-.meta-card__btn--peligro { color: #ef4444; }
-.meta-card__btn--peligro:hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
-
-/* Estados */
-.meta-card--completada .meta-card__icono { background: var(--verde-claro); color: var(--verde); }
-.meta-card--completada .plan-progreso__relleno { background: #16a34a; }
-.meta-card--completada .meta-card__pct { color: var(--verde); }
-.meta-card--abandonada { background: #fbfcfd; }
-.meta-card--abandonada .meta-card__monto,
-.meta-card--abandonada .meta-card__icono,
-.meta-card--abandonada .meta-card__barra { filter: grayscale(1); opacity: .6; }
-
-/* Cards angostas (tablet): se ocultan el icono y el texto de Aportar */
-@container (max-width: 300px) {
-  .meta-card__icono { display: none; }
-  .meta-card__aportar span { display: none; }
-  .meta-card__aportar { padding: .3rem .45rem; }
-}
-
-@media (min-width: 1280px) {
-  .metas-grid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
-}
+/* Las cards de metas usan el componente compartido css/gastu_card.css */
 
 /* ── Toolbar: tiene mas acciones que las otras vistas ──────── */
 .plan-modulo--ahorros .toolbar {
@@ -160,29 +78,18 @@
 .ahorro-alerta[hidden] { display: none; }
 .ahorro-alerta svg { width: 1rem; height: 1rem; flex-shrink: 0; margin-top: .1rem; }
 
-/* ── Modales en dos columnas (horizontales, como en Egresos) ── */
-/* Mismo ancho para el formulario y el detalle: ambos ocupan el mismo espacio en pantalla */
-.ahorro-modal-meta,
+/* ── Detalle en dos columnas (las columnas base estan en css/gastu_planificacion.css) ── */
 .plan-modal--ancho.ahorro-detalle { width: min(860px, 95vw); }
-.ahorro-columnas__col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-
 @media (min-width: 820px) {
-  .ahorro-columnas {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 1.1rem 1.5rem;
-    align-items: start;
-  }
-  .ahorro-columnas__completa { grid-column: 1 / -1; }
-  .ahorro-columnas--detalle { overflow: hidden; }
+  .plan-columnas--detalle { overflow: hidden; }
   /* En el detalle cada columna tiene su propio scroll para no alargar el modal */
-  .ahorro-columnas--detalle > .ahorro-columnas__col {
+  .plan-columnas--detalle > .plan-columnas__col {
     max-height: min(calc(92vh - 150px), 470px); overflow-y: auto; padding-right: .35rem;
     scrollbar-width: thin; scrollbar-color: #e2e8f0 transparent;
   }
-  .ahorro-columnas--detalle > .ahorro-columnas__col::-webkit-scrollbar { width: 6px; }
-  .ahorro-columnas--detalle > .ahorro-columnas__col::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 9999px; }
-  .ahorro-columnas--detalle > .ahorro-columnas__col::-webkit-scrollbar-track { background: transparent; }
+  .plan-columnas--detalle > .plan-columnas__col::-webkit-scrollbar { width: 6px; }
+  .plan-columnas--detalle > .plan-columnas__col::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 9999px; }
+  .plan-columnas--detalle > .plan-columnas__col::-webkit-scrollbar-track { background: transparent; }
   .ahorro-detalle__cuotas { border-left: 1px solid #f1f5f9; padding-left: 1.25rem; }
 }
 

@@ -12,6 +12,7 @@ class ProgramacionSerializer(serializers.ModelSerializer):
     tanto al crear como al editar.
     """
     categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
+    categoria_icono = serializers.CharField(source='categoria.icono', read_only=True)
     tipo = serializers.CharField(source='categoria.tipo', read_only=True)
     frecuencia_label = serializers.CharField(source='get_frecuencia_display', read_only=True)
     monto_mensual = serializers.SerializerMethodField()

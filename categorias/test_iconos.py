@@ -107,3 +107,20 @@ class TestMovimientos:
     def test_card_muestra_icono(self, usuario, egreso_noche):
         html = cliente(usuario).get("/egresos/?mes=all&anio=all").content.decode()
         assert 'data-icono="bus"' in html
+
+
+class TestPlanificacion:
+    @pytest.mark.django_db
+    def test_presupuesto_y_programacion_exponen_icono(self, usuario):
+        from presupuesto.models import Presupuesto
+        from programaciones.models import Programacion
+        cat = Categoria.objects.create(nombre="Gimnasio plan", tipo="EGRESO", icono="dumbbell")
+        hoy = timezone.localdate()
+        Presupuesto.objects.create(usuario=usuario, categoria=cat, limite=Decimal("100000"),
+                                   fecha_inicio=hoy, fecha_fin=hoy + datetime.timedelta(days=20), is_activo=True)
+        Programacion.objects.create(usuario=usuario, categoria=cat, tipo="EGRESO", monto_programado=Decimal("5000"),
+                                    frecuencia="MENSUAL", fecha_inicio=hoy, proxima_ejecucion=hoy)
+        c = cliente(usuario)
+        assert c.get("/api/presupuestos/con_estado/").json()["data"][0]["categoria_icono"] == "dumbbell"
+        assert c.get("/api/programaciones/").json()[0]["categoria_icono"] == "dumbbell"
+        assert c.get("/api/programaciones/pendientes/").json()["pendientes"][0]["categoria_icono"] == "dumbbell"

@@ -100,7 +100,7 @@
 
   <!-- Modal crear / editar -->
   <div class="modal-overlay" id="modal-programacion" hidden>
-    <div class="plan-modal" role="dialog" aria-modal="true" aria-labelledby="modal-programacion-titulo">
+    <div class="plan-modal plan-modal--form" role="dialog" aria-modal="true" aria-labelledby="modal-programacion-titulo">
       <div class="plan-modal__header">
         <div class="plan-modal__header-izq">
           <div class="plan-modal__badge"><i data-lucide="calendar-range"></i></div>
@@ -116,61 +116,62 @@
 
       <form id="form-programacion" novalidate>
         <input type="hidden" id="programacion-id">
-        <div class="plan-modal__cuerpo">
-          <div class="fg">
-            <span class="fg-label">Categoría <span class="fg-label-req">*</span></span>
-            <button type="button" class="picker-trigger" id="programacion-categoria-btn">
-              <span class="picker-trigger-icon"><i data-lucide="tag"></i></span>
-              <span class="picker-trigger-text" id="programacion-categoria-texto">Selecciona una categoría</span>
-              <span class="picker-trigger-tipo" id="programacion-categoria-tipo" hidden></span>
-              <i data-lucide="chevron-right" class="picker-trigger-arrow"></i>
-            </button>
-            <input type="hidden" id="programacion-categoria">
-            <span class="fg-hint">El tipo (ingreso o egreso) se toma de la categoría.</span>
-          </div>
-
-          <div class="fg">
-            <label class="fg-label" for="programacion-monto">Monto <span class="fg-label-req">*</span></label>
-            <div class="monto-field-wrap">
-              <span class="monto-prefix">$</span>
-              <input type="text" inputmode="numeric" id="programacion-monto" class="monto-input" placeholder="0" autocomplete="off">
-              <span class="monto-currency-tag">COP</span>
-            </div>
-          </div>
-
-          <div class="fg">
-            <span class="fg-label">Frecuencia <span class="fg-label-req">*</span></span>
-            <div class="plan-opciones" id="programacion-frecuencias">
-              <button type="button" class="plan-opcion" data-frecuencia="DIARIO">Diario</button>
-              <button type="button" class="plan-opcion" data-frecuencia="SEMANAL">Semanal</button>
-              <button type="button" class="plan-opcion" data-frecuencia="QUINCENAL">Quincenal</button>
-              <button type="button" class="plan-opcion" data-frecuencia="MENSUAL">Mensual</button>
-              <button type="button" class="plan-opcion" data-frecuencia="BIMESTRAL">Bimestral</button>
-              <button type="button" class="plan-opcion" data-frecuencia="TRIMESTRAL">Trimestral</button>
-              <button type="button" class="plan-opcion" data-frecuencia="SEMESTRAL">Semestral</button>
-              <button type="button" class="plan-opcion" data-frecuencia="ANUAL">Anual</button>
-            </div>
-            <input type="hidden" id="programacion-frecuencia">
-            <span class="fg-hint fg-hint--acento" id="programacion-equivalente"></span>
-          </div>
-
-          <div class="fg">
-            <label class="fg-label" for="programacion-descripcion">Descripción <span class="fg-label-opt">(opcional)</span></label>
-            <input type="text" id="programacion-descripcion" class="desc-input" placeholder="Ej: Arriendo, Netflix, Salario" maxlength="100" autocomplete="off">
-            <div class="fg-hint-row">
-              <span class="fg-hint">Así la reconocerás en la lista</span>
-              <span class="fg-counter" id="programacion-descripcion-contador">0/100</span>
-            </div>
-          </div>
-
-          <div class="fg-fila">
+        <div class="plan-modal__cuerpo plan-columnas">
+          <div class="plan-columnas__col">
             <div class="fg">
-              <span class="fg-label">Primera fecha <span class="fg-label-req">*</span></span>
-              <input type="hidden" id="programacion-inicio">
+              <span class="fg-label">Categoría <span class="fg-label-req">*</span></span>
+              <button type="button" class="picker-trigger" id="programacion-categoria-btn">
+                <span class="picker-trigger-icon"><i data-lucide="tag"></i></span>
+                <span class="picker-trigger-text" id="programacion-categoria-texto">Selecciona una categoría</span>
+                <span class="picker-trigger-tipo" id="programacion-categoria-tipo" hidden></span>
+                <i data-lucide="chevron-right" class="picker-trigger-arrow"></i>
+              </button>
+              <input type="hidden" id="programacion-categoria">
+              <span class="fg-hint">El tipo (ingreso o egreso) se toma de la categoría.</span>
             </div>
             <div class="fg">
-              <span class="fg-label">Termina <span class="fg-label-opt">(opcional)</span></span>
-              <input type="hidden" id="programacion-fin">
+              <label class="fg-label" for="programacion-monto">Monto <span class="fg-label-req">*</span></label>
+              <div class="monto-field-wrap">
+                <span class="monto-prefix">$</span>
+                <input type="text" inputmode="numeric" id="programacion-monto" class="monto-input" placeholder="0" autocomplete="off">
+                <span class="monto-currency-tag">COP</span>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fg-label" for="programacion-descripcion">Descripción <span class="fg-label-opt">(opcional)</span></label>
+              <input type="text" id="programacion-descripcion" class="desc-input" placeholder="Ej: Arriendo, Netflix, Salario" maxlength="100" autocomplete="off">
+              <div class="fg-hint-row">
+                <span class="fg-hint">Así la reconocerás en la lista</span>
+                <span class="fg-counter" id="programacion-descripcion-contador">0/100</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="plan-columnas__col">
+            <div class="fg">
+              <span class="fg-label">Frecuencia <span class="fg-label-req">*</span></span>
+              <div class="plan-opciones" id="programacion-frecuencias">
+                <button type="button" class="plan-opcion" data-frecuencia="DIARIO">Diario</button>
+                <button type="button" class="plan-opcion" data-frecuencia="SEMANAL">Semanal</button>
+                <button type="button" class="plan-opcion" data-frecuencia="QUINCENAL">Quincenal</button>
+                <button type="button" class="plan-opcion" data-frecuencia="MENSUAL">Mensual</button>
+                <button type="button" class="plan-opcion" data-frecuencia="BIMESTRAL">Bimestral</button>
+                <button type="button" class="plan-opcion" data-frecuencia="TRIMESTRAL">Trimestral</button>
+                <button type="button" class="plan-opcion" data-frecuencia="SEMESTRAL">Semestral</button>
+                <button type="button" class="plan-opcion" data-frecuencia="ANUAL">Anual</button>
+              </div>
+              <input type="hidden" id="programacion-frecuencia">
+              <span class="fg-hint fg-hint--acento" id="programacion-equivalente"></span>
+            </div>
+            <div class="fg-fila">
+              <div class="fg">
+                <span class="fg-label">Primera fecha <span class="fg-label-req">*</span></span>
+                <input type="hidden" id="programacion-inicio">
+              </div>
+              <div class="fg">
+                <span class="fg-label">Termina <span class="fg-label-opt">(opcional)</span></span>
+                <input type="hidden" id="programacion-fin">
+              </div>
             </div>
           </div>
         </div>

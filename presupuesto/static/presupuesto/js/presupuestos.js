@@ -177,71 +177,64 @@
       return;
     }
     contenedor.innerHTML = lista.map(cardHTML).join('');
-    contenedor.querySelectorAll('.plan-progreso__relleno').forEach(barra => {
+    contenedor.querySelectorAll('.progress-bar__fill').forEach(barra => {
       requestAnimationFrame(() => { barra.style.width = `${Math.min(Number(barra.dataset.pct) || 0, 100)}%`; });
     });
     P.iconos();
   }
+
+  /* Color de la barra segun el consumo (clases de css/gastu_card.css) */
+  const BARRA = { normal: 'bien', cuidado: 'cuidado', alerta: 'alerta', excedido: 'peligro' };
 
   function cardHTML(p) {
     const nivel = nivelDe(p);
     const pct = Math.round(p.porcentaje || 0);
     const disponible = p.disponible || 0;
     const vencido = estaVencido(p);
+    const id = Number(p.id);
+    const periodo = `${P.formatFecha(p.fecha_inicio, true)} – ${P.formatFecha(p.fecha_fin, true)}`;
 
-    let restante = '—';
-    let porDia = '—';
-    if (p.is_activo && !vencido) {
-      if (nivel === 'programado') {
-        restante = `inicia ${P.textoRelativo(p.fecha_inicio)}`;
-      } else {
-        restante = p.dias_restantes === 1 ? 'último día' : P.plural(p.dias_restantes, 'día', 'días');
-        porDia = p.gasto_diario !== null && p.gasto_diario !== undefined ? P.formatMonto(p.gasto_diario) : '—';
-      }
-    } else if (vencido) {
-      restante = 'terminó';
+    let sub = periodo;
+    let info;
+    if (vencido) {
+      info = `<i data-lucide="calendar-x"></i> Terminó el ${P.formatFecha(p.fecha_fin, true)}`;
+    } else if (nivel === 'programado') {
+      sub = `${periodo} · inicia ${P.textoRelativo(p.fecha_inicio)}`;
+      info = `<i data-lucide="calendar-clock"></i> Disponible <b>${P.formatMonto(disponible)}</b>`;
+    } else if (disponible < 0) {
+      info = `<i data-lucide="alert-circle"></i> Excedido por <b>${P.formatMonto(Math.abs(disponible))}</b>`;
+    } else {
+      const dias = p.dias_restantes === 1 ? 'último día' : P.plural(p.dias_restantes, 'día', 'días');
+      sub = `${periodo} · ${dias}`;
+      const porDia = p.gasto_diario !== null && p.gasto_diario !== undefined ? `<span class="categoria-card__info-extra"> · ${P.formatMonto(p.gasto_diario)}/día</span>` : '';
+      info = `<i data-lucide="wallet"></i> Disponible <b>${P.formatMonto(disponible)}</b>${porDia}`;
     }
 
-    const id = Number(p.id);
-    const accionPrincipal = vencido
-      ? `<button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="renovar" data-id="${id}"><i data-lucide="refresh-cw"></i> Renovar</button>`
-      : `<button type="button" class="plan-card-btn plan-card-btn--acento" data-accion="toggle" data-id="${id}"><i data-lucide="${p.is_activo ? 'pause' : 'play'}"></i> ${p.is_activo ? 'Desactivar' : 'Activar'}</button>`;
+    const renovar = vencido
+      ? `<button type="button" class="categoria-card__accion" data-accion="renovar" data-id="${id}"><i data-lucide="refresh-cw"></i><span>Renovar</span></button>`
+      : `<button type="button" class="categoria-card__btn" data-accion="toggle" data-id="${id}" title="${p.is_activo ? 'Desactivar' : 'Activar'}" aria-label="${p.is_activo ? 'Desactivar' : 'Activar'}"><i data-lucide="${p.is_activo ? 'pause' : 'play'}"></i></button>`;
 
     return `
-      <article class="plan-card plan-card--${nivel}" data-id="${id}">
-        <header class="plan-card__cabecera">
-          <div class="plan-card__principal">
-            <p class="plan-card__cifra font-display">${P.formatMonto(p.limite)}</p>
-            <p class="plan-card__etiqueta" title="${P.esc(p.categoria_nombre)}">${P.esc(p.categoria_nombre)}</p>
-            <p class="plan-card__sub">${P.formatFecha(p.fecha_inicio, true)} – ${P.formatFecha(p.fecha_fin, true)}</p>
+      <article class="categoria-card ${BARRA[nivel] ? `categoria-card--${BARRA[nivel]}` : ''}" data-activo="${p.is_activo && !vencido}"
+               tabindex="0" role="button" aria-label="Editar presupuesto de ${P.esc(p.categoria_nombre)}"
+               data-accion="editar" data-id="${id}">
+        <div class="categoria-card__header">
+          <div class="categoria-card__icon"><i data-lucide="${P.esc(p.categoria_icono || 'target')}"></i></div>
+          <div class="categoria-card__titulo">
+            <p class="categoria-card__nombre">${P.esc(p.categoria_nombre)}</p>
+            <p class="categoria-card__cantidad">${P.esc(sub)}</p>
           </div>
-          <div class="plan-card__lado">
-            <div class="plan-card__icono plan-card__icono--egreso"><i data-lucide="trending-down"></i></div>
-            <span class="plan-chip plan-chip--${nivel}">${ETIQUETAS[nivel]}</span>
-          </div>
-        </header>
-
-        <div class="plan-card__cuerpo">
-          <div class="plan-progreso">
-            <div class="plan-progreso__fila">
-              <span>Gastado <b>${P.formatMonto(p.gastado)}</b></span>
-              <span class="plan-progreso__pct">${pct}%</span>
-            </div>
-            <div class="plan-progreso__barra"><div class="plan-progreso__relleno" data-pct="${pct}"></div></div>
-          </div>
-
-          <dl class="plan-card__datos">
-            <div><dt>${disponible < 0 ? 'Excedido' : 'Disponible'}</dt><dd class="${disponible < 0 ? 'is-negativo' : ''}">${P.formatMonto(Math.abs(disponible))}</dd></div>
-            <div><dt>Quedan</dt><dd>${P.esc(restante)}</dd></div>
-            <div><dt>Por día</dt><dd>${porDia}</dd></div>
-          </dl>
+          <span class="plan-chip plan-chip--${nivel}">${ETIQUETAS[nivel]}</span>
         </div>
-
-        <footer class="plan-card__pie">
-          ${accionPrincipal}
-          <button type="button" class="plan-card-btn" data-accion="editar" data-id="${id}"><i data-lucide="pencil"></i> Editar</button>
-          <button type="button" class="plan-card-btn plan-card-btn--peligro" data-accion="eliminar" data-id="${id}" title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
-        </footer>
+        <p class="categoria-card__monto font-display">${P.formatMonto(p.gastado)}<small>de ${P.formatMonto(p.limite)} · ${pct}%</small></p>
+        <div class="progress-bar"><div class="progress-bar__fill" data-pct="${pct}"></div></div>
+        <div class="categoria-card__pie">
+          <p class="categoria-card__info${disponible < 0 && !vencido ? ' categoria-card__info--aviso' : ''}">${info}</p>
+          <div class="categoria-card__acciones">
+            ${renovar}
+            <button type="button" class="categoria-card__btn categoria-card__btn--peligro" data-accion="eliminar" data-id="${id}" title="Eliminar" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>
       </article>`;
   }
 
@@ -449,6 +442,7 @@
       });
     });
 
+    P.activarCardsTeclado($('presupuestos-app'));
     $('presupuestos-app').addEventListener('click', e => {
       const btn = e.target.closest('[data-accion]');
       if (!btn) return;

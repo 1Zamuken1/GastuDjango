@@ -7,6 +7,7 @@ from .models import Presupuesto
 class PresupuestoSerializer(serializers.ModelSerializer):
     """Serializer de Presupuesto. Expone el nombre de la categoría como solo lectura."""
     categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
+    categoria_icono = serializers.CharField(source='categoria.icono', read_only=True)
 
     class Meta:
         model = Presupuesto

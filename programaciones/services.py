@@ -152,6 +152,7 @@ def serializar_pendiente(prog: Programacion, fecha_pendiente: date) -> dict:
         'tipo': prog.tipo,
         'categoria_id': prog.categoria_id,
         'categoria_nombre': prog.categoria.nombre,
+        'categoria_icono': prog.categoria.icono,
         'fecha_inicio': prog.fecha_inicio.isoformat(),
         'fecha_pendiente': fecha_pendiente.isoformat(),
     }

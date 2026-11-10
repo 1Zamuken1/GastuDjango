@@ -1,9 +1,9 @@
-/* Acento del modulo para la card de categoria (movimientos/css/categoria_card.css) */
+/* Acento del modulo para la card de categoria (css/gastu_card.css) */
 :root {
-  --mov-acento: #10b981;
-  --mov-acento-oscuro: #047857;
-  --mov-acento-claro: #ecfdf5;
-  --mov-acento-rgb: 16, 185, 129;
+  --card-acento: #10b981;
+  --card-acento-oscuro: #047857;
+  --card-acento-claro: #ecfdf5;
+  --card-acento-rgb: 16, 185, 129;
 }
 
 /* ── Hero 2 columnas ─────────────────────────────── */
