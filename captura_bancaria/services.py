@@ -12,6 +12,8 @@ from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import parseaddr
 
+from django.conf import settings
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -20,6 +22,7 @@ from movimientos.models import Movimiento
 
 from .models import BuzonCaptura, CorreoEntrante, MovimientoDetectado, ReglaComercio
 from .parsers import detectar_parser
+from .parsers.ia import autorizador_ia
 from .parsers.base import normalizar_comercio, normalizar_texto
 
 logger = logging.getLogger(__name__)
@@ -28,6 +31,9 @@ MAX_TEXTO = 20000
 REMITENTE_VERIFICACION_GMAIL = 'forwarding-noreply@google.com'
 RE_CODIGO_GMAIL = re.compile(r'(?:c[oó]digo de confirmaci[oó]n|confirmation code)\s*:?\s*(\d{6,12})', re.IGNORECASE)
 RE_ENLACE_GMAIL = re.compile(r'https://mail(?:-settings)?\.google\.com/mail/\S+')
+# Caracteres que no tienen sentido en un comercio o producto y que sirven para
+# inyectar HTML o instrucciones: el texto viene de un correo que cualquiera puede enviar.
+RE_TEXTO_PELIGROSO = re.compile(r'[<>{}`\x5c\x00-\x1f\x7f]')
 
 
 class Resultado:
@@ -191,6 +197,30 @@ def calcular_hash(usuario_id, datos, fecha) -> str:
     return hashlib.sha256(base.encode('utf-8')).hexdigest()
 
 
+def consumir_cupo_ia(buzon_id) -> bool:
+    """
+    Descuenta una lectura con IA del cupo diario del buzon para correos sin DKIM.
+
+    Devuelve False cuando el cupo se agoto: asi un tercero que conozca la direccion
+    no puede gastar la cuota de Groq inundando el buzon con correos falsos.
+    """
+    maximo = getattr(settings, 'CAPTURA_IA_MAX_SIN_DKIM', 20)
+    clave = f'captura_ia_sin_dkim:{buzon_id}:{timezone.localdate().isoformat()}'
+    cache.add(clave, 0, timeout=60 * 60 * 24)
+    try:
+        usados = cache.incr(clave)
+    except ValueError:
+        cache.set(clave, 1, timeout=60 * 60 * 24)
+        usados = 1
+    return usados <= maximo
+
+
+def limpiar_texto_externo(texto: str, maximo: int) -> str:
+    """Quita marcado y caracteres de control de un texto extraido de un correo."""
+    limpio = RE_TEXTO_PELIGROSO.sub(' ', str(texto or ''))
+    return ' '.join(limpio.split())[:maximo]
+
+
 def _procesar_verificacion_gmail(buzon, texto):
     m_codigo = RE_CODIGO_GMAIL.search(texto)
     m_enlace = RE_ENLACE_GMAIL.search(texto)
@@ -253,6 +283,11 @@ def procesar_correo(raw: bytes, destinatario: str):
         return Resultado.IGNORADO, None
 
     correo.dkim_valido = verificar_dkim(raw, parser.DOMINIOS)
+    # Sin firma DKIM el correo puede ser falso: la IA (que cuesta cuota de Groq)
+    # solo se usa hasta CAPTURA_IA_MAX_SIN_DKIM veces al dia por buzon.
+    token_ia = autorizador_ia.set(
+        None if correo.dkim_valido else (lambda: consumir_cupo_ia(buzon.pk))
+    )
     try:
         datos = parser.parsear(asunto, texto)
     except Exception as exc:
@@ -261,12 +296,17 @@ def procesar_correo(raw: bytes, destinatario: str):
         correo.detalle = f'Error del parser: {exc}'[:255]
         correo.save()
         return Resultado.IGNORADO, None
+    finally:
+        autorizador_ia.reset(token_ia)
 
     if datos is None:
         correo.estado = CorreoEntrante.Estado.IGNORADO
         correo.detalle = f'Correo de {parser.NOMBRE} sin movimiento reconocible'
         correo.save()
         return Resultado.IGNORADO, None
+
+    datos.comercio = limpiar_texto_externo(datos.comercio, 120) or f'{datos.operacion.capitalize()} {datos.banco}'
+    datos.producto = limpiar_texto_externo(datos.producto, 40)
 
     correo.estado = CorreoEntrante.Estado.PROCESADO
     correo.save()

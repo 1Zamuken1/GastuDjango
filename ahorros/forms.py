@@ -2,6 +2,9 @@ from django import forms
 from .models import AhorroMeta, AporteAhorro
 from categorias.models import Categoria
 from django.utils import timezone
+from dateutil.relativedelta import relativedelta
+
+from .services import MAX_ANIOS_META, MAX_CUOTAS, calcular_campo_faltante
 
 class AhorroMetaForm(forms.ModelForm):
     
@@ -64,6 +67,25 @@ class AhorroMetaForm(forms.ModelForm):
             raise forms.ValidationError(
                 "La fecha meta no puede estar en el pasado."
             )
+
+        if fecha and fecha > hoy + relativedelta(years=MAX_ANIOS_META):
+            raise forms.ValidationError(
+                f"La fecha meta no puede superar los {MAX_ANIOS_META} años."
+            )
+
+        if cuotas and cuotas > MAX_CUOTAS:
+            raise forms.ValidationError(
+                f"La meta admite como máximo {MAX_CUOTAS} cuotas."
+            )
+
+        frecuencia = cleaned_data.get('frecuencia')
+        if fecha and frecuencia:
+            _, cuotas_calculadas = calcular_campo_faltante(fecha, None, frecuencia, fecha_base=hoy)
+            if cuotas_calculadas > MAX_CUOTAS:
+                raise forms.ValidationError(
+                    f"Con esa frecuencia la meta tendría más de {MAX_CUOTAS} cuotas. "
+                    "Elige una fecha más cercana o una frecuencia más espaciada."
+                )
 
         return cleaned_data
 

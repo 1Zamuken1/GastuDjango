@@ -9,7 +9,7 @@
 {% block extra_head %}
   <meta name="description" content="Panel financiero personal — resumen de ingresos, egresos y tendencia de {{ mes_nombre }} {{ anio }}">
   <meta name="robots" content="noindex, nofollow">
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.5.0/dist/apexcharts.min.js" integrity="sha384-9OyI2UN+1hFTz/m3KXl5gdpr7eeNRANHiggXdNFH6vEU8RHWUjvRJra4REyiVNEJ" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="{% static 'movimientos/css/datepicker.css' %}">
   <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
 {% endblock %}
@@ -686,7 +686,7 @@ function initOnboarding() {
 </div>
 
 {# Datos para JS #}
-<script id="data-pie" type="application/json">{{ pie_json|safe }}</script>
+{{ pie_data|json_script:"data-pie" }}
 <span id="url-tendencia"       data-url="{% url 'dashboard:tendencia_mes' %}"   hidden></span>
 <span id="url-dashboard"       data-url="{% url 'dashboard:home' %}"            hidden></span>
 <span id="url-meses-disp"      data-url="{% url 'dashboard:meses_disponibles' %}" hidden></span>

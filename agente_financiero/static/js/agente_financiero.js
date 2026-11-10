@@ -266,8 +266,9 @@
   function renderLibreta(datos) {
     if (!datos || !datos.filas) return "";
     var titulo = datos.titulo || "Movimientos";
-    var mostradas = datos.mostradas || datos.filas.length;
-    var totalFilas = datos.total_filas || mostradas;
+    // Siempre enteros: estos valores se insertan como HTML y el JSON puede venir del modelo.
+    var mostradas = parseInt(datos.mostradas, 10) || datos.filas.length;
+    var totalFilas = parseInt(datos.total_filas, 10) || mostradas;
     var total = datos.total || null;
 
     var tsvRows = ["Fecha\tConcepto\tMonto\tTipo"];

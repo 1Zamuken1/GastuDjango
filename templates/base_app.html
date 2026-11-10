@@ -589,10 +589,13 @@
               Mi perfil
             </a>
             <div class="dropdown-divider"></div>
-            <a href="{% url 'logout' %}" class="dropdown-item danger">
-              <i data-lucide="log-out" style="width: 14px; height: 14px"></i>
-              Cerrar sesion
-            </a>
+            <form method="post" action="{% url 'logout' %}" class="form-logout">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item danger">
+                <i data-lucide="log-out" style="width: 14px; height: 14px"></i>
+                Cerrar sesion
+              </button>
+            </form>
           </div>
         </div>
       </div>

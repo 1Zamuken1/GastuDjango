@@ -326,22 +326,23 @@ class GestorMovimientos {
         return;
       }
       const data = await res.json();
+      const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
       this.tablaRegistrosBody.innerHTML = data.registros.length
         ? data.registros.map(r => `
-            <tr data-id="${r.id}">
-              <td>${r.descripcion}</td>
-              <td class="text-muted">${r.fecha}</td>
-              <td><span class="monto ${this.montoClass}">${r.monto_fmt}</span></td>
+            <tr data-id="${esc(r.id)}">
+              <td>${esc(r.descripcion)}</td>
+              <td class="text-muted">${esc(r.fecha)}</td>
+              <td><span class="monto ${this.montoClass}">${esc(r.monto_fmt)}</span></td>
               <td class="table-actions">
                 <button class="btn-icon btn-editar"
-                        data-id="${r.id}"
-                        data-descripcion="${r.descripcion.replace(/"/g,'&quot;')}"
-                        data-monto="${r.monto}"
-                        data-fecha="${r.fecha_raw}"
-                        data-categoria="${r.categoria_id}"
+                        data-id="${esc(r.id)}"
+                        data-descripcion="${esc(r.descripcion)}"
+                        data-monto="${esc(r.monto)}"
+                        data-fecha="${esc(r.fecha_raw)}"
+                        data-categoria="${esc(r.categoria_id)}"
                         title="Editar"><i data-lucide="pencil"></i></button>
-                <button class="btn-icon btn-eliminar" data-id="${r.id}" title="Eliminar">
+                <button class="btn-icon btn-eliminar" data-id="${esc(r.id)}" title="Eliminar">
                   <i data-lucide="trash-2"></i>
                 </button>
               </td>

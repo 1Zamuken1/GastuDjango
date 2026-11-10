@@ -17,6 +17,11 @@ from .models import AhorroMeta, AporteAhorro
 
 # ── Calculo de periodos y fechas ────────────────────────────────────────────
 
+# Limites de una meta: cada cuota es una fila en BD, asi que sin tope un solo
+# POST podia generar millones de filas.
+MAX_CUOTAS = 1000
+MAX_ANIOS_META = 30
+
 DELTA_FRECUENCIA = {
     'DIARIA': relativedelta(days=1),
     'SEMANAL': relativedelta(weeks=1),
@@ -88,7 +93,9 @@ def calcular_campo_faltante(fecha_meta, cuotas, frecuencia, fecha_base=None):
 
     if not cuotas:
         cuotas = 1
-        while fecha_cuota(inicio, frecuencia, cuotas) <= fecha_meta:
+        # El tope evita que una fecha lejana con frecuencia diaria bloquee el servidor;
+        # el formulario rechaza antes cualquier meta que supere MAX_CUOTAS.
+        while cuotas <= MAX_CUOTAS and fecha_cuota(inicio, frecuencia, cuotas) <= fecha_meta:
             cuotas += 1
         return fecha_meta, cuotas
 

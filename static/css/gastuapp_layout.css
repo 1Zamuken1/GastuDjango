@@ -422,6 +422,18 @@ body.sidebar-mini .sidebar-toggle-icon-closed {
   background: #fef2f2;
   color: #dc2626;
 }
+/* Cerrar sesion va por POST: formulario con boton que se ve igual que los enlaces */
+.form-logout {
+  margin: 0;
+}
+button.dropdown-item {
+  width: 100%;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 .dropdown-divider {
   height: 1px;
   background: var(--border);

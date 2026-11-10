@@ -68,11 +68,14 @@
       {{ request.user.username }}
     </span>
 
-    <a href="{% url 'logout' %}"
-       class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-       title="Cerrar sesión">
-      <i data-lucide="log-out" class="w-4 h-4"></i>
-    </a>
+    <form method="post" action="{% url 'logout' %}" class="m-0">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+              title="Cerrar sesión">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </button>
+    </form>
   </div>
 </header>
 

@@ -19,7 +19,7 @@ from notificaciones.preferencias.service import PreferenciasService
 #  REGISTER
 # ──────────────────────────────────────────────────────────────
 
-@ratelimit(key='ip', rate='10/h', block=False)
+@ratelimit(key='ip', rate='10/h', method='POST', block=False)
 def register_view(request):
     if getattr(request, 'limited', False):
         messages.error(request, 'Demasiadas solicitudes de registro. Por favor intenta mas tarde.')
@@ -48,7 +48,8 @@ def register_view(request):
 # ──────────────────────────────────────────────────────────────
 
 
-@ratelimit(key='ip', rate='5/m', block=False)
+@ratelimit(key='ip', rate='5/m', method='POST', block=False)
+@ratelimit(key='gastu_django.ratelimit_keys.email_login', rate='20/h', method='POST', block=False)
 def login_view(request):
     """
     Login de usuarios por EMAIL + contrasena.
@@ -87,8 +88,15 @@ def login_view(request):
 def logout_view(request):
     """
     Cierra la sesion y redirige al home de la landing.
+
+    Solo por POST (con CSRF): por GET cualquier sitio podria cerrar la sesion
+    de la victima con un <img src="/logout/">. Un GET no cierra nada.
     """
-    logout(request)
+    if request.method == 'POST':
+        logout(request)
+        return redirect(settings.LOGOUT_REDIRECT_URL)
+    if request.user.is_authenticated:
+        return redirect(settings.LOGIN_REDIRECT_URL)
     return redirect(settings.LOGOUT_REDIRECT_URL)
 
 

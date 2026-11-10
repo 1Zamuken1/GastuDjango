@@ -11,6 +11,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 
 from gastu_django.constants import MESES_ES
+from gastu_django.pdf_seguro import imagen_png_segura
 from .services import (
     build_dashboard_context,
     build_tendencia_data,
@@ -195,8 +196,9 @@ def exportar_pdf(request):
     
     # Agregar gráficos si vienen en el POST
     if request.method == 'POST':
-        ctx['img_tendencia'] = request.POST.get('img_tendencia', '')
-        ctx['img_pie'] = request.POST.get('img_pie', '')
+        # Solo graficas PNG en data URI: cualquier URL haria que xhtml2pdf la descargue (SSRF).
+        ctx['img_tendencia'] = imagen_png_segura(request.POST.get('img_tendencia', ''))
+        ctx['img_pie'] = imagen_png_segura(request.POST.get('img_pie', ''))
 
     ctx['filtro_tipo'] = filtros.get('tipo', '')
 

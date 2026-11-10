@@ -2,6 +2,12 @@
    dashboard.js  —  GastuApp
    ============================================================= */
 
+/* Escapa texto antes de insertarlo con innerHTML (nombres de metas y descripciones
+   los escribe el usuario o llegan de correos capturados). */
+function escDash(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 
   lucide.createIcons();
@@ -468,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   <span style="display:flex;align-items:center;gap:.35rem;">
                     <span style="width:6px;height:6px;border-radius:50%;
                                  background:${color};flex-shrink:0;"></span>
-                    ${c.nombre}
+                    ${escDash(c.nombre)}
                   </span>
                   <span style="font-weight:600;color:#334155;">${fmtNum(c.monto)}</span>
                 </div>`).join('');
@@ -692,24 +698,24 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="display:flex;align-items:center;gap:8px;min-width:0;">
             <span class="meta-dot"></span>
             <div style="min-width:0;">
-              <span class="meta-nombre">${m.descripcion}</span>
-              <span class="meta-frecuencia">${m.frecuencia}</span>
+              <span class="meta-nombre">${escDash(m.descripcion)}</span>
+              <span class="meta-frecuencia">${escDash(m.frecuencia)}</span>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <span class="meta-pct">${m.pct}%</span>
-            <span class="meta-monto">${m.acumulado_fmt}</span>
+            <span class="meta-pct">${escDash(m.pct)}%</span>
+            <span class="meta-monto">${escDash(m.acumulado_fmt)}</span>
           </div>
         </div>
         <div class="meta-bar-track">
           <div class="meta-bar-fill"
                style="width:0%;"
-               data-pct="${m.pct}">
+               data-pct="${escDash(m.pct)}">
           </div>
         </div>
         <div class="meta-footer">
-          <span class="meta-detail">${m.categoria}</span>
-          <span class="meta-detail">Meta: ${m.meta_fmt}</span>
+          <span class="meta-detail">${escDash(m.categoria)}</span>
+          <span class="meta-detail">Meta: ${escDash(m.meta_fmt)}</span>
         </div>
       </div>`).join('');
 
@@ -1394,16 +1400,16 @@ window.renderMovsTable = function() {
     const label  = esI ? 'Ingreso' : esA ? 'Ahorro' : 'Egreso';
     const montoF = '$' + new Intl.NumberFormat('es-CO').format(Math.round(parseFloat(m.monto)));
     return `
-      <div class="mov-row" data-tipo="${m.tipo}">
+      <div class="mov-row" data-tipo="${escDash(m.tipo)}">
         <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
           <div class="mov-dot ${dotCls}"></div>
           <div style="min-width:0;">
-            <p class="mov-desc">${m.descripcion}</p>
+            <p class="mov-desc">${escDash(m.descripcion)}</p>
             <p class="mov-type">${label}</p>
           </div>
         </div>
-        <div class="mov-cat">${m.categoria}</div>
-        <div class="mov-date">${m.fecha_fmt || m.fecha}</div>
+        <div class="mov-cat">${escDash(m.categoria)}</div>
+        <div class="mov-date">${escDash(m.fecha_fmt || m.fecha)}</div>
         <div class="mov-amount ${amtCls}">${signo}${montoF}</div>
       </div>`;
   }).join('');

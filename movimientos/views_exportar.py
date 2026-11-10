@@ -21,6 +21,8 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from categorias.models import Categoria
+from gastu_django.exportacion import texto_seguro
+from gastu_django.pdf_seguro import link_callback_seguro
 from .models import Movimiento
 
 
@@ -107,8 +109,8 @@ def exportar_csv(request):
         writer.writerow([
             m.fecha_registro.date().strftime('%d/%m/%Y'),
             m.get_tipo_display(),
-            m.categoria.nombre,
-            m.descripcion or '',
+            texto_seguro(m.categoria.nombre),
+            texto_seguro(m.descripcion or ''),
             str(m.monto),
         ])
 
@@ -188,7 +190,7 @@ def exportar_excel(request):
             float(m.monto),
         ]
         for col, val in enumerate(valores, 1):
-            celda = ws.cell(row=fila, column=col, value=val)
+            celda = ws.cell(row=fila, column=col, value=texto_seguro(val))
             celda.fill   = PatternFill('solid', fgColor=color_fila)
             celda.border = borde
             celda.font   = Font(name='Calibri', size=10)
@@ -284,7 +286,7 @@ def exportar_pdf(request):
     html_string = render_to_string('movimientos/reporte_pdf.html', contexto)
 
     buffer = io.BytesIO()
-    pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+    pisa_status = pisa.CreatePDF(html_string, dest=buffer, link_callback=link_callback_seguro)
 
     if pisa_status.err:
         return HttpResponse('Error al generar el PDF. Intenta nuevamente.', status=500)

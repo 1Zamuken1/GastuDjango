@@ -90,6 +90,7 @@ MIDDLEWARE = [
     *(['django_browser_reload.middleware.BrowserReloadMiddleware'] if DEBUG else []),
     # 🔹 Separación de contextos Admin / Usuario 🔹───────────────
     'gastu_django.middleware.AdminAreaMiddleware',
+    'gastu_django.middleware.ContentSecurityPolicyMiddleware',
 ]
 
 ROOT_URLCONF = 'gastu_django.urls'
@@ -277,6 +278,8 @@ CAPTURA_INGESTA_URL = os.getenv('CAPTURA_INGESTA_URL', 'http://127.0.0.1:8000/ca
 CAPTURA_INGESTA_TOKEN = os.getenv('CAPTURA_INGESTA_TOKEN', 'dev-captura-token' if DEBUG else '')
 # Leer con IA (Groq) las alertas que el parser de reglas no reconoce.
 CAPTURA_USAR_IA = os.getenv('CAPTURA_USAR_IA', 'True') == 'True'
+# Lecturas con IA al dia por buzon para correos sin firma DKIM (pueden ser falsos).
+CAPTURA_IA_MAX_SIN_DKIM = int(os.getenv('CAPTURA_IA_MAX_SIN_DKIM', '20'))
 
 # --------------------------------------------------------------
 # CONFIGURACI�N DE SEGURIDAD (HARDENING)
@@ -300,6 +303,25 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 ano
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+
+# Content-Security-Policy. En Report-Only hasta sacar los scripts en linea de
+# las plantillas; las violaciones salen en la consola del navegador.
+CSP_REPORT_ONLY = os.getenv('CSP_REPORT_ONLY', 'True') == 'True'
+CSP_POLITICA = '; '.join([
+    "default-src 'self'",
+    "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https://*.googleusercontent.com",
+    "connect-src 'self' ws: wss:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self' https://accounts.google.com",
+])
+
+# Rate limit por IP real del cliente (detras de nginx REMOTE_ADDR es el proxy).
+RATELIMIT_IP_META_KEY = 'gastu_django.ratelimit_keys.ip_cliente'
 
 # --------------------------------------------------------------
 # REST FRAMEWORK SEGURIDAD POR DEFECTO

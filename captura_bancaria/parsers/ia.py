@@ -8,6 +8,7 @@ validaciones y siempre queda como pendiente para que el usuario lo confirme.
 import json
 import logging
 import re
+from contextvars import ContextVar
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Optional
@@ -38,6 +39,12 @@ INSTRUCCIONES = (
     '- producto: producto del usuario con solo los ultimos 4 digitos (ej. "T.Cred *1234") o "".\n'
     'No inventes datos: si algo no aparece en el texto, usa null o "".'
 )
+
+
+# Quien procesa el correo puede fijar aqui una funcion que autoriza (y descuenta)
+# cada llamada a la IA. Se consulta solo cuando de verdad se va a llamar a Groq,
+# para no gastar cupo en correos que el parser de reglas ya entiende.
+autorizador_ia: ContextVar = ContextVar('autorizador_ia', default=None)
 
 
 def ia_disponible() -> bool:
@@ -119,6 +126,10 @@ def parsear_con_ia(banco: str, asunto: str, texto: str) -> Optional[DatosMovimie
     falla o su respuesta no pasa las validaciones.
     """
     if not ia_disponible() or not texto.strip():
+        return None
+    autorizar = autorizador_ia.get()
+    if autorizar is not None and not autorizar():
+        logger.info('Lectura con IA omitida para %s: cupo agotado', banco)
         return None
     try:
         datos = _llamar_groq(asunto, texto)

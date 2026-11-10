@@ -247,6 +247,11 @@ def admin_editar_usuario_ajax(request, usuario_id):
     if request.method != 'POST':
         return JsonResponse({'ok': False}, status=405)
     usuario  = get_object_or_404(Usuario, pk=usuario_id)
+    # Un admin no puede tocar otras cuentas de admin ni al superusuario (escalada de privilegios).
+    # Su propia cuenta la edita desde su perfil; solo el superusuario puede editar a otros admins.
+    es_privilegiado = usuario.is_superuser or usuario.is_staff or usuario.rol == 'ADMIN'
+    if es_privilegiado and not request.user.is_superuser:
+        return JsonResponse({'ok': False, 'msg': 'No puedes editar una cuenta de administrador.'}, status=403)
     username = request.POST.get('username', '').strip()
     email    = request.POST.get('email', '').strip().lower()
     telefono = request.POST.get('telefono', '').strip()

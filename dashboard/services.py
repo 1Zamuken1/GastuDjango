@@ -5,7 +5,6 @@ Contiene la logica de calculo de resumenes mensuales, saldo disponible
 y construccion de contexto para las vistas. Las vistas solo orquestan
 y delegan a estas funciones.
 """
-import json
 import calendar
 from datetime import date, timedelta
 from decimal import Decimal
@@ -239,7 +238,6 @@ def build_dashboard_context(user, mes, anio, filtros=None):
         'ahorros_mes':               ahorros_mes,
         'hay_deficit':               hay_deficit,
         'pie_data':                  pie_data,
-        'pie_json':                  json.dumps(pie_data),
         'metas_ahorro_activas':      metas,
         'ultimos_movimientos':       ultimos,
         'notificaciones_count':      notif_data['count'],
