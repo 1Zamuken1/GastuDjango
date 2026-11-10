@@ -8,6 +8,7 @@ from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from django.core.paginator import Paginator
 
+from categorias.iconos import ICONOS_CATEGORIA
 from categorias.models import Categoria
 from movimientos.models import Movimiento
 
@@ -426,6 +427,7 @@ def admin_categorias(request):
         'tipo_fil':    tipo,
         'estado_fil':  estado,
         'seccion':     'categorias',
+        'iconos_categoria': ICONOS_CATEGORIA,
     }
     return render(request, 'panel_admin/categorias.html', context)
 
@@ -434,12 +436,20 @@ def admin_categorias(request):
 #  CATEGORÍAS — CRUD via JSON (modales)
 # ──────────────────────────────────────────────────────────────
 
+def _icono_valido(icono, nombre):
+    """Icono enviado por el formulario si es uno permitido; si no, el sugerido para el nombre."""
+    from categorias.iconos import ICONOS_CATEGORIA, icono_sugerido
+    permitidos = {valor for valor, _ in ICONOS_CATEGORIA}
+    return icono if icono in permitidos else icono_sugerido(nombre)
+
+
 @admin_required
 def admin_categoria_detalle(request, categoria_id):
     cat = get_object_or_404(Categoria, pk=categoria_id)
     return JsonResponse({
         'id': cat.pk, 'nombre': cat.nombre,
         'tipo': cat.tipo, 'descripcion': cat.descripcion or '', 'activo': cat.activo,
+        'icono': cat.icono,
     })
 
 
@@ -456,7 +466,8 @@ def admin_crear_categoria_ajax(request):
         return JsonResponse({'ok': False, 'msg': 'Tipo inválido.'})
     if Categoria.objects.filter(nombre__iexact=nombre, tipo=tipo).exists():
         return JsonResponse({'ok': False, 'msg': f'Ya existe una categoría de tipo {tipo} con el nombre "{nombre}".'})
-    cat = Categoria.objects.create(nombre=nombre, tipo=tipo, descripcion=desc)
+    cat = Categoria.objects.create(nombre=nombre, tipo=tipo, descripcion=desc,
+                                   icono=_icono_valido(request.POST.get('icono'), nombre))
     return JsonResponse({'ok': True, 'msg': f'Categoría "{nombre}" creada.', 'id': cat.pk})
 
 
@@ -475,6 +486,7 @@ def admin_editar_categoria_ajax(request, categoria_id):
     if Categoria.objects.exclude(pk=categoria_id).filter(nombre__iexact=nombre).exists():
         return JsonResponse({'ok': False, 'msg': f'Ya existe otra categoría con el nombre "{nombre}".'})
     cat.nombre = nombre; cat.tipo = tipo; cat.descripcion = desc
+    cat.icono = _icono_valido(request.POST.get('icono'), nombre)
     cat.save()
     return JsonResponse({'ok': True, 'msg': f'Categoría "{nombre}" actualizada.'})
 
@@ -540,4 +552,4 @@ def importar_categorias_csv(request):
         return redirect('panel_admin:importar_categorias_csv')
 
     context = {'seccion': 'categorias'}
-    return render(request, 'panel_admin/importar_categorias.html', context)
+    return render(request, 'panel_admin/importar_categorias.html', context)

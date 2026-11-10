@@ -10,13 +10,16 @@ class CategoriaForm(forms.ModelForm):
 
     class Meta:
         model = Categoria
-        fields = ['nombre', 'tipo', 'descripcion']
+        fields = ['nombre', 'tipo', 'icono', 'descripcion']
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: Salario'
             }),
             'tipo': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'icono': forms.Select(attrs={
                 'class': 'form-control'
             }),
             'descripcion': forms.TextInput(attrs={

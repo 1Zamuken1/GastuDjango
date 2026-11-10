@@ -293,7 +293,8 @@ window.CategoryPicker = {
             const favIconColor = cat.es_favorita ? '#f43f5e' : '#cbd5e1';
             const favActiveClass = cat.es_favorita ? 'picker-cat-fav-btn--active' : '';
             const tipoLower = cat.tipo ? cat.tipo.toLowerCase() : 'default';
-            const mainIcon = cat.tipo === 'INGRESO' ? 'trending-up' : (cat.tipo === 'EGRESO' ? 'trending-down' : 'piggy-bank');
+            const iconoTipo = cat.tipo === 'INGRESO' ? 'trending-up' : (cat.tipo === 'EGRESO' ? 'trending-down' : 'piggy-bank');
+            const mainIcon = cat.icono && cat.icono !== 'tag' ? cat.icono : iconoTipo;
             
             out += `
             <button type="button" class="picker-cat-card picker-cat-card--${tipoLower}" data-id="${cat.id}" data-nombre="${cat.nombre}" data-tipo="${cat.tipo}">

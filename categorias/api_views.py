@@ -85,6 +85,7 @@ def categorias_enriched(request):
             'id': c.id,
             'nombre': c.nombre,
             'tipo': c.tipo,
+            'icono': c.icono,
             'es_favorita': c.es_favorita,
             'uso_global': c.uso_global
         }

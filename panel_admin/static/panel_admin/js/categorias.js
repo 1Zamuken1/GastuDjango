@@ -67,6 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('editar-cat-nombre').value  = res.nombre;
       document.getElementById('editar-cat-tipo').value    = res.tipo;
       document.getElementById('editar-cat-desc').value    = res.descripcion;
+      const icono = document.querySelector(`#editar-cat-iconos input[value="${res.icono}"]`)
+        || document.querySelector('#editar-cat-iconos input');
+      if (icono) icono.checked = true;
       const msg = document.getElementById('msg-editar-cat');
       if (msg) msg.textContent = '';
       openModal('modal-editar-categoria');
