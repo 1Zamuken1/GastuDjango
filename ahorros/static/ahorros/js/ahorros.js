@@ -73,7 +73,7 @@
   }
 
   function aplicarFiltros() {
-    const cards = [...app.querySelectorAll('#grid-metas .plan-card')];
+    const cards = [...app.querySelectorAll('#grid-metas .meta-card')];
     let visibles = 0;
     cards.forEach(card => {
       const pasaEstado = estado.filtro === 'todas' || card.dataset.grupo === estado.filtro;
@@ -362,6 +362,13 @@
         case 'eliminar': eliminar(btn); break;
         case 'nueva': abrirFormulario(null); break;
       }
+    });
+    /* Las cards son clicables como en Ingresos/Egresos; tambien con Enter o espacio */
+    app.addEventListener('keydown', e => {
+      const card = e.target.closest?.('.meta-card');
+      if (!card || e.target !== card || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      abrirDetalle(card.dataset.url);
     });
   }
 
