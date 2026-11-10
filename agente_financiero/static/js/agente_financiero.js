@@ -355,6 +355,11 @@
         case "siguientes":
           htmlPartes.push(renderSiguientes(b.items));
           break;
+        case "procedencia":
+          if (b.texto) {
+            htmlPartes.push('<p class="agente-procedencia">' + escaparHTML(b.texto) + '</p>');
+          }
+          break;
         case "texto":
           htmlPartes.push(formatearBot(b.texto));
           break;

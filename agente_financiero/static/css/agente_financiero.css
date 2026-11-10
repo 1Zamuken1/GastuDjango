@@ -1042,6 +1042,50 @@
   .agente-libreta__concepto {
     max-width: 170px;
   }
+  .agente-medidor__seg {
+    gap: 2px;
+    border-radius: 3px;
+  }
+  .agente-medidor__bandera {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+  .agente-next-btn {
+    font-size: 14px;
+  }
+  .agente-msg--bot {
+    padding-left: 0;
+  }
+  .agente-artifact-card {
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+}
+
+/* ── Pantallas extra-pequenas (360px) ────────────────────────── */
+@media (max-width: 400px) {
+  .agente-hero__saludo {
+    font-size: 24px;
+  }
+  .agente-cifras {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .agente-cifras__col + .agente-cifras__col {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--agente-line);
+    padding-top: 12px;
+  }
+  .agente-cifras__valor {
+    font-size: 20px;
+  }
+  .agente-libreta__concepto {
+    max-width: 120px;
+  }
+  .agente-ask-text span {
+    display: none;
+  }
 }
 
 /* ── Respeto a Reducción de Movimiento ───────────────────────── */
