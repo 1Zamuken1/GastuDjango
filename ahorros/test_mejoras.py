@@ -191,3 +191,16 @@ class TestResumen:
         r = client_auto.get(f"/ahorros/{meta.pk}/aporte/")
         assert r.status_code == 200
         assert "Mensual" in r.content.decode()
+
+
+class TestDashboard:
+    @pytest.mark.django_db
+    def test_tendencia_con_aportes(self, client_auto, usuario, cat_ahorro):
+        """La tendencia diaria del dashboard agrupa los aportes por fecha_aporte (DateField)."""
+        hoy = timezone.localdate()
+        meta = crear_meta(usuario, cat_ahorro, hoy)
+        cuota = meta.aporteahorro_set.first()
+        AporteAhorro.objects.filter(pk=cuota.pk).update(estado_ap='APORTADO', aporte=Decimal("100000"), fecha_aporte=hoy)
+        r = client_auto.get(f"/dashboard/tendencia/?mes={hoy.month}&anio={hoy.year}")
+        assert r.status_code == 200
+        assert sum(r.json()["ahorros"]) == 100000

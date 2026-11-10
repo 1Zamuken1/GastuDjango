@@ -10,7 +10,7 @@ import calendar
 from datetime import date, timedelta
 from decimal import Decimal
 
-from django.db.models import Sum
+from django.db.models import F, Sum
 from django.db.models.functions import TruncDate
 
 from gastu_django.constants import ZERO, MESES_ES, PIE_COLORES
@@ -545,7 +545,7 @@ def build_tendencia_data(user, mes, anio, filtros=None):
         row['fecha']: float(row['total'])
         for row in (
             qs_ahorros
-            .annotate(fecha=TruncDate('fecha_aporte'))
+            .annotate(fecha=F('fecha_aporte'))
             .values('fecha')
             .annotate(total=Sum('aporte'))
         )
@@ -554,7 +554,7 @@ def build_tendencia_data(user, mes, anio, filtros=None):
     ahor_cat_map = defaultdict(list)
     for row in (
         qs_ahorros
-        .annotate(fecha=TruncDate('fecha_aporte'))
+        .annotate(fecha=F('fecha_aporte'))
         .values('fecha', 'ahorro__descripcion', 'ahorro__categoria__nombre')
         .annotate(total=Sum('aporte'))
         .order_by('fecha', '-total')

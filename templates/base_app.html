@@ -784,7 +784,7 @@
 ══════════════════════════════════════════ -->
     <script>
       // Definir URL estática global para los scripts JS
-      window.GASTU_STATIC_URL = "{% static '' %}";
+      window.GASTU_STATIC_URL = "{% get_static_prefix %}";
     </script>
     <script src="{% static 'js/gastuapp_layout.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

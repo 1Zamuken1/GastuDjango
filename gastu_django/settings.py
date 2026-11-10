@@ -173,12 +173,19 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# Whitenoise: en produccion comprime y sirve con hash de versión
-STATICFILES_STORAGE = (
-    'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    if not DEBUG
-    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
-)
+# Estaticos con hash de version en produccion: cada cambio de CSS/JS genera
+# un nombre de archivo nuevo, asi el navegador nunca usa una copia vieja aunque
+# nginx los cachee 30 dias. Django 5.1+ ignora STATICFILES_STORAGE; va en STORAGES.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage'
+            if not DEBUG
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ──────────────────────────────────────────────────────────────
