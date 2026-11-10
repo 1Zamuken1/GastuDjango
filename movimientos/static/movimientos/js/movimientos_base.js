@@ -92,6 +92,8 @@ class GestorMovimientos {
     this.modalRegistros.setAttribute('hidden', '');
     this.modalMovimiento.removeAttribute('hidden');
     this._resetPicker();
+    this._renderChipsCategorias();
+    this._setFechaRapida('hoy');
   }
 
   abrirModalEditar(id, descripcion, monto, fechaRaw, categoriaId) {
@@ -110,7 +112,13 @@ class GestorMovimientos {
     montoInput.value = this._formatearNumero(monto);
     montoInput.dataset.raw = monto;
     this.limpiarErrores();
+    this._renderChipsCategorias();
     this._syncPickerLabel(categoriaId);
+    const hoy = this._isoDesdeHoy(0);
+    const ayer = this._isoDesdeHoy(-1);
+    if (!fechaRaw || fechaRaw === hoy) this._setFechaRapida('hoy');
+    else if (fechaRaw === ayer) this._setFechaRapida('ayer');
+    else this._setFechaRapida('otra', fechaRaw);
   }
 
   cerrarModalMovimiento() {
@@ -161,30 +169,28 @@ class GestorMovimientos {
         return;
       }
 
+      // Misma estructura que la card del template (ver movimientos/css/categoria_card.css)
+      const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
       grid.innerHTML = data.categorias.map(cat => `
-        <div class="categoria-card"
+        <div class="categoria-card" tabindex="0"
              data-categoria-id="${cat.id}"
-             data-search-text="${cat.nombre.toLowerCase()}"
+             data-search-text="${esc(cat.nombre.toLowerCase())}"
+             data-icono="${esc(cat.icono || 'tag')}"
              data-activo="${cat.activo ? 'true' : 'false'}">
           <div class="categoria-card__header">
-            <div>
+            <div class="categoria-card__icon"><i data-lucide="${esc(cat.icono || 'tag')}"></i></div>
+            <div class="categoria-card__titulo">
               <p class="categoria-card__nombre">
-                ${cat.nombre}
+                ${esc(cat.nombre)}
                 ${!cat.activo ? '<span class="badge-inactiva">Inactiva</span>' : ''}
               </p>
-              <p class="categoria-card__cantidad">${cat.cantidad} registro${cat.cantidad !== 1 ? 's' : ''}</p>
+              <p class="categoria-card__cantidad">${cat.cantidad} registro${cat.cantidad !== 1 ? 's' : ''} · último ${esc(cat.ultimo_corto)}</p>
             </div>
-            <div class="categoria-card__icon"><i data-lucide="folder"></i></div>
+            <span class="categoria-card__pct">${cat.porcentaje}%</span>
           </div>
-          <p class="categoria-card__monto font-display">${cat.total_fmt}</p>
-          <div style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0 .25rem;">
-            <div class="progress-bar" style="flex:1;margin:0;">
-              <div class="progress-bar__fill" data-porcentaje="${cat.porcentaje}"></div>
-            </div>
-            <span style="font-size:.72rem;font-weight:700;color:${this.color};white-space:nowrap;min-width:2.5rem;text-align:right;">${cat.porcentaje}%</span>
-          </div>
-          <div class="categoria-card__footer">
-            <i data-lucide="clock"></i> Último: ${cat.ultimo_registro}
+          <p class="categoria-card__monto font-display">$${Math.round(Number(cat.total)).toLocaleString('es-CO')}</p>
+          <div class="progress-bar">
+            <div class="progress-bar__fill" data-porcentaje="${cat.porcentaje}"></div>
           </div>
         </div>`).join('');
 
@@ -273,6 +279,9 @@ class GestorMovimientos {
   /* ── Cards ── */
   bindearCards() {
     document.querySelectorAll('.categoria-card').forEach(card => {
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+      });
       card.addEventListener('click', () => {
         this.categoriaActualId = card.dataset.categoriaId;
         this.paginaActual = 1;
@@ -437,9 +446,7 @@ class GestorMovimientos {
         tipo: this.tipo.toUpperCase(),
         context: 'movimientos',
         onSelect: (cat) => {
-          inputCat.value = cat.id;
-          pickerLabel.textContent = cat.nombre;
-          pickerLabel.style.color = '#0f172a';
+          self._setCategoria(cat.id, cat.nombre, cat.icono);
           cerrarPicker();
         }
       });
@@ -486,27 +493,87 @@ class GestorMovimientos {
       const catId = self.categoriaActualId;
       const catNombre = document.getElementById('modal-registros-titulo').textContent;
       self.abrirModalNuevo();
-      if (inputCat && pickerLabel && catId) {
-        inputCat.value = catId;
-        pickerLabel.textContent = catNombre;
-        pickerLabel.style.color = 'var(--slate-900)';
-      }
+      if (catId) self._setCategoria(catId, catNombre, self._iconoDe(catId));
     });
   }
 
   _resetPicker() {
     if (!this._pickerEls) return;
-    this._pickerEls.inputCat.value = '';
-    this._pickerEls.pickerLabel.textContent = 'Seleccionar categoría';
-    this._pickerEls.pickerLabel.style.color = '';
+    this._setCategoria('', 'Seleccionar categoría', null);
   }
   _syncPickerLabel(categoriaId) {
     if (!this._pickerEls) return;
-    const card = document.querySelector(`.picker-cat-card[data-id="${categoriaId}"]`);
-    if (card) {
-      this._pickerEls.pickerLabel.textContent = card.dataset.nombre;
-      this._pickerEls.pickerLabel.style.color = 'var(--slate-900)';
+    const cat = window.CategoryPicker?.allCategories?.find(c => c.id == categoriaId);
+    const card = document.querySelector(`.categoria-card[data-categoria-id="${categoriaId}"]`);
+    const nombre = cat?.nombre
+      || card?.querySelector('.categoria-card__nombre')?.textContent.replace('Inactiva', '').trim()
+      || document.querySelector(`.picker-cat-card[data-id="${categoriaId}"]`)?.dataset.nombre;
+    if (nombre) this._setCategoria(categoriaId, nombre, this._iconoDe(categoriaId));
+  }
+
+  /** Icono de una categoria segun el picker o la card de la pagina. */
+  _iconoDe(categoriaId) {
+    const cat = window.CategoryPicker?.allCategories?.find(c => c.id == categoriaId);
+    if (cat?.icono) return cat.icono;
+    return document.querySelector(`.categoria-card[data-categoria-id="${categoriaId}"]`)?.dataset.icono || null;
+  }
+
+  /** Fija la categoria elegida: valor, texto, icono del boton y de la cabecera, y atajo activo. */
+  _setCategoria(id, nombre, icono) {
+    if (!this._pickerEls) return;
+    const { inputCat, pickerLabel, btnPicker } = this._pickerEls;
+    inputCat.value = id || '';
+    pickerLabel.textContent = nombre;
+    pickerLabel.style.color = id ? 'var(--slate-900)' : '';
+    btnPicker.classList.toggle('has-value', !!id);
+
+    const iconoPicker = document.getElementById('picker-cat-icono');
+    if (iconoPicker) iconoPicker.innerHTML = `<i data-lucide="${id && icono ? icono : 'tag'}"></i>`;
+    const badge = document.getElementById('modal-tipo-badge');
+    if (badge) {
+      if (this._badgeOriginal === undefined) this._badgeOriginal = badge.innerHTML;
+      badge.innerHTML = id && icono ? `<i data-lucide="${icono}"></i>` : this._badgeOriginal;
     }
+    document.querySelectorAll('#mov-chips-categorias .mov-chip').forEach(chip => {
+      chip.classList.toggle('is-activo', chip.dataset.id == id);
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  /** Atajos con las categorias que mas usa el usuario (las primeras cards de la pagina). */
+  _renderChipsCategorias() {
+    const cont = document.getElementById('mov-chips-categorias');
+    if (!cont) return;
+    const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const cards = [...document.querySelectorAll('#grid-categorias .categoria-card[data-activo="true"]')].slice(0, 4);
+    cont.innerHTML = cards.map(card => {
+      const nombre = card.querySelector('.categoria-card__nombre').textContent.trim();
+      return `<button type="button" class="mov-chip" data-id="${esc(card.dataset.categoriaId)}" data-nombre="${esc(nombre)}" data-icono="${esc(card.dataset.icono || 'tag')}">
+        <i data-lucide="${esc(card.dataset.icono || 'tag')}"></i>${esc(nombre)}</button>`;
+    }).join('');
+    cont.querySelectorAll('.mov-chip').forEach(chip => {
+      chip.addEventListener('click', () => this._setCategoria(chip.dataset.id, chip.dataset.nombre, chip.dataset.icono));
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  _isoDesdeHoy(dias) {
+    const f = new Date();
+    f.setDate(f.getDate() + dias);
+    return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`;
+  }
+
+  /** Atajos de fecha: hoy, ayer u otra fecha (muestra el calendario). */
+  _setFechaRapida(modo, fechaIso) {
+    const cont = document.getElementById('dp-fecha-container');
+    document.querySelectorAll('#mov-chips-fecha .mov-chip').forEach(chip => {
+      chip.classList.toggle('is-activo', chip.dataset.fecha === modo);
+    });
+    if (cont) cont.hidden = modo !== 'otra';
+    if (!this.dpFecha) return;
+    if (modo === 'hoy') this.dpFecha.setValor(this._isoDesdeHoy(0));
+    else if (modo === 'ayer') this.dpFecha.setValor(this._isoDesdeHoy(-1));
+    else if (fechaIso) this.dpFecha.setValor(fechaIso);
   }
 
   /* ── Datepicker Fecha (formulario CRUD) ── */
@@ -516,6 +583,9 @@ class GestorMovimientos {
     if (!inputFecha || !container) return;
     this.dpFecha = new MiniDatepicker(inputFecha, this.dpAcento);
     container.appendChild(this.dpFecha.wrapper);
+    document.querySelectorAll('#mov-chips-fecha .mov-chip').forEach(chip => {
+      chip.addEventListener('click', () => this._setFechaRapida(chip.dataset.fecha));
+    });
   }
 
   /* ── Reportes ── */

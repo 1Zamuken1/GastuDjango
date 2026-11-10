@@ -394,6 +394,12 @@ Extraída de `movimientos` para ser compartida por todo el sistema. Solo visible
 categorias:lista_categorias
 ```
 
+**Ícono de categoría:** cada `Categoria` guarda un ícono de Lucide en `icono` (lista cerrada en `categorias/iconos.py`). Las categorías base tienen uno asignado (`ICONOS_BASE`, también en el fixture `categorias_iniciales.json`, que se recarga en cada `migrate`); las nuevas se crean desde el panel de administración con un selector de íconos. El ícono se usa en las cards de Ingresos/Egresos, en el selector de categorías (`category-picker.js`) y en el modal de movimiento.
+
+**Plantilla visual de las vistas:** Ingresos/Egresos son la referencia. La card de categoría vive en `movimientos/static/movimientos/css/categoria_card.css` (horizontal, acento lateral del módulo, ícono propio, chip de porcentaje) y el modal de movimiento en `modal_movimiento.css` (dos columnas: monto y descripción / categoría con atajos y fecha con atajos Hoy-Ayer-Otra). Cada página define su acento con `--mov-acento*`.
+
+**Fechas de movimientos:** `fecha_registro` es un `DateTimeField` en UTC; para mostrarla o compararla por día usar siempre `timezone.localtime(...)` (America/Bogota).
+
 ---
 
 ## 10. App notificaciones — estado actual (100%)

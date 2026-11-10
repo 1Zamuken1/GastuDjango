@@ -1,3 +1,4 @@
+from django.template.defaultfilters import date as date_filter
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
@@ -225,8 +226,8 @@ def guardar_movimiento(request, pk=None):
             'descripcion': mov.descripcion,
             'monto': str(mov.monto),
             'monto_fmt': f"${mov.monto:,.0f}",
-            'fecha': mov.fecha_registro.strftime('%d %b %Y'),
-            'fecha_raw': mov.fecha_registro.date().isoformat(),
+            'fecha': timezone.localtime(mov.fecha_registro).strftime('%d %b %Y'),
+            'fecha_raw': timezone.localtime(mov.fecha_registro).date().isoformat(),
             'categoria_id': mov.categoria_id,
             'categoria_nombre': mov.categoria.nombre,
             'tipo': mov.tipo,
@@ -276,8 +277,8 @@ def registros_por_categoria(request):
             {
                 'id': m.id,
                 'descripcion': m.descripcion or 'Sin descripción',
-                'fecha': m.fecha_registro.strftime('%d %b %Y'),
-                'fecha_raw': m.fecha_registro.date().isoformat(),
+                'fecha': timezone.localtime(m.fecha_registro).strftime('%d %b %Y'),
+                'fecha_raw': timezone.localtime(m.fecha_registro).date().isoformat(),
                 'monto': str(m.monto),
                 'monto_fmt': f"${m.monto:,.0f}",
                 'tipo': m.tipo,
@@ -337,7 +338,9 @@ def resumen_movimientos(request):
                 'total_fmt': f"${cd['total']:,.0f}",
                 'cantidad': cd['cantidad'],
                 'porcentaje': cd['porcentaje'],
-                'ultimo_registro': cd['ultimo_registro'].strftime('%d %b %Y'),
+                'ultimo_registro': timezone.localtime(cd['ultimo_registro']).strftime('%d %b %Y'),
+                'ultimo_corto': date_filter(timezone.localtime(cd['ultimo_registro']), 'j b'),
+                'icono': cd['categoria'].icono,
             }
             for cd in categorias_con_totales
         ],
@@ -421,8 +424,8 @@ def buscar_registros(request):
         categorias_map[cid]['registros'].append({
             'id': m.id,
             'descripcion': m.descripcion,
-            'fecha': m.fecha_registro.strftime('%d %b %Y'),
-            'fecha_raw': m.fecha_registro.date().isoformat(),
+            'fecha': timezone.localtime(m.fecha_registro).strftime('%d %b %Y'),
+            'fecha_raw': timezone.localtime(m.fecha_registro).date().isoformat(),
             'monto': str(m.monto),
             'monto_fmt': f"${m.monto:,.0f}",
             'categoria_id': m.categoria_id,

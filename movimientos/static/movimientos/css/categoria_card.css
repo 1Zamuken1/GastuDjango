@@ -1,0 +1,72 @@
+/* ─────────────────────────────────────────────────────────────
+   Card de categoria — plantilla de Ingresos y Egresos
+   Rectangulo horizontal con acento lateral del modulo, icono propio de
+   la categoria, chip de porcentaje, monto y barra de avance.
+   Cada pagina define su acento con --mov-acento* (ver ingresos.css y
+   egresos.css). La misma card la pinta movimientos_base.js al refrescar.
+   ───────────────────────────────────────────────────────────── */
+
+.categoria-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: .875rem;
+  padding: 1.1rem 1.25rem 1.15rem 1.4rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow .15s, transform .15s, border-color .15s;
+}
+.categoria-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--mov-acento);
+}
+.categoria-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--mov-acento-rgb), .35);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .07);
+}
+.categoria-card:focus-visible { outline: 2px solid var(--mov-acento); outline-offset: 2px; }
+
+.categoria-card__header { display: flex; align-items: center; gap: .75rem; margin-bottom: .8rem; }
+.categoria-card__icon {
+  width: 2.6rem; height: 2.6rem; border-radius: .75rem; flex-shrink: 0;
+  display: grid; place-items: center;
+  background: var(--mov-acento-claro); color: var(--mov-acento);
+  transition: background .15s, color .15s;
+}
+.categoria-card__icon svg { width: 1.25rem; height: 1.25rem; }
+.categoria-card:hover .categoria-card__icon { background: var(--mov-acento); color: #fff; }
+
+.categoria-card__titulo { flex: 1; min-width: 0; }
+.categoria-card__nombre { font-size: .95rem; font-weight: 700; color: var(--slate-900); margin: 0 0 .1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.categoria-card__cantidad { font-size: .75rem; color: var(--slate-500); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.categoria-card__pct {
+  flex-shrink: 0;
+  padding: .2rem .55rem; border-radius: 9999px;
+  background: var(--mov-acento-claro); color: var(--mov-acento-oscuro);
+  font-size: .74rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+
+.categoria-card__monto { font-size: 1.45rem; font-weight: 800; color: var(--slate-900); margin: 0 0 .65rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+.progress-bar { height: 6px; background: #edf1f6; border-radius: 9999px; overflow: hidden; margin-top: auto; }
+.progress-bar__fill { height: 100%; width: 0; background: var(--mov-acento); border-radius: 9999px; transition: width .45s ease; }
+
+/* Categorias inactivas */
+.categoria-card[data-activo="false"] { background: #fbfcfd; }
+.categoria-card[data-activo="false"]::before { background: #cbd5e1; }
+.categoria-card[data-activo="false"] .categoria-card__icon,
+.categoria-card[data-activo="false"] .categoria-card__pct,
+.categoria-card[data-activo="false"] .progress-bar__fill { filter: grayscale(1); opacity: .7; }
+
+.grid-empty { grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: var(--slate-500); font-size: .9rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .categoria-card, .categoria-card:hover { transition: none; transform: none; }
+}

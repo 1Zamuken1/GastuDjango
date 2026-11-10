@@ -10,6 +10,8 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'movimientos/css/datepicker.css' %}">
 <link rel="stylesheet" href="{% static 'movimientos/css/ingresos.css' %}">
+<link rel="stylesheet" href="{% static 'movimientos/css/categoria_card.css' %}">
+<link rel="stylesheet" href="{% static 'movimientos/css/modal_movimiento.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -131,34 +133,27 @@
 <!-- Zona 3: Grid de categorías -->
 <div class="categorias-grid" id="grid-categorias">
   {% for item in categorias_con_totales %}
-  <div class="categoria-card"
+  <div class="categoria-card" tabindex="0"
        data-categoria-id="{{ item.categoria.id }}"
        data-search-text="{{ item.categoria.nombre|lower }}"
+       data-icono="{{ item.categoria.icono|default:'tag' }}"
        data-activo="{{ item.categoria.activo|yesno:'true,false' }}">
     <div class="categoria-card__header">
-      <div>
+      <div class="categoria-card__icon"><i data-lucide="{{ item.categoria.icono|default:'tag' }}"></i></div>
+      <div class="categoria-card__titulo">
         <p class="categoria-card__nombre">
           {{ item.categoria.nombre }}
           {% if not item.categoria.activo %}
             <span class="badge-inactiva">Inactiva</span>
           {% endif %}
         </p>
-        <p class="categoria-card__cantidad">{{ item.cantidad }} registro{{ item.cantidad|pluralize }}</p>
+        <p class="categoria-card__cantidad">{{ item.cantidad }} registro{{ item.cantidad|pluralize }} · último {{ item.ultimo_registro|date:"j b" }}</p>
       </div>
-      <div class="categoria-card__icon">
-        <i data-lucide="folder"></i>
-      </div>
+      <span class="categoria-card__pct">{{ item.porcentaje }}%</span>
     </div>
     <p class="categoria-card__monto font-display">${{ item.total|floatformat:"0g" }}</p>
-    <div style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0 .25rem;">
-      <div class="progress-bar" style="flex:1;margin:0;">
-        <div class="progress-bar__fill" data-porcentaje="{{ item.porcentaje|stringformat:'g' }}"></div>
-      </div>
-      <span style="font-size:.72rem;font-weight:700;color:#10b981;white-space:nowrap;min-width:2.5rem;text-align:right;">{{ item.porcentaje }}%</span>
-    </div>
-    <div class="categoria-card__footer">
-      <i data-lucide="clock"></i>
-      Último: {{ item.ultimo_registro|date:"d M Y" }}
+    <div class="progress-bar">
+      <div class="progress-bar__fill" data-porcentaje="{{ item.porcentaje|stringformat:'g' }}"></div>
     </div>
   </div>
   {% empty %}

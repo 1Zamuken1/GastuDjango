@@ -1,3 +1,11 @@
+/* Acento del modulo para la card de categoria (movimientos/css/categoria_card.css) */
+:root {
+  --mov-acento: #e11d48;
+  --mov-acento-oscuro: #be123c;
+  --mov-acento-claro: #fff1f2;
+  --mov-acento-rgb: 225, 29, 72;
+}
+
 /* ── Hero 2 columnas ─────────────────────────────── */
 .stats-hero {
   display: grid;
@@ -100,21 +108,6 @@
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-.categoria-card {
-  background: #fff; border: 1px solid var(--border); border-radius: .875rem;
-  padding: 1.25rem; cursor: pointer; transition: box-shadow .15s, transform .15s;
-}
-.categoria-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); transform: translateY(-1px); }
-.categoria-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .75rem; }
-.categoria-card__icon { width: 2.25rem; height: 2.25rem; border-radius: .625rem; display: grid; place-items: center; background: #fff1f2; color: #e11d48; flex-shrink: 0; }
-.categoria-card__icon svg { width: 1.1rem; height: 1.1rem; }
-.categoria-card__nombre { font-size: .95rem; font-weight: 700; color: var(--slate-900); margin: 0 0 .15rem; }
-.categoria-card__cantidad { font-size: .75rem; color: var(--slate-500); margin: 0; }
-.categoria-card__monto { font-size: 1.4rem; font-weight: 800; color: var(--slate-900); margin: 0 0 .5rem; }
-.progress-bar { height: 6px; background: #cbd5e1; border-radius: 9999px; margin: .5rem 0; overflow: hidden; }
-.progress-bar__fill { height: 100%; background: #e11d48; border-radius: 9999px; transition: width .4s ease; }
-.categoria-card__footer { font-size: .75rem; color: var(--slate-500); display: flex; align-items: center; gap: .3rem; margin: 0; }
-.categoria-card__footer svg { width: .8rem; height: .8rem; }
 .grid-empty { grid-column: 1/-1; text-align: center; padding: 3rem 1rem; color: var(--slate-500); font-size: .9rem; }
 
 /* ── Tabla global ────────────────────────────────── */
@@ -313,14 +306,4 @@
   #modal-picker-cat #picker-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
-}
-
-/* ── Categorías inactivas ───────────────────────── */
-.categoria-card[data-activo="false"] {
-  filter: grayscale(1);
-  opacity: 0.75;
-}
-.categoria-card[data-activo="false"]:hover {
-  filter: grayscale(0.85);
-  opacity: 0.9;
 }
