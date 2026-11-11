@@ -519,7 +519,7 @@ window.GastuTours = {
 
         // ── Tematización Dinámica por Módulo ──
         const moduleColors = {
-            dashboard: { hex: '#6366f1', rgb: '99, 102, 241' },
+            dashboard: { hex: '#047857', rgb: '4, 120, 87' },
             ingresos: { hex: '#10b981', rgb: '16, 185, 129' },
             egresos: { hex: '#e11d48', rgb: '225, 29, 72' },
             ahorros: { hex: '#d97706', rgb: '217, 119, 6' },

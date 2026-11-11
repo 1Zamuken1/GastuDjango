@@ -819,6 +819,10 @@ requestAnimationFrame(() => {
       } else if (data.hay_deficit) {
         badge.className = 'status-badge status-badge--warning';
         badge.innerHTML = '<i data-lucide="info"></i> Gastos superan ingresos del mes';
+      } else if (data.presupuestos_en_alerta > 0) {
+        const n = parseInt(data.presupuestos_en_alerta, 10);
+        badge.className = 'status-badge status-badge--warning';
+        badge.innerHTML = `<i data-lucide="gauge"></i> ${n} presupuesto${n === 1 ? '' : 's'} al 80% o más`;
       } else {
         badge.className = 'status-badge status-badge--ok';
         badge.innerHTML = '<i data-lucide="check-circle"></i> Finanzas en orden';

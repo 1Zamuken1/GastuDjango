@@ -16,18 +16,33 @@
   --sidebar-w-mini: 64px;
   --topbar-h: 70px;
   --emerald: #10b981;
-  --emerald-dark: #059669;
+  /* #047857: texto blanco encima da 5,5:1 (AA). El anterior #059669 daba 3,77:1. */
+  --emerald-dark: #047857;
   --emerald-light: #ecfdf5;
   --slate-900: #0f172a;
   --slate-700: #334155;
   --slate-600: #475569;
-  --slate-500: #64748b;
+  /* #5b6779: 5,7:1 sobre blanco y 4,9:1 sobre el fondo #e8edf2 (el anterior #64748b daba 4,0:1). */
+  --slate-500: #5b6779;
   --slate-400: #94a3b8;
   --slate-300: #cbd5e1;
   --slate-100: #f1f5f9;
   --slate-50: #f8fafc;
   --white: #ffffff;
   --border: #e2e8f0;
+
+  /* ── Tokens semanticos compartidos con el agente (agente_financiero.css) ── */
+  --gastu-canvas: #eef2f7;
+  --gastu-ink: #0f172a;
+  --gastu-ink-muted: #475569;
+  --gastu-linea: #d5dee9;
+  --gastu-linea-fuerte: #cbd5e1;
+  --gastu-accion: #047857;
+  --gastu-accion-viva: #10b981;
+  --gastu-alerta: #d97706;
+  --gastu-alerta-ink: #92400e;
+  --gastu-peligro: #be123c;
+  --gastu-segmento-vacio: #d5dee9;
 }
 
 html,

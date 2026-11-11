@@ -48,12 +48,7 @@ class GestorMovimientos {
 
   /* ── Auto-ajustar Textos Largos ── */
   _ajustarTamanoTextos() {
-    const total = document.querySelector('.hero-total__value');
-    if (total) {
-      const len = total.textContent.trim().length;
-      total.style.fontSize = len > 12 ? '1.5rem' : (len > 9 ? '1.9rem' : '');
-    }
-    document.querySelectorAll('.hero-stat__value, .categoria-card__monto').forEach(el => {
+    document.querySelectorAll('.categoria-card__monto').forEach(el => {
       const len = el.textContent.trim().length;
       el.style.fontSize = len > 12 ? '0.95rem' : (len > 9 ? '1.15rem' : '');
     });
@@ -192,11 +187,13 @@ class GestorMovimientos {
           <div class="progress-bar">
             <div class="progress-bar__fill" data-porcentaje="${cat.porcentaje}"></div>
           </div>
+          ${this._htmlPresupuesto(cat.presupuesto)}
         </div>`).join('');
 
       document.querySelectorAll('.progress-bar__fill').forEach(el => {
         el.style.width = (parseFloat(el.dataset.porcentaje) || 0) + '%';
       });
+      this.pintarMedidoresPresupuesto();
       this.bindearCards();
       lucide.createIcons();
       this._ajustarTamanoTextos();
@@ -692,11 +689,54 @@ class GestorMovimientos {
     });
   }
 
+  /* ── Medidor de presupuesto en las cards de Egresos ──
+     12 segmentos: verde hasta el 80 %, ambar en zona de alerta y rojo si se excede
+     (mismo criterio que el medidor del agente financiero). */
+  pintarMedidoresPresupuesto() {
+    const SEGMENTOS = 12;
+    document.querySelectorAll('.cat-presupuesto').forEach(medidor => {
+      const pct = parseFloat(medidor.dataset.porcentaje) || 0;
+      const llenos = Math.min(Math.round(pct / 100 * SEGMENTOS), SEGMENTOS);
+      const caja = medidor.querySelector('.cat-presupuesto__segmentos');
+      if (!caja) return;
+      caja.innerHTML = '';
+      for (let i = 1; i <= SEGMENTOS; i++) {
+        const seg = document.createElement('i');
+        seg.setAttribute('aria-hidden', 'true');
+        if (i <= llenos) {
+          seg.className = (i / SEGMENTOS) * 100 <= 80 ? 'is-ok' : (pct >= 100 ? 'is-danger' : 'is-warn');
+        }
+        caja.appendChild(seg);
+      }
+    });
+  }
+
+  /* Bloque de presupuesto para las cards que se re-renderizan desde el resumen JSON. */
+  _htmlPresupuesto(p) {
+    if (!p) return '';
+    const fmt = v => '$' + Math.round(Math.abs(Number(v) || 0)).toLocaleString('es-CO');
+    const nivel = ['ok', 'alerta', 'excedido'].includes(p.nivel) ? p.nivel : 'ok';
+    const pct = Math.round(Number(p.porcentaje) || 0);
+    let nota = '';
+    if (nivel === 'excedido') nota = `<p class="cat-presupuesto__nota">Te pasaste por ${fmt(p.disponible)}</p>`;
+    else if (nivel === 'alerta') nota = `<p class="cat-presupuesto__nota">Te quedan ${fmt(p.disponible)}</p>`;
+    return `
+      <div class="cat-presupuesto cat-presupuesto--${nivel}" data-porcentaje="${Number(p.porcentaje) || 0}">
+        <div class="cat-presupuesto__cabecera">
+          <span class="cat-presupuesto__etiqueta">Presupuesto</span>
+          <span class="cat-presupuesto__valor">${pct}% de ${fmt(p.limite)}</span>
+        </div>
+        <div class="cat-presupuesto__segmentos" role="img" aria-label="${pct} por ciento del presupuesto usado"></div>
+        ${nota}
+      </div>`;
+  }
+
   /* ── Progress bars init ── */
   _initProgress() {
     document.querySelectorAll('.progress-bar__fill').forEach(el => {
       el.style.width = (parseFloat(el.dataset.porcentaje) || 0) + '%';
     });
+    this.pintarMedidoresPresupuesto();
     this.bindearCards();
     lucide.createIcons();
   }

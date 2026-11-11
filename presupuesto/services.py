@@ -198,3 +198,24 @@ def renovar_presupuesto(presupuesto, hoy=None):
         fecha_fin=fin,
         is_activo=True,
     )
+
+
+def estado_presupuesto_por_categoria(usuario):
+    """
+    Estado del presupuesto activo de cada categoria del usuario, para mostrarlo en
+    las cards de Egresos: {categoria_id: {porcentaje, limite, gastado, disponible, nivel}}.
+
+    nivel: "ok" por debajo del 80 %, "alerta" del 80 al 99 %, "excedido" desde el 100 %
+    (los mismos umbrales que usan las alertas y el agente).
+    """
+    resultado = {}
+    for estado in obtener_estados_presupuestos(usuario, solo_activos=True):
+        porcentaje = estado["porcentaje"]
+        resultado.setdefault(estado["categoria_id"], {
+            "porcentaje": porcentaje,
+            "limite": estado["limite"],
+            "gastado": estado["gastado"],
+            "disponible": estado["disponible"],
+            "nivel": "excedido" if porcentaje >= 100 else ("alerta" if porcentaje >= 80 else "ok"),
+        })
+    return resultado

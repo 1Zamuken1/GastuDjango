@@ -136,3 +136,55 @@
 @media (prefers-reduced-motion: reduce) {
   .categoria-card, .categoria-card:hover { transition: none; transform: none; animation: none; }
 }
+
+/* ── Pieza opcional: presupuesto de la categoria (cards de Egresos) ──
+   Medidor de 12 segmentos, mismo lenguaje que el medidor del agente:
+   verde hasta el 80 %, ambar en zona de alerta, rojo si se excede.
+   Los segmentos los genera movimientos_base.js (pintarMedidoresPresupuesto). */
+.cat-presupuesto {
+  margin-top: .8rem;
+  padding-top: .7rem;
+  border-top: 1px dashed var(--gastu-linea, #d5dee9);
+}
+.cat-presupuesto__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .5rem;
+}
+.cat-presupuesto__etiqueta {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--gastu-ink-muted, #475569);
+}
+.cat-presupuesto__valor {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--gastu-ink, #0f172a);
+  white-space: nowrap;
+}
+.cat-presupuesto--alerta .cat-presupuesto__valor { color: var(--gastu-alerta-ink, #92400e); }
+.cat-presupuesto--excedido .cat-presupuesto__valor { color: var(--gastu-peligro, #be123c); }
+.cat-presupuesto__segmentos {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  margin-top: .4rem;
+}
+.cat-presupuesto__segmentos i {
+  flex: 1;
+  border-radius: 3px;
+  background: var(--gastu-segmento-vacio, #d5dee9);
+}
+.cat-presupuesto__segmentos i.is-ok { background: var(--gastu-accion-viva, #10b981); }
+.cat-presupuesto__segmentos i.is-warn { background: var(--gastu-alerta, #d97706); }
+.cat-presupuesto__segmentos i.is-danger { background: var(--gastu-peligro, #be123c); }
+.cat-presupuesto__nota {
+  margin: .35rem 0 0;
+  font-size: .74rem;
+  font-weight: 600;
+  color: var(--gastu-alerta-ink, #92400e);
+}
+.cat-presupuesto--excedido .cat-presupuesto__nota { color: var(--gastu-peligro, #be123c); }

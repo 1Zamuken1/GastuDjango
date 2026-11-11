@@ -1,5 +1,5 @@
 {% extends 'base_app.html' %}
-{% load static %}
+{% load static dashboard_extras %}
 
 {% block title %}Dashboard — GastuApp{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
@@ -161,11 +161,13 @@ function initOnboarding() {
     </p>
   </div>
   <span id="status-badge-wrap"
-        class="status-badge {% if total_dinero < 0 %}status-badge--deficit{% elif hay_deficit %}status-badge--warning{% else %}status-badge--ok{% endif %}">
+        class="status-badge {% if total_dinero < 0 %}status-badge--deficit{% elif hay_deficit or presupuestos_en_alerta %}status-badge--warning{% else %}status-badge--ok{% endif %}">
     {% if total_dinero < 0 %}
       <i data-lucide="alert-triangle"></i> Balance global en déficit
     {% elif hay_deficit %}
       <i data-lucide="info"></i> Gastos superan ingresos del mes
+    {% elif presupuestos_en_alerta %}
+      <i data-lucide="gauge"></i> {{ presupuestos_en_alerta }} presupuesto{{ presupuestos_en_alerta|pluralize }} al 80% o más
     {% else %}
       <i data-lucide="check-circle"></i> Finanzas en orden
     {% endif %}
@@ -370,7 +372,7 @@ function initOnboarding() {
         <i data-lucide="filter" style="width:20px; height:20px;"></i>
       </div>
       <div>
-        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">Filtros Globales</h3>
+        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">Filtros globales</h3>
         <p style="font-size: 12px; color: #64748b; margin: 0;" id="mov-subtitulo">{{ mes_nombre }} {{ anio }}</p>
       </div>
     </div>
@@ -546,7 +548,7 @@ function initOnboarding() {
 
     <div class="mov-section-header">
       <div>
-        <p class="chart-card__title">Desglose de Movimientos</p>
+        <p class="chart-card__title">Desglose de movimientos</p>
         <p class="chart-card__subtitle">Historial detallado del período actual</p>
       </div>
       <div class="mov-section-actions">
@@ -568,20 +570,22 @@ function initOnboarding() {
           <span class="mov-table-label mov-table-label--right">Monto</span>
         </div>
         {% for mov in ultimos_movimientos %}
+        {% with partes=mov.descripcion|separar_banco %}
         <div class="mov-row" data-tipo="{{ mov.tipo }}">
-          <div style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
+          <div class="mov-row__concepto">
             <div class="mov-dot {% if mov.tipo == 'INGRESO' %}mov-dot--income{% elif mov.tipo == 'EGRESO' %}mov-dot--expense{% else %}mov-dot--saving{% endif %}"></div>
-            <div style="min-width:0;">
-              <p class="mov-desc">{{ mov.descripcion }}</p>
-              <p class="mov-type">{% if mov.tipo == 'INGRESO' %}Ingreso{% elif mov.tipo == 'EGRESO' %}Egreso{% else %}Ahorro{% endif %}</p>
+            <div class="mov-row__texto">
+              <p class="mov-desc" title="{{ mov.descripcion }}">{{ partes.concepto }}</p>
+              <p class="mov-type">{% if mov.tipo == 'INGRESO' %}Ingreso{% elif mov.tipo == 'EGRESO' %}Egreso{% else %}Ahorro{% endif %}<span class="mov-type__fecha"> · {{ mov.fecha_fmt|fecha_corta }}</span>{% if partes.banco %} <span class="mov-banco">{{ partes.banco }}</span>{% endif %}</p>
             </div>
           </div>
           <div class="mov-cat">{{ mov.categoria }}</div>
-          <div class="mov-date">{{ mov.fecha_fmt }}</div>
+          <div class="mov-date">{{ mov.fecha_fmt|fecha_corta }}</div>
           <div class="mov-amount {% if mov.tipo == 'INGRESO' %}mov-amount--income{% elif mov.tipo == 'EGRESO' %}mov-amount--expense{% else %}mov-amount--saving{% endif %}">
             {% if mov.tipo == 'INGRESO' %}+{% elif mov.tipo == 'EGRESO' %}−{% else %}↗{% endif %}${{ mov.monto|floatformat:'0g' }}
           </div>
         </div>
+        {% endwith %}
         {% endfor %}
 
       {% else %}

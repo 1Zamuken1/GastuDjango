@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 from categorias.models import Categoria
 from dashboard.services import obtener_disponible
 from gastu_django.constants import MESES_ES
+from presupuesto.services import estado_presupuesto_por_categoria
 from .forms import MovimientoForm
 from .models import Movimiento
 
@@ -151,6 +152,9 @@ def lista_egresos(request):
     categorias_con_totales, total_mes = _build_categorias_con_totales(
         request.user, 'EGRESO', mes, anio
     )
+    presupuestos = estado_presupuesto_por_categoria(request.user)
+    for cd in categorias_con_totales:
+        cd['presupuesto'] = presupuestos.get(cd['categoria'].id)
 
     cantidad_mes = sum(cd['cantidad'] for cd in categorias_con_totales)
     promedio_mes = (
@@ -320,6 +324,7 @@ def resumen_movimientos(request):
     categorias_con_totales, total_mes = _build_categorias_con_totales(
         request.user, tipo, mes, anio
     )
+    presupuestos = estado_presupuesto_por_categoria(request.user) if tipo == 'EGRESO' else {}
 
     cantidad_mes = sum(cd['cantidad'] for cd in categorias_con_totales)
     promedio_mes = round(total_mes / cantidad_mes, 2) if cantidad_mes > 0 else 0
@@ -341,6 +346,7 @@ def resumen_movimientos(request):
                 'ultimo_registro': timezone.localtime(cd['ultimo_registro']).strftime('%d %b %Y'),
                 'ultimo_corto': date_filter(timezone.localtime(cd['ultimo_registro']), 'j b'),
                 'icono': cd['categoria'].icono,
+                'presupuesto': presupuestos.get(cd['categoria'].id),
             }
             for cd in categorias_con_totales
         ],

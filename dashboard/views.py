@@ -127,6 +127,7 @@ def home_view(request):
             'ahorro_total':             str(ctx['ahorro_total']),
             'ahorros_mes':              str(ctx['ahorros_mes']),
             'hay_deficit':              ctx['hay_deficit'],
+            'presupuestos_en_alerta':   ctx['presupuestos_en_alerta'],
             'pie_data':                 ctx['pie_data'],
             'metas_ahorro_activas':     ctx['metas_ahorro_activas'],
             'ultimos_movimientos':      mov_list,

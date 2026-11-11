@@ -1,14 +1,14 @@
 /* =============================================================
    perfil.css  —  GastuApp
-   Paleta: azul #2563eb como primario, tema claro
+   Paleta: verde de accion #047857 como primario (mismo que el agente), tema claro
    ============================================================= */
 
 /* ── CSS Variables ─────────────────────────────────────── */
 :root {
-  --perfil-blue:       #2563eb;
-  --perfil-blue-dark:  #1d4ed8;
-  --perfil-blue-hover: #3b82f6;
-  --perfil-blue-light: #eff6ff;
+  --perfil-blue:       #047857; /* verde de accion (AA con texto blanco) */
+  --perfil-blue-dark:  #065f46;
+  --perfil-blue-hover: #059669;
+  --perfil-blue-light: #ecfdf5;
 }
 
 /* ── Animations ────────────────────────────────────────── */
@@ -93,7 +93,7 @@
 }
 
 .perfil-tab.active .perfil-tab-badge {
-  background: rgba(37, 99, 235, 0.1);
+  background: rgba(4, 120, 87, 0.1);
   color: var(--perfil-blue);
 }
 
@@ -130,7 +130,7 @@
 }
 .info-block:hover {
   background: var(--perfil-blue-light);
-  border-color: #bfdbfe;
+  border-color: #a7f3d0;
 }
 
 /* ── Profile Hero ──────────────────────────────────────── */
@@ -140,7 +140,7 @@
   gap: 18px;
   padding: 22px 26px;
   background: linear-gradient(135deg, var(--perfil-blue-light) 0%, #ffffff 60%);
-  border: 1px solid #bfdbfe;
+  border: 1px solid #a7f3d0;
   border-radius: 16px;
   margin-bottom: 20px;
   position: relative;
@@ -154,7 +154,7 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.06);
+  background: rgba(4, 120, 87, 0.06);
   pointer-events: none;
 }
 
@@ -166,7 +166,7 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.25);
 }
 .perfil-hero-avatar span {
   color: #ffffff;
@@ -215,7 +215,7 @@
   font-size: 0.65rem;
   font-weight: 700;
   color: var(--perfil-blue);
-  background: rgba(37, 99, 235, 0.10);
+  background: rgba(4, 120, 87, 0.10);
   padding: 3px 10px;
   border-radius: 8px;
   text-transform: uppercase;
@@ -306,7 +306,7 @@
 .perfil-input::placeholder { color: var(--slate-400); }
 .perfil-input:focus {
   border-color: var(--perfil-blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.14);
 }
 .perfil-input:hover:not(:focus) {
   border-color: var(--slate-300);
@@ -357,7 +357,7 @@
 .btn-perfil:hover {
   background: var(--perfil-blue-dark);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.30);
+  box-shadow: 0 4px 16px rgba(4, 120, 87, 0.30);
 }
 .btn-perfil:disabled {
   opacity: 0.5;
@@ -573,7 +573,7 @@
   background: var(--perfil-blue);
   color: #ffffff;
   border-color: var(--perfil-blue);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 2px 8px rgba(4, 120, 87, 0.25);
 }
 
 .notif-pill-count {
@@ -707,7 +707,7 @@
 }
 @keyframes notif-pulse-planificacion {
   0%, 100% { background: #1d4ed8; }
-  50%      { background: #93c5fd; }
+  50%      { background: #6ee7b7; }
 }
 @keyframes notif-pulse-general {
   0%, 100% { background: #64748b; }
@@ -1259,3 +1259,61 @@
   transition: background 0.2s;
 }
 .pw-criterion.met .criterion-dot { background: #10b981; }
+
+/* =============================================================
+   ACTUALIZACION AL LENGUAJE DEL AGENTE
+   Superficies planas, lineas finas, un solo color de accion y el
+   avatar con anillo como el de Gastu. No cambia el comportamiento.
+   ============================================================= */
+.perfil-hero {
+  background: var(--white);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+.perfil-hero::before { display: none; }
+
+.perfil-hero-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--perfil-blue-light);
+  border: 3px solid var(--gastu-accion, #047857);
+  box-shadow: none;
+  overflow: hidden;
+}
+.perfil-hero-avatar span { color: var(--gastu-accion, #047857); }
+.perfil-hero-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.perfil-hero-name { color: var(--gastu-ink, #0f172a); }
+.perfil-hero-meta-item { color: var(--gastu-ink-muted, #475569); }
+
+.perfil-card {
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+.perfil-card:hover { box-shadow: 0 1px 3px rgba(15, 23, 42, .05); }
+
+/* Cabecera de cada seccion como fila de ajustes con linea divisoria */
+.perfil-card .tab-header-row {
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--gastu-linea, #d5dee9);
+}
+.tab-section-desc { color: var(--gastu-ink-muted, #475569); }
+
+/* Zona de peligro contenida: sin degradado, el rojo solo en el borde y la accion */
+.danger-zone {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gastu-peligro, #be123c);
+}
+.danger-zone:hover { border-color: var(--border); border-left-color: var(--gastu-peligro, #be123c); box-shadow: none; }
+.danger-zone-title { color: var(--gastu-peligro, #be123c); }
+.danger-zone-desc { color: var(--gastu-ink, #0f172a); }
+.danger-zone-subdesc { color: var(--gastu-ink-muted, #475569); }
+
+.btn-perfil:focus-visible,
+.perfil-tab:focus-visible {
+  outline: 2px solid var(--gastu-accion, #047857);
+  outline-offset: 2px;
+}

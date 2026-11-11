@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.conf import settings
 
 from .forms import UsuarioCreationForm, LoginForm, PerfilForm
+from .services import foto_de_perfil
 from notificaciones.preferencias.models import PreferenciasAlertas
 from notificaciones.preferencias.forms import PreferenciasAlertasForm
 from notificaciones.preferencias.service import PreferenciasService
@@ -225,4 +226,5 @@ def perfil_view(request):
         'total_no_leidas': total_no_leidas,
         'recuentos_modulos': recuentos_modulos,
         'notificaciones_modulo_choices': Notificacion.Modulo.choices,
+        'foto_perfil': foto_de_perfil(request.user),
     })

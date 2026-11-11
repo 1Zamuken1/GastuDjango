@@ -5,311 +5,26 @@
 
 {% block title %}Ingresos — GastuApp{% endblock %}
 {% block page_title %}Ingresos{% endblock %}
-{% block page_subtitle %}{{ mes_nombre }} {{ anio }}{% endblock %}
+{% block page_subtitle %}{% if anio == 'all' %}Todas las fechas{% else %}{{ mes_nombre }} {{ anio }}{% endif %}{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'movimientos/css/datepicker.css' %}">
 <link rel="stylesheet" href="{% static 'movimientos/css/ingresos.css' %}">
 <link rel="stylesheet" href="{% static 'css/gastu_card.css' %}">
+<link rel="stylesheet" href="{% static 'movimientos/css/vista_movimientos.css' %}">
 <link rel="stylesheet" href="{% static 'movimientos/css/modal_movimiento.css' %}">
 {% endblock %}
 
 {% block content %}
 
-<!-- Zona 1: Hero -->
-<div class="stats-hero">
-
-  <!-- Card total -->
-  <div class="hero-total gastu-hero-card gastu-hero-card--ingresos">
-    <div class="gastu-hero-card__icono"><i data-lucide="trending-up"></i></div>
-    <p class="hero-total__label">Total ingresos</p>
-    <p class="hero-total__value font-display">${{ total_mes|floatformat:"0g" }}</p>
-    <span class="hero-total__badge">{{ mes_nombre }} {{ anio }}</span>
-  </div>
-
-  <!-- Card métricas -->
-  <div class="app-card hero-stats">
-    <div class="hero-stat">
-      <span class="hero-stat__label">
-        <i data-lucide="list"></i> Registros
-      </span>
-      <span class="hero-stat__value font-display">{{ cantidad_mes }}</span>
-      <span class="hero-stat__sub">movimientos</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat__label">
-        <i data-lucide="folder"></i> Categorías
-      </span>
-      <span class="hero-stat__value font-display">{{ categorias_con_totales|length }}</span>
-      <span class="hero-stat__sub">con actividad</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat__label">
-        <i data-lucide="bar-chart-2"></i> Promedio
-      </span>
-      <span class="hero-stat__value font-display">${{ promedio_mes|floatformat:"0g" }}</span>
-      <span class="hero-stat__sub">por registro</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat__label">
-        <i data-lucide="wallet"></i> Disponible
-      </span>
-      <span class="hero-stat__value font-display">${{ disponible|floatformat:"0g"|default:"0" }}</span>
-      <span class="hero-stat__sub">total actual</span>
-    </div>
-  </div>
-
-</div>
-
-<!-- Zona 2: Toolbar -->
-<div class="app-card toolbar">
-  <div class="toolbar__search">
-    <svg class="toolbar__search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input type="text" id="buscador" placeholder="Buscar categoría...">
-  </div>
-  <div class="toolbar__actions">
-    <!-- Filtro de Período Custom -->
-    <div class="nav-mes-selector-group" style="position:relative;display:inline-flex;align-items:center;gap:.35rem;background:#fff;border:1px solid #e2e8f0;border-radius:.625rem;padding:2px 8px;height:38px;margin-right:auto;">
-      
-      <input type="hidden" id="select-mes" value="{{ mes_numero }}" data-primer-mes="{{ mes_primer_registro|default:1 }}">
-      <input type="hidden" id="select-anio" value="{{ anio }}" data-primer-anio="{{ anio_primer_registro|default:2024 }}">
-
-      <!-- Botón Mes -->
-      <button type="button" id="btn-custom-mes" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-right:4px;height:100%;display:flex;align-items:center;gap:2px;">
-        <span id="label-mes">{{ mes_nombre|title }}</span>
-        <i data-lucide="chevron-down" style="width:12px;height:12px;color:#94a3b8;"></i>
-      </button>
-
-      <!-- Divisor -->
-      <span id="divisor-anio" class="{% if anio == 'all' %}hidden{% endif %}" style="color:#cbd5e1;font-weight:300;font-size:12px;display:inline;">|</span>
-
-      <!-- Botón Año -->
-      <button type="button" id="btn-custom-anio" class="{% if anio == 'all' %}hidden{% endif %}" style="border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;color:#334155;cursor:pointer;outline:none;padding-left:4px;height:100%;display:flex;align-items:center;gap:2px;">
-        <span id="label-anio">{{ anio }}</span>
-        <i data-lucide="chevron-down" style="width:12px;height:12px;color:#94a3b8;"></i>
-      </button>
-
-      <!-- Menú Mes -->
-      <div id="dropdown-mes" style="top:calc(100% + 4px); left:0; min-width:140px;" class="absolute bg-white border border-slate-200 rounded-xl shadow-xl z-50 hidden p-2">
-         <!-- Las opciones se inyectan por JS -->
-      </div>
-
-      <!-- Menú Año -->
-      <div id="dropdown-anio" style="top:calc(100% + 4px); left:80px; min-width:110px;" class="absolute bg-white border border-slate-200 rounded-xl shadow-xl z-50 hidden p-2">
-         <!-- Las opciones se inyectan por JS -->
-      </div>
-
-      <button id="btn-filtrar-periodo" title="Filtrar período" style="border:none;background:#ecfdf5;color:#10b981;border-radius:6px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;margin-left:4px;transition:all 0.15s;padding:0;">
-        <i data-lucide="filter" style="width:12px;height:12px;"></i>
-      </button>
-    </div>
-
-    <button class="btn-ghost" type="button" id="btn-historial"
-            data-modulo="INGRESOS"
-            data-tema-accent="#10b981"
-            data-tema-light="#ecfdf5"
-            data-tema-label="Ingresos"
-            data-tema-icon="trending-up"
-            style="padding: 9px 12px;">
-      <i data-lucide="history"></i> Historial
-    </button>
-    <div class="export-group" style="display:flex; gap:0.35rem;">
-      <button class="btn-export btn-export--pdf" type="button">
-        <i data-lucide="file-text"></i> PDF
-      </button>
-      <button class="btn-export btn-export--excel" type="button">
-        <i data-lucide="table-2"></i> Excel
-      </button>
-      <button class="btn-export btn-export--csv" type="button">
-        <i data-lucide="file-spreadsheet"></i> CSV
-      </button>
-    </div>
-    <button class="btn-primary" id="btn-nuevo">
-      <i data-lucide="plus"></i> Nuevo ingreso
-    </button>
-  </div>
-</div>
-
-<!-- Zona 3: Grid de categorías -->
-<div class="categorias-grid" id="grid-categorias">
-  {% for item in categorias_con_totales %}
-  <div class="categoria-card" tabindex="0"
-       data-categoria-id="{{ item.categoria.id }}"
-       data-search-text="{{ item.categoria.nombre|lower }}"
-       data-icono="{{ item.categoria.icono|default:'tag' }}"
-       data-activo="{{ item.categoria.activo|yesno:'true,false' }}">
-    <div class="categoria-card__header">
-      <div class="categoria-card__icon"><i data-lucide="{{ item.categoria.icono|default:'tag' }}"></i></div>
-      <div class="categoria-card__titulo">
-        <p class="categoria-card__nombre">
-          {{ item.categoria.nombre }}
-          {% if not item.categoria.activo %}
-            <span class="badge-inactiva">Inactiva</span>
-          {% endif %}
-        </p>
-        <p class="categoria-card__cantidad">{{ item.cantidad }} registro{{ item.cantidad|pluralize }} · último {{ item.ultimo_registro|date:"j b" }}</p>
-      </div>
-      <span class="categoria-card__pct">{{ item.porcentaje }}%</span>
-    </div>
-    <p class="categoria-card__monto font-display">${{ item.total|floatformat:"0g" }}</p>
-    <div class="progress-bar">
-      <div class="progress-bar__fill" data-porcentaje="{{ item.porcentaje|stringformat:'g' }}"></div>
-    </div>
-  </div>
-  {% empty %}
-  <div class="grid-empty" style="text-align: center; padding: 2rem; border: 1px dashed #e2e8f0; border-radius: 12px; margin-top: 1rem;">
-    <i data-lucide="folder-search" style="width: 40px; height: 40px; color: #cbd5e1; margin-bottom: 0.5rem; display: block; margin-left: auto; margin-right: auto;"></i>
-    <p style="color: #64748b; font-weight: 600;">Sin ingresos registrados en {{ mes_nombre }} {{ anio }}</p>
-    {% if anio < anio_primer_registro or anio == anio_primer_registro and mes_numero < mes_primer_registro %}
-    <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.25rem;">Esta fecha es anterior a tu primer registro en la aplicación.</p>
-    {% endif %}
-  </div>
-  {% endfor %}
-</div>
+{% include "movimientos/includes/_vista_movimientos.html" with modulo="ingresos" plural="ingresos" singular="ingreso" icono="trending-up" btn_class="btn-primary" tema_accent="#10b981" tema_light="#ecfdf5" %}
 
 {% include "movimientos/includes/_modales_movimientos.html" with tipo_value="INGRESO" tipo_label="ingreso" btn_class="btn-primary" %}
 {% endblock %}
 
 
 {% block scripts %}
-<script>
-  window.CURRENT_MODULE = 'ingresos';
-  document.addEventListener('DOMContentLoaded', () => {
-    if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
-
-    const selectMes = document.getElementById('select-mes');
-    const selectAnio = document.getElementById('select-anio');
-    const btnFiltrar = document.getElementById('btn-filtrar-periodo');
-    
-    // Custom Dropdown Elements
-    const btnMes = document.getElementById('btn-custom-mes');
-    const btnAnio = document.getElementById('btn-custom-anio');
-    const labelMes = document.getElementById('label-mes');
-    const labelAnio = document.getElementById('label-anio');
-    const dropMes = document.getElementById('dropdown-mes');
-    const dropAnio = document.getElementById('dropdown-anio');
-
-    if (selectMes && selectAnio) {
-      const userJoinedYear = parseInt(selectAnio.dataset.primerAnio || 2024);
-      const userJoinedMonth = parseInt(selectMes.dataset.primerMes || 1);
-      const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-      const aniosList = [2024, 2025, 2026, 2027, 2028];
-
-      const aplicarFiltro = () => {
-        const mes = selectMes.value;
-        const anio = selectAnio.value;
-        window.location.href = window.location.pathname + '?mes=' + mes + '&anio=' + anio;
-      };
-
-      if (btnFiltrar) {
-        btnFiltrar.addEventListener('click', aplicarFiltro);
-      }
-
-      // Eventos de toggles
-      btnMes.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropMes.classList.toggle('hidden');
-        dropAnio.classList.add('hidden');
-      });
-
-      btnAnio.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropAnio.classList.toggle('hidden');
-        dropMes.classList.add('hidden');
-      });
-
-      document.addEventListener('click', () => {
-        dropMes.classList.add('hidden');
-        dropAnio.classList.add('hidden');
-      });
-
-      const renderOptions = () => {
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth() + 1;
-        const selectedYear = selectAnio.value === 'all' ? currentYear : parseInt(selectAnio.value);
-
-        // Render Meses
-        dropMes.innerHTML = '';
-        
-        // Opción "Todas las fechas"
-        const optAll = document.createElement('div');
-        const isSelectedAll = selectMes.value === 'all';
-        optAll.className = `px-3 py-2 text-sm font-medium transition-colors rounded-lg cursor-pointer mb-1 last:mb-0 ${isSelectedAll ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'}`;
-        optAll.innerText = 'Todas las fechas';
-        optAll.addEventListener('click', () => {
-          selectMes.value = 'all';
-          selectAnio.value = 'all';
-          labelMes.innerText = 'Todas las fechas';
-          document.getElementById('divisor-anio').classList.add('hidden');
-          btnAnio.classList.add('hidden');
-          renderOptions();
-          aplicarFiltro();
-        });
-        dropMes.appendChild(optAll);
-
-        mesesNombres.forEach((nombre, index) => {
-          const m = index + 1;
-          const isDisabled = (selectedYear < userJoinedYear || (selectedYear === userJoinedYear && m < userJoinedMonth)) ||
-                             (selectedYear > currentYear || (selectedYear === currentYear && m > currentMonth));
-          
-          if (!isDisabled) {
-            const opt = document.createElement('div');
-            const isSelected = m == selectMes.value;
-            opt.className = `px-3 py-2 text-sm font-medium transition-colors rounded-lg cursor-pointer mb-1 last:mb-0 ${isSelected ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'}`;
-            opt.innerText = nombre;
-            
-            opt.addEventListener('click', () => {
-              selectMes.value = m;
-              labelMes.innerText = nombre;
-              if(selectAnio.value === 'all') {
-                  selectAnio.value = currentYear;
-                  labelAnio.innerText = currentYear;
-              }
-              document.getElementById('divisor-anio').classList.remove('hidden');
-              btnAnio.classList.remove('hidden');
-              renderOptions();
-              aplicarFiltro();
-            });
-            dropMes.appendChild(opt);
-          }
-        });
-
-        // Render Años
-        dropAnio.innerHTML = '';
-        aniosList.forEach(a => {
-          const isDisabled = a < userJoinedYear || a > currentYear;
-          
-          if (!isDisabled) {
-            const opt = document.createElement('div');
-            const isSelected = a == selectAnio.value;
-            opt.className = `px-3 py-2 text-sm font-medium transition-colors rounded-lg cursor-pointer mb-1 last:mb-0 ${isSelected ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'}`;
-            opt.innerText = a;
-
-            opt.addEventListener('click', () => {
-              selectAnio.value = a;
-              labelAnio.innerText = a;
-              // Ajustar mes si queda inválido
-              if (a === userJoinedYear && parseInt(selectMes.value) < userJoinedMonth) {
-                  selectMes.value = userJoinedMonth;
-                  labelMes.innerText = mesesNombres[userJoinedMonth - 1];
-              }
-              if (a === currentYear && parseInt(selectMes.value) > currentMonth) {
-                  selectMes.value = currentMonth;
-                  labelMes.innerText = mesesNombres[currentMonth - 1];
-              }
-              renderOptions();
-              aplicarFiltro();
-            });
-            dropAnio.appendChild(opt);
-          }
-        });
-      };
-
-      renderOptions();
-    }
-  });
-</script>
+<script>window.CURRENT_MODULE = 'ingresos';</script>
 <script>
   const URL_GUARDAR   = "{% url 'movimientos:guardar_movimiento' %}";
   const URL_EDITAR    = "{% url 'movimientos:editar_movimiento' pk=0 %}".replace('/0/', '/');
@@ -324,6 +39,7 @@
 </script>
 <script src="{% static 'movimientos/js/datepicker.js' %}"></script>
 <script src="{% static 'js/category-picker.js' %}"></script>
+<script src="{% static 'movimientos/js/selector_periodo.js' %}"></script>
 <script src="{% static 'movimientos/js/movimientos_base.js' %}"></script>
 <script src="{% static 'movimientos/js/ingresos.js' %}"></script>
 <script src="{% static 'historial/js/historial.js' %}"></script>

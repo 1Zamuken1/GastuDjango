@@ -139,6 +139,16 @@ def _totales_movimiento(user, mes, anio):
 
 # ── Construccion del contexto del dashboard ──────────────────────────────────
 
+def _presupuestos_en_alerta(user) -> int:
+    """
+    Presupuestos activos al 80 % o mas. Solo alimenta la insignia de estado del
+    encabezado ("Finanzas en orden" no puede salir con un presupuesto casi agotado);
+    no cambia ninguna cifra de las cards.
+    """
+    from presupuesto.services import estado_presupuesto_por_categoria
+    return sum(1 for p in estado_presupuesto_por_categoria(user).values() if p["porcentaje"] >= 80)
+
+
 def build_dashboard_context(user, mes, anio, filtros=None):
     """
     Construye todos los datos del dashboard para un mes/anio dado.
@@ -237,6 +247,7 @@ def build_dashboard_context(user, mes, anio, filtros=None):
         'ahorro_total':              ahorro_total,
         'ahorros_mes':               ahorros_mes,
         'hay_deficit':               hay_deficit,
+        'presupuestos_en_alerta':    _presupuestos_en_alerta(user) if es_mes_actual else 0,
         'pie_data':                  pie_data,
         'metas_ahorro_activas':      metas,
         'ultimos_movimientos':       ultimos,

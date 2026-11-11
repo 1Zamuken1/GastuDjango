@@ -3,7 +3,7 @@
 
 {% block title %}Mi perfil — GastuApp{% endblock %}
 {% block page_title %}Mi perfil{% endblock %}
-{% block page_subtitle %}Configuracion de tu cuenta{% endblock %}
+{% block page_subtitle %}Configuración de tu cuenta{% endblock %}
 {% block nav_perfil %}active{% endblock %}
 
 {% block extra_head %}
@@ -45,8 +45,12 @@
 
   {# ── Hero de perfil ──────────────────────────────────── #}
   <div class="perfil-hero">
-    <div class="perfil-hero-avatar">
-      <span>{{ request.user.username|first|upper }}</span>
+    <div class="perfil-hero-avatar{% if foto_perfil %} perfil-hero-avatar--foto{% endif %}">
+      {% if foto_perfil %}
+      <img src="{{ foto_perfil }}" alt="Foto de perfil de {{ request.user.username }}" referrerpolicy="no-referrer" width="56" height="56">
+      {% else %}
+      <span aria-hidden="true">{{ request.user.username|first|upper }}</span>
+      {% endif %}
     </div>
     <div class="perfil-hero-info">
       <h2 class="perfil-hero-name font-display">{{ request.user.username }}</h2>
@@ -76,7 +80,7 @@
           </div>
           <div>
             <h3 class="font-display font-bold tab-section-title">Editar datos</h3>
-            <p class="tab-section-desc">Actualiza tu nombre de usuario y telefono</p>
+            <p class="tab-section-desc">Actualiza tu nombre de usuario y teléfono</p>
           </div>
         </div>
 
@@ -93,7 +97,7 @@
             </div>
             <div class="form-group">
               <label for="id_telefono" class="form-label">
-                Telefono <span class="form-label-optional">(opcional)</span>
+                Teléfono <span class="form-label-optional">(opcional)</span>
               </label>
               <input type="text" name="telefono" id="id_telefono"
                      value="{{ perfil_form.telefono.value|default:'' }}"
@@ -115,8 +119,8 @@
             <i data-lucide="lock" class="tab-header-icon-svg"></i>
           </div>
           <div>
-            <h3 class="font-display font-bold tab-section-title">Cambiar contrasena</h3>
-            <p class="tab-section-desc">Elige una contrasena segura y unica</p>
+            <h3 class="font-display font-bold tab-section-title">Cambiar contraseña</h3>
+            <p class="tab-section-desc">Elige una contraseña segura y única</p>
           </div>
         </div>
 
@@ -125,22 +129,22 @@
           <input type="hidden" name="cambiar_password" value="1" />
           <div class="form-stacked">
             <div class="form-group">
-              <label for="id_old_password" class="form-label">Contrasena actual</label>
+              <label for="id_old_password" class="form-label">Contraseña actual</label>
               <div class="input-with-toggle">
                 <input type="password" name="old_password" id="id_old_password"
                        class="perfil-input" autocomplete="current-password" />
-                <button type="button" class="toggle-pass" data-target="id_old_password" aria-label="Mostrar contrasena">
+                <button type="button" class="toggle-pass" data-target="id_old_password" aria-label="Mostrar contraseña">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </button>
               </div>
               <p class="form-error" id="error-old_password"></p>
             </div>
             <div class="form-group">
-              <label for="id_new_password1" class="form-label">Nueva contrasena</label>
+              <label for="id_new_password1" class="form-label">Nueva contraseña</label>
               <div class="input-with-toggle">
                 <input type="password" name="new_password1" id="id_new_password1"
                        class="perfil-input" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
-                <button type="button" class="toggle-pass" data-target="id_new_password1" aria-label="Mostrar contrasena">
+                <button type="button" class="toggle-pass" data-target="id_new_password1" aria-label="Mostrar contraseña">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </button>
               </div>
@@ -169,11 +173,11 @@
               <p class="form-error" id="error-new_password1"></p>
             </div>
             <div class="form-group">
-              <label for="id_new_password2" class="form-label">Confirmar nueva contrasena</label>
+              <label for="id_new_password2" class="form-label">Confirmar nueva contraseña</label>
               <div class="input-with-toggle">
                 <input type="password" name="new_password2" id="id_new_password2"
                        class="perfil-input" autocomplete="new-password" placeholder="Repite la nueva contraseña" />
-                <button type="button" class="toggle-pass" data-target="id_new_password2" aria-label="Mostrar contrasena">
+                <button type="button" class="toggle-pass" data-target="id_new_password2" aria-label="Mostrar contraseña">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </button>
               </div>
@@ -188,7 +192,7 @@
           </div>
           <button type="submit" class="btn-perfil btn-sm" id="btn-password">
             <i data-lucide="shield-check" class="btn-icon"></i>
-            Actualizar contrasena
+            Actualizar contraseña
           </button>
         </form>
       </div>
@@ -207,9 +211,9 @@
     <div class="danger-zone-body">
       <div class="danger-zone-info">
         <p class="danger-zone-desc">
-          Eliminar tu cuenta es una accion permanente. Se borraran todos tus movimientos, ahorros, preferencias y datos asociados.
+          Eliminar tu cuenta es una acción permanente. Se borrarán todos tus movimientos, ahorros, preferencias y datos asociados.
         </p>
-        <p class="danger-zone-subdesc">Esta accion no se puede deshacer.</p>
+        <p class="danger-zone-subdesc">Esta acción no se puede deshacer.</p>
       </div>
       <button type="button" class="btn-danger" id="btn-abrir-eliminar">
         <i data-lucide="trash-2"></i>
@@ -229,7 +233,7 @@
       </div>
       <div>
         <h3 class="font-display font-bold tab-section-title" style="margin-bottom:0;">Preferencias de alertas</h3>
-        <p style="color:var(--slate-400);font-size:0.78rem;">Configura cuando y como queremos que te alertemos</p>
+        <p style="color:var(--slate-400);font-size:0.78rem;">Configura cuándo y cómo quieres que te alertemos</p>
       </div>
     </div>
 
@@ -282,7 +286,7 @@
       </div>
       <button class="notif-mark-btn" id="btn-marcar-todas">
         <i data-lucide="check-check" style="width:14px;height:14px;"></i>
-        Marcar todas como leidas
+        Marcar todas como leídas
       </button>
     </div>
 
@@ -322,7 +326,7 @@
         </div>
         <div>
           <h3 class="modal-delete-title font-display">Eliminar cuenta</h3>
-          <p class="modal-delete-subtitle">Esta accion es permanente e irreversible</p>
+          <p class="modal-delete-subtitle">Esta acción es permanente e irreversible</p>
         </div>
       </div>
       <button type="button" class="modal-delete-close" id="btn-cerrar-eliminar">
@@ -332,14 +336,14 @@
 
     <div class="modal-delete-body">
       <div class="modal-delete-warning">
-        <p><strong>Se eliminaran permanentemente:</strong> todos tus movimientos, resumenes mensuales, preferencias de alertas, notificaciones y cualquier dato asociado a tu cuenta.</p>
+        <p><strong>Se eliminarán permanentemente:</strong> todos tus movimientos, resúmenes mensuales, preferencias de alertas, notificaciones y cualquier dato asociado a tu cuenta.</p>
       </div>
 
       <div class="modal-delete-field">
-        <label for="delete-password">Ingresa tu contrasena para confirmar</label>
+        <label for="delete-password">Ingresa tu contraseña para confirmar</label>
         <div class="input-with-toggle">
-          <input type="password" id="delete-password" class="perfil-input" autocomplete="current-password" placeholder="Tu contrasena actual" />
-          <button type="button" class="toggle-pass" data-target="delete-password" aria-label="Mostrar contrasena">
+          <input type="password" id="delete-password" class="perfil-input" autocomplete="current-password" placeholder="Tu contraseña actual" />
+          <button type="button" class="toggle-pass" data-target="delete-password" aria-label="Mostrar contraseña">
             <i data-lucide="eye" style="width:15px;height:15px;"></i>
           </button>
         </div>
