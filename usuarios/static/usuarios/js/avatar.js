@@ -28,7 +28,7 @@
   function avatarDe(clave) {
     var op = opciones.filter(function (o) { return o.getAttribute('data-avatar') === clave; })[0];
     if (clave && op) {
-      return { tipo: 'pool', icono: op.getAttribute('data-icono'), color: op.getAttribute('data-color') };
+      return { tipo: 'pool', url: op.getAttribute('data-imagen'), color: op.getAttribute('data-color') };
     }
     if (foto) return { tipo: 'foto', url: foto };
     return { tipo: 'inicial', inicial: inicial };
@@ -42,15 +42,12 @@
     while (el.firstChild) el.removeChild(el.firstChild);
 
     var hijo;
-    if (avatar.tipo === 'pool') {
-      el.style.setProperty('--avatar-color', avatar.color);
-      hijo = document.createElement('i');
-      hijo.setAttribute('data-lucide', avatar.icono);
-    } else if (avatar.tipo === 'foto') {
+    if (avatar.tipo === 'pool' || avatar.tipo === 'foto') {
+      if (avatar.tipo === 'pool') el.style.setProperty('--avatar-color', avatar.color);
       hijo = document.createElement('img');
       hijo.src = avatar.url;
       hijo.alt = '';
-      hijo.referrerPolicy = 'no-referrer';
+      if (avatar.tipo === 'foto') hijo.referrerPolicy = 'no-referrer';
     } else {
       hijo = document.createElement('span');
       hijo.textContent = avatar.inicial;

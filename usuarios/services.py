@@ -1,6 +1,10 @@
 """Servicios de usuarios."""
 from urllib.parse import urlparse
 
+from django.templatetags.static import static
+
+from .avatares_gastu import VARIANTES
+
 
 def foto_de_perfil(usuario) -> str:
     """
@@ -19,24 +23,12 @@ def foto_de_perfil(usuario) -> str:
     return url
 
 
-# Pool de avatares: icono Lucide sobre un color de marca (sin imagenes externas).
+# Pool de avatares: variantes de Gastu, la mascota (SVG propios en
+# usuarios/static/usuarios/img/avatares/, generados por usuarios/avatares_gastu.py).
 # La clave es lo que se guarda en Usuario.avatar.
 AVATARES = {
-    "ave": {"nombre": "Ave", "icono": "bird", "color": "#2563eb"},
-    "gato": {"nombre": "Gato", "icono": "cat", "color": "#7c3aed"},
-    "perro": {"nombre": "Perro", "icono": "dog", "color": "#b45309"},
-    "pez": {"nombre": "Pez", "icono": "fish", "color": "#0e7490"},
-    "conejo": {"nombre": "Conejo", "icono": "rabbit", "color": "#be185d"},
-    "ardilla": {"nombre": "Ardilla", "icono": "squirrel", "color": "#c2410c"},
-    "tortuga": {"nombre": "Tortuga", "icono": "turtle", "color": "#047857"},
-    "cohete": {"nombre": "Cohete", "icono": "rocket", "color": "#4338ca"},
-    "hoja": {"nombre": "Hoja", "icono": "leaf", "color": "#15803d"},
-    "sol": {"nombre": "Sol", "icono": "sun", "color": "#a16207"},
-    "luna": {"nombre": "Luna", "icono": "moon", "color": "#334155"},
-    "montana": {"nombre": "Montaña", "icono": "mountain", "color": "#1e40af"},
-    "cafe": {"nombre": "Café", "icono": "coffee", "color": "#78350f"},
-    "gema": {"nombre": "Gema", "icono": "gem", "color": "#9333ea"},
-    "estrella": {"nombre": "Estrella", "icono": "star", "color": "#b91c1c"},
+    clave: {"nombre": nombre, "imagen": f"usuarios/img/avatares/gastu_{clave}.svg", "color": fondo}
+    for clave, (nombre, fondo, *_resto) in VARIANTES.items()
 }
 
 
@@ -50,7 +42,8 @@ def avatar_de(usuario) -> dict:
     inicial = (usuario.username or usuario.email or "?")[:1].upper()
     elegido = AVATARES.get(usuario.avatar or "")
     if elegido:
-        return {"tipo": "pool", "clave": usuario.avatar, "inicial": inicial, **elegido}
+        return {"tipo": "pool", "clave": usuario.avatar, "inicial": inicial,
+                "url": static(elegido["imagen"]), **elegido}
     foto = foto_de_perfil(usuario)
     if foto:
         return {"tipo": "foto", "clave": "", "inicial": inicial, "url": foto}

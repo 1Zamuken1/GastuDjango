@@ -377,8 +377,8 @@
         </button>
         {% for clave, a in avatares.items %}
         <button type="button" class="avatar-opcion" role="radio" aria-checked="false"
-                data-avatar="{{ clave }}" data-icono="{{ a.icono }}" data-color="{{ a.color }}" data-nombre="{{ a.nombre }}">
-          <span class="avatar-opcion__circulo" style="--avatar-color: {{ a.color }}" aria-hidden="true"><i data-lucide="{{ a.icono }}"></i></span>
+                data-avatar="{{ clave }}" data-imagen="{% static a.imagen %}" data-color="{{ a.color }}" data-nombre="{{ a.nombre }}">
+          <span class="avatar-opcion__circulo" style="--avatar-color: {{ a.color }}" aria-hidden="true"><img src="{% static a.imagen %}" alt="" loading="lazy"></span>
           {{ a.nombre }}
         </button>
         {% endfor %}
