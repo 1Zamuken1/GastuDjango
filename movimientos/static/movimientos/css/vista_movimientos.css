@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   vista_movimientos.css — Resumen y barra de herramientas de Ingresos y Egresos
+   vista_movimientos.css — Barra de herramientas de Ingresos y Egresos
    (plantilla movimientos/includes/_vista_movimientos.html)
 
    Mismo lenguaje que el agente: superficie plana, una sola cifra en el color del
@@ -7,116 +7,32 @@
    etiqueta pequena y separadores finos, sin cajas ni degradados.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Resumen ─────────────────────────────────────── */
-/* Contenedor propio: con el sidebar abierto el ancho util cambia mucho a igual
-   ventana (a 768 px quedan ~440 px), asi que el resumen se adapta a su ancho real. */
-.mov-resumen-wrap { container: resumen / inline-size; }
+/* ── Hero (estilos en ingresos.css / egresos.css) ── */
+/* Con el sidebar abierto el ancho util cambia mucho a igual ventana: el hero
+   mira su propio ancho y, si las cuatro cifras no caben en fila, pasan a 2 x 2
+   en lugar de cortarse. En pantallas anchas se ve igual que siempre. */
+.stats-hero { container: hero / inline-size; }
+.hero-stat__value { white-space: nowrap; }
 
-.mov-resumen {
-  display: grid;
-  grid-template-columns: minmax(240px, 1fr) 2.2fr;
-  align-items: center;
-  gap: 1.25rem 1.5rem;
-  margin-bottom: 1.25rem;
-  padding: 1.1rem 1.4rem;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--card-acento);
-  border-radius: .875rem;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+/* Cuatro cifras en fila pero con poco ancho (portatil con el sidebar abierto):
+   menos relleno lateral y cifras que se encogen un poco antes de cortarse */
+@container hero (max-width: 1240px) {
+  .stats-hero .hero-stat { padding-inline: .6rem; }
+  .stats-hero .hero-stat__value { font-size: clamp(1.1rem, 2.1cqi, 1.45rem); }
 }
 
-.mov-resumen__principal {
-  display: flex;
-  align-items: center;
-  gap: .9rem;
-  min-width: 0;
+@container hero (max-width: 940px) {
+  .stats-hero .hero-stats { grid-template-columns: 1fr 1fr; }
+  .stats-hero .hero-stat { border-right: none; border-bottom: none; padding: .75rem 1rem; }
+  .stats-hero .hero-stat:nth-child(odd) { border-right: 1px solid var(--border); }
+  .stats-hero .hero-stat:nth-child(-n + 2) { border-bottom: 1px solid var(--border); }
+  /* El total ocupa un tercio del hero: baja de tamano con el ancho para no salirse */
+  .stats-hero .hero-total__value { font-size: clamp(1.35rem, 5.2cqi - 8px, 2.4rem); }
 }
 
-.mov-resumen__icono {
-  flex: none;
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--card-acento-claro);
-  color: var(--card-acento-oscuro);
-}
-.mov-resumen__icono svg { width: 1.25rem; height: 1.25rem; }
-
-.mov-resumen__texto { min-width: 0; }
-
-.mov-resumen__etiqueta {
-  margin: 0 0 .2rem;
-  font-size: .8rem;
-  font-weight: 500;
-  color: var(--gastu-ink-muted);
-}
-.mov-resumen__etiqueta::first-letter { text-transform: uppercase; }
-
-.mov-resumen__total {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -.01em;
-  color: var(--card-acento-oscuro);
-  overflow-wrap: anywhere;
-}
-
-.mov-resumen__cifras {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.mov-cifra {
-  min-width: 0;
-  padding: .15rem 1.1rem;
-  border-left: 1px solid var(--gastu-linea);
-}
-
-.mov-cifra__etiqueta {
-  margin: 0;
-  font-size: .72rem;
-  font-weight: 600;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  color: var(--gastu-ink-muted);
-}
-
-.mov-cifra__valor {
-  margin: .15rem 0 .1rem;
-  font-size: 1.35rem;
-  font-weight: 800;
-  line-height: 1.15;
-  color: var(--gastu-ink);
-  white-space: nowrap; /* un monto nunca se parte en dos lineas */
-}
-
-.mov-cifra__sub {
-  margin: 0;
-  font-size: .74rem;
-  line-height: 1.35;
-  color: var(--gastu-ink-muted);
-}
-
-@container resumen (max-width: 960px) {
-  .mov-resumen { grid-template-columns: 1fr; }
-  .mov-cifra:first-child { border-left: none; padding-left: 0; }
-}
-
-@container resumen (max-width: 620px) {
-  .mov-resumen { padding: 1rem; gap: 1rem; }
-  .mov-resumen__total { font-size: 1.75rem; }
-  /* 2 x 2 con separadores finos en lugar de cuatro filas apiladas */
-  .mov-resumen__cifras { grid-template-columns: 1fr 1fr; }
-  .mov-cifra { padding: .65rem .85rem; border-left: none; }
-  .mov-cifra:first-child,
-  .mov-cifra:nth-child(odd) { padding-left: 0; }
-  .mov-cifra:nth-child(even) { border-left: 1px solid var(--gastu-linea); }
-  .mov-cifra:nth-child(n + 3) { border-top: 1px solid var(--gastu-linea); }
-  .mov-cifra__valor { font-size: 1.15rem; }
+/* En movil la card del total va sola en su fila: vuelve a su tamano movil */
+@media (max-width: 640px) {
+  .stats-hero .hero-total__value { font-size: 1.8rem; }
 }
 
 /* ── Barra de herramientas ───────────────────────── */

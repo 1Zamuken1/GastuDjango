@@ -13,43 +13,39 @@
   #btn-historial y .export-group los usan movimientos_base.js y tours.js: no cambiarlos.
 {% endcomment %}
 
-<!-- Resumen -->
-<div class="mov-resumen-wrap">
-<section class="mov-resumen mov-resumen--{{ modulo }}" aria-label="Resumen de {{ plural }}">
-  <div class="mov-resumen__principal">
-    <span class="mov-resumen__icono" aria-hidden="true"><i data-lucide="{{ icono }}"></i></span>
-    <div class="mov-resumen__texto">
-      <p class="mov-resumen__etiqueta">
-        Total {{ plural }} ·
-        {% if anio == 'all' %}todas las fechas{% else %}{{ mes_nombre|lower }} {{ anio }}{% endif %}
-      </p>
-      <p class="mov-resumen__total hero-total__value font-display">${{ total_mes|floatformat:"0g" }}</p>
+<!-- Hero: total del periodo en el color del modulo + metricas -->
+<div class="stats-hero">
+
+  <div class="hero-total gastu-hero-card gastu-hero-card--{{ modulo }}">
+    <div class="gastu-hero-card__icono"><i data-lucide="{{ icono }}"></i></div>
+    <p class="hero-total__label">Total {{ plural }}</p>
+    <p class="hero-total__value font-display">${{ total_mes|floatformat:"0g" }}</p>
+    <span class="hero-total__badge">{% if anio == 'all' %}Todas las fechas{% else %}{{ mes_nombre }} {{ anio }}{% endif %}</span>
+  </div>
+
+  <div class="app-card hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat__label"><i data-lucide="list"></i> Registros</span>
+      <span class="hero-stat__value font-display">{{ cantidad_mes }}</span>
+      <span class="hero-stat__sub">movimientos</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat__label"><i data-lucide="folder"></i> Categorías</span>
+      <span class="hero-stat__value font-display">{{ categorias_con_totales|length }}</span>
+      <span class="hero-stat__sub">con actividad</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat__label"><i data-lucide="bar-chart-2"></i> Promedio</span>
+      <span class="hero-stat__value font-display">${{ promedio_mes|floatformat:"0g" }}</span>
+      <span class="hero-stat__sub">por registro</span>
+    </div>
+    <div class="hero-stat" title="No incluye lo que tienes ahorrado">
+      <span class="hero-stat__label"><i data-lucide="wallet"></i> Disponible</span>
+      <span class="hero-stat__value font-display">${{ disponible|floatformat:"0g"|default:"0" }}</span>
+      <span class="hero-stat__sub">para gastar</span>
     </div>
   </div>
 
-  <div class="mov-resumen__cifras">
-    <div class="mov-cifra">
-      <p class="mov-cifra__etiqueta">Registros</p>
-      <p class="mov-cifra__valor hero-stat__value font-display">{{ cantidad_mes }}</p>
-      <p class="mov-cifra__sub">movimientos</p>
-    </div>
-    <div class="mov-cifra">
-      <p class="mov-cifra__etiqueta">Categorías</p>
-      <p class="mov-cifra__valor hero-stat__value font-display">{{ categorias_con_totales|length }}</p>
-      <p class="mov-cifra__sub">con actividad</p>
-    </div>
-    <div class="mov-cifra">
-      <p class="mov-cifra__etiqueta">Promedio</p>
-      <p class="mov-cifra__valor hero-stat__value font-display">${{ promedio_mes|floatformat:"0g" }}</p>
-      <p class="mov-cifra__sub">por registro</p>
-    </div>
-    <div class="mov-cifra mov-cifra--disponible">
-      <p class="mov-cifra__etiqueta">Disponible</p>
-      <p class="mov-cifra__valor hero-stat__value font-display">${{ disponible|floatformat:"0g"|default:"0" }}</p>
-      <p class="mov-cifra__sub">para gastar; tu ahorro no cuenta aquí</p>
-    </div>
-  </div>
-</section>
 </div>
 
 <!-- Barra de herramientas -->

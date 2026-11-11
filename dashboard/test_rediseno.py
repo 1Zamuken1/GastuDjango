@@ -74,7 +74,9 @@ def test_resumen_sin_all_en_textos(cliente):
     html = cliente.get('/ingresos/').content.decode()
     assert 'Todas las fechas all' not in html
     assert 'todas las fechas' in html.lower()
-    assert 'tu ahorro no cuenta aquí' in html
+    # Hero de color restaurado; el disponible aclara que no incluye el ahorro
+    assert 'gastu-hero-card--ingresos' in html
+    assert 'No incluye lo que tienes ahorrado' in html
 
 
 def test_insignia_del_dashboard_avisa_presupuestos_en_alerta(cliente, usuario, presupuesto_en_alerta):
