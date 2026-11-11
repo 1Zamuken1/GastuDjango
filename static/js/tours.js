@@ -482,14 +482,14 @@ const toursConfig = {
         {
             popover: {
                 title: 'Captura automática',
-                description: getGastuHtml(gastuImgs.gastu_normal, 'Reenvíame los correos de notificación de tu banco y yo convierto cada compra o transferencia en un movimiento. Tú solo revisas y confirmas.'),
+                description: getGastuHtml(gastuImgs.gastu_normal, 'Es una ayuda opcional: si me reenvías los correos de notificación de tu banco, convierto cada compra o transferencia en un movimiento y tú solo revisas y confirmas. Si prefieres, sigue registrando todo a mano.'),
                 align: 'center'
             }
         },
         {
             element: '#btn-activar',
             popover: {
-                title: 'Actívala en un paso',
+                title: 'Actívala solo si quieres',
                 description: 'Al activarla te doy un correo personal y privado. Nunca te pediré claves del banco ni acceso a tu correo: solo veo las alertas que tú decidas reenviar.',
                 side: 'top', align: 'center'
             }
