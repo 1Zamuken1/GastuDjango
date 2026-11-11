@@ -343,12 +343,17 @@ class EjecutorHerramientas:
             fecha_limite__year=hoy.year, fecha_limite__month=hoy.month,
         ).aggregate(total=Sum('aporte_asignado'))['total'] or Decimal('0')
         saldo = ingresos - egresos
+        libre = max(Decimal('0'), saldo - pendientes)
+        # Dias que quedan contando hoy (misma convencion que los presupuestos).
+        dias_restantes = calendar.monthrange(hoy.year, hoy.month)[1] - hoy.day + 1
         return {
             "ingresos_mes": float(ingresos),
             "egresos_mes": float(egresos),
             "saldo_actual": float(saldo),
             "compromisos_ahorro_pendientes": float(pendientes),
-            "disponible_libre_real": float(max(Decimal('0'), saldo - pendientes)),
+            "disponible_libre_real": float(libre),
+            "dias_restantes_mes_incluido_hoy": dias_restantes,
+            "maximo_diario_libre": float((libre / dias_restantes).quantize(Decimal('1'))),
         }
 
     # ── Escritura con confirmacion ──────────────────────────────
@@ -365,6 +370,11 @@ class EjecutorHerramientas:
         repetida = next((t for t in self.tarjetas if t["tipo"] == "confirmacion" and t["resumen"] == resumen[:255]), None)
         if repetida:
             return self._respuesta_confirmacion(repetida["resumen"])
+        if not any(t["tipo"] == "confirmacion" for t in self.tarjetas):
+            # Una respuesta nueva con acciones reemplaza las pendientes de respuestas
+            # anteriores: si el usuario corrige ("mejor que sean 25"), la tarjeta vieja
+            # no puede quedar confirmable al lado de la nueva y duplicar el gasto.
+            acciones.reemplazar_pendientes(self.usuario)
         return self._agregar_confirmacion(acciones.preparar_accion(self.usuario, tipo, datos, resumen))
 
     @staticmethod

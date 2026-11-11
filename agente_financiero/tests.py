@@ -1057,9 +1057,11 @@ class TestHardeningRedTeamingIA:
         with patch("agente_financiero.api_views.preguntar_a_groq", side_effect=mirar):
             client_auto.post("/api/agente/chat/", data=json.dumps({"mensaje": "cambia ese gasto a 20 mil"}),
                              content_type="application/json")
-        asistente = [m["content"] for m in capturado["mensajes"] if m["role"] == "assistant"][-1]
-        assert "Acciones de esta respuesta" in asistente
-        assert "$15.000" in asistente and "sin confirmar" in asistente
+        sistema = capturado["mensajes"][0]["content"]
+        assert "ACCIONES DE ESTA CONVERSACION" in sistema
+        assert "$15.000" in sistema and "sin confirmar" in sistema
+        # Los mensajes del asistente van limpios: asi el modelo no imita el formato.
+        assert all("ACCIONES" not in m["content"] for m in capturado["mensajes"] if m["role"] == "assistant")
 
     def test_prompt_prohibe_pedir_ids_y_cabe_en_el_plan_gratuito(self, usuario):
         from agente_financiero.tools_schema import TOOLS
@@ -1080,3 +1082,56 @@ class TestHardeningRedTeamingIA:
         with patch.object(groq_client.requests, "post", side_effect=post):
             groq_client.preguntar_a_groq([{"role": "user", "content": "hola"}], lambda n, a: "{}")
         assert enviados and max(enviados) <= 1200
+
+    # ── Prueba 3: lenguaje ambiguo de un usuario real ─────────────────────────
+
+    def test_prompt_incluye_la_fecha_de_hoy(self, usuario):
+        sistema = construir_prompt(RecolectorDatos(usuario).recolectar_todo(), "anota lo de ayer")[0]["content"]
+        assert f"({timezone.localdate().isoformat()})" in sistema
+        assert '"ayer"' in sistema
+
+    def test_correccion_reemplaza_la_tarjeta_anterior(self, usuario, cat_egreso):
+        primero = EjecutorHerramientas(usuario)
+        primero.ejecutar("crear_movimiento", {"tipo": "EGRESO", "categoria": cat_egreso.nombre, "monto": 20000})
+        segundo = EjecutorHerramientas(usuario)
+        segundo.ejecutar("crear_movimiento", {"tipo": "EGRESO", "categoria": cat_egreso.nombre, "monto": 25000})
+        vieja = AccionPendiente.objects.get(token=primero.tarjetas[0]["token"])
+        nueva = AccionPendiente.objects.get(token=segundo.tarjetas[0]["token"])
+        assert vieja.estado == AccionPendiente.Estado.CANCELADA
+        assert nueva.estado == AccionPendiente.Estado.PENDIENTE
+
+    def test_varias_acciones_en_la_misma_respuesta_conviven(self, usuario, cat_egreso, cat_ingreso):
+        e = EjecutorHerramientas(usuario)
+        e.ejecutar("crear_movimiento", {"tipo": "EGRESO", "categoria": cat_egreso.nombre, "monto": 1000})
+        e.ejecutar("crear_movimiento", {"tipo": "INGRESO", "categoria": cat_ingreso.nombre, "monto": 2000})
+        assert AccionPendiente.objects.filter(usuario=usuario, estado="PENDIENTE").count() == 2
+
+    def test_eco_del_formato_interno_se_quita_de_la_respuesta(self):
+        from agente_financiero.api_views import limpiar_eco_interno
+        texto = "Listo, quedó para confirmar.\n[Acciones de esta respuesta: Editar movimiento (sin confirmar)]"
+        assert limpiar_eco_interno(texto) == "Listo, quedó para confirmar."
+
+    def test_capacidad_trae_maximo_diario_calculado(self, usuario, cat_ingreso):
+        import calendar as cal
+        Movimiento.objects.create(usuario=usuario, categoria=cat_ingreso, tipo="INGRESO", monto=Decimal("2100000"))
+        res = _datos(EjecutorHerramientas(usuario).ejecutar("calcular_capacidad_disponible", {}))
+        hoy = timezone.localdate()
+        dias = cal.monthrange(hoy.year, hoy.month)[1] - hoy.day + 1
+        assert res["dias_restantes_mes_incluido_hoy"] == dias
+        assert res["maximo_diario_libre"] == round(2100000 / dias)
+
+    def test_prompt_pide_vision_global_en_preguntas_generales(self, usuario):
+        sistema = construir_prompt(RecolectorDatos(usuario).recolectar_todo(), "voy bien?")[0]["content"]
+        assert "TODOS los presupuestos" in sistema
+        assert "maximo_diario_libre" in sistema
+
+    def test_qwen_nunca_reserva_mas_salida_que_su_limite(self, settings):
+        from agente_financiero.groq_client import _opciones_modelo
+        assert _opciones_modelo("qwen/qwen3.8-27b", 1200)["max_tokens"] <= 900
+        assert _opciones_modelo("openai/gpt-oss-120b", 1200)["max_tokens"] == 1200
+
+    def test_cadena_de_respaldo_admite_varios_modelos(self, settings):
+        from agente_financiero.groq_client import modelos_configurados
+        settings.GROQ_MODEL = "openai/gpt-oss-120b"
+        settings.GROQ_MODEL_RESPALDO = "openai/gpt-oss-20b, qwen/qwen3.8-27b"
+        assert modelos_configurados() == ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]

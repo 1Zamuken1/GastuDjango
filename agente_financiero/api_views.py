@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -27,6 +28,14 @@ MAX_HISTORIAL_CONTEXTO = 4
 MAX_HISTORIAL_RESPUESTA = 50
 MAX_LARGO_MENSAJE = 1000
 MSG_CUPO_DIARIO = "Llegaste al límite de consultas de hoy. Vuelve mañana para seguir conversando con Gastu."
+
+
+RE_ECO_INTERNO = re.compile(r"^\s*\[?\s*acciones de esta (respuesta|conversaci[oó]n)\b.*$", re.IGNORECASE | re.MULTILINE)
+
+
+def limpiar_eco_interno(texto: str) -> str:
+    """Quita lineas en las que el modelo repite el formato interno de la lista de acciones."""
+    return RE_ECO_INTERNO.sub("", texto or "").strip()
 
 
 def _clave_cupo(usuario_id) -> str:
@@ -140,7 +149,7 @@ class ChatView(View):
         ejecutor = EjecutorHerramientas(request.user)
 
         try:
-            respuesta = preguntar_a_groq(mensajes, ejecutor.ejecutar)
+            respuesta = limpiar_eco_interno(preguntar_a_groq(mensajes, ejecutor.ejecutar))
             if not respuesta and ejecutor.tarjetas:
                 respuesta = "Te dejé lista la acción. Revísala y confirma si está bien."
             bloques, animo, procedencia = detectar_y_ensamblar_bloques(request.user, pregunta, respuesta_llm=respuesta)

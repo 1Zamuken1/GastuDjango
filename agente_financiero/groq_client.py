@@ -41,17 +41,26 @@ class _ModeloNoDisponible(Exception):
 
 
 def modelos_configurados() -> list:
+    """Modelo principal y respaldos en orden. GROQ_MODEL_RESPALDO admite una lista separada por comas."""
     principal = getattr(settings, "GROQ_MODEL", "") or "openai/gpt-oss-120b"
-    respaldo = getattr(settings, "GROQ_MODEL_RESPALDO", "") or ""
-    return [m for m in dict.fromkeys([principal, respaldo]) if m]
+    respaldos = [m.strip() for m in str(getattr(settings, "GROQ_MODEL_RESPALDO", "") or "").split(",")]
+    return [m for m in dict.fromkeys([principal, *respaldos]) if m]
 
 
-def _opciones_modelo(modelo: str) -> dict:
+# Tope de max_tokens por familia: en el plan gratuito algunos modelos limitan los
+# tokens de salida por minuto (qwen3.8: 1.000) y rechazan cualquier peticion que
+# reserve mas, aunque la respuesta real sea corta.
+TOPE_SALIDA = {"qwen/": 900}
+
+
+def _opciones_modelo(modelo: str, max_tokens: int) -> dict:
     """Parametros propios de cada familia de modelos."""
+    tope = next((v for prefijo, v in TOPE_SALIDA.items() if modelo.startswith(prefijo)), max_tokens)
+    opciones = {"max_tokens": min(max_tokens, tope)}
     if modelo.startswith("openai/gpt-oss"):
         # Razona antes de responder: esfuerzo bajo para no gastar tokens ni latencia.
-        return {"reasoning_effort": getattr(settings, "GROQ_REASONING_EFFORT", "low")}
-    return {}
+        opciones["reasoning_effort"] = getattr(settings, "GROQ_REASONING_EFFORT", "low")
+    return opciones
 
 
 def _mensaje_para_historial(mensaje: dict) -> dict:
@@ -82,10 +91,9 @@ def _conversar(modelo, mensajes, ejecutar_herramienta_fn, max_tokens, max_vuelta
         payload = {
             "model": modelo,
             "messages": mensajes_actuales,
-            "max_tokens": max_tokens,
             "temperature": 0.3,
             "stream": False,
-            **_opciones_modelo(modelo),
+            **_opciones_modelo(modelo, max_tokens),
         }
         if not es_ultima:
             payload["tools"] = TOOLS

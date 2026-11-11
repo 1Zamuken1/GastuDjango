@@ -49,6 +49,13 @@ def preparar_accion(usuario, tipo: str, datos: dict, resumen: str) -> AccionPend
     )
 
 
+def reemplazar_pendientes(usuario) -> int:
+    """Cancela las acciones aun pendientes del usuario (las reemplaza una respuesta nueva)."""
+    return AccionPendiente.objects.filter(
+        usuario=usuario, estado=AccionPendiente.Estado.PENDIENTE,
+    ).update(estado=AccionPendiente.Estado.CANCELADA, resuelto_en=timezone.now())
+
+
 def _obtener_pendiente(usuario, token) -> AccionPendiente:
     """Bloquea la fila y valida dueno, estado y vigencia."""
     accion = (
@@ -59,7 +66,7 @@ def _obtener_pendiente(usuario, token) -> AccionPendiente:
     if accion is None:
         raise ErrorAccion("No encontramos esa acción.")
     if accion.estado != AccionPendiente.Estado.PENDIENTE:
-        raise ErrorAccion("Esta acción ya fue resuelta.")
+        raise ErrorAccion("Esta acción ya fue resuelta o la reemplazó una más reciente.")
     if accion.vencida:
         raise ErrorAccion("La acción venció. Pídele a Gastu que la prepare de nuevo.")
     return accion
