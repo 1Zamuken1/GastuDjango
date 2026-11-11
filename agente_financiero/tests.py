@@ -1022,3 +1022,61 @@ class TestHardeningRedTeamingIA:
         sistema = construir_prompt(RecolectorDatos(usuario).recolectar_todo(), "hola")[0]["content"]
         assert "SOLO un consejo" in sistema
         assert "no uses tablas" in sistema
+
+    # ── Pruebas reales: "cambia ese gasto" y limite de tokens por minuto ──────
+
+    def test_tarjeta_preparada_no_se_pierde_si_falla_la_vuelta_siguiente(self, client_auto, usuario, cat_egreso):
+        from agente_financiero.groq_client import GroqError
+
+        def falla_tras_preparar(mensajes, ejecutar):
+            ejecutar("crear_movimiento", {"tipo": "EGRESO", "categoria": cat_egreso.nombre, "monto": 15000})
+            raise GroqError("Límite de consultas alcanzado temporalmente.")
+
+        with patch("agente_financiero.api_views.preguntar_a_groq", side_effect=falla_tras_preparar):
+            resp = client_auto.post("/api/agente/chat/", data=json.dumps({"mensaje": "anota 15 mil en comida"}),
+                                    content_type="application/json")
+        data = resp.json()
+        assert resp.status_code == 200 and data["ok"] is True
+        assert [b["tipo"] for b in data["bloques"]].count("confirmacion") == 1
+        assert MensajeChat.objects.filter(usuario=usuario, rol="user").count() == 1
+
+    def test_historial_le_dice_al_modelo_que_accion_se_preparo(self, client_auto, usuario, cat_egreso):
+        def preparar(mensajes, ejecutar):
+            ejecutar("crear_movimiento", {"tipo": "EGRESO", "categoria": cat_egreso.nombre, "monto": 15000})
+            return "Lista para confirmar."
+
+        with patch("agente_financiero.api_views.preguntar_a_groq", side_effect=preparar):
+            client_auto.post("/api/agente/chat/", data=json.dumps({"mensaje": "anota 15 mil en comida"}),
+                             content_type="application/json")
+        capturado = {}
+
+        def mirar(mensajes, ejecutar):
+            capturado["mensajes"] = mensajes
+            return "ok"
+
+        with patch("agente_financiero.api_views.preguntar_a_groq", side_effect=mirar):
+            client_auto.post("/api/agente/chat/", data=json.dumps({"mensaje": "cambia ese gasto a 20 mil"}),
+                             content_type="application/json")
+        asistente = [m["content"] for m in capturado["mensajes"] if m["role"] == "assistant"][-1]
+        assert "Acciones de esta respuesta" in asistente
+        assert "$15.000" in asistente and "sin confirmar" in asistente
+
+    def test_prompt_prohibe_pedir_ids_y_cabe_en_el_plan_gratuito(self, usuario):
+        from agente_financiero.tools_schema import TOOLS
+        sistema = construir_prompt(RecolectorDatos(usuario).recolectar_todo(), "hola")[0]["content"]
+        assert "Nunca pidas un id" in sistema
+        # Estimacion conservadora (3,5 caracteres por token): prompt + tools por debajo de 3.000 tokens.
+        assert (len(sistema) + len(json.dumps(TOOLS, ensure_ascii=False))) / 3.5 < 3000
+
+    def test_max_tokens_por_defecto_es_acotado(self, settings):
+        from agente_financiero import groq_client
+        settings.GROQ_API_KEY = "gsk_prueba"
+        enviados = []
+
+        def post(url, headers, json, timeout):
+            enviados.append(json["max_tokens"])
+            return self._respuesta_groq()
+
+        with patch.object(groq_client.requests, "post", side_effect=post):
+            groq_client.preguntar_a_groq([{"role": "user", "content": "hola"}], lambda n, a: "{}")
+        assert enviados and max(enviados) <= 1200

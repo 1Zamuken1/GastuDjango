@@ -123,8 +123,13 @@ def _conversar(modelo, mensajes, ejecutar_herramienta_fn, max_tokens, max_vuelta
     return ""
 
 
-def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 2048, max_vueltas: int = 4) -> str:
-    """Envia la conversacion a Groq, resuelve las tools en bucle y retorna el texto final."""
+def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 1200, max_vueltas: int = 4) -> str:
+    """
+    Envia la conversacion a Groq, resuelve las tools en bucle y retorna el texto final.
+
+    max_tokens cuenta contra el limite de tokens por minuto aunque no se usen (Groq
+    reserva prompt + max_tokens), asi que se deja justo para una respuesta del chat.
+    """
     if not getattr(settings, "GROQ_API_KEY", None):
         logger.error("[GASTU] GROQ_API_KEY no esta configurada")
         raise GroqError("El asistente no está disponible en este momento.")

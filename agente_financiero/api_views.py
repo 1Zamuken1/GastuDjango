@@ -161,6 +161,17 @@ class ChatView(View):
             else:
                 logger.exception("[GASTU] Error inesperado en el chat usuario %s", request.user.pk)
 
+            # Si una herramienta ya preparo tarjetas (acciones o descargas) antes de que
+            # fallara una vuelta posterior, se entregan igual: perderlas obligaba al usuario
+            # a repetir la peticion y dejaba acciones huerfanas.
+            if ejecutor.tarjetas:
+                txt_resp = "Te dejé esto listo, aunque no alcancé a redactar el resto de la respuesta. Revisa la tarjeta:"
+                bloques_tj = _con_tarjetas(None, txt_resp, ejecutor.tarjetas)
+                MensajeChat.objects.create(
+                    usuario=request.user, rol="bot", contenido=txt_resp, bloques=bloques_tj, animo="normal",
+                )
+                return JsonResponse({"ok": True, "respuesta": txt_resp, "bloques": bloques_tj, "animo": "normal"})
+
             # Respaldo determinista si la consulta es sobre presupuestos o movimientos.
             bloques_fb, animo_fb, proc_fb = detectar_y_ensamblar_bloques(request.user, pregunta, respuesta_llm=None)
             if bloques_fb:
