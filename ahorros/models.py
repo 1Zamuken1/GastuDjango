@@ -5,19 +5,19 @@ from django.db import models
 class AhorroMeta(models.Model):
     
     class Frecuencia(models.TextChoices):
-        DIARIA= 'DIARIA', 'Diaria',
-        SEMANAL= 'SEMANAL', 'Semanal',
-        QUINCENAL= 'QUINCENAL', 'Quincenal',
-        MENSUAL='MENSUAL', 'Mensual',
-        TRIMESTRAL='TRIMESTRAL', 'Trimestral',
-        SEMESTRAL='SEMESTRAL', 'Semestral',
-        ANUAL='ANUAL', 'Anual'
-        
+        DIARIA = 'DIARIA', 'Diaria'
+        SEMANAL = 'SEMANAL', 'Semanal'
+        QUINCENAL = 'QUINCENAL', 'Quincenal'
+        MENSUAL = 'MENSUAL', 'Mensual'
+        TRIMESTRAL = 'TRIMESTRAL', 'Trimestral'
+        SEMESTRAL = 'SEMESTRAL', 'Semestral'
+        ANUAL = 'ANUAL', 'Anual'
+
     class Estado(models.TextChoices):
-        SIN_INICIAR='SIN_INICIAR', 'Sin_iniciar',
-        ACTIVO='ACTIVO', 'Activo',
-        COMPLETADO='COMPLETADO', 'Completado',
-        ABANDONADO='ABANDONADO', 'Abandonado',
+        SIN_INICIAR = 'SIN_INICIAR', 'Sin iniciar'
+        ACTIVO = 'ACTIVO', 'Activo'
+        COMPLETADO = 'COMPLETADO', 'Completado'
+        ABANDONADO = 'ABANDONADO', 'Abandonado'
         
     monto_meta=models.DecimalField(max_digits=12, decimal_places=2, null=False)
     total_acumulado=models.DecimalField(max_digits=12, decimal_places=2, null=False, default=0)
@@ -42,15 +42,18 @@ class AhorroMeta(models.Model):
 class AporteAhorro(models.Model):
     
     class EstadoAp(models.TextChoices):
-        APORTADO= 'APORTADO', 'Aportado',
-        PERDIDO= 'PERDIDO', 'Perdido',
-        PENDIENTE='PENDIENTE', 'Pendiente'
+        APORTADO = 'APORTADO', 'Aportado'
+        PERDIDO = 'PERDIDO', 'Perdido'
+        PENDIENTE = 'PENDIENTE', 'Pendiente'
         
     aporte_asignado=models.DecimalField(max_digits=12, decimal_places=2 )
     aporte = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     fecha_limite=models.DateField(null=False)
     estado_ap=models.CharField(max_length=15, choices=EstadoAp.choices, null=False)
     fecha_registro = models.DateField(auto_now_add=True, null=False)
+    # Dia en que el usuario hizo el aporte. Las cuotas se crean todas al crear
+    # la meta, asi que fecha_registro no sirve para ubicar el aporte en el mes.
+    fecha_aporte = models.DateField(null=True, blank=True, db_index=True)
     ahorro=models.ForeignKey(AhorroMeta, on_delete=models.CASCADE, null=False)
     es_extraordinario = models.BooleanField(default=False)
     

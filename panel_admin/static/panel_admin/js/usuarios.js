@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── Helpers ─────────────────────────────────────────────── */
   function getCsrf() {
+    // 0. Meta tag (la cookie es HttpOnly en produccion)
+    const fromMeta = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (fromMeta) return fromMeta;
     // 1. Try cookie first
     const fromCookie = document.cookie
       .split(';')

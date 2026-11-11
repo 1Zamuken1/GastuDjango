@@ -15,13 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── Helpers ─────────────────────────────────────────────── */
   function setError(inputId, errId, msg) {
-    document.getElementById(inputId).classList.add('input-error');
+    document.getElementById(inputId)?.classList.add('input-error');
     const el = document.getElementById(errId);
     if (el) el.textContent = msg;
   }
 
   function clearError(inputId, errId) {
-    document.getElementById(inputId).classList.remove('input-error');
+    document.getElementById(inputId)?.classList.remove('input-error');
     const el = document.getElementById(errId);
     if (el) el.textContent = '';
   }
@@ -41,17 +41,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ── Validación en tiempo real ───────────────────────────── */
-  const usernameInput = document.getElementById('id_username');
+  const emailInput = document.getElementById('id_email');
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (usernameInput) {
-    usernameInput.addEventListener('blur', () => {
-      if (!usernameInput.value.trim()) {
-        setError('id_username', 'err-username', 'El nombre de usuario es obligatorio.');
-      } else {
-        clearError('id_username', 'err-username');
-      }
+  // Devuelve el mensaje de error del correo, o '' si es valido
+  function errorEmail() {
+    const valor = emailInput?.value.trim() || '';
+    if (!valor) return 'El correo electrónico es obligatorio.';
+    if (!EMAIL_RE.test(valor)) return 'Ingresa un correo electrónico válido.';
+    return '';
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener('blur', () => {
+      const msg = errorEmail();
+      if (msg) setError('id_email', 'err-email', msg);
+      else clearError('id_email', 'err-email');
     });
-    usernameInput.addEventListener('input', () => clearError('id_username', 'err-username'));
+    emailInput.addEventListener('input', () => clearError('id_email', 'err-email'));
   }
 
   if (passInput) {
@@ -72,8 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', (e) => {
       let hasError = false;
 
-      if (!usernameInput?.value.trim()) {
-        setError('id_username', 'err-username', 'El nombre de usuario es obligatorio.');
+      const msgEmail = errorEmail();
+      if (msgEmail) {
+        setError('id_email', 'err-email', msgEmail);
         hasError = true;
       }
 

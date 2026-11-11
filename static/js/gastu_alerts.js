@@ -48,7 +48,7 @@ window.GastuAlerts = {
         return Swal.fire({
             ...this._baseToast,
             icon: 'success',
-            title: mensaje,
+            titleText: mensaje, // titleText: nunca interpreta HTML
             background: '#ecfdf5', // Verde muy claro
             color: '#065f46',      // Texto verde oscuro
             iconColor: '#10b981'   // Icono verde Gastu
@@ -63,7 +63,7 @@ window.GastuAlerts = {
         return Swal.fire({
             ...this._baseToast,
             icon: 'error',
-            title: mensaje,
+            titleText: mensaje, // titleText: nunca interpreta HTML
             background: '#fef2f2', // Rojo muy claro
             color: '#991b1b',      // Texto rojo oscuro
             iconColor: '#ef4444'   // Icono rojo Gastu
@@ -78,7 +78,7 @@ window.GastuAlerts = {
         return Swal.fire({
             ...this._baseToast,
             icon: 'info',
-            title: mensaje,
+            titleText: mensaje, // titleText: nunca interpreta HTML
             background: '#eff6ff',
             color: '#1e3a8a',
             iconColor: '#3b82f6'
@@ -95,7 +95,7 @@ window.GastuAlerts = {
     confirmar: async function(titulo, texto, confirmText = 'Sí, continuar') {
         const result = await Swal.fire({
             ...this._baseModal,
-            title: titulo,
+            titleText: titulo,
             text: texto,
             icon: 'question',
             showCancelButton: true,
@@ -113,7 +113,7 @@ window.GastuAlerts = {
     modal: function(titulo, texto, tipo = 'success') {
         return Swal.fire({
             ...this._baseModal,
-            title: titulo,
+            titleText: titulo,
             text: texto,
             icon: tipo,
             showCancelButton: false,

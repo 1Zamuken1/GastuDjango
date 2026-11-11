@@ -1,0 +1,147 @@
+{% comment %}
+  Cuerpo compartido de Ingresos y Egresos: resumen, barra de herramientas y grid de cards.
+
+  Parametros del include:
+    modulo      "ingresos" | "egresos" (clases de acento y textos)
+    plural      "ingresos" | "egresos"
+    singular    "ingreso"  | "egreso"
+    icono       icono Lucide del modulo
+    btn_class   clase del boton principal del modulo
+    tema_accent / tema_light   colores del panel de historial
+
+  Los nombres de clase hero-total__value, hero-stat__value, btn-export--*, #btn-nuevo,
+  #btn-historial y .export-group los usan movimientos_base.js y tours.js: no cambiarlos.
+{% endcomment %}
+
+<!-- Resumen -->
+<div class="mov-resumen-wrap">
+<section class="mov-resumen mov-resumen--{{ modulo }}" aria-label="Resumen de {{ plural }}">
+  <div class="mov-resumen__principal">
+    <span class="mov-resumen__icono" aria-hidden="true"><i data-lucide="{{ icono }}"></i></span>
+    <div class="mov-resumen__texto">
+      <p class="mov-resumen__etiqueta">
+        Total {{ plural }} ·
+        {% if anio == 'all' %}todas las fechas{% else %}{{ mes_nombre|lower }} {{ anio }}{% endif %}
+      </p>
+      <p class="mov-resumen__total hero-total__value font-display">${{ total_mes|floatformat:"0g" }}</p>
+    </div>
+  </div>
+
+  <div class="mov-resumen__cifras">
+    <div class="mov-cifra">
+      <p class="mov-cifra__etiqueta">Registros</p>
+      <p class="mov-cifra__valor hero-stat__value font-display">{{ cantidad_mes }}</p>
+      <p class="mov-cifra__sub">movimientos</p>
+    </div>
+    <div class="mov-cifra">
+      <p class="mov-cifra__etiqueta">Categorías</p>
+      <p class="mov-cifra__valor hero-stat__value font-display">{{ categorias_con_totales|length }}</p>
+      <p class="mov-cifra__sub">con actividad</p>
+    </div>
+    <div class="mov-cifra">
+      <p class="mov-cifra__etiqueta">Promedio</p>
+      <p class="mov-cifra__valor hero-stat__value font-display">${{ promedio_mes|floatformat:"0g" }}</p>
+      <p class="mov-cifra__sub">por registro</p>
+    </div>
+    <div class="mov-cifra mov-cifra--disponible">
+      <p class="mov-cifra__etiqueta">Disponible</p>
+      <p class="mov-cifra__valor hero-stat__value font-display">${{ disponible|floatformat:"0g"|default:"0" }}</p>
+      <p class="mov-cifra__sub">para gastar; tu ahorro no cuenta aquí</p>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- Barra de herramientas -->
+<div class="app-card toolbar mov-toolbar">
+  <div class="toolbar__search">
+    <svg class="toolbar__search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="buscador" placeholder="Buscar categoría..." aria-label="Buscar categoría">
+  </div>
+
+  <div class="mov-toolbar__acciones">
+    <!-- Selector de periodo (movimientos/js/selector_periodo.js) -->
+    <div class="mov-periodo" id="selector-periodo">
+      <input type="hidden" id="select-mes" value="{{ mes_numero }}" data-primer-mes="{{ mes_primer_registro|default:1 }}">
+      <input type="hidden" id="select-anio" value="{{ anio }}" data-primer-anio="{{ anio_primer_registro|default:2024 }}">
+
+      <button type="button" id="btn-custom-mes" class="mov-periodo__btn" aria-haspopup="listbox">
+        <span id="label-mes">{% if anio == 'all' %}Todas las fechas{% else %}{{ mes_nombre|capfirst }}{% endif %}</span>
+        <i data-lucide="chevron-down" aria-hidden="true"></i>
+      </button>
+      <span id="divisor-anio" class="mov-periodo__divisor{% if anio == 'all' %} hidden{% endif %}" aria-hidden="true"></span>
+      <button type="button" id="btn-custom-anio" class="mov-periodo__btn{% if anio == 'all' %} hidden{% endif %}" aria-haspopup="listbox">
+        <span id="label-anio">{% if anio != 'all' %}{{ anio }}{% endif %}</span>
+        <i data-lucide="chevron-down" aria-hidden="true"></i>
+      </button>
+
+      <div id="dropdown-mes" class="mov-periodo__menu hidden" role="listbox" aria-label="Mes"></div>
+      <div id="dropdown-anio" class="mov-periodo__menu mov-periodo__menu--anio hidden" role="listbox" aria-label="Año"></div>
+    </div>
+
+    <button class="btn-ghost mov-toolbar__btn" type="button" id="btn-historial" aria-label="Historial"
+            data-modulo="{{ plural|upper }}"
+            data-tema-accent="{{ tema_accent }}"
+            data-tema-light="{{ tema_light }}"
+            data-tema-label="{{ plural|capfirst }}"
+            data-tema-icon="{{ icono }}">
+      <i data-lucide="history" aria-hidden="true"></i><span>Historial</span>
+    </button>
+
+    <details class="mov-descargar export-group">
+      <summary class="btn-ghost mov-toolbar__btn" aria-label="Descargar reporte">
+        <i data-lucide="download" aria-hidden="true"></i><span>Descargar</span>
+        <i data-lucide="chevron-down" class="mov-descargar__flecha" aria-hidden="true"></i>
+      </summary>
+      <div class="mov-descargar__menu" role="menu">
+        <button class="btn-export btn-export--pdf" type="button" role="menuitem"><i data-lucide="file-text" aria-hidden="true"></i> PDF</button>
+        <button class="btn-export btn-export--excel" type="button" role="menuitem"><i data-lucide="table-2" aria-hidden="true"></i> Excel</button>
+        <button class="btn-export btn-export--csv" type="button" role="menuitem"><i data-lucide="file-spreadsheet" aria-hidden="true"></i> CSV</button>
+      </div>
+    </details>
+
+    <button class="{{ btn_class }} mov-toolbar__nuevo" id="btn-nuevo" type="button">
+      <i data-lucide="plus" aria-hidden="true"></i> Nuevo {{ singular }}
+    </button>
+  </div>
+</div>
+
+<!-- Grid de categorias -->
+<div class="categorias-grid" id="grid-categorias">
+  {% for item in categorias_con_totales %}
+  <div class="categoria-card" tabindex="0"
+       data-categoria-id="{{ item.categoria.id }}"
+       data-search-text="{{ item.categoria.nombre|lower }}"
+       data-icono="{{ item.categoria.icono|default:'tag' }}"
+       data-activo="{{ item.categoria.activo|yesno:'true,false' }}">
+    <div class="categoria-card__header">
+      <div class="categoria-card__icon"><i data-lucide="{{ item.categoria.icono|default:'tag' }}"></i></div>
+      <div class="categoria-card__titulo">
+        <p class="categoria-card__nombre">
+          {{ item.categoria.nombre }}
+          {% if not item.categoria.activo %}
+            <span class="badge-inactiva">Inactiva</span>
+          {% endif %}
+        </p>
+        <p class="categoria-card__cantidad">{{ item.cantidad }} registro{{ item.cantidad|pluralize }} · último {{ item.ultimo_registro|date:"j b" }}</p>
+      </div>
+      <span class="categoria-card__pct" title="Parte del total de {{ plural }}">{{ item.porcentaje }}%</span>
+    </div>
+    <p class="categoria-card__monto font-display">${{ item.total|floatformat:"0g" }}</p>
+    <div class="progress-bar" title="{{ item.porcentaje }}% del total de {{ plural }}">
+      <div class="progress-bar__fill" data-porcentaje="{{ item.porcentaje|stringformat:'g' }}"></div>
+    </div>
+    {% if item.presupuesto %}
+    {% include "movimientos/includes/_presupuesto_card.html" with p=item.presupuesto %}
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="grid-empty mov-vacio">
+    <i data-lucide="folder-search" aria-hidden="true"></i>
+    <p class="mov-vacio__titulo">Sin {{ plural }} registrados {% if anio == 'all' %}todavía{% else %}en {{ mes_nombre|lower }} {{ anio }}{% endif %}</p>
+    {% if anio != 'all' %}{% if anio < anio_primer_registro or anio == anio_primer_registro and mes_numero < mes_primer_registro %}
+    <p class="mov-vacio__sub">Esta fecha es anterior a tu primer registro en la aplicación.</p>
+    {% endif %}{% endif %}
+  </div>
+  {% endfor %}
+</div>

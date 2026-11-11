@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── Helpers ─────────────────────────────────────────────── */
   function getCsrf() {
-    return document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+    return document.querySelector('meta[name="csrf-token"]')?.content
+      || document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
   }
 
   async function postForm(url, fd) {
@@ -67,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('editar-cat-nombre').value  = res.nombre;
       document.getElementById('editar-cat-tipo').value    = res.tipo;
       document.getElementById('editar-cat-desc').value    = res.descripcion;
+      const icono = document.querySelector(`#editar-cat-iconos input[value="${res.icono}"]`)
+        || document.querySelector('#editar-cat-iconos input');
+      if (icono) icono.checked = true;
       const msg = document.getElementById('msg-editar-cat');
       if (msg) msg.textContent = '';
       openModal('modal-editar-categoria');

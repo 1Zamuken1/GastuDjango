@@ -35,7 +35,7 @@ def presupuesto_valido(usuario, cat_egreso):
         limite=Decimal("500000"),
         fecha_inicio=date.today() - timedelta(days=30),
         fecha_fin=date.today() + timedelta(days=30),
-        isActivo=True,
+        is_activo=True,
         categoria=cat_egreso,
         usuario=usuario,
     )
@@ -99,11 +99,11 @@ class TestDesactivarPresupuestosVencidos:
             limite=Decimal("100000"),
             fecha_inicio=date.today() - timedelta(days=60),
             fecha_fin=date.today() - timedelta(days=1),
-            isActivo=True, categoria=cat_egreso, usuario=usuario,
+            is_activo=True, categoria=cat_egreso, usuario=usuario,
         )
         res = desactivar_presupuestos_vencidos(usuario)
         p.refresh_from_db()
-        assert p.isActivo is False
+        assert p.is_activo is False
         assert len(res) == 1
         assert res[0]["id"] == p.id
 
@@ -156,7 +156,7 @@ class TestPresupuestoSerializer:
     def test_valido(self, usuario, cat_egreso):
         data = dict(limite=500000, fecha_inicio=date.today().isoformat(),
                     fecha_fin=(date.today() + timedelta(days=30)).isoformat(),
-                    isActivo=True, categoria=cat_egreso.id)
+                    is_activo=True, categoria=cat_egreso.id)
         ctx = {"request": type("R", (), {"user": usuario})()}
         s = PresupuestoSerializer(data=data, context=ctx)
         assert s.is_valid(), s.errors
@@ -165,7 +165,7 @@ class TestPresupuestoSerializer:
     def test_limite_invalido(self, usuario, cat_egreso):
         data = dict(limite=0, fecha_inicio=date.today().isoformat(),
                     fecha_fin=(date.today() + timedelta(days=30)).isoformat(),
-                    isActivo=True, categoria=cat_egreso.id)
+                    is_activo=True, categoria=cat_egreso.id)
         ctx = {"request": type("R", (), {"user": usuario})()}
         s = PresupuestoSerializer(data=data, context=ctx)
         assert not s.is_valid()
@@ -175,7 +175,7 @@ class TestPresupuestoSerializer:
     def test_fecha_fin_pasada(self, usuario, cat_egreso):
         data = dict(limite=500000, fecha_inicio=date.today().isoformat(),
                     fecha_fin=date.today().isoformat(),
-                    isActivo=True, categoria=cat_egreso.id)
+                    is_activo=True, categoria=cat_egreso.id)
         ctx = {"request": type("R", (), {"user": usuario})()}
         s = PresupuestoSerializer(data=data, context=ctx)
         assert not s.is_valid()
@@ -184,7 +184,7 @@ class TestPresupuestoSerializer:
     def test_fecha_fin_menor_inicio(self, usuario, cat_egreso):
         data = dict(limite=500000, fecha_inicio=(date.today() + timedelta(days=30)).isoformat(),
                     fecha_fin=(date.today() + timedelta(days=10)).isoformat(),
-                    isActivo=True, categoria=cat_egreso.id)
+                    is_activo=True, categoria=cat_egreso.id)
         ctx = {"request": type("R", (), {"user": usuario})()}
         s = PresupuestoSerializer(data=data, context=ctx)
         assert not s.is_valid()
@@ -193,7 +193,7 @@ class TestPresupuestoSerializer:
     def test_categoria_duplicada(self, usuario, cat_egreso, presupuesto_valido):
         data = dict(limite=300000, fecha_inicio=date.today().isoformat(),
                     fecha_fin=(date.today() + timedelta(days=30)).isoformat(),
-                    isActivo=True, categoria=cat_egreso.id)
+                    is_activo=True, categoria=cat_egreso.id)
         ctx = {"request": type("R", (), {"user": usuario})()}
         s = PresupuestoSerializer(data=data, context=ctx)
         assert not s.is_valid()
@@ -211,7 +211,7 @@ class TestPresupuestoAPI:
         r = client_auto.post("/api/presupuestos/", {
             "limite": 500000, "fecha_inicio": date.today().isoformat(),
             "fecha_fin": (date.today() + timedelta(days=30)).isoformat(),
-            "isActivo": True, "categoria": cat_egreso.id,
+            "is_activo": True, "categoria": cat_egreso.id,
         }, content_type="application/json")
         assert r.status_code == 201, r.json()
         assert r.json()["limite"] == "500000.00"
@@ -227,7 +227,7 @@ class TestPresupuestoAPI:
         Presupuesto.objects.create(limite=Decimal("100000"),
             fecha_inicio=date.today() - timedelta(days=60),
             fecha_fin=date.today() - timedelta(days=1),
-            isActivo=True, categoria=cat_egreso, usuario=usuario)
+            is_activo=True, categoria=cat_egreso, usuario=usuario)
         r = client_auto.post("/api/presupuestos/verificar_vencidos/")
         assert r.status_code == 200
         assert len(r.json()["desactivados"]) == 1

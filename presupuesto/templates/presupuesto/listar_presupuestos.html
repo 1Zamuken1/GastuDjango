@@ -7,641 +7,200 @@
 {% endblock %}
 
 {% block presupuestos_content %}
-<div class="stats-hero">
+<div class="plan-modulo plan-modulo--presupuestos" id="presupuestos-app">
 
-  <div class="stat-card stat-card-primary">
-    <span class="stat-label">Presupuestos activos</span>
-    <p class="stat-number" id="stat-activos">0</p>
-    <span class="stat-badge" id="stat-total-badge">de 0 registrados</span>
+  <!-- Zona 1: Hero -->
+  <div class="stats-hero">
+    <div class="hero-total gastu-hero-card gastu-hero-card--presupuestos">
+      <div class="gastu-hero-card__icono"><i data-lucide="target"></i></div>
+      <p class="hero-total__label">Disponible en presupuestos</p>
+      <p class="hero-total__value font-display" id="stat-disponible">$0</p>
+      <span class="hero-total__badge" id="stat-badge">Sin presupuestos activos</span>
+    </div>
+
+    <div class="app-card hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="wallet"></i> Presupuestado</span>
+        <span class="hero-stat__value font-display" id="stat-limite">$0</span>
+        <span class="hero-stat__sub">suma de límites activos</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="receipt"></i> Gastado</span>
+        <span class="hero-stat__value hero-stat__value--rojo font-display" id="stat-gastado">$0</span>
+        <span class="hero-stat__sub" id="stat-gastado-sub">0% del total</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="alert-triangle"></i> En alerta</span>
+        <span class="hero-stat__value hero-stat__value--ambar font-display" id="stat-alerta">0</span>
+        <span class="hero-stat__sub">80% o más consumido</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat__label"><i data-lucide="calendar-clock"></i> Vencen pronto</span>
+        <span class="hero-stat__value font-display" id="stat-vencen">0</span>
+        <span class="hero-stat__sub">en los próximos 7 días</span>
+      </div>
+    </div>
   </div>
 
-  <div class="app-card stats-grid">
-    <div class="stat-item">
-      <span class="stat-item-label">Total límites</span>
-      <span class="stat-item-value purple" id="stat-total-limite">0</span>
-      <span class="stat-item-sub">suma activos</span>
+  <!-- Avisos: presupuestos en alerta y presupuestos que terminaron -->
+  <div class="plan-banner plan-banner--info" id="banner-vencidos" hidden>
+    <div class="plan-banner__icono"><i data-lucide="calendar-check"></i></div>
+    <div class="plan-banner__cuerpo">
+      <p class="plan-banner__titulo" id="banner-vencidos-titulo"></p>
+      <p class="plan-banner__texto">Puedes renovarlos para el siguiente período con el mismo límite.</p>
+      <div class="plan-banner__items" id="banner-vencidos-items"></div>
     </div>
-    <div class="stat-item">
-      <span class="stat-item-label">Total gastado</span>
-      <span class="stat-item-value danger" id="stat-total-gastado">0</span>
-      <span class="stat-item-sub">en activos</span>
+    <button type="button" class="plan-banner__cerrar" data-cerrar-banner="banner-vencidos" aria-label="Cerrar aviso">
+      <i data-lucide="x"></i>
+    </button>
+  </div>
+
+  <div class="plan-banner plan-banner--alerta" id="banner-alertas" hidden>
+    <div class="plan-banner__icono"><i data-lucide="alert-triangle"></i></div>
+    <div class="plan-banner__cuerpo">
+      <p class="plan-banner__titulo" id="banner-alertas-titulo"></p>
+      <p class="plan-banner__texto" id="banner-alertas-texto"></p>
+      <div class="plan-banner__items" id="banner-alertas-items"></div>
     </div>
-    <div class="stat-item">
-      <span class="stat-item-label">En alerta</span>
-      <span class="stat-item-value amber" id="stat-en-alerta">0</span>
-      <span class="stat-item-sub">≥ 80% consumido</span>
+    <button type="button" class="plan-banner__cerrar" data-cerrar-banner="banner-alertas" aria-label="Cerrar aviso">
+      <i data-lucide="x"></i>
+    </button>
+  </div>
+
+  <!-- Zona 2: Toolbar -->
+  <div class="app-card toolbar toolbar--simple">
+    <div class="toolbar__search">
+      <svg class="toolbar__search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="buscador" placeholder="Buscar categoría..." autocomplete="off">
+    </div>
+    <div class="toolbar__filtros">
+      <div class="plan-filtro" role="group" aria-label="Filtrar por estado" id="filtro-estado">
+        <button type="button" class="plan-filtro__opcion is-activo" data-filtro="activos">Activos<span class="plan-filtro__conteo" data-conteo="activos"></span></button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="inactivos">Inactivos<span class="plan-filtro__conteo" data-conteo="inactivos"></span></button>
+        <button type="button" class="plan-filtro__opcion" data-filtro="todos">Todos<span class="plan-filtro__conteo" data-conteo="todos"></span></button>
+      </div>
+    </div>
+    <div class="toolbar__actions">
+      <button class="btn-ghost" type="button" id="btn-historial"
+              data-modulo="PRESUPUESTOS"
+              data-tema-accent="#7c3aed"
+              data-tema-light="#f5f3ff"
+              data-tema-label="Presupuestos"
+              data-tema-icon="target">
+        <i data-lucide="history"></i> Historial
+      </button>
+      <button class="btn-plan" type="button" id="btn-nuevo">
+        <i data-lucide="plus"></i> Nuevo presupuesto
+      </button>
+    </div>
+  </div>
+
+  <!-- Zona 3: Grilla -->
+  <div class="plan-grid" id="cards-presupuesto" aria-live="polite">
+    <div class="plan-esqueleto"></div>
+    <div class="plan-esqueleto"></div>
+    <div class="plan-esqueleto"></div>
+  </div>
+
+  <!-- Modal crear / editar -->
+  <div class="modal-overlay" id="modal-presupuesto" hidden>
+    <div class="plan-modal plan-modal--form" role="dialog" aria-modal="true" aria-labelledby="modal-presupuesto-titulo">
+      <div class="plan-modal__header">
+        <div class="plan-modal__header-izq">
+          <div class="plan-modal__badge"><i data-lucide="target"></i></div>
+          <div>
+            <p class="plan-modal__titulo font-display" id="modal-presupuesto-titulo">Nuevo presupuesto</p>
+            <p class="plan-modal__subtitulo">Define cuánto quieres gastar como máximo en una categoría</p>
+          </div>
+        </div>
+        <button type="button" class="plan-modal__cerrar" data-cerrar-modal="modal-presupuesto" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="form-presupuesto" novalidate>
+        <input type="hidden" id="presupuesto-id">
+        <div class="plan-modal__cuerpo plan-columnas">
+          <div class="plan-columnas__col">
+            <div class="fg">
+              <span class="fg-label">Categoría <span class="fg-label-req">*</span></span>
+              <button type="button" class="picker-trigger" id="presupuesto-categoria-btn">
+                <span class="picker-trigger-icon"><i data-lucide="tag"></i></span>
+                <span class="picker-trigger-text" id="presupuesto-categoria-texto">Selecciona una categoría de egreso</span>
+                <i data-lucide="chevron-right" class="picker-trigger-arrow"></i>
+              </button>
+              <input type="hidden" id="presupuesto-categoria">
+            </div>
+            <div class="fg">
+              <label class="fg-label" for="presupuesto-limite">Límite <span class="fg-label-req">*</span></label>
+              <div class="monto-field-wrap">
+                <span class="monto-prefix">$</span>
+                <input type="text" inputmode="numeric" id="presupuesto-limite" class="monto-input" placeholder="0" autocomplete="off">
+                <span class="monto-currency-tag">COP</span>
+              </div>
+              <span class="fg-hint fg-hint--acento" id="presupuesto-ritmo"></span>
+            </div>
+          </div>
+
+          <div class="plan-columnas__col">
+            <div class="fg">
+              <span class="fg-label">Período <span class="fg-label-req">*</span></span>
+              <div class="plan-opciones plan-opciones--auto" id="presupuesto-atajos">
+                <button type="button" class="plan-opcion" data-atajo="este-mes">Este mes</button>
+                <button type="button" class="plan-opcion" data-atajo="proximo-mes">Próximo mes</button>
+                <button type="button" class="plan-opcion" data-atajo="quincena">Próximos 15 días</button>
+                <button type="button" class="plan-opcion" data-atajo="30-dias">Próximos 30 días</button>
+              </div>
+            </div>
+            <div class="fg-fila">
+              <div class="fg">
+                <span class="fg-label">Desde</span>
+                <input type="hidden" id="presupuesto-inicio">
+              </div>
+              <div class="fg">
+                <span class="fg-label">Hasta</span>
+                <input type="hidden" id="presupuesto-fin">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="plan-modal__pie">
+          <button type="button" class="btn-cancel" data-cerrar-modal="modal-presupuesto">Cancelar</button>
+          <button type="submit" class="btn-save" id="presupuesto-guardar">
+            <i data-lucide="check"></i> <span id="presupuesto-guardar-texto">Crear presupuesto</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal selector de categorías -->
+  <div class="modal-overlay" id="modal-categorias" hidden>
+    <div class="plan-modal plan-modal--ancho" role="dialog" aria-modal="true" aria-labelledby="modal-categorias-titulo">
+      <div class="plan-modal__header">
+        <div>
+          <p class="plan-modal__titulo font-display" id="modal-categorias-titulo">Seleccionar categoría</p>
+          <p class="plan-modal__subtitulo">Solo categorías de egreso</p>
+        </div>
+        <button type="button" class="plan-modal__cerrar" data-cerrar-modal="modal-categorias" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="plan-picker__buscador">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="buscador-categorias" placeholder="Buscar categoría..." autocomplete="off">
+      </div>
+      <div id="picker-grid" class="plan-picker__grid"></div>
     </div>
   </div>
 
 </div>
-<!-- div BOTON CREAR PRESUPUESTO -->
-<div class="presupuesto-header">
-
-    <button class="btn-historial" id="btn-historial"
-            data-modulo="PRESUPUESTOS"
-            data-tema-accent="#7c5cbf"
-            data-tema-light="#f5f3ff"
-            data-tema-label="Presupuestos"
-            data-tema-icon="target">
-      <i data-lucide="history"></i> Historial
-    </button>
-    <button onclick="abrirModalCrear()" class="btn-crear"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus"
-       aria-hidden="true" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Nuevo presupuesto</button>
-  </div>
-  <!-- DIV TARJETAS PRESUPUESTOS -->
-    <div id="cards-presupuesto"></div>
-
-    <!-- MODAL CREAR PRESUPUESTO -->
-    <div id="modal-crear" class="modal-overlay" style="display:none;">
-      <div class="modal-container">
-        <h3 class="modal-title">Crear presupuesto</h3>
-        <form id="form-crear" class="modal-form">
-          <div class="form-group">
-            <label>Límite</label>
-            <div class="monto-field-wrap">
-              <span class="monto-prefix">$</span>
-              <input type="text" inputmode="numeric" id="limite" class="monto-input" placeholder="0" autocomplete="off">
-              <span class="monto-currency-tag">COP</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Categoría</label>
-            <input type="text" id="categoria_nombre" class="form-input"
-              placeholder="Seleccionar categoría" readonly
-              onclick="abrirModalCategorias('crear')">
-            <input type="hidden" id="categoria">
-          </div>
-          <div class="form-group">
-            <label>Fecha inicio</label>
-            <input type="hidden" id="fecha_inicio">
-          </div>
-          <div class="form-group">
-            <label>Fecha fin</label>
-            <input type="hidden" id="fecha_fin">
-          </div>
-          <div class="modal-actions">
-            <button type="submit" class="btn-guardar">Guardar</button>
-            <button type="button" class="btn-cancelar" onclick="cerrarModal('modal-crear')">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL EDITAR PRESUPUESTO -->
-    <div id="modal-editar" class="modal-overlay" style="display:none;">
-      <div class="modal-container">
-        <h3 class="modal-title">Editar presupuesto</h3>
-        <form id="form-editar" class="modal-form">
-          <input type="hidden" id="editar-id">
-          <div class="form-group">
-            <label>Límite</label>
-            <div class="monto-field-wrap">
-              <span class="monto-prefix">$</span>
-              <input type="text" inputmode="numeric" id="editar-limite" class="monto-input" placeholder="0" autocomplete="off">
-              <span class="monto-currency-tag">COP</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Categoría</label>
-            <input type="text" id="editar-categoria_nombre" class="form-input"
-                   placeholder="Seleccionar categoría" readonly
-                   onclick="abrirModalCategorias('editar')">
-            <input type="hidden" id="editar-categoria">
-          </div>
-          <div class="form-group">
-            <label>Fecha inicio</label>
-            <input type="hidden" id="editar-fecha_inicio">
-          </div>
-          <div class="form-group">
-            <label>Fecha fin</label>
-            <input type="hidden" id="editar-fecha_fin">
-          </div>
-          <div class="modal-actions">
-            <button type="submit" class="btn-guardar">Guardar cambios</button>
-            <button type="button" class="btn-cancelar" onclick="cerrarModal('modal-editar')">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL CATEGORIAS -->
-    <div id="modal-categorias" class="modal-overlay" style="display:none;">
-      <div class="modal-container modal-categorias-container">
-        <h3 class="modal-title">Seleccionar categoría</h3>
-        <input type="text" id="buscador-categorias" class="form-input"
-          placeholder="Buscar categoría..." oninput="filtrarCategorias()"
-          style="margin-bottom: 12px;">
-        <div id="lista-categorias" class="categorias-grid"></div>
-        <div class="modal-actions" style="margin-top:18px;">
-          <button onclick="cerrarModal('modal-categorias')" class="btn-cancelar btn-categoria">Cerrar</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="toast-container"
-         style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
-                display:flex;flex-direction:column;gap:.5rem;"></div>
-
 {% endblock %}
-
-<style>
-@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-</style>
 
 {% block presupuestos_scripts %}
 <script src="{% static 'presupuesto/js/datepicker.js' %}"></script>
-<script>
-      window.CURRENT_MODULE = 'presupuestos';
-      if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
-
-      const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
-
-      let dpInicioCrear = null
-      let dpFinCrear = null
-      let dpInicioEditar = null
-      let dpFinEditar = null
-
-      function mostrarToast(mensaje, tipo = 'success') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        const colores = {
-          success: { bg: '#f0fdf4', border: '#86efac', text: '#15803d', icon: 'check-circle' },
-          error:   { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626', icon: 'alert-circle' },
-          info:    { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8', icon: 'info' },
-        };
-        const c = colores[tipo] || colores.info;
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-          background:${c.bg};border:1px solid ${c.border};color:${c.text};
-          padding:.75rem 1rem;border-radius:.75rem;font-size:.85rem;font-weight:600;
-          display:flex;align-items:center;gap:.5rem;
-          box-shadow:0 4px 16px rgba(0,0,0,.08);
-          animation:fadeIn .2s ease;max-width:320px;
-        `;
-        toast.innerHTML = `<i data-lucide="${c.icon}" style="width:16px;height:16px;flex-shrink:0;"></i>${mensaje}`;
-        container.appendChild(toast);
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        setTimeout(() => toast.remove(), 4000);
-      }
-
-      // ── Helpers de modal ──────────────────────────────────────────────────────────
-      function abrirModal(id) { document.getElementById(id).style.display = 'flex' }
-      function cerrarModal(id) { document.getElementById(id).style.display = 'none' }
-
-      document.addEventListener('click', function(e) {
-        ['modal-crear', 'modal-editar', 'modal-categorias'].forEach(id => {
-          const overlay = document.getElementById(id)
-          if (e.target === overlay) cerrarModal(id)
-        })
-      })
-
-      // ── Helpers de alerta (localStorage) ─────────────────────────────────────────
-      function alertaYaVista(presupuestoId, nivel) {
-        return !!localStorage.getItem(`presup_vista_${presupuestoId}_${nivel}`)
-      }
-      function marcarAlertaVista(presupuestoId, nivel) {
-        ['baja','nivel_50','nivel_55','nivel_60','nivel_65','nivel_70',
-        'nivel_75','nivel_80','nivel_85','nivel_90','nivel_95','critica'].forEach(n => {
-          localStorage.removeItem(`presup_vista_${presupuestoId}_${n}`)
-        })
-        localStorage.setItem(`presup_vista_${presupuestoId}_${nivel}`, '1')
-      }
-
-      // ── Mapeo porcentaje → clase de borde superior ────────────────────────────────
-      function claseEstado(alerta, isActivo) {
-        if (!isActivo) return 'estado-inactivo'
-        const mapa = {
-          nivel_50: 'estado-cuidado', nivel_55: 'estado-cuidado',
-          nivel_60: 'estado-alerta',  nivel_65: 'estado-alerta',
-          nivel_70: 'estado-alerta',  nivel_75: 'estado-alerta',
-          nivel_80: 'estado-alerta',
-          nivel_85: 'estado-peligro', nivel_90: 'estado-peligro', nivel_95: 'estado-peligro',
-          critica:  'estado-critico',
-        }
-        return mapa[alerta] || 'estado-normal'
-      }
-
-      // ── Cargar presupuestos ───────────────────────────────────────────────────────
-      function cargarPresupuestos() {
-        fetch('/api/presupuestos/verificar_vencidos/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          credentials: 'same-origin'
-        })
-        .then(r => r.json())
-        .then(resultado => {
-          resultado.desactivados.forEach(p => {
-            const key = `alerta_vista_${p.id}_vencido`
-            if (!localStorage.getItem(key)) {
-              localStorage.setItem(key, '1')
-              Swal.fire({
-                icon: 'info',
-                title: 'Presupuesto completado',
-                text: `El presupuesto de "${p.categoria__nombre}" venció el ${p.fecha_fin} y fue desactivado automáticamente.`,
-                confirmButtonColor: '#7c5cbf'
-              })
-            }
-          })
-        })
-
-        fetch('/api/presupuestos/con_estado/', { credentials: 'same-origin' })
-        .then(r => r.json())
-        .then(response => {
-          const presupuestos = response.data
-          const contenedor = document.getElementById('cards-presupuesto')
-
-          const activos = presupuestos.filter(p => p.isActivo)
-          const totalLimite  = activos.reduce((s, p) => s + parseFloat(p.limite), 0)
-          const totalGastado = activos.reduce((s, p) => s + (p.gastado || 0), 0)
-          const enAlerta = activos.filter(p => (p.porcentaje || 0) >= 80).length
-
-          const fmt = v => parseFloat(v).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
-
-          document.getElementById('stat-activos').textContent      = activos.length
-          document.getElementById('stat-total-badge').textContent  = `de ${presupuestos.length} registrados`
-          document.getElementById('stat-total-limite').textContent = fmt(totalLimite)
-          document.getElementById('stat-total-gastado').textContent = fmt(totalGastado)
-          document.getElementById('stat-en-alerta').textContent    = enAlerta
-          contenedor.innerHTML = ''
-
-          if (!presupuestos.length) {
-            contenedor.innerHTML = '<p class="sin-resultados">No tienes presupuestos registrados.</p>'
-            return
-          }
-
-          const configs = {
-            nivel_50: { color: '#daa508', texto: 'Cuidado',     msg: idx => `Llevas el 50% del límite en "${idx}". Vigila tus gastos.` },
-            nivel_55: { color: '#daa508', texto: 'Cuidado',     msg: idx => `Llevas el 55% del límite en "${idx}". Vigila tus gastos.` },
-            nivel_60: { color: '#f97316', texto: 'Advertencia', msg: idx => `Ya consumiste el 60% en "${idx}". Modera tus gastos.` },
-            nivel_65: { color: '#f97316', texto: 'Advertencia', msg: idx => `Ya consumiste el 65% en "${idx}". Modera tus gastos.` },
-            nivel_70: { color: '#f97316', texto: 'Alerta',      msg: idx => `Llevas el 70% en "${idx}". Reduce tus gastos.` },
-            nivel_75: { color: '#f97316', texto: 'Alerta',      msg: idx => `Llevas el 75% en "${idx}". Reduce tus gastos.` },
-            nivel_80: { color: '#f97316', texto: 'Alerta',      msg: idx => `Llevas el 80% en "${idx}". Reduce tus gastos.` },
-            nivel_85: { color: '#ef4444', texto: 'Peligro',     msg: idx => `Casi al límite. 85% consumido en "${idx}".` },
-            nivel_90: { color: '#ef4444', texto: 'Peligro',     msg: idx => `Casi al límite. 90% consumido en "${idx}".` },
-            nivel_95: { color: '#ef4444', texto: 'Peligro',     msg: idx => `Casi al límite. 95% consumido en "${idx}".` },
-            critica:  { color: '#b91c1c', texto: 'Crítico',     msg: idx => `Superaste el límite de "${idx}". Revisa tus gastos.` },
-          }
-
-          presupuestos.forEach(p => {
-            const alertaId = p.id
-            const alertaStr = p.alerta || 'baja'
-            const porcentaje = p.porcentaje || 0
-            const gastado = (p.gastado || 0).toLocaleString('es-CO')
-            const disponible = parseFloat(p.limite) - (p.gastado || 0)
-            const disponibleFmt = disponible.toLocaleString('es-CO', {
-              style: 'currency', currency: 'COP', maximumFractionDigits: 0
-            })
-
-            let color = '#1ba74e'
-            let textoEstado = 'Normal'
-            let mensaje = ''
-
-            if (configs[alertaStr]) {
-              const cfg = configs[alertaStr]
-              color = cfg.color
-              textoEstado = cfg.texto
-              mensaje = cfg.msg(p.categoria_nombre)
-            }
-
-            if (mensaje && p.isActivo && !alertaYaVista(alertaId, alertaStr)) {
-              Swal.fire({
-                icon: 'warning',
-                title: p.categoria_nombre,
-                text: mensaje,
-                confirmButtonColor: color
-              })
-              marcarAlertaVista(alertaId, alertaStr)
-            }
-
-            const limite = parseFloat(p.limite).toLocaleString('es-CO', {
-              style: 'currency', currency: 'COP', maximumFractionDigits: 0
-            })
-
-            const estadoClase = claseEstado(alertaStr, p.isActivo)
-
-            const card = document.createElement('div')
-            card.className = `card-presupuesto ${estadoClase}`
-            card.innerHTML = `
-              <div class="card-header">
-                <div>
-                  <div class="card-limite">${limite}</div>
-                  <div class="card-categoria">${p.categoria_nombre}</div>
-                </div>
-                <div class="card-badges">
-                  <div class="card-tipo-icon tipo-egreso">
-                    <i data-lucide="trending-down" style="width:16px;height:16px;"></i>
-                  </div>
-                  <span class="card-badge ${p.isActivo ? 'activo' : 'inactivo'}">
-                    ${p.isActivo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="progreso-wrap">
-                  <span class="progreso-label">${porcentaje}% usado</span>
-                  <div class="progreso-track">
-                    <div class="progreso-fill" style="width:${Math.min(porcentaje,100)}%; background:${color};"></div>
-                  </div>
-                </div>
-                <div class="card-row">
-                  <span class="card-label">Gastado</span>
-                  <span class="card-value">$${gastado}</span>
-                </div>
-                <div class="card-row">
-                  <span class="card-label">Disponible</span>
-                  <span class="card-value">${disponibleFmt}</span>
-                </div>
-                <div class="card-row">
-                  <span class="card-label">Estado</span>
-                  <span class="card-value" style="color:${color}; font-weight:700;">${textoEstado}</span>
-                </div>
-                <div class="card-row">
-                  <span class="card-label">Inicio</span>
-                  <span class="card-value">${p.fecha_inicio}</span>
-                </div>
-                <div class="card-row">
-                  <span class="card-label">Fin</span>
-                  <span class="card-value">${p.fecha_fin}</span>
-                </div>
-              </div>
-              <div class="card-footer">
-                <button onclick="togglePresupuesto(${p.id}, ${p.isActivo})" class="card-btn toggle">
-                  ${p.isActivo ? 'Desactivar' : 'Activar'}
-                </button>
-                <button onclick="editarPresupuesto(${p.id})" class="card-btn">Editar</button>
-                <button onclick="eliminarPresupuesto(${p.id})" class="card-btn danger">Eliminar</button>
-              </div>
-            `
-            contenedor.appendChild(card)
-          })
-          if (typeof lucide !== 'undefined') lucide.createIcons()
-        })
-        .catch(err => console.error('cargarPresupuestos error:', err))
-      }
-
-      // ── Toggle activo/inactivo ────────────────────────────────────────────────────
-      function togglePresupuesto(id, isActivo) {
-        fetch(`/api/presupuestos/${id}/`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          credentials: 'same-origin',
-          body: JSON.stringify({ isActivo: !isActivo })
-        })
-        .then(async r => {
-          const data = await r.json()
-          if (!r.ok) throw new Error(Object.values(data).flat().join('\n'))
-          return data
-        })
-        .then(() => {
-          mostrarToast(isActivo ? 'Presupuesto desactivado' : 'Presupuesto activado')
-          cargarPresupuestos()
-        })
-        .catch(err => mostrarToast(err.message || 'No se pudo actualizar.', 'error'))
-      }
-
-      // ── Modal categorías ──────────────────────────────────────────────────────────
-      let modalContexto = 'crear'
-      let todasLasCategorias = []
-
-        function abrirModalCategorias(contexto) {
-          modalContexto = contexto
-          document.getElementById('buscador-categorias').value = ''
-          document.getElementById('modal-categorias').style.display = 'flex'
-
-          fetch('/api/categorias-egreso/')
-            .then(res => res.json())
-            .then(data => {
-              todasLasCategorias = data
-              renderCategorias(data)
-            })
-            .catch(err => console.error('Error cargando categorías:', err))
-        }
-
-        function filtrarCategorias() {
-          const query = document.getElementById('buscador-categorias').value.toLowerCase()
-          const filtradas = todasLasCategorias.filter(c => c.nombre.toLowerCase().includes(query))
-          renderCategorias(filtradas)
-        }
-
-        function renderCategorias(lista) {
-          const contenedor = document.getElementById('lista-categorias')
-          contenedor.innerHTML = ''
-          if (!lista.length) {
-            contenedor.innerHTML = '<p style="color:#888; font-size:0.9rem;">Sin resultados.</p>'
-            return
-          }
-          lista.forEach(cat => {
-            const div = document.createElement('div')
-            div.className = 'categoria-card'
-            div.innerHTML = `
-              <div class="categoria-card__icon">
-                <i data-lucide="trending-down"></i>
-              </div>
-              <span class="categoria-card__nombre">${cat.nombre}</span>
-            `
-            div.onclick = () => seleccionarCategoria(cat)
-            contenedor.appendChild(div)
-          })
-          if (typeof lucide !== 'undefined') lucide.createIcons()
-        }
-
-      function seleccionarCategoria(cat) {
-        if (modalContexto === 'editar') {
-          document.getElementById('editar-categoria').value       = cat.id
-          document.getElementById('editar-categoria_nombre').value = cat.nombre
-        } else {
-          document.getElementById('categoria').value       = cat.id
-          document.getElementById('categoria_nombre').value = cat.nombre
-        }
-        cerrarModal('modal-categorias')
-      }
-
-      // ── Crear presupuesto ─────────────────────────────────────────────────────────
-      function abrirModalCrear() {
-        document.getElementById('form-crear').reset()
-        dpInicioCrear?.limpiar()
-        dpFinCrear?.limpiar()
-        abrirModal('modal-crear')
-      }
-
-      document.getElementById('form-crear').addEventListener('submit', function(e) {
-        e.preventDefault()
-
-        const categoria  = document.getElementById('categoria').value
-        const raw        = document.getElementById('limite').dataset.raw
-        const limiteVal  = raw ? parseFloat(raw) : 0
-        const fechaIni   = document.getElementById('fecha_inicio').value
-        const fechaFin   = document.getElementById('fecha_fin').value
-
-        if (!limiteVal || limiteVal <= 0)
-          return mostrarToast('El límite debe ser mayor a 0.', 'info')
-        if (!categoria)
-          return mostrarToast('Selecciona una categoría para continuar.', 'info')
-        if (!fechaIni)
-          return mostrarToast('Debes indicar la fecha de inicio.', 'info')
-        if (!fechaFin)
-          return mostrarToast('Debes indicar la fecha de fin.', 'info')
-
-        const body = {
-          limite: limiteVal,
-          categoria,
-          fecha_inicio: fechaIni,
-          fecha_fin:    fechaFin,
-          isActivo:     true
-        }
-        fetch('/api/presupuestos/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          credentials: 'same-origin',
-          body: JSON.stringify(body)
-        })
-        .then(async r => {
-          const data = await r.json()
-          if (!r.ok) {
-            // Extrae solo los mensajes, sin los nombres de campo
-            const mensajes = Object.values(data).flat().join('\n')
-            throw new Error(mensajes)
-          }
-          return data
-        })
-        .then(() => {
-          cerrarModal('modal-crear')
-          mostrarToast('Presupuesto creado')
-          cargarPresupuestos()
-        })
-        .catch(err => mostrarToast(err.message || 'No se pudo guardar.', 'error'))
-      })
-
-      // ── Editar presupuesto ────────────────────────────────────────────────────────
-      function editarPresupuesto(id) {
-        fetch(`/api/presupuestos/${id}/`, { credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(p => {
-            document.getElementById('editar-id').value               = p.id
-            const rawLim = String(parseInt(p.limite, 10))
-            document.getElementById('editar-limite').dataset.raw     = rawLim
-            document.getElementById('editar-limite').value           = rawLim.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-            document.getElementById('editar-fecha_inicio').value     = p.fecha_inicio
-            document.getElementById('editar-fecha_fin').value        = p.fecha_fin
-            dpInicioEditar?.setValor(p.fecha_inicio)
-            dpFinEditar?.setValor(p.fecha_fin || '')
-            document.getElementById('editar-categoria').value        = p.categoria
-            document.getElementById('editar-categoria_nombre').value = p.categoria_nombre
-            abrirModal('modal-editar')
-          })
-          .catch(() => mostrarToast('No se pudo cargar el presupuesto.', 'error'))
-      }
-
-      document.getElementById('form-editar').addEventListener('submit', function(e) {
-        e.preventDefault()
-
-        const id         = document.getElementById('editar-id').value
-        const categoria  = document.getElementById('editar-categoria').value
-        const raw        = document.getElementById('editar-limite').dataset.raw
-        const limiteVal  = raw ? parseFloat(raw) : 0
-        const fechaIni   = document.getElementById('editar-fecha_inicio').value
-        const fechaFin   = document.getElementById('editar-fecha_fin').value
-
-        if (!limiteVal || limiteVal <= 0)
-          return mostrarToast('El límite debe ser mayor a 0.', 'info')
-        if (!categoria)
-          return mostrarToast('Selecciona una categoría para continuar.', 'info')
-        if (!fechaIni)
-          return mostrarToast('Debes indicar la fecha de inicio.', 'info')
-        if (!fechaFin)
-          return mostrarToast('Debes indicar la fecha de fin.', 'info')
-
-        const body = { limite: limiteVal, categoria, fecha_inicio: fechaIni, fecha_fin: fechaFin }
-        fetch(`/api/presupuestos/${id}/`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          credentials: 'same-origin',
-          body: JSON.stringify(body)
-        })
-        .then(async r => {
-          const data = await r.json()
-          if (!r.ok) {
-            const mensajes = Object.values(data).flat().join('\n')
-            throw new Error(mensajes)
-          }
-          return data
-        })
-        .then(() => {
-          cerrarModal('modal-editar')
-          mostrarToast('Cambios guardados')
-          cargarPresupuestos()
-        })
-        .catch(err => mostrarToast(err.message || 'No se pudo actualizar.', 'error'))
-      })
-      // ── Eliminar presupuesto ──────────────────────────────────────────────────────
-      function eliminarPresupuesto(id) {
-        Swal.fire({
-          title: 'Eliminar presupuesto',
-          text: 'Esta acción no se puede deshacer.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, eliminar',
-          cancelButtonText: 'Cancelar',
-          confirmButtonColor: '#ef4444',
-        }).then(result => {
-          if (!result.isConfirmed) return
-          fetch(`/api/presupuestos/${id}/`, {
-            method: 'DELETE',
-            headers: { 'X-CSRFToken': csrfToken },
-            credentials: 'same-origin',
-          })
-          .then(r => {
-            if (!r.ok) throw new Error()
-            ['baja','media','alta_media','alta','critica','vencido'].forEach(n => {
-              localStorage.removeItem(`alerta_vista_${id}_${n}`)
-            })
-            mostrarToast('Presupuesto eliminado')
-            cargarPresupuestos()
-          })
-          .catch(() => mostrarToast('No se pudo eliminar el presupuesto.', 'error'))
-        })
-      }
-
-      // ── Init ──────────────────────────────────────────────────────────────────────
-      function initFormateoMonto(inputId) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-        input.addEventListener('input', function () {
-          const digitos = this.value.replace(/\D/g, '');
-          if (!digitos) { this.dataset.raw = ''; this.value = ''; return; }
-          const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-          this.dataset.raw = digitos;
-          this.value = formatted;
-        });
-      }
-
-      document.addEventListener('DOMContentLoaded', () => {
-        initFormateoMonto('limite')
-        initFormateoMonto('editar-limite')
-        if (typeof MiniDatepicker !== 'undefined') {
-          const inpInicioCrear = document.getElementById('fecha_inicio')
-          const inpFinCrear = document.getElementById('fecha_fin')
-          const inpInicioEditar = document.getElementById('editar-fecha_inicio')
-          const inpFinEditar = document.getElementById('editar-fecha_fin')
-          if (inpInicioCrear) {
-            dpInicioCrear = new MiniDatepicker(inpInicioCrear, {})
-            inpInicioCrear.parentNode.appendChild(dpInicioCrear.wrapper)
-          }
-          if (inpFinCrear) {
-            dpFinCrear = new MiniDatepicker(inpFinCrear, {})
-            inpFinCrear.parentNode.appendChild(dpFinCrear.wrapper)
-          }
-          if (inpInicioEditar) {
-            dpInicioEditar = new MiniDatepicker(inpInicioEditar, {})
-            inpInicioEditar.parentNode.appendChild(dpInicioEditar.wrapper)
-          }
-          if (inpFinEditar) {
-            dpFinEditar = new MiniDatepicker(inpFinEditar, {})
-            inpFinEditar.parentNode.appendChild(dpFinEditar.wrapper)
-          }
-        }
-        cargarPresupuestos()
-      })
-    </script>
+<script src="{% static 'js/category-picker.js' %}"></script>
+<script src="{% static 'js/gastu_planificacion.js' %}"></script>
+<script src="{% static 'presupuesto/js/presupuestos.js' %}"></script>
 {% endblock %}

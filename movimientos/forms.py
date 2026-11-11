@@ -98,7 +98,7 @@ class MovimientoForm(forms.ModelForm):
         movimiento = super().save(commit=False)
         fecha_ingresada = self.cleaned_data.get('fecha')
         if fecha_ingresada:
-            ahora = timezone.now()
+            ahora = timezone.localtime()
             # Combinar la fecha ingresada con la hora actual
             dt = datetime.datetime.combine(fecha_ingresada, ahora.time())
             movimiento.fecha_registro = timezone.make_aware(dt) if timezone.is_naive(dt) else dt

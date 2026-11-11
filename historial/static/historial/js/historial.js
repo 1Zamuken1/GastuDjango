@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!btnAbrir || !panel) return;
 
+    /* Escapa texto antes de insertarlo con innerHTML (descripciones escritas por el usuario o capturadas de correos). */
+    const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
     /* ── Leer configuracion del boton ── */
     const modulo = btnAbrir.dataset.modulo || 'MOVIMIENTOS';
     const tema = {
@@ -195,13 +198,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="historial-item__body">
                         <div class="historial-item__top">
-                            <p class="historial-item__desc">${act.descripcion}</p>
+                            <p class="historial-item__desc">${esc(act.descripcion)}</p>
                             ${montoHTML}
                         </div>
                         <div class="historial-item__meta">
                             <span class="historial-item__time">
                                 <i data-lucide="clock"></i>
-                                ${act.fecha}
+                                ${esc(act.fecha)}
                             </span>
                             <span class="historial-item__tag ${cfg.tagClass}">${cfg.tag}</span>
                         </div>

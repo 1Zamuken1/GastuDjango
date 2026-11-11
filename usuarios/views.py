@@ -1,4 +1,7 @@
 from django.shortcuts import render, redirect
+from django_ratelimit.decorators import ratelimit
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib import messages
@@ -7,6 +10,7 @@ from django.http import JsonResponse
 from django.conf import settings
 
 from .forms import UsuarioCreationForm, LoginForm, PerfilForm
+from .services import AVATARES, avatar_de, cambiar_avatar, foto_de_perfil
 from notificaciones.preferencias.models import PreferenciasAlertas
 from notificaciones.preferencias.forms import PreferenciasAlertasForm
 from notificaciones.preferencias.service import PreferenciasService
@@ -16,7 +20,12 @@ from notificaciones.preferencias.service import PreferenciasService
 #  REGISTER
 # ──────────────────────────────────────────────────────────────
 
+@ratelimit(key='ip', rate='10/h', method='POST', block=False)
 def register_view(request):
+    if getattr(request, 'limited', False):
+        messages.error(request, 'Demasiadas solicitudes de registro. Por favor intenta mas tarde.')
+        form = UsuarioCreationForm()
+        return render(request, 'usuarios/register.html', {'form': form}, status=429)
     """
     Registro de nuevos usuarios. Guarda en usuarios_usuario.
     La cuenta se identifica por EMAIL (unico), no por username.
@@ -39,12 +48,20 @@ def register_view(request):
 #  LOGIN
 # ──────────────────────────────────────────────────────────────
 
+
+@ratelimit(key='ip', rate='5/m', method='POST', block=False)
+@ratelimit(key='gastu_django.ratelimit_keys.email_login', rate='20/h', method='POST', block=False)
 def login_view(request):
     """
     Login de usuarios por EMAIL + contrasena.
     Redirige al dashboard si el usuario ya esta autenticado.
     Respeta el parametro ?next= para redireccion post-login.
     """
+    if getattr(request, 'limited', False):
+        messages.error(request, 'Demasiados intentos de inicio de sesión. Por favor intenta más tarde.')
+        form = LoginForm(request)
+        return render(request, 'usuarios/login.html', {'form': form}, status=429)
+
     if request.user.is_authenticated:
         return redirect(settings.LOGIN_REDIRECT_URL)
 
@@ -54,7 +71,7 @@ def login_view(request):
             user = form.get_user()
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             next_url = request.POST.get('next') or request.GET.get('next')
-            if next_url:
+            if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
                 return redirect(next_url)
             if user.rol == 'ADMIN' or user.is_staff:
                 return redirect('/admin-panel/')
@@ -72,8 +89,15 @@ def login_view(request):
 def logout_view(request):
     """
     Cierra la sesion y redirige al home de la landing.
+
+    Solo por POST (con CSRF): por GET cualquier sitio podria cerrar la sesion
+    de la victima con un <img src="/logout/">. Un GET no cierra nada.
     """
-    logout(request)
+    if request.method == 'POST':
+        logout(request)
+        return redirect(settings.LOGOUT_REDIRECT_URL)
+    if request.user.is_authenticated:
+        return redirect(settings.LOGIN_REDIRECT_URL)
     return redirect(settings.LOGOUT_REDIRECT_URL)
 
 
@@ -202,4 +226,19 @@ def perfil_view(request):
         'total_no_leidas': total_no_leidas,
         'recuentos_modulos': recuentos_modulos,
         'notificaciones_modulo_choices': Notificacion.Modulo.choices,
+        'foto_perfil': foto_de_perfil(request.user),
+        'avatar_actual': avatar_de(request.user),
+        'avatares': AVATARES,
     })
+
+
+@login_required
+@require_POST
+@ratelimit(key='user', rate='30/m', block=True)
+def cambiar_avatar_view(request):
+    """Cambia el avatar del usuario por uno del pool ("" = automatico)."""
+    try:
+        avatar = cambiar_avatar(request.user, request.POST.get('avatar', ''))
+    except ValueError as error:
+        return JsonResponse({'ok': False, 'error': str(error)}, status=400)
+    return JsonResponse({'ok': True, 'avatar': avatar})

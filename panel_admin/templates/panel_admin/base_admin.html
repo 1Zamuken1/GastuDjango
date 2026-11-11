@@ -3,6 +3,7 @@
 <html lang="es" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8" />
+  <meta name="csrf-token" content="{{ csrf_token }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/png" href="{% static 'img/gastu_logo_rostro.png' %}" />
   <title>{% block title %}Panel Admin — GastuApp{% endblock %}</title>
@@ -67,11 +68,14 @@
       {{ request.user.username }}
     </span>
 
-    <a href="{% url 'logout' %}"
-       class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-       title="Cerrar sesión">
-      <i data-lucide="log-out" class="w-4 h-4"></i>
-    </a>
+    <form method="post" action="{% url 'logout' %}" class="m-0">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+              title="Cerrar sesión">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </button>
+    </form>
   </div>
 </header>
 
@@ -105,7 +109,7 @@
 
 <script src="{% static 'js/lucide.min.js' %}"></script>
 <script src="{% static 'panel_admin/js/admin.js' %}"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js" integrity="sha384-YB/DdIkloKoRpclWB8bNcYXWakt57USgtQPDzvnIDHYU0lasD5eWlXVo1S4ODukY" crossorigin="anonymous"></script>
 <script src="{% static 'js/gastu_alerts.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {

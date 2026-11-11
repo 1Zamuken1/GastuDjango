@@ -1,0 +1,18 @@
+{% comment %}
+  Medidor compacto del presupuesto activo de una categoria (cards de Egresos).
+  p: dict de presupuesto.services.estado_presupuesto_por_categoria.
+  Los 12 segmentos y su color los pinta movimientos_base.js (pintarMedidores) desde data-porcentaje.
+{% endcomment %}
+<div class="cat-presupuesto cat-presupuesto--{{ p.nivel }}" data-porcentaje="{{ p.porcentaje|stringformat:'g' }}">
+  <div class="cat-presupuesto__cabecera">
+    <span class="cat-presupuesto__etiqueta">Presupuesto</span>
+    <span class="cat-presupuesto__valor">{{ p.porcentaje|floatformat:"0" }}% de ${{ p.limite|floatformat:"0g" }}</span>
+  </div>
+  <div class="cat-presupuesto__segmentos" role="img"
+       aria-label="{{ p.porcentaje|floatformat:'0' }} por ciento del presupuesto usado"></div>
+  {% if p.nivel == 'excedido' %}
+  <p class="cat-presupuesto__nota">Te pasaste por ${{ p.disponible|floatformat:"0g"|cut:"-" }}</p>
+  {% elif p.nivel == 'alerta' %}
+  <p class="cat-presupuesto__nota">Te quedan ${{ p.disponible|floatformat:"0g" }}</p>
+  {% endif %}
+</div>

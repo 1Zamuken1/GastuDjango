@@ -6,9 +6,27 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-sr^8%d0t&zht-2qbvnql&_p0a0(qd6b2v*@9u#z^6-u(zbrjul')
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG', 'False').strip().lower() in ('true', '1', 't')
+
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-dev-only-key-do-not-use-in-production'
+    else:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured("SECRET_KEY no configurada en las variables de entorno.")
+
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+# llama-3.3-70b-versatile fue retirado de Groq (responde 404). gpt-oss-120b es el
+# mejor de la cuenta con tools; qwen3.8 queda de respaldo si el principal falla.
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-120b')
+# Respaldos en orden (cada modelo tiene su propia cuota por minuto en Groq).
+GROQ_MODEL_RESPALDO = os.getenv('GROQ_MODEL_RESPALDO', 'openai/gpt-oss-20b,qwen/qwen3.8-27b')
+GROQ_REASONING_EFFORT = os.getenv('GROQ_REASONING_EFFORT', 'low')
+# Modelo de la lectura de alertas bancarias (captura); por defecto el mismo.
+GROQ_MODEL_CAPTURA = os.getenv('GROQ_MODEL_CAPTURA', GROQ_MODEL)
+# Mensajes al agente por usuario y por dia (protege la cuota de Groq).
+AGENTE_MAX_MENSAJES_DIA = int(os.getenv('AGENTE_MAX_MENSAJES_DIA', '100'))
 
 # ── Hosts y Seguridad ─────────────────────────────────────────
 _allowed_hosts_env = os.getenv('ALLOWED_HOSTS')
@@ -60,6 +78,7 @@ INSTALLED_APPS = [
     'presupuesto',
     'categorias',
     'historial',
+    'captura_bancaria',
     'channels',
 ]
 
@@ -80,6 +99,7 @@ MIDDLEWARE = [
     *(['django_browser_reload.middleware.BrowserReloadMiddleware'] if DEBUG else []),
     # 🔹 Separación de contextos Admin / Usuario 🔹───────────────
     'gastu_django.middleware.AdminAreaMiddleware',
+    'gastu_django.middleware.ContentSecurityPolicyMiddleware',
 ]
 
 ROOT_URLCONF = 'gastu_django.urls'
@@ -172,12 +192,19 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# Whitenoise: en produccion comprime y sirve con hash de versión
-STATICFILES_STORAGE = (
-    'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    if not DEBUG
-    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
-)
+# Estaticos con hash de version en produccion: cada cambio de CSS/JS genera
+# un nombre de archivo nuevo, asi el navegador nunca usa una copia vieja aunque
+# nginx los cachee 30 dias. Django 5.1+ ignora STATICFILES_STORAGE; va en STORAGES.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage'
+            if not DEBUG
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ──────────────────────────────────────────────────────────────
@@ -248,3 +275,71 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'soporte.gastuapp@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# ──────────────────────────────────────────────────────────────
+# CAPTURA BANCARIA (correo reenviado)
+# ──────────────────────────────────────────────────────────────
+# Dominio de las direcciones de captura (alias@CAPTURA_DOMINIO).
+CAPTURA_DOMINIO = os.getenv('CAPTURA_DOMINIO', 'gastu.duckdns.org')
+# URL interna a la que el servidor SMTP entrega cada correo recibido.
+CAPTURA_INGESTA_URL = os.getenv('CAPTURA_INGESTA_URL', 'http://127.0.0.1:8000/captura/api/ingesta/')
+# Secreto compartido entre el servidor SMTP y Django. Obligatorio en produccion.
+CAPTURA_INGESTA_TOKEN = os.getenv('CAPTURA_INGESTA_TOKEN', 'dev-captura-token' if DEBUG else '')
+# Leer con IA (Groq) las alertas que el parser de reglas no reconoce.
+CAPTURA_USAR_IA = os.getenv('CAPTURA_USAR_IA', 'True') == 'True'
+# Lecturas con IA al dia por buzon para correos sin firma DKIM (pueden ser falsos).
+CAPTURA_IA_MAX_SIN_DKIM = int(os.getenv('CAPTURA_IA_MAX_SIN_DKIM', '20'))
+
+# --------------------------------------------------------------
+# CONFIGURACI�N DE SEGURIDAD (HARDENING)
+# --------------------------------------------------------------
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'same-origin'
+
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 60 * 60 * 4  # 4 horas de sesion
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 ano
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# Content-Security-Policy. En Report-Only hasta sacar los scripts en linea de
+# las plantillas; las violaciones salen en la consola del navegador.
+CSP_REPORT_ONLY = os.getenv('CSP_REPORT_ONLY', 'True') == 'True'
+CSP_POLITICA = '; '.join([
+    "default-src 'self'",
+    "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https://*.googleusercontent.com",
+    "connect-src 'self' ws: wss:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self' https://accounts.google.com",
+])
+
+# Rate limit por IP real del cliente (detras de nginx REMOTE_ADDR es el proxy).
+RATELIMIT_IP_META_KEY = 'gastu_django.ratelimit_keys.ip_cliente'
+
+# --------------------------------------------------------------
+# REST FRAMEWORK SEGURIDAD POR DEFECTO
+# --------------------------------------------------------------
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}

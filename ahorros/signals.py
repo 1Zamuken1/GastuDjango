@@ -120,10 +120,11 @@ def historial_aporte_registrado(sender, instance, created, **kwargs):
 
     # Actualizar resumen mensual e invalidar caché
     from dashboard.services import actualizar_resumen
+    fecha = instance.fecha_aporte or instance.fecha_registro
     actualizar_resumen(
         usuario=instance.ahorro.usuario,
-        mes=instance.fecha_registro.month,
-        anio=instance.fecha_registro.year
+        mes=fecha.month,
+        anio=fecha.year
     )
 
 @receiver(post_delete, sender='ahorros.AporteAhorro')
@@ -131,8 +132,9 @@ def actualizar_resumen_aporte_eliminado(sender, instance, **kwargs):
     """Actualiza el resumen y limpia la caché al eliminar un aporte."""
     if instance.estado_ap == 'APORTADO':
         from dashboard.services import actualizar_resumen
+        fecha = instance.fecha_aporte or instance.fecha_registro
         actualizar_resumen(
             usuario=instance.ahorro.usuario,
-            mes=instance.fecha_registro.month,
-            anio=instance.fecha_registro.year
+            mes=fecha.month,
+            anio=fecha.year
         )

@@ -8,7 +8,6 @@ from dateutil.relativedelta import relativedelta
 from usuarios.models import Usuario
 from categorias.models import Categoria
 from movimientos.models import Movimiento
-from dashboard.models import ResumenMensual
 from programaciones.models import Programacion
 from programaciones.serializers import ProgramacionSerializer
 from programaciones.services import (
@@ -200,9 +199,9 @@ class TestProgramacionAPI:
 
     @pytest.mark.django_db
     def test_ejecutar_aceptar(self, client_auto, prog_activa, usuario, cat_egreso):
-        ResumenMensual.objects.create(usuario=usuario, mes=date.today().month,
-            anio=date.today().year, total_ingresos=Decimal("1000000"),
-            total_egresos=Decimal("0"), disponible=Decimal("500000"))
+        cat_salario = Categoria.objects.create(nombre="Sueldo base", tipo="INGRESO")
+        Movimiento.objects.create(usuario=usuario, tipo="INGRESO", categoria=cat_salario,
+            monto=Decimal("1000000"))
         r = client_auto.post(f"/api/programaciones/{prog_activa.pk}/ejecutar/",
             {"accion": "aceptar"}, content_type="application/json")
         assert r.status_code == 200, r.json()
@@ -219,9 +218,9 @@ class TestProgramacionAPI:
 
     @pytest.mark.django_db
     def test_ejecutar_sin_disponible(self, client_auto, prog_activa, usuario):
-        ResumenMensual.objects.create(usuario=usuario, mes=date.today().month,
-            anio=date.today().year, total_ingresos=Decimal("1000"),
-            total_egresos=Decimal("0"), disponible=Decimal("10"))
+        cat_salario = Categoria.objects.create(nombre="Sueldo base", tipo="INGRESO")
+        Movimiento.objects.create(usuario=usuario, tipo="INGRESO", categoria=cat_salario,
+            monto=Decimal("10"))
         r = client_auto.post(f"/api/programaciones/{prog_activa.pk}/ejecutar/",
             {"accion": "aceptar"}, content_type="application/json")
         assert r.status_code == 400

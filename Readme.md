@@ -61,7 +61,7 @@ USE_SQLITE=True
 GROQ_API_KEY=
 ```
 
-### 🚨 IMPORTANTE: Reset de Base de Datos y Migraciones (01 Abril)
+### IMPORTANTE: Reset de Base de Datos y Migraciones (01 Abril)
 
 Para instalar los últimos cambios relacionados al login por email e importación CSV, **todos los desarrolladores** deben limpiar sus bases de datos locales y carpetas de migraciones antes de ejecutar los próximos comandos. 
 
@@ -103,7 +103,7 @@ python manage.py runserver
 
 ---
 
-## 🚀 Notas para Desarrolladores
+## Notas para Desarrolladores
 
 ### Tailwind CSS (Admin Panel)
 El proyecto utiliza [Tailwind CSS](https://tailwindcss.com/) a través del paquete `django-tailwind` para estilizar el panel de administración.
