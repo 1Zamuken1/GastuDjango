@@ -135,7 +135,9 @@
 **Revisado al implementar:**
 - A5 ya está mitigado por allauth 65.15. En `_accept_login`, `wipe_password` borra la contraseña de la cuenta local cuyo correo no está verificado, y al cambiar la contraseña cambia el hash de sesión, así que las sesiones del atacante quedan invalidadas. No hace falta código propio mientras no se marquen como verificados los correos del registro local.
 
-**Pendiente:** M4 (Django 5.2 al último parche), M6, M8, B4 a B12 y pasar la CSP a modo estricto.
+- M4: Django actualizado a 5.2.19 (último parche de la rama LTS 5.2, noviembre de 2026).
+
+**Pendiente:** M6, M8, B4 a B12 y pasar la CSP a modo estricto.
 
 ## Fuera de esta fase
 
