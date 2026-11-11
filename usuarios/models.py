@@ -76,6 +76,10 @@ class Usuario(AbstractUser):
         help_text='Identificador de la cuenta Google vinculada. Usado por django-allauth.',
     )
 
+    # Avatar elegido del pool (usuarios.services.AVATARES); vacio = automatico
+    # (foto de Google si existe, si no la inicial).
+    avatar = models.CharField(max_length=30, blank=True, default='', verbose_name='Avatar')
+
     # El campo de autenticacion es el email
     USERNAME_FIELD = 'email'
     # username es campo requerido al crear superusuario via comando

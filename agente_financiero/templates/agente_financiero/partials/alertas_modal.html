@@ -573,6 +573,10 @@
         .replace(/"/g, "&quot;");
     }
     function getCookie(name) {
+      if (name === "csrftoken") {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.content) return meta.content;
+      }
       var v = document.cookie.match("(^|;) ?" + name + "=([^;]*)(;|$)");
       return v ? v[2] : "";
     }

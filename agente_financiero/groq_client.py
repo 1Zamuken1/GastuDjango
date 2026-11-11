@@ -1,202 +1,200 @@
-"""Cliente HTTP para GroqCloud con soporte de tool calling."""
+"""
+Cliente HTTP para GroqCloud con tool calling en varias vueltas.
 
-import os
+- Modelo principal y de respaldo configurables (GROQ_MODEL, GROQ_MODEL_RESPALDO):
+  si el principal deja de existir (404) o el servicio falla (5xx), se reintenta
+  la misma conversacion con el respaldo.
+- La ultima vuelta se hace sin herramientas, para que el modelo siempre termine
+  con una respuesta en texto aunque haya seguido pidiendo tools.
+- Tope de llamadas a herramientas por vuelta y de vueltas por pregunta.
+- GroqError lleva un mensaje apto para el usuario; el detalle del proveedor
+  solo va al log.
+"""
+
 import json
+import logging
+import re
+import time
+
 import requests
 from django.conf import settings
 
-GROQ_MODEL = getattr(settings, "GROQ_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"))
+from .tools_schema import TOOLS
+
+logger = logging.getLogger(__name__)
+
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+MAX_TOOL_CALLS_POR_VUELTA = 5
+MAX_ARGUMENTOS_BYTES = 4000
 
 
 class GroqError(Exception):
-    """Error de conexión o respuesta con GroqCloud."""
-    pass
+    """Error de conexion o respuesta con GroqCloud. str(error) es apto para el usuario."""
 
 
-TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "obtener_movimientos",
-            "description": (
-                "Consulta los movimientos del usuario aplicando filtros opcionales. "
-                "Úsala cuando el usuario pregunte por gastos, ingresos, historial, "
-                "o quiera saber cuánto gastó/ingresó en un período o categoría."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "tipo": {
-                        "type": "string",
-                        "enum": ["INGRESO", "EGRESO", "TODOS"],
-                        "description": "Filtrar por tipo de movimiento. Usa TODOS si no se especifica.",
-                    },
-                    "mes": {
-                        "type": "integer",
-                        "description": "Número de mes (1-12). Omitir si no se especifica.",
-                    },
-                    "anio": {
-                        "type": "integer",
-                        "description": "Año de 4 dígitos. Omitir si no se especifica.",
-                    },
-                    "categoria": {
-                        "type": "string",
-                        "description": "Nombre parcial de la categoría a filtrar (búsqueda por contenido).",
-                    },
-                    "limite": {
-                        "type": "integer",
-                        "description": "Cantidad máxima de registros a retornar. Default 20, máximo 100.",
-                    },
-                },
-                "required": [],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "obtener_resumen_periodo",
-            "description": (
-                "Calcula ingresos totales, egresos totales y balance de un período específico. "
-                "Úsala cuando el usuario pregunte por totales, balances o comparaciones entre meses."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "mes": {
-                        "type": "integer",
-                        "description": "Número de mes (1-12).",
-                    },
-                    "anio": {
-                        "type": "integer",
-                        "description": "Año de 4 dígitos.",
-                    },
-                },
-                "required": ["mes", "anio"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "obtener_gastos_por_categoria",
-            "description": (
-                "Agrupa y suma los egresos por categoría en un período dado. "
-                "Úsala cuando el usuario pregunte en qué gasta más, distribución de gastos, "
-                "o quiera ver un desglose por categoría."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "mes": {
-                        "type": "integer",
-                        "description": "Número de mes (1-12). Omitir para todos los meses del año.",
-                    },
-                    "anio": {
-                        "type": "integer",
-                        "description": "Año de 4 dígitos.",
-                    },
-                },
-                "required": ["anio"],
-            },
-        },
-    },
-]
+class _ModeloNoDisponible(Exception):
+    """El modelo no existe, fallo o agoto su cuota: vale la pena probar el de respaldo."""
 
-def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 1024) -> str:
-    """Envía mensajes a Groq, maneja tool calls y retorna la respuesta final del asistente."""
-   
-    api_key = getattr(settings, "GROQ_API_KEY", None)
-    if not api_key:
-        raise GroqError(
-            "GROQ_API_KEY no está configurada en settings.py. "
-            "Agrega GROQ_API_KEY=gsk_... a tu archivo .env"
-        )
+    def __init__(self, motivo, mensaje_usuario="El asistente no está disponible en este momento. Intenta más tarde."):
+        super().__init__(motivo)
+        self.mensaje_usuario = mensaje_usuario
 
+
+def modelos_configurados() -> list:
+    """Modelo principal y respaldos en orden. GROQ_MODEL_RESPALDO admite una lista separada por comas."""
+    principal = getattr(settings, "GROQ_MODEL", "") or "openai/gpt-oss-120b"
+    respaldos = [m.strip() for m in str(getattr(settings, "GROQ_MODEL_RESPALDO", "") or "").split(",")]
+    return [m for m in dict.fromkeys([principal, *respaldos]) if m]
+
+
+# Tope de max_tokens por familia: en el plan gratuito algunos modelos limitan los
+# tokens de salida por minuto (qwen3.8: 1.000) y rechazan cualquier peticion que
+# reserve mas, aunque la respuesta real sea corta.
+TOPE_SALIDA = {"qwen/": 900}
+
+
+def _opciones_modelo(modelo: str, max_tokens: int) -> dict:
+    """Parametros propios de cada familia de modelos."""
+    tope = next((v for prefijo, v in TOPE_SALIDA.items() if modelo.startswith(prefijo)), max_tokens)
+    opciones = {"max_tokens": min(max_tokens, tope)}
+    if modelo.startswith("openai/gpt-oss"):
+        # Razona antes de responder: esfuerzo bajo para no gastar tokens ni latencia.
+        opciones["reasoning_effort"] = getattr(settings, "GROQ_REASONING_EFFORT", "low")
+    return opciones
+
+
+def _mensaje_para_historial(mensaje: dict) -> dict:
+    """Copia del mensaje del asistente sin campos que otro modelo no acepta (reasoning)."""
+    return {k: v for k, v in mensaje.items() if k in ("role", "content", "tool_calls")}
+
+
+def _argumentos(tool_call) -> dict:
+    crudo = (tool_call.get("function") or {}).get("arguments") or "{}"
+    if len(crudo) > MAX_ARGUMENTOS_BYTES:
+        return {"__invalido__": True}
+    try:
+        valor = json.loads(crudo)
+    except (json.JSONDecodeError, TypeError):
+        return {"__invalido__": True}
+    return valor if isinstance(valor, dict) else {"__invalido__": True}
+
+
+def _conversar(modelo, mensajes, ejecutar_herramienta_fn, max_tokens, max_vueltas) -> str:
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
         "Content-Type": "application/json",
     }
+    mensajes_actuales = list(mensajes)
 
-    # primera llamada valida si necesita las herramientas o no
-    payload = {
-        "model": GROQ_MODEL,
-        "messages": mensajes,
-        "tools": TOOLS,
-        "tool_choice": "auto",
-        "max_tokens": max_tokens,
-        "temperature": 0.4,
-        "top_p": 0.9,
-        "stream": False,
-    }
+    for vuelta in range(max_vueltas):
+        es_ultima = vuelta == max_vueltas - 1
+        payload = {
+            "model": modelo,
+            "messages": mensajes_actuales,
+            "temperature": 0.3,
+            "stream": False,
+            **_opciones_modelo(modelo, max_tokens),
+        }
+        if not es_ultima:
+            payload["tools"] = TOOLS
+            payload["tool_choice"] = "auto"
 
-    response = _hacer_request(headers, payload)
-    data = response.json()
-    choice = data["choices"][0]
-    mensaje_asistente = choice["message"]
-    finish_reason = choice.get("finish_reason", "")
-
-    # Si el modelo NO invocó herramienta, retornar directo
-    if finish_reason != "tool_calls" or not mensaje_asistente.get("tool_calls"):
-        return (mensaje_asistente.get("content") or "").strip()
-
-    # el modelo utiliza las herramientas
-    # Agregamos el mensaje del asistente con el llamado a la herramineta al historial
-    mensajes_con_tool = list(mensajes) + [mensaje_asistente]
-
-    for tool_call in mensaje_asistente["tool_calls"]:
-        nombre = tool_call["function"]["name"]
+        data = _hacer_request(headers, payload).json()
         try:
-            argumentos = json.loads(tool_call["function"]["arguments"])
-        except json.JSONDecodeError:
-            argumentos = {}
+            choice = data["choices"][0]
+            mensaje = choice["message"]
+        except (KeyError, IndexError, TypeError):
+            logger.error("[GASTU] Respuesta de Groq sin choices: %s", str(data)[:300])
+            raise GroqError("El asistente devolvió una respuesta inválida. Intenta de nuevo.")
 
-        # Ejecutar la herramienta en Django
-        resultado_json = ejecutar_herramienta_fn(nombre, argumentos)
+        tool_calls = mensaje.get("tool_calls") or []
+        if es_ultima or not tool_calls:
+            return (mensaje.get("content") or "").strip()
 
-        # Adjuntar resultado al historial
-        mensajes_con_tool.append({
-            "role": "tool",
-            "tool_call_id": tool_call["id"],
-            "content": resultado_json,
-        })
+        mensajes_actuales.append(_mensaje_para_historial(mensaje))
+        for i, tool_call in enumerate(tool_calls):
+            nombre = (tool_call.get("function") or {}).get("name", "")
+            if i >= MAX_TOOL_CALLS_POR_VUELTA:
+                resultado = json.dumps({"error": "Demasiadas herramientas en una sola vuelta; usa menos."})
+            else:
+                argumentos = _argumentos(tool_call)
+                if argumentos.get("__invalido__"):
+                    resultado = json.dumps({"error": "Los argumentos no son un objeto JSON válido."})
+                else:
+                    resultado = ejecutar_herramienta_fn(nombre, argumentos)
+            mensajes_actuales.append({
+                "role": "tool",
+                "tool_call_id": tool_call.get("id", ""),
+                "content": resultado,
+            })
 
-    # segunda llamada recibe los resultados de la herramienta y da la respuesta
-    payload2 = {
-        "model": GROQ_MODEL,
-        "messages": mensajes_con_tool,
-        "max_tokens": max_tokens,
-        "temperature": 0.4,
-        "top_p": 0.9,
-        "stream": False,
-    }
-
-    response2 = _hacer_request(headers, payload2)
-    data2 = response2.json()
-    texto_final = data2["choices"][0]["message"].get("content", "")
-    return texto_final.strip()
+    return ""
 
 
-def _hacer_request(headers: dict, payload: dict) -> requests.Response:
-    """POST a GroqCloud. Lanza GroqError si hay timeout, conexión o error HTTP."""
+def preguntar_a_groq(mensajes: list, ejecutar_herramienta_fn, max_tokens: int = 1200, max_vueltas: int = 4) -> str:
+    """
+    Envia la conversacion a Groq, resuelve las tools en bucle y retorna el texto final.
+
+    max_tokens cuenta contra el limite de tokens por minuto aunque no se usen (Groq
+    reserva prompt + max_tokens), asi que se deja justo para una respuesta del chat.
+    """
+    if not getattr(settings, "GROQ_API_KEY", None):
+        logger.error("[GASTU] GROQ_API_KEY no esta configurada")
+        raise GroqError("El asistente no está disponible en este momento.")
+
+    modelos = modelos_configurados()
+    for i, modelo in enumerate(modelos):
+        try:
+            return _conversar(modelo, mensajes, ejecutar_herramienta_fn, max_tokens, max_vueltas)
+        except _ModeloNoDisponible as exc:
+            logger.warning("[GASTU] Modelo %s no disponible (%s)", modelo, exc)
+            if i == len(modelos) - 1:
+                raise GroqError(exc.mensaje_usuario)
+    raise GroqError("El asistente no está disponible en este momento.")
+
+
+def _detalle_error(response) -> str:
     try:
-        response = requests.post(
-            GROQ_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=30,
-        )
-    except requests.exceptions.Timeout:
-        raise GroqError("La solicitud a GroqCloud tardo demasiado. Intenta de nuevo.")
-    except requests.exceptions.ConnectionError:
-        raise GroqError("No se pudo conectar a GroqCloud. Verifica tu conexión a internet.")
+        return response.json().get("error", {}).get("message", "") or response.text
+    except Exception:
+        return response.text
 
-    if response.status_code != 200:
+
+def _hacer_request(headers: dict, payload: dict, max_intentos: int = 2) -> requests.Response:
+    """POST a GroqCloud con un reintento ante rate limit (429)."""
+    for intento in range(1, max_intentos + 1):
         try:
-            error_detail = response.json().get("error", {}).get("message", response.text)
-        except Exception:
-            error_detail = response.text
-        raise GroqError(f"Error de GroqCloud ({response.status_code}): {error_detail}")
+            response = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=40)
+        except requests.exceptions.Timeout:
+            raise GroqError("El asistente tardó demasiado en responder. Intenta de nuevo.")
+        except requests.exceptions.RequestException as exc:
+            logger.error("[GASTU] Error de conexion con Groq: %s", exc)
+            raise _ModeloNoDisponible("conexion")
 
-    return response
+        if response.status_code == 200:
+            return response
+
+        detalle = _detalle_error(response)
+        logger.warning("[GASTU] Groq HTTP %s modelo=%s: %s", response.status_code, payload.get("model"), detalle[:300])
+
+        if response.status_code == 429:
+            match = re.search(r'try again in ([\d\.]+)s', detalle)
+            espera = float(match.group(1)) if match else 5.0
+            if intento < max_intentos and espera <= 8:
+                time.sleep(espera + 0.5)
+                continue
+            # Cada modelo tiene su propia cuota en Groq: se prueba el de respaldo.
+            segundos = f" unos {int(espera) + 1} segundos" if match else " un momento"
+            raise _ModeloNoDisponible(
+                "HTTP 429",
+                f"Límite de consultas alcanzado temporalmente. Espera{segundos} y vuelve a preguntar.",
+            )
+
+        if response.status_code in (404, 410) or response.status_code >= 500:
+            raise _ModeloNoDisponible(f"HTTP {response.status_code}")
+        if response.status_code == 400 and "model" in detalle.lower() and "decommission" in detalle.lower():
+            raise _ModeloNoDisponible("modelo retirado")
+
+        raise GroqError("El asistente no pudo procesar la consulta. Intenta reformularla.")
+
+    raise GroqError("El asistente no está disponible en este momento.")

@@ -16,18 +16,33 @@
   --sidebar-w-mini: 64px;
   --topbar-h: 70px;
   --emerald: #10b981;
-  --emerald-dark: #059669;
+  /* #047857: texto blanco encima da 5,5:1 (AA). El anterior #059669 daba 3,77:1. */
+  --emerald-dark: #047857;
   --emerald-light: #ecfdf5;
   --slate-900: #0f172a;
   --slate-700: #334155;
   --slate-600: #475569;
-  --slate-500: #64748b;
+  /* #5b6779: 5,7:1 sobre blanco y 4,9:1 sobre el fondo #e8edf2 (el anterior #64748b daba 4,0:1). */
+  --slate-500: #5b6779;
   --slate-400: #94a3b8;
   --slate-300: #cbd5e1;
   --slate-100: #f1f5f9;
   --slate-50: #f8fafc;
   --white: #ffffff;
   --border: #e2e8f0;
+
+  /* ── Tokens semanticos compartidos con el agente (agente_financiero.css) ── */
+  --gastu-canvas: #eef2f7;
+  --gastu-ink: #0f172a;
+  --gastu-ink-muted: #475569;
+  --gastu-linea: #d5dee9;
+  --gastu-linea-fuerte: #cbd5e1;
+  --gastu-accion: #047857;
+  --gastu-accion-viva: #10b981;
+  --gastu-alerta: #d97706;
+  --gastu-alerta-ink: #92400e;
+  --gastu-peligro: #be123c;
+  --gastu-segmento-vacio: #d5dee9;
 }
 
 html,
@@ -422,6 +437,18 @@ body.sidebar-mini .sidebar-toggle-icon-closed {
   background: #fef2f2;
   color: #dc2626;
 }
+/* Cerrar sesion va por POST: formulario con boton que se ve igual que los enlaces */
+.form-logout {
+  margin: 0;
+}
+button.dropdown-item {
+  width: 100%;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 .dropdown-divider {
   height: 1px;
   background: var(--border);
@@ -557,6 +584,13 @@ body.sidebar-mini .nav-section-label {
   background: rgba(14, 165, 233, 0.15);
   color: #ffffff;
   border-left-color: #7a5c3e;
+  font-weight: 600;
+}
+.nav-item--captura:hover,
+.nav-item--captura.active {
+  background: rgba(192, 38, 211, 0.15);
+  color: #f0abfc;
+  border-left-color: #c026d3;
   font-weight: 600;
 }
 .nav-item--categorias:hover,
@@ -1000,3 +1034,16 @@ body.sidebar-mini #app-content {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* ── Avatar del usuario (pool de avatares, foto de Google o inicial) ──
+   El color del avatar del pool llega en --avatar-color. */
+.avatar-ui { overflow: hidden; }
+.avatar-ui img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-ui--pool {
+  background: var(--avatar-color, #2563eb) !important;
+  border-color: var(--avatar-color, #2563eb) !important;
+  color: #fff;
+}
+.avatar-ui--pool svg { width: 58%; height: 58%; stroke-width: 2; color: #fff; }
+.avatar-ui--foto { padding: 0; }
+.avatar-ui--pool img { width: 100%; height: 100%; object-fit: cover; }

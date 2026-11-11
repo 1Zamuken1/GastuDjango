@@ -1,0 +1,105 @@
+/* Pestanas y lista "Por revisar" del panel de notificaciones (base_app.html) */
+.notif-tabs {
+  display: flex;
+  gap: .25rem;
+  padding: 0 .75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+.notif-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .55rem .6rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+.notif-tab:hover { color: #0f172a; }
+.notif-tab.activo { color: #0f172a; border-bottom-color: #10b981; }
+.notif-tab[data-notif-tab="pendientes"].activo { color: #86198f; border-bottom-color: #c026d3; }
+.notif-tab__contador {
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 .3rem;
+  border-radius: 9999px;
+  background: #c026d3;
+  color: #fff;
+  font-size: .65rem;
+  font-weight: 800;
+  display: inline-grid;
+  place-items: center;
+}
+.notif-tab__contador[hidden] { display: none; }
+
+.notif-pend-item {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .7rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f8fafc;
+  transition: background .15s;
+}
+.notif-pend-item:hover { background: #f8fafc; }
+.notif-pend-icono {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: .6rem;
+  display: grid;
+  place-items: center;
+  background: #ffe4e6;
+  color: #e11d48;
+}
+.notif-pend-icono svg { width: .95rem; height: .95rem; }
+.notif-pend-item--ingreso .notif-pend-icono { background: #dcfce7; color: #10b981; }
+.notif-pend-cuerpo { flex: 1; min-width: 0; }
+.notif-pend-fila { display: flex; justify-content: space-between; gap: .5rem; }
+.notif-pend-comercio {
+  margin: 0;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notif-pend-monto { margin: 0; font-size: .8rem; font-weight: 800; color: #e11d48; white-space: nowrap; }
+.notif-pend-item--ingreso .notif-pend-monto { color: #10b981; }
+.notif-pend-meta { margin: .1rem 0 0; font-size: .72rem; color: #64748b; }
+.notif-pend-aviso { margin: .2rem 0 0; font-size: .72rem; font-weight: 600; color: #92400e; }
+.notif-pend-confirmar {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1.5px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #059669;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background .15s, color .15s, transform .15s;
+}
+.notif-pend-confirmar:hover:not(:disabled) { background: #10b981; color: #fff; transform: scale(1.06); }
+.notif-pend-confirmar:disabled { opacity: .45; cursor: default; }
+.notif-pend-confirmar svg { width: .95rem; height: .95rem; }
+.notif-pend-mas {
+  display: block;
+  padding: .65rem 1rem;
+  text-align: center;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #86198f;
+  text-decoration: none;
+}
+.notif-pend-mas:hover { background: #fdf4ff; }
+
+#notif-lista[hidden],
+#notif-pendientes[hidden] { display: none !important; }

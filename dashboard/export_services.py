@@ -14,6 +14,8 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 from gastu_django.constants import MESES_ES
+from gastu_django.exportacion import texto_seguro
+from gastu_django.pdf_seguro import link_callback_seguro
 
 
 # ── Excel ────────────────────────────────────────────────────────────────────
@@ -83,8 +85,8 @@ def generar_excel_dashboard(ctx, all_items, mes, anio):
     # Datos
     for i, item in enumerate(all_items, 7):
         ws.cell(row=i, column=1, value=item['tipo']).border = thin_border
-        ws.cell(row=i, column=2, value=item['descripcion']).border = thin_border
-        ws.cell(row=i, column=3, value=item['categoria']).border = thin_border
+        ws.cell(row=i, column=2, value=texto_seguro(item['descripcion'])).border = thin_border
+        ws.cell(row=i, column=3, value=texto_seguro(item['categoria'])).border = thin_border
         ws.cell(row=i, column=4, value=item['fecha']).border = thin_border
         c = ws.cell(row=i, column=5, value=item['monto'])
         c.number_format = '$#,##0'
@@ -156,7 +158,9 @@ def generar_pdf_dashboard(ctx, all_items, mes, anio, user):
     html_string = render_to_string('dashboard/reporte_pdf.html', pdf_ctx)
 
     buffer = io.BytesIO()
-    pisa_status = pisa.CreatePDF(html_string, dest=buffer, encoding='utf-8')
+    pisa_status = pisa.CreatePDF(
+        html_string, dest=buffer, encoding='utf-8', link_callback=link_callback_seguro,
+    )
 
     if pisa_status.err:
         return HttpResponse('Error generando el PDF', status=500)

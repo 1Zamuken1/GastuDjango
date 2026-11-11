@@ -15,6 +15,8 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.utils import timezone
 
+from gastu_django.exportacion import texto_seguro
+
 from .models import AhorroMeta
 
 
@@ -57,8 +59,8 @@ def exportar_csv(request):
     for a in qs:
         pct = (a.total_acumulado / a.monto_meta * 100) if (a.total_acumulado and a.monto_meta) else 0
         writer.writerow([
-            a.categoria.nombre if a.categoria else 'N/A',
-            a.descripcion or '',
+            texto_seguro(a.categoria.nombre if a.categoria else 'N/A'),
+            texto_seguro(a.descripcion or ''),
             a.get_estado_display(),
             f"{pct:.1f}%",
             f"${a.total_acumulado:.2f}" if a.total_acumulado else "$0.00",
@@ -125,7 +127,7 @@ def exportar_excel(request):
             a.get_frecuencia_display(),
         ]
         for col, val in enumerate(valores, 1):
-            celda = ws.cell(row=fila, column=col, value=val)
+            celda = ws.cell(row=fila, column=col, value=texto_seguro(val))
             celda.fill   = PatternFill('solid', fgColor=COLOR_ROW)
             celda.border = borde
             celda.font   = Font(name='Calibri', size=10)

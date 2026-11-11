@@ -179,7 +179,7 @@ window.CategoryPicker = {
         }
 
         const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
-        const csrfToken = csrfMatch ? csrfMatch[1] : '';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || (csrfMatch ? csrfMatch[1] : '');
 
         fetch(`/api/categorias/${id}/toggle-favorita/`, {
             method: 'POST',
@@ -288,20 +288,23 @@ window.CategoryPicker = {
             </div>`;
         }
 
+        // Los nombres e iconos vienen de la BD: se escapan antes de usar innerHTML.
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         categories.forEach(cat => {
             const favIconFill = cat.es_favorita ? 'currentColor' : 'none';
             const favIconColor = cat.es_favorita ? '#f43f5e' : '#cbd5e1';
             const favActiveClass = cat.es_favorita ? 'picker-cat-fav-btn--active' : '';
             const tipoLower = cat.tipo ? cat.tipo.toLowerCase() : 'default';
-            const mainIcon = cat.tipo === 'INGRESO' ? 'trending-up' : (cat.tipo === 'EGRESO' ? 'trending-down' : 'piggy-bank');
+            const iconoTipo = cat.tipo === 'INGRESO' ? 'trending-up' : (cat.tipo === 'EGRESO' ? 'trending-down' : 'piggy-bank');
+            const mainIcon = cat.icono && cat.icono !== 'tag' ? cat.icono : iconoTipo;
             
             out += `
-            <button type="button" class="picker-cat-card picker-cat-card--${tipoLower}" data-id="${cat.id}" data-nombre="${cat.nombre}" data-tipo="${cat.tipo}">
+            <button type="button" class="picker-cat-card picker-cat-card--${esc(tipoLower)}" data-id="${esc(cat.id)}" data-nombre="${esc(cat.nombre)}" data-tipo="${esc(cat.tipo)}">
               <div class="picker-cat-icon">
-                <i data-lucide="${mainIcon}" style="width:18px;height:18px;"></i>
+                <i data-lucide="${esc(mainIcon)}" style="width:18px;height:18px;"></i>
               </div>
-              <span class="picker-cat-nombre">${cat.nombre}</span>
-              <div class="picker-cat-fav-btn ${favActiveClass}" data-id="${cat.id}" style="color:${favIconColor};">
+              <span class="picker-cat-nombre">${esc(cat.nombre)}</span>
+              <div class="picker-cat-fav-btn ${favActiveClass}" data-id="${esc(cat.id)}" style="color:${favIconColor};">
                 <i data-lucide="heart" fill="${favIconFill}" style="width:16px;height:16px;"></i>
               </div>
             </button>

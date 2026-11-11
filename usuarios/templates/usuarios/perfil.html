@@ -1,9 +1,9 @@
 {% extends 'base_app.html' %}
-{% load static %}
+{% load static usuarios_extras %}
 
 {% block title %}Mi perfil — GastuApp{% endblock %}
 {% block page_title %}Mi perfil{% endblock %}
-{% block page_subtitle %}Configuracion de tu cuenta{% endblock %}
+{% block page_subtitle %}Configuración de tu cuenta{% endblock %}
 {% block nav_perfil %}active{% endblock %}
 
 {% block extra_head %}
@@ -45,9 +45,11 @@
 
   {# ── Hero de perfil ──────────────────────────────────── #}
   <div class="perfil-hero">
-    <div class="perfil-hero-avatar">
-      <span>{{ request.user.username|first|upper }}</span>
-    </div>
+    <div class="perfil-hero-banda" aria-hidden="true"></div>
+    <button type="button" class="perfil-hero-avatar-btn" id="btn-cambiar-avatar" aria-haspopup="dialog" aria-controls="modal-avatar" aria-label="Cambiar avatar" title="Cambiar avatar">
+      {% avatar_usuario request.user "perfil-hero-avatar" %}
+      <span class="perfil-hero-avatar-editar" aria-hidden="true"><i data-lucide="pencil"></i></span>
+    </button>
     <div class="perfil-hero-info">
       <h2 class="perfil-hero-name font-display">{{ request.user.username }}</h2>
       <div class="perfil-hero-meta">
@@ -76,7 +78,7 @@
           </div>
           <div>
             <h3 class="font-display font-bold tab-section-title">Editar datos</h3>
-            <p class="tab-section-desc">Actualiza tu nombre de usuario y telefono</p>
+            <p class="tab-section-desc">Actualiza tu nombre de usuario y teléfono</p>
           </div>
         </div>
 
@@ -93,7 +95,7 @@
             </div>
             <div class="form-group">
               <label for="id_telefono" class="form-label">
-                Telefono <span class="form-label-optional">(opcional)</span>
+                Teléfono <span class="form-label-optional">(opcional)</span>
               </label>
               <input type="text" name="telefono" id="id_telefono"
                      value="{{ perfil_form.telefono.value|default:'' }}"
@@ -108,15 +110,18 @@
           </button>
         </form>
       </div>
+    </div>
 
-      <div class="perfil-card" style="margin-top: 20px;">
+    {# ── Columna lateral: seguridad ─────────────────────── #}
+    <div class="perfil-col-side">
+      <div class="perfil-card perfil-card--seguridad">
         <div class="tab-header-row">
           <div class="tab-header-icon">
             <i data-lucide="lock" class="tab-header-icon-svg"></i>
           </div>
           <div>
-            <h3 class="font-display font-bold tab-section-title">Cambiar contrasena</h3>
-            <p class="tab-section-desc">Elige una contrasena segura y unica</p>
+            <h3 class="font-display font-bold tab-section-title">Cambiar contraseña</h3>
+            <p class="tab-section-desc">Elige una contraseña segura y única</p>
           </div>
         </div>
 
@@ -125,22 +130,22 @@
           <input type="hidden" name="cambiar_password" value="1" />
           <div class="form-stacked">
             <div class="form-group">
-              <label for="id_old_password" class="form-label">Contrasena actual</label>
+              <label for="id_old_password" class="form-label">Contraseña actual</label>
               <div class="input-with-toggle">
                 <input type="password" name="old_password" id="id_old_password"
                        class="perfil-input" autocomplete="current-password" />
-                <button type="button" class="toggle-pass" data-target="id_old_password" aria-label="Mostrar contrasena">
+                <button type="button" class="toggle-pass" data-target="id_old_password" aria-label="Mostrar contraseña">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </button>
               </div>
               <p class="form-error" id="error-old_password"></p>
             </div>
             <div class="form-group">
-              <label for="id_new_password1" class="form-label">Nueva contrasena</label>
+              <label for="id_new_password1" class="form-label">Nueva contraseña</label>
               <div class="input-with-toggle">
                 <input type="password" name="new_password1" id="id_new_password1"
                        class="perfil-input" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
-                <button type="button" class="toggle-pass" data-target="id_new_password1" aria-label="Mostrar contrasena">
+                <button type="button" class="toggle-pass" data-target="id_new_password1" aria-label="Mostrar contraseña">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </button>
               </div>
@@ -169,11 +174,11 @@
               <p class="form-error" id="error-new_password1"></p>
             </div>
             <div class="form-group">
-              <label for="id_new_password2" class="form-label">Confirmar nueva contrasena</label>
+              <label for="id_new_password2" class="form-label">Confirmar nueva contraseña</label>
               <div class="input-with-toggle">
                 <input type="password" name="new_password2" id="id_new_password2"
                        class="perfil-input" autocomplete="new-password" placeholder="Repite la nueva contraseña" />
-                <button type="button" class="toggle-pass" data-target="id_new_password2" aria-label="Mostrar contrasena">
+                <button type="button" class="toggle-pass" data-target="id_new_password2" aria-label="Mostrar contraseña">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </button>
               </div>
@@ -188,7 +193,7 @@
           </div>
           <button type="submit" class="btn-perfil btn-sm" id="btn-password">
             <i data-lucide="shield-check" class="btn-icon"></i>
-            Actualizar contrasena
+            Actualizar contraseña
           </button>
         </form>
       </div>
@@ -207,9 +212,9 @@
     <div class="danger-zone-body">
       <div class="danger-zone-info">
         <p class="danger-zone-desc">
-          Eliminar tu cuenta es una accion permanente. Se borraran todos tus movimientos, ahorros, preferencias y datos asociados.
+          Eliminar tu cuenta es una acción permanente. Se borrarán todos tus movimientos, ahorros, preferencias y datos asociados.
         </p>
-        <p class="danger-zone-subdesc">Esta accion no se puede deshacer.</p>
+        <p class="danger-zone-subdesc">Esta acción no se puede deshacer.</p>
       </div>
       <button type="button" class="btn-danger" id="btn-abrir-eliminar">
         <i data-lucide="trash-2"></i>
@@ -222,44 +227,70 @@
 
 <!-- TAB 3: Preferencias -->
 <div class="perfil-panel {% if tab_activo == 'preferencias' %}active{% endif %}" data-panel="preferencias">
-  <div class="perfil-card">
+  <div class="perfil-card pref-card">
     <div class="tab-header-row">
-      <div style="width:32px;height:32px;border-radius:9px;background:var(--perfil-blue-light);display:grid;place-items:center;">
-        <i data-lucide="settings-2" style="width:15px;height:15px;color:var(--perfil-blue);"></i>
+      <div class="tab-header-icon">
+        <i data-lucide="settings-2" class="tab-header-icon-svg"></i>
       </div>
       <div>
-        <h3 class="font-display font-bold tab-section-title" style="margin-bottom:0;">Preferencias de alertas</h3>
-        <p style="color:var(--slate-400);font-size:0.78rem;">Configura cuando y como queremos que te alertemos</p>
+        <h3 class="font-display font-bold tab-section-title">Preferencias de alertas</h3>
+        <p class="tab-section-desc">Elige qué te avisamos y desde qué valores. Los cambios se guardan al pulsar Guardar.</p>
       </div>
     </div>
 
     <form method="post" id="preferencias-form" novalidate>
       {% csrf_token %}
       <input type="hidden" name="guardar_preferencias" value="1" />
-      <h4 class="tab-subsection-title">Umbrales de alerta</h4>
-      <div class="form-grid">
-        {% for field in preferencias_form %}
-          {% if field.field.widget.input_type == "checkbox" %}
-            <label class="alert-toggle">
-              {{ field }}
-              <div>
-                <span class="alert-toggle-label">{{ field.label|default:field.name|title }}</span>
-                {% if field.help_text %}<span class="alert-toggle-help">{{ field.help_text }}</span>{% endif %}
-              </div>
-            </label>
-          {% else %}
-            <div class="form-group">
-              <label for="{{ field.id_for_label }}" class="form-label">{{ field.label|default:field.name|title }}</label>
-              {{ field }}
-              {% if field.help_text %}<p class="form-hint">{{ field.help_text }}</p>{% endif %}
-            </div>
-          {% endif %}
-        {% endfor %}
-      </div>
 
-      <div style="margin-top:20px;">
+      {% for seccion in preferencias_form.secciones %}
+      <section class="pref-seccion" aria-labelledby="pref-sec-{{ forloop.counter }}">
+        <header class="pref-seccion__cabecera">
+          <span class="pref-seccion__icono" aria-hidden="true"><i data-lucide="{{ seccion.icono }}"></i></span>
+          <div>
+            <h4 class="pref-seccion__titulo" id="pref-sec-{{ forloop.counter }}">{{ seccion.titulo }}</h4>
+            {% if seccion.descripcion %}<p class="pref-seccion__desc">{{ seccion.descripcion }}</p>{% endif %}
+          </div>
+        </header>
+
+        <div class="pref-filas">
+          {% for fila in seccion.filas %}
+          <div class="pref-fila{% if not fila.interruptor %} pref-fila--solo-valores{% endif %}">
+            {% if fila.interruptor %}
+            <label class="pref-fila__texto" for="{{ fila.interruptor.id_for_label }}">
+              <span class="pref-fila__titulo">{{ fila.interruptor.label }}</span>
+              {% if fila.interruptor.help_text %}<span class="pref-fila__ayuda">{{ fila.interruptor.help_text }}</span>{% endif %}
+            </label>
+            <span class="pref-switch">
+              {{ fila.interruptor }}
+              <span class="pref-switch__pista" aria-hidden="true"></span>
+            </span>
+            {% endif %}
+
+            {% if fila.valores %}
+            <div class="pref-valores">
+              {% for v in fila.valores %}
+              <div class="pref-valor">
+                <label for="{{ v.campo.id_for_label }}" class="pref-valor__etiqueta">{{ v.campo.label }}</label>
+                <div class="pref-valor__control{% if v.unidad == '$' %} pref-valor__control--moneda{% endif %}">
+                  {% if v.unidad == '$' %}<span class="pref-valor__prefijo" aria-hidden="true">$</span>{% endif %}
+                  {{ v.campo }}
+                  {% if v.unidad and v.unidad != '$' %}<span class="pref-valor__unidad">{{ v.unidad }}</span>{% endif %}
+                </div>
+                {% if v.campo.help_text and not fila.interruptor %}<p class="pref-valor__ayuda">{{ v.campo.help_text }}</p>{% endif %}
+                <p class="form-error" id="error-{{ v.campo.name }}"></p>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+
+      <div class="pref-acciones">
         <button type="submit" class="btn-perfil btn-sm" id="btn-preferencias">
-          <i data-lucide="save" style="width:14px;height:14px;"></i>
+          <i data-lucide="save" class="btn-icon"></i>
           Guardar preferencias
         </button>
       </div>
@@ -272,17 +303,17 @@
   <div class="perfil-card notif-card">
     <div class="notif-header">
       <div class="tab-header-row">
-        <div style="width:32px;height:32px;border-radius:9px;background:var(--perfil-blue-light);display:grid;place-items:center;">
-          <i data-lucide="bell" style="width:15px;height:15px;color:var(--perfil-blue);"></i>
+        <div class="tab-header-icon">
+          <i data-lucide="bell" class="tab-header-icon-svg"></i>
         </div>
         <div>
-          <h3 class="font-display font-bold tab-section-title" style="margin-bottom:0;">Centro de notificaciones</h3>
-          <p style="color:var(--slate-400);font-size:0.78rem;">Todas tus alertas en un solo lugar</p>
+          <h3 class="font-display font-bold tab-section-title">Centro de notificaciones</h3>
+          <p class="tab-section-desc">Todas tus alertas en un solo lugar</p>
         </div>
       </div>
-      <button class="notif-mark-btn" id="btn-marcar-todas">
-        <i data-lucide="check-check" style="width:14px;height:14px;"></i>
-        Marcar todas como leidas
+      <button type="button" class="notif-mark-btn" id="btn-marcar-todas">
+        <i data-lucide="check-check" class="btn-icon"></i>
+        Marcar todas como leídas
       </button>
     </div>
 
@@ -312,6 +343,61 @@
   </div>
 </div>
 
+{# ── Modal cambiar avatar ─────────────────────────────── #}
+<div class="modal-avatar-overlay" id="modal-avatar" aria-hidden="true"
+     data-url="{% url 'cambiar_avatar' %}"
+     data-actual="{{ avatar_actual.clave }}"
+     data-foto="{{ foto_perfil }}"
+     data-inicial="{{ avatar_actual.inicial }}">
+  <div class="modal-avatar" role="dialog" aria-modal="true" aria-labelledby="modal-avatar-titulo">
+    <div class="modal-avatar__lado">
+      <span class="modal-avatar__preview avatar-ui" id="avatar-preview" aria-hidden="true"></span>
+      <div>
+        <p class="modal-avatar__eyebrow">Vista previa</p>
+        <p class="modal-avatar__nombre" id="avatar-preview-nombre">Automático</p>
+      </div>
+    </div>
+
+    <div class="modal-avatar__cuerpo">
+      <div class="modal-avatar__cabecera">
+        <div>
+          <h3 class="modal-avatar__titulo font-display" id="modal-avatar-titulo">Elige tu avatar</h3>
+          <p class="modal-avatar__sub">Se verá en tu perfil y en la barra superior.</p>
+        </div>
+        <button type="button" class="modal-avatar__cerrar" id="btn-cerrar-avatar" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="modal-avatar__rejilla" role="radiogroup" aria-labelledby="modal-avatar-titulo">
+        <button type="button" class="avatar-opcion avatar-opcion--auto" role="radio" aria-checked="false"
+                data-avatar="" data-nombre="Automático">
+          <span class="avatar-opcion__circulo" aria-hidden="true"><i data-lucide="sparkles"></i></span>
+          Automático
+        </button>
+        {% for clave, a in avatares.items %}
+        <button type="button" class="avatar-opcion" role="radio" aria-checked="false"
+                data-avatar="{{ clave }}" data-imagen="{% static a.imagen %}" data-color="{{ a.color }}" data-nombre="{{ a.nombre }}">
+          <span class="avatar-opcion__circulo" style="--avatar-color: {{ a.color }}" aria-hidden="true"><img src="{% static a.imagen %}" alt="" loading="lazy"></span>
+          {{ a.nombre }}
+        </button>
+        {% endfor %}
+      </div>
+
+      <div class="modal-avatar__pie">
+        <p class="modal-avatar__nota">Automático usa tu foto de Google si la tienes, o tu inicial.</p>
+        <div class="modal-avatar__acciones">
+          <button type="button" class="btn-avatar-cancelar" id="btn-cancelar-avatar">Cancelar</button>
+          <button type="button" class="btn-perfil btn-sm" id="btn-guardar-avatar">
+            <i data-lucide="check" class="btn-icon"></i>
+            Guardar avatar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {# ── Modal eliminar cuenta ────────────────────────────── #}
 <div class="modal-delete-overlay" id="modal-eliminar">
   <div class="modal-delete">
@@ -322,7 +408,7 @@
         </div>
         <div>
           <h3 class="modal-delete-title font-display">Eliminar cuenta</h3>
-          <p class="modal-delete-subtitle">Esta accion es permanente e irreversible</p>
+          <p class="modal-delete-subtitle">Esta acción es permanente e irreversible</p>
         </div>
       </div>
       <button type="button" class="modal-delete-close" id="btn-cerrar-eliminar">
@@ -332,14 +418,14 @@
 
     <div class="modal-delete-body">
       <div class="modal-delete-warning">
-        <p><strong>Se eliminaran permanentemente:</strong> todos tus movimientos, resumenes mensuales, preferencias de alertas, notificaciones y cualquier dato asociado a tu cuenta.</p>
+        <p><strong>Se eliminarán permanentemente:</strong> todos tus movimientos, resúmenes mensuales, preferencias de alertas, notificaciones y cualquier dato asociado a tu cuenta.</p>
       </div>
 
       <div class="modal-delete-field">
-        <label for="delete-password">Ingresa tu contrasena para confirmar</label>
+        <label for="delete-password">Ingresa tu contraseña para confirmar</label>
         <div class="input-with-toggle">
-          <input type="password" id="delete-password" class="perfil-input" autocomplete="current-password" placeholder="Tu contrasena actual" />
-          <button type="button" class="toggle-pass" data-target="delete-password" aria-label="Mostrar contrasena">
+          <input type="password" id="delete-password" class="perfil-input" autocomplete="current-password" placeholder="Tu contraseña actual" />
+          <button type="button" class="toggle-pass" data-target="delete-password" aria-label="Mostrar contraseña">
             <i data-lucide="eye" style="width:15px;height:15px;"></i>
           </button>
         </div>
@@ -378,4 +464,5 @@
   if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
 </script>
 <script src="{% static 'usuarios/js/perfil.js' %}"></script>
+<script src="{% static 'usuarios/js/avatar.js' %}"></script>
 {% endblock %}

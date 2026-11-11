@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gastu - Agente Financiero - Maqueta de referencia</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<style>body{margin:0}*{box-sizing:border-box}button{font-family:inherit;cursor:pointer}
+.app{width:1360px;height:880px;display:flex;flex-direction:column;font-family:'DM Sans',sans-serif;color:#0f172a;background:#e8edf2}
+.nav{height:60px;flex:none;background:#1b273d;display:flex;align-items:center;border-bottom:1px solid #2b3a57;color:#fff}
+.brand{width:232px;padding-left:20px;display:flex;align-items:center;gap:10px;font:800 20px 'Plus Jakarta Sans',sans-serif}
+.logo{flex:none;width:32px;height:32px;border-radius:50%;background:#f5ebe0;border:2px solid #8b5e34;display:grid;place-items:center;font:800 13px 'Plus Jakarta Sans',sans-serif;color:#6b4226;position:relative}
+.ttl{flex:1;font:700 16px 'Plus Jakarta Sans',sans-serif}.ttl small{display:block;font:400 12.5px 'DM Sans',sans-serif;color:#94a3b8}
+.usr{margin-right:24px;padding:6px 14px;border-radius:10px;background:#243452;border:1px solid #34476b;font-size:14px}
+.body{flex:1;display:flex;min-height:0}
+.side{width:232px;flex:none;background:#172136;padding:10px;font-size:15px}
+.sec{margin:18px 12px 6px;font-size:11px;letter-spacing:.08em;color:#94a3b8}
+.it{height:40px;padding:0 12px;border-radius:10px;display:flex;align-items:center;gap:12px;color:#cbd5e1}
+.it.on{background:#223656;color:#fff;font-weight:500;border:1px solid #2f4670}
+.ic{width:16px;height:16px;border:1.8px solid currentColor;border-radius:5px}
+.main{flex:1;padding:20px;display:flex;min-width:0}
+.card{flex:1;display:flex;flex-direction:column;background:#fff;border:1px solid #d5dee9;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.hd{display:flex;align-items:center;gap:12px;padding:14px 28px;border-bottom:1px solid #e2e8f0}
+.hd b{display:block;font:700 16px 'Plus Jakarta Sans',sans-serif}.hd small{font-size:13px;color:#475569}
+.dot{position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;background:#10b981;border:2px solid #fff}
+.gh{display:flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;font-size:13px;color:#334155}
+.conv{flex:1;min-height:0;overflow:hidden;background:#f1f5f9;padding:24px 0 0;display:flex;flex-direction:column}
+.col{width:720px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.me{align-self:flex-end;max-width:520px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.me div{background:#047857;color:#fff;border-radius:20px 20px 6px 20px;padding:12px 18px;font-size:15.5px;line-height:1.5}
+.me span{font-size:12px;color:#475569}
+.ai{display:flex;gap:14px}.ai .logo{width:34px;height:34px;font-size:13px}
+.tx{flex:1;display:flex;flex-direction:column;gap:16px}.tx p{margin:0;font-size:15.5px;line-height:1.6}
+.pn{background:#fff;border:1px solid #d5dee9;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;font:700 14.5px 'Plus Jakarta Sans',sans-serif}
+.ph.am{background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e}.ph.rd{background:#fff1f2;border-bottom:1px solid #fecdd3;color:#9f1239}
+.ph i{display:flex;align-items:center;gap:8px;font-style:normal}
+.tag{font:500 12.5px 'DM Sans',sans-serif;padding:3px 10px;border-radius:999px;background:#fef3c7;color:#92400e}
+.tag.rd{background:#ffe4e6;color:#9f1239}
+.pb{padding:16px 20px 20px}
+.big{font:800 34px 'Plus Jakarta Sans',sans-serif}.big small{font:400 15px 'DM Sans',sans-serif;color:#475569;margin-left:8px}
+.bar{position:relative;margin-top:14px;height:10px;border-radius:999px;background:#e2e8f0}
+.bar i{display:block;width:88%;height:10px;border-radius:999px;background:#d97706}
+.bar u{position:absolute;left:80%;top:-4px;width:2px;height:18px;background:#334155}
+.bl{position:relative;height:18px;margin-top:8px;font-size:12px;color:#475569}.bl span{position:absolute;left:80%;transform:translateX(-50%)}
+.tiles{display:flex;gap:12px;margin-top:12px}
+.tl{flex:1;padding:12px 16px;border-radius:12px;font-size:12.5px}.tl b{display:block;margin-top:2px;font:700 19px 'Plus Jakarta Sans',sans-serif}
+.tl.g{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}.tl.s{background:#f1f5f9;border:1px solid #e2e8f0;color:#475569}.tl.s b{color:#0f172a}
+.row{display:flex;align-items:center;gap:14px;padding:0 20px;height:44px;border-top:1px solid #eef2f6;font-size:14.5px}
+.row:first-of-type{border-top:none}.row em{width:52px;font-style:normal;color:#475569;font-size:13px}.row span{flex:1}.row b{color:#be123c;font-weight:500}
+.acts{display:flex;gap:4px}.acts button{width:32px;height:32px;border:none;background:transparent;border-radius:8px;color:#475569;display:grid;place-items:center}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{height:36px;padding:0 14px;border:1px solid #6ee7b7;background:#fff;border-radius:999px;font-size:14px;color:#047857;font-weight:500}
+.hero{margin:auto;width:720px;text-align:center;padding-bottom:30px}
+.hero .logo{width:76px;height:76px;font-size:28px;margin:0 auto 18px;border-width:3px}
+.hero h1{margin:0;font:800 30px 'Plus Jakarta Sans',sans-serif}.hero p{margin:10px auto 26px;max-width:520px;font-size:16px;line-height:1.55;color:#475569}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left}
+.sg{display:flex;gap:14px;align-items:center;padding:16px;background:#fff;border:1px solid #d5dee9;border-radius:14px;font-size:14px;color:#475569;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.sg b{display:block;margin-bottom:2px;font:700 15px 'Plus Jakarta Sans',sans-serif;color:#0f172a}
+.sq{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center}
+.typ{display:inline-flex;gap:6px;align-items:center;padding:14px 18px;background:#fff;border:1px solid #d5dee9;border-radius:18px 18px 18px 6px}
+.typ i{width:8px;height:8px;border-radius:50%;background:#047857}
+.cmp{flex:none;background:#fff;border-top:1px solid #e2e8f0;padding:14px 0}
+.box{width:720px;margin:0 auto}
+.pill{display:flex;align-items:center;gap:8px;height:56px;padding:0 8px 0 22px;border:1.5px solid #94a3b8;border-radius:28px;background:#f8fafc}
+.pill input{flex:1;border:none;outline:none;background:transparent;font:15.5px 'DM Sans',sans-serif;color:#0f172a}
+.send{width:42px;height:42px;border:none;border-radius:50%;color:#fff;display:grid;place-items:center}
+.note{margin-top:10px;display:flex;justify-content:center;align-items:center;gap:6px;font-size:12.5px;color:#475569}
+.ai .logo{border-width:3px}.ai .m-a{border-color:#d97706}.ai .m-e{border-color:#059669}.ai .m-s{border-color:#94a3b8}
+.tx{gap:14px}
+.lead{margin:0;font:800 23px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
+.mt{position:relative;padding-top:42px}
+.seg{position:relative;display:flex;gap:4px;height:30px}.seg i{flex:1;border-radius:5px;background:#d5dee9}
+.seg i.o{background:#10b981}.seg i.w{background:#d97706}
+.seg u{position:absolute;left:80%;top:-5px;bottom:-5px;width:2px;background:#334155}
+.flag{position:absolute;top:0;left:87.5%;transform:translateX(-50%);background:#78350f;color:#fff;font:700 13px 'DM Sans',sans-serif;padding:4px 10px;border-radius:8px;white-space:nowrap}
+.flag:after{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;background:#78350f;transform:translateX(-50%) rotate(45deg)}
+.sc{position:relative;height:18px;margin-top:10px;font-size:12px;color:#475569}.sc span{position:absolute;top:0}
+.nums{display:flex;margin-top:6px;border-top:1px solid #cbd5e1}
+.nums div{flex:1;padding:12px 0 6px;font-size:12.5px;color:#475569}.nums div+div{padding-left:28px;border-left:1px solid #cbd5e1}
+.nums b{display:block;font:800 26px 'Plus Jakarta Sans',sans-serif;color:#0f172a}.nums .ok b{color:#047857}
+.tip strong{color:#92400e}
+.next{border-top:1px solid #cbd5e1}
+.next button{display:flex;justify-content:space-between;align-items:center;width:100%;height:42px;padding:0 2px;background:none;border:none;border-bottom:1px solid #d5dee9;font-size:15px;color:#0f172a;text-align:left}
+.next svg{color:#047857}
+.hero{margin:auto;width:640px;text-align:left;padding-bottom:24px}
+.hero .logo{margin:0 0 20px;border-color:#059669}
+.hero h1{font-size:40px;line-height:1.1;letter-spacing:-.02em}.hero p{margin:12px 0 22px;max-width:none;font-size:17px}
+.ask button{display:flex;align-items:center;gap:16px;width:100%;padding:15px 4px;background:none;border:none;border-top:1px solid #cbd5e1;text-align:left;font-family:inherit;color:#475569;font-size:14px}
+.ask button:last-child{border-bottom:1px solid #cbd5e1}
+.ask .sq{width:38px;height:38px;border-radius:50%}.ask b{display:block;margin-bottom:1px;font:700 17px 'Plus Jakarta Sans',sans-serif;color:#0f172a}
+.led{border-top:2px solid #0f172a}
+.lh{display:flex;justify-content:space-between;padding:10px 0 4px;font:700 14.5px 'Plus Jakarta Sans',sans-serif}.lh small{font:400 13px 'DM Sans',sans-serif;color:#475569}
+.lr{display:flex;align-items:baseline;gap:8px;padding:9px 0;font-size:15px}.lr em{width:54px;font-style:normal;font-size:13px;color:#475569}
+.lr u{flex:1;border-bottom:2px dotted #94a3b8;text-decoration:none;transform:translateY(-4px)}.lr b{color:#be123c;font-weight:600}
+.lm{padding:4px 0 10px 62px;font-size:13.5px;color:#475569}
+.lt{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:1px solid #0f172a;font:800 17px 'Plus Jakarta Sans',sans-serif}
+.lt b{border-bottom:4px double #0f172a;padding-bottom:1px}
+.st{display:flex;align-items:center;gap:10px;height:34px;font-size:14.5px;color:#475569}.st i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#047857;margin-right:4px}
+
+.app{width:auto;min-width:0}.app.mob{width:390px;height:844px}
+.hb{display:none;width:40px;height:40px;margin-left:6px;border:none;background:none;color:#fff;place-items:center}
+.main{padding:0;background:#eef2f7;min-width:0}
+.chat{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.hd2{flex:none;display:flex;align-items:center;gap:12px;padding:12px 28px;border-bottom:1px solid #d0d9e4}
+.hd2>div:nth-child(2){flex:1;min-width:0}.hd2 b{display:block;font:700 16px 'Plus Jakarta Sans',sans-serif}
+.hd2 small{display:block;font-size:13px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:none;background:none;border-radius:8px;color:#475569;font-size:13px}
+.conv{flex:1;min-height:0;overflow-y:auto;background:none;padding:24px 0 24px}
+.col{width:100%;max-width:760px;padding:0 20px}.me{max-width:85%}.tx{min-width:0}
+.hero{width:100%;max-width:680px;padding:0 20px 20px}.hero h1{font-size:clamp(28px,4.4vw,40px)}
+.chip{background:transparent}
+.cmp2{flex:none;position:relative;margin-top:-24px;padding:24px 20px max(28px,env(safe-area-inset-bottom));background:linear-gradient(to top,#eef2f7 70%,rgba(238,242,247,0))}
+.box2{width:100%;max-width:720px;margin:0 auto}
+.fld{display:flex;align-items:flex-end;gap:8px;min-height:48px;padding:3px 3px 3px 17px;background:#f8fafc;border:1.5px solid #8497ae;border-radius:26px;box-shadow:0 4px 14px rgba(15,23,42,.07)}
+.fld:focus-within{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.2)}
+.fld textarea{flex:1;min-width:0;border:none;outline:none;resize:none;background:transparent;font:15.5px/1.45 'DM Sans',sans-serif;color:#0f172a;padding:10px 0;max-height:132px;overflow-y:auto}
+.fld textarea::placeholder{color:#475569}
+.send{flex:none;width:40px;height:40px}
+@media(max-width:760px){.side{display:none}.brand{width:auto;padding-left:14px}.ttl{display:none}.usr{margin:0 14px 0 auto}.hb{display:grid}.tt{display:none}.hd2{padding:10px 16px}.col{padding:0 16px}.lead{font-size:20px}.nums b{font-size:22px}.nums div+div{padding-left:16px}.hero{padding:0 16px 16px}.hero h1{font-size:30px}.cmp2{padding-left:12px;padding-right:12px;padding-bottom:max(18px,env(safe-area-inset-bottom))}}.mob .side{display:none}.mob .brand{width:auto;padding-left:14px}.mob .ttl{display:none}.mob .usr{margin:0 14px 0 auto}.mob .hb{display:grid}.mob .tt{display:none}.mob .hd2{padding:10px 16px}.mob .col{padding:0 16px}.mob .lead{font-size:20px}.mob .nums b{font-size:22px}.mob .nums div+div{padding-left:16px}.mob .hero{padding:0 16px 16px}.mob .hero h1{font-size:30px}.mob .cmp2{padding-left:12px;padding-right:12px;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+.pg{margin:0;padding:32px 24px 64px;background:#cfd8e3;font-family:'DM Sans',sans-serif;color:#0f172a}
+.pg h1{margin:0 0 6px;font:800 24px 'Plus Jakarta Sans',sans-serif}
+.pg>p{margin:0 0 28px;max-width:760px;font-size:15px;line-height:1.55;color:#334155}
+.sec-x{margin-bottom:56px}.sec-x h2{margin:0 0 12px;font:700 16px 'Plus Jakarta Sans',sans-serif}
+.fr{border:1px solid #94a3b8;overflow:hidden;background:#fff}
+</style></head>
+<body class="pg">
+<!-- Maqueta estatica de referencia. Los datos numericos son de ejemplo. El shell (sidebar y navbar) es solo contexto y no forma parte del cambio. Ver AGENTE_FINANCIERO_UI_BRIEF.md -->
+<h1>Agente Financiero: maqueta de referencia</h1>
+<p>Cuatro estados de la zona de chat. El sidebar y el navbar azules son solo contexto de contraste. Los montos y movimientos son datos de ejemplo.</p>
+<section class="sec-x"><h2>1. Respuesta con presupuesto (estado principal)</h2><div class="fr" style="max-width:1360px"><div class="app" style="height:880px"><div class="nav"><button type="button" class="hb" aria-label="Abrir menú"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class="brand"><div class="logo ">G</div>Gastu</div><div class="ttl">Agente Financiero<small>Tu asistente inteligente de finanzas personales</small></div><div class="usr">Demo</div></div>
+<div class="body"><div class="side"><div class="sec">GENERAL</div><div class="it"><span class="ic"></span>Dashboard</div><div class="sec">FINANZAS</div><div class="it"><span class="ic"></span>Ingresos</div><div class="it"><span class="ic"></span>Egresos</div><div class="it"><span class="ic"></span>Ahorros</div><div class="it"><span class="ic"></span>Programaciones</div><div class="it"><span class="ic"></span>Presupuestos</div><div class="sec">HERRAMIENTAS</div><div class="it on"><span class="ic"></span>Agente Financiero</div><div class="sec">CUENTA</div><div class="it"><span class="ic"></span>Mi perfil</div></div><div class="main"><section class="chat">
+<header class="hd2"><div class="logo" style="width:40px;height:40px;font-size:15px">G<span class="dot"></span></div><div><b>Gastu</b><small>Consulta tus datos reales; nunca los modifica</small></div><button type="button" class="tb"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg><span class="tt">Limpiar chat</span></button></header>
+<div class="conv"><div class="col" style="gap:26px">
+<div class="me"><div>¿Cómo va mi presupuesto de alimentación este mes?</div><span>00:42</span></div>
+<div class="ai"><div class="logo m-a">G</div><div class="tx">
+<h2 class="lead">Vas al 88% de tu presupuesto en Alimentación.</h2>
+<div class="mt"><div class="flag">$517.000 de $587.500</div><div class="seg"><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="w"></i><i class="w"></i><i></i><i></i><i></i><u></u></div>
+<div class="sc"><span style="left:80%;transform:translateX(-50%);font-weight:500">Alerta al 80%</span></div></div>
+<div class="nums"><div class="ok">Te quedan<b>$70.500</b></div><div>Máximo por día, 5 días restantes<b>$14.100</b></div></div>
+<p class="tip"><strong>Mi consejo.</strong> Llevas $19.900 diarios; a ese ritmo el límite te alcanza en unos 3 días. Para cerrar noviembre dentro del presupuesto, intenta no pasar de $14.100 al día.</p>
+<div style="display:flex;justify-content:space-between;align-items:center"><div class="acts"><button type="button" aria-label="Copiar respuesta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg></button><button type="button" aria-label="Regenerar respuesta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button></div><span style="font-size:12.5px;color:#475569">Basado en 14 egresos de noviembre</span></div>
+<div class="next"><button type="button">Ver movimientos de Alimentación<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12z"/></svg></button><button type="button">Comparar con octubre<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12z"/></svg></button></div>
+</div></div></div></div>
+<div class="cmp2"><div class="box2"><div class="fld"><textarea rows="1" aria-label="Escribe tu pregunta" placeholder="Pregunta sobre tus finanzas"></textarea><button type="button" class="send" aria-label="Enviar" style="background:#047857"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div></div>
+</section></div></div></div>
+</div></section><section class="sec-x"><h2>2. Estado vacio (bienvenida y sugerencias)</h2><div class="fr" style="max-width:1360px"><div class="app" style="height:880px"><div class="nav"><button type="button" class="hb" aria-label="Abrir menú"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class="brand"><div class="logo ">G</div>Gastu</div><div class="ttl">Agente Financiero<small>Tu asistente inteligente de finanzas personales</small></div><div class="usr">Demo</div></div>
+<div class="body"><div class="side"><div class="sec">GENERAL</div><div class="it"><span class="ic"></span>Dashboard</div><div class="sec">FINANZAS</div><div class="it"><span class="ic"></span>Ingresos</div><div class="it"><span class="ic"></span>Egresos</div><div class="it"><span class="ic"></span>Ahorros</div><div class="it"><span class="ic"></span>Programaciones</div><div class="it"><span class="ic"></span>Presupuestos</div><div class="sec">HERRAMIENTAS</div><div class="it on"><span class="ic"></span>Agente Financiero</div><div class="sec">CUENTA</div><div class="it"><span class="ic"></span>Mi perfil</div></div><div class="main"><section class="chat">
+<header class="hd2"><div class="logo" style="width:40px;height:40px;font-size:15px">G<span class="dot"></span></div><div><b>Gastu</b><small>Consulta tus datos reales; nunca los modifica</small></div><button type="button" class="tb"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg><span class="tt">Limpiar chat</span></button></header>
+<div class="conv"><div class="hero"><div class="logo ">G</div><h1>Buenas noches, Demo.<br>¿Qué revisamos hoy?</h1><p>Respondo con tus datos reales: ingresos, gastos, ahorros y presupuestos.</p>
+<div class="ask"><button type="button"><span class="sq" style="background:#d1fae5;color:#047857"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span><span><b>¿Cuánto he ingresado este mes?</b>Resumen y comparación con el mes anterior</span></button><button type="button"><span class="sq" style="background:#ffe4e6;color:#be123c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l6 6 4-4 8 8M15 17h6v-6"/></svg></span><span><b>¿En qué categoría gasto más?</b>Tus egresos agrupados por categoría</span></button><button type="button"><span class="sq" style="background:#ede9fe;color:#6d28d9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></span><span><b>¿Cómo van mis presupuestos?</b>Consumo y alertas de cada categoría</span></button><button type="button"><span class="sq" style="background:#fef3c7;color:#b45309"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h12l-2 4 2 4H5"/></svg></span><span><b>¿Cómo van mis metas de ahorro?</b>Avance y fechas próximas a vencer</span></button></div></div></div>
+<div class="cmp2"><div class="box2"><div class="fld"><textarea rows="1" aria-label="Escribe tu pregunta" placeholder="Pregunta sobre tus finanzas"></textarea><button type="button" class="send" aria-label="Enviar" style="background:#047857"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div></div>
+</section></div></div></div>
+</div></section><section class="sec-x"><h2>3. Libreta de movimientos y estado revisando</h2><div class="fr" style="max-width:1360px"><div class="app" style="height:880px"><div class="nav"><button type="button" class="hb" aria-label="Abrir menú"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class="brand"><div class="logo ">G</div>Gastu</div><div class="ttl">Agente Financiero<small>Tu asistente inteligente de finanzas personales</small></div><div class="usr">Demo</div></div>
+<div class="body"><div class="side"><div class="sec">GENERAL</div><div class="it"><span class="ic"></span>Dashboard</div><div class="sec">FINANZAS</div><div class="it"><span class="ic"></span>Ingresos</div><div class="it"><span class="ic"></span>Egresos</div><div class="it"><span class="ic"></span>Ahorros</div><div class="it"><span class="ic"></span>Programaciones</div><div class="it"><span class="ic"></span>Presupuestos</div><div class="sec">HERRAMIENTAS</div><div class="it on"><span class="ic"></span>Agente Financiero</div><div class="sec">CUENTA</div><div class="it"><span class="ic"></span>Mi perfil</div></div><div class="main"><section class="chat">
+<header class="hd2"><div class="logo" style="width:40px;height:40px;font-size:15px">G<span class="dot"></span></div><div><b>Gastu</b><small>Consulta tus datos reales; nunca los modifica</small></div><button type="button" class="tb"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg><span class="tt">Limpiar chat</span></button></header>
+<div class="conv"><div class="col" style="margin-top:auto;padding-bottom:24px;gap:22px">
+<div class="me"><div>¿En qué gasté en Alimentación este mes?</div></div>
+<div class="ai"><div class="logo m-e">G</div><div class="tx"><h2 class="lead">Estos son tus últimos egresos en Alimentación.</h2>
+<div class="led"><div class="lh">Egresos de noviembre<small>4 de 14</small></div><div class="lr"><em>07 nov</em><span>Supermercado Éxito</span><u></u><b>-$142.300</b></div><div class="lr"><em>05 nov</em><span>Plaza de mercado</span><u></u><b>-$68.500</b></div><div class="lr"><em>03 nov</em><span>Domicilio almuerzo</span><u></u><b>-$34.000</b></div><div class="lr"><em>02 nov</em><span>Panadería</span><u></u><b>-$18.200</b></div><div class="lm">y 10 movimientos más</div><div class="lt"><span>Total Alimentación</span><b>$517.000</b></div></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><div class="acts"><button type="button" aria-label="Copiar respuesta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg></button><button type="button" aria-label="Regenerar respuesta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button></div><button type="button" class="chip">Ver los 14 movimientos</button></div></div></div>
+<div class="me"><div>¿Y cómo fue octubre?</div></div>
+<div class="ai"><div class="logo m-s">G</div><div class="tx"><div class="st" role="status"><span><i></i><i style="opacity:.6"></i><i style="opacity:.3"></i></span>Revisando tus egresos de octubre</div></div></div>
+</div></div>
+<div class="cmp2"><div class="box2"><div class="fld"><textarea rows="1" aria-label="Escribe tu pregunta" placeholder="Pregunta sobre tus finanzas"></textarea><button type="button" class="send" aria-label="Enviar" style="background:#047857"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div></div>
+</section></div></div></div>
+</div></section><section class="sec-x"><h2>4. Movil (390 px)</h2><div class="fr" style="max-width:390px"><div class="app mob" style="height:844px"><div class="nav"><button type="button" class="hb" aria-label="Abrir menú"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class="brand"><div class="logo ">G</div>Gastu</div><div class="ttl">Agente Financiero<small>Tu asistente inteligente de finanzas personales</small></div><div class="usr">Demo</div></div>
+<div class="body"><div class="main"><section class="chat">
+<header class="hd2"><div class="logo" style="width:40px;height:40px;font-size:15px">G<span class="dot"></span></div><div><b>Gastu</b><small>Consulta tus datos reales; nunca los modifica</small></div><button type="button" class="tb"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg><span class="tt">Limpiar chat</span></button></header>
+<div class="conv"><div class="col" style="gap:26px">
+<div class="me"><div>¿Cómo va mi presupuesto de alimentación este mes?</div><span>00:42</span></div>
+<div class="ai"><div class="logo m-a">G</div><div class="tx">
+<h2 class="lead">Vas al 88% de tu presupuesto en Alimentación.</h2>
+<div class="mt"><div class="flag">$517.000 de $587.500</div><div class="seg"><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="w"></i><i class="w"></i><i></i><i></i><i></i><u></u></div>
+<div class="sc"><span style="left:80%;transform:translateX(-50%);font-weight:500">Alerta al 80%</span></div></div>
+<div class="nums"><div class="ok">Te quedan<b>$70.500</b></div><div>Máximo por día, 5 días restantes<b>$14.100</b></div></div>
+<p class="tip"><strong>Mi consejo.</strong> Llevas $19.900 diarios; a ese ritmo el límite te alcanza en unos 3 días. Para cerrar noviembre dentro del presupuesto, intenta no pasar de $14.100 al día.</p>
+<div style="display:flex;justify-content:space-between;align-items:center"><div class="acts"><button type="button" aria-label="Copiar respuesta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg></button><button type="button" aria-label="Regenerar respuesta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button></div><span style="font-size:12.5px;color:#475569">Basado en 14 egresos de noviembre</span></div>
+<div class="next"><button type="button">Ver movimientos de Alimentación<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12z"/></svg></button><button type="button">Comparar con octubre<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12z"/></svg></button></div>
+</div></div></div></div>
+<div class="cmp2"><div class="box2"><div class="fld"><textarea rows="1" aria-label="Escribe tu pregunta" placeholder="Pregunta sobre tus finanzas"></textarea><button type="button" class="send" aria-label="Enviar" style="background:#047857"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div></div>
+</section></div></div></div>
+</div></section>
+</body></html>

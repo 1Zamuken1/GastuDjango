@@ -1,0 +1,322 @@
+/* ═══════════════════════════════════════════════════════════════
+   vista_movimientos.css — Resumen y barra de herramientas de Ingresos y Egresos
+   (plantilla movimientos/includes/_vista_movimientos.html)
+
+   Mismo lenguaje que el agente: superficie plana, una sola cifra en el color del
+   modulo (--card-acento*, definido en ingresos.css / egresos.css), cifras con
+   etiqueta pequena y separadores finos, sin cajas ni degradados.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Resumen ─────────────────────────────────────── */
+/* Contenedor propio: con el sidebar abierto el ancho util cambia mucho a igual
+   ventana (a 768 px quedan ~440 px), asi que el resumen se adapta a su ancho real. */
+.mov-resumen-wrap { container: resumen / inline-size; }
+
+.mov-resumen {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 2.2fr;
+  align-items: center;
+  gap: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  padding: 1.1rem 1.4rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--card-acento);
+  border-radius: .875rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+
+.mov-resumen__principal {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  min-width: 0;
+}
+
+.mov-resumen__icono {
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--card-acento-claro);
+  color: var(--card-acento-oscuro);
+}
+.mov-resumen__icono svg { width: 1.25rem; height: 1.25rem; }
+
+.mov-resumen__texto { min-width: 0; }
+
+.mov-resumen__etiqueta {
+  margin: 0 0 .2rem;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--gastu-ink-muted);
+}
+.mov-resumen__etiqueta::first-letter { text-transform: uppercase; }
+
+.mov-resumen__total {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.01em;
+  color: var(--card-acento-oscuro);
+  overflow-wrap: anywhere;
+}
+
+.mov-resumen__cifras {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mov-cifra {
+  min-width: 0;
+  padding: .15rem 1.1rem;
+  border-left: 1px solid var(--gastu-linea);
+}
+
+.mov-cifra__etiqueta {
+  margin: 0;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--gastu-ink-muted);
+}
+
+.mov-cifra__valor {
+  margin: .15rem 0 .1rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--gastu-ink);
+  white-space: nowrap; /* un monto nunca se parte en dos lineas */
+}
+
+.mov-cifra__sub {
+  margin: 0;
+  font-size: .74rem;
+  line-height: 1.35;
+  color: var(--gastu-ink-muted);
+}
+
+@container resumen (max-width: 960px) {
+  .mov-resumen { grid-template-columns: 1fr; }
+  .mov-cifra:first-child { border-left: none; padding-left: 0; }
+}
+
+@container resumen (max-width: 620px) {
+  .mov-resumen { padding: 1rem; gap: 1rem; }
+  .mov-resumen__total { font-size: 1.75rem; }
+  /* 2 x 2 con separadores finos en lugar de cuatro filas apiladas */
+  .mov-resumen__cifras { grid-template-columns: 1fr 1fr; }
+  .mov-cifra { padding: .65rem .85rem; border-left: none; }
+  .mov-cifra:first-child,
+  .mov-cifra:nth-child(odd) { padding-left: 0; }
+  .mov-cifra:nth-child(even) { border-left: 1px solid var(--gastu-linea); }
+  .mov-cifra:nth-child(n + 3) { border-top: 1px solid var(--gastu-linea); }
+  .mov-cifra__valor { font-size: 1.15rem; }
+}
+
+/* ── Barra de herramientas ───────────────────────── */
+.mov-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding: .875rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.toolbar__search {
+  position: relative;
+  flex: 1 1 240px;
+  max-width: 380px;
+}
+.toolbar__search input {
+  width: 100%;
+  height: 38px;
+  padding: 0 .75rem 0 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: .625rem;
+  font-size: .875rem;
+  color: var(--slate-900);
+  background: var(--slate-50);
+  outline: none;
+  transition: border-color .15s, background .15s;
+}
+.toolbar__search input:focus { border-color: var(--card-acento); background: var(--white); }
+.toolbar__search-icon {
+  position: absolute; left: .7rem; top: 50%; transform: translateY(-50%);
+  width: 1rem; height: 1rem; color: var(--slate-500); pointer-events: none;
+}
+
+.mov-toolbar__acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+.mov-toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  height: 38px;
+  padding: 0 .8rem;
+  white-space: nowrap;
+}
+.mov-toolbar__btn svg { width: 1rem; height: 1rem; }
+
+/* Selector de periodo */
+.mov-periodo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 .3rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: .625rem;
+}
+.mov-periodo__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  height: 100%;
+  padding: 0 .4rem;
+  border: none;
+  background: none;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--slate-700);
+  cursor: pointer;
+}
+.mov-periodo__btn svg { width: .8rem; height: .8rem; color: var(--slate-500); }
+.mov-periodo__btn:focus-visible,
+.mov-periodo__opcion:focus-visible,
+.mov-descargar summary:focus-visible {
+  outline: 2px solid var(--card-acento);
+  outline-offset: 2px;
+  border-radius: .45rem;
+}
+.mov-periodo__divisor {
+  width: 1px;
+  height: 16px;
+  background: var(--gastu-linea-fuerte);
+}
+.mov-periodo__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  min-width: 160px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: .35rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .12);
+}
+.mov-periodo__menu--anio { left: auto; right: 0; min-width: 110px; }
+/* Tailwind carga antes: sin esto display:flex pisaria a .hidden */
+.mov-periodo__menu.hidden,
+.mov-periodo__btn.hidden,
+.mov-periodo__divisor.hidden { display: none; }
+
+.mov-periodo__opcion {
+  width: 100%;
+  padding: .45rem .75rem;
+  border: none;
+  border-radius: .5rem;
+  background: none;
+  text-align: left;
+  font-family: inherit;
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--slate-600);
+  cursor: pointer;
+}
+.mov-periodo__opcion:hover { background: var(--slate-100); }
+.mov-periodo__opcion.is-activa {
+  background: var(--card-acento-claro);
+  color: var(--card-acento-oscuro);
+  font-weight: 700;
+}
+
+/* Menu Descargar (PDF, Excel, CSV) */
+.mov-descargar { position: relative; }
+.mov-descargar summary { list-style: none; cursor: pointer; }
+.mov-descargar summary::-webkit-details-marker { display: none; }
+.mov-descargar__flecha { transition: transform .15s; }
+.mov-descargar[open] .mov-descargar__flecha { transform: rotate(180deg); }
+.mov-descargar__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  min-width: 160px;
+  padding: .35rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .12);
+}
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  padding: .5rem .75rem;
+  border: none;
+  border-radius: .5rem;
+  background: none;
+  font-family: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.btn-export svg { width: 1rem; height: 1rem; }
+.btn-export--pdf   { color: #b91c1c; }
+.btn-export--pdf:hover   { background: #fef2f2; }
+.btn-export--excel { color: #15803d; }
+.btn-export--excel:hover { background: #f0fdf4; }
+.btn-export--csv   { color: #1d4ed8; }
+.btn-export--csv:hover   { background: #eff6ff; }
+
+.mov-toolbar__nuevo { height: 38px; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .mov-toolbar { padding: .75rem; gap: .6rem; }
+  .toolbar__search { flex-basis: 100%; max-width: none; }
+  .mov-toolbar__acciones { width: 100%; margin-left: 0; }
+  .mov-periodo { flex: 1 1 auto; justify-content: space-between; }
+  .mov-toolbar__nuevo { flex: 1 1 100%; justify-content: center; }
+}
+@media (max-width: 420px) {
+  /* Solo iconos en Historial y Descargar: el texto queda en aria-label */
+  .mov-toolbar__btn span { display: none; }
+  .mov-toolbar__btn { padding: 0 .7rem; }
+}
+
+/* ── Estado vacio ────────────────────────────────── */
+.mov-vacio {
+  padding: 2.25rem 1rem;
+  border: 1px dashed var(--gastu-linea-fuerte);
+  border-radius: .875rem;
+  text-align: center;
+}
+.mov-vacio svg { display: block; width: 2.5rem; height: 2.5rem; margin: 0 auto .5rem; color: var(--slate-300); }
+.mov-vacio__titulo { margin: 0; font-weight: 600; color: var(--gastu-ink-muted); }
+.mov-vacio__sub { margin: .25rem 0 0; font-size: .85rem; color: var(--slate-500); }

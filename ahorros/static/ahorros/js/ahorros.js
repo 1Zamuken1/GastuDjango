@@ -1,805 +1,376 @@
+/**
+ * ahorros.js
+ * Vista de Ahorros: filtros, detalle de meta con aportes, formulario de
+ * crear/editar, borrado y exportacion. Las cards se renderizan en el servidor.
+ * Depende de gastu_planificacion.js (GastuPlan), category-picker.js y datepicker.js.
+ */
 'use strict';
 
-/* ══════════════════════════════════════════════════════════
-   ahorros.js — lógica completa de la vista lista de ahorros
-   ══════════════════════════════════════════════════════════ */
+(function () {
+  const P = window.GastuPlan;
+  const $ = id => document.getElementById(id);
+  const app = $('ahorros-app');
+  if (!app) return;
 
-/* ── URLs inyectadas desde el template via bloque <script> en lista.html
-   URL_EXPORTAR_CSV, URL_EXPORTAR_EXCEL, URL_EXPORTAR_PDF
-   URL_CREAR_META, URL_EDITAR_META, URL_ELIMINAR_META, CSRF_TOKEN
-   ─────────────────────────────────────────────────────────────────────── */
+  const csrf = () => app.querySelector('[name=csrfmiddlewaretoken]').value;
 
-
-/* ══════════════════════════════════════════════════════════
-   1. BARRAS DE PROGRESO
-   ══════════════════════════════════════════════════════════ */
-
-document.querySelectorAll('.progress-bar__fill').forEach(bar => {
-  const actual   = parseFloat(bar.dataset.actual)   || 0;
-  const objetivo = parseFloat(bar.dataset.objetivo) || 0;
-  const pct      = objetivo > 0 ? Math.min(100, (actual / objetivo) * 100) : 0;
-  bar.style.width = pct.toFixed(1) + '%';
-
-  const id  = bar.id.replace('bar-', '');
-  const lbl = document.getElementById('pct-' + id);
-  if (lbl) lbl.textContent = pct.toFixed(1) + '%';
-});
-
-
-/* ══════════════════════════════════════════════════════════
-   2. BUSCADOR DE METAS
-   ══════════════════════════════════════════════════════════ */
-
-const buscador = document.getElementById('buscador-metas');
-if (buscador) {
-  buscador.addEventListener('input', () => {
-    const q = buscador.value.toLowerCase().trim();
-    document.querySelectorAll('#grid-metas .categoria-card').forEach(card => {
-      const txt = (card.dataset.searchText || '').toLowerCase();
-      card.style.display = txt.includes(q) ? '' : 'none';
-    });
-  });
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   3. TOAST
-   ══════════════════════════════════════════════════════════ */
-
-function mostrarToast(mensaje, tipo = 'success') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-
-  const colores = {
-    success: { bg: '#f0fdf4', border: '#86efac', text: '#15803d', icon: 'check-circle' },
-    error:   { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626', icon: 'alert-circle' },
-    info:    { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8', icon: 'info' },
+  const estado = {
+    filtro: 'en_curso',
+    busqueda: '',
+    plazo: 'cuotas',
+    fechaCreacion: null,
+    dpFecha: null,
+    formato: 'csv',
+    estadoReporte: '',
   };
-  const c = colores[tipo] || colores.info;
 
-  const toast = document.createElement('div');
-  toast.style.cssText = `
-    background:${c.bg};border:1px solid ${c.border};color:${c.text};
-    padding:.75rem 1rem;border-radius:.75rem;font-size:.85rem;font-weight:600;
-    display:flex;align-items:center;gap:.5rem;
-    box-shadow:0 4px 16px rgba(0,0,0,.08);
-    animation:fadeIn .2s ease;max-width:320px;
-  `;
-  toast.innerHTML = `<i data-lucide="${c.icon}" style="width:16px;height:16px;flex-shrink:0;"></i>${mensaje}`;
-  container.appendChild(toast);
-  lucide.createIcons();
-  setTimeout(() => toast.remove(), 4000);
-}
+  /* Igual que DELTA_FRECUENCIA en ahorros/services.py */
+  const PERIODO = {
+    DIARIA: { dias: 1 }, SEMANAL: { dias: 7 }, QUINCENAL: { dias: 15 },
+    MENSUAL: { meses: 1 }, TRIMESTRAL: { meses: 3 }, SEMESTRAL: { meses: 6 }, ANUAL: { meses: 12 },
+  };
 
+  /** Fecha de la cuota n (0 = primera), calculada desde la primera para no correr el dia. */
+  function fechaCuota(inicio, frecuencia, n) {
+    const p = PERIODO[frecuencia] || PERIODO.MENSUAL;
+    if (p.dias) return new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + p.dias * n);
+    const destino = new Date(inicio.getFullYear(), inicio.getMonth() + p.meses * n, 1);
+    const ultimoDia = new Date(destino.getFullYear(), destino.getMonth() + 1, 0).getDate();
+    destino.setDate(Math.min(inicio.getDate(), ultimoDia));
+    return destino;
+  }
 
-/* ══════════════════════════════════════════════════════════
-   4. MODAL APORTES (fetch de parcial HTML)
-   ══════════════════════════════════════════════════════════ */
+  async function enviarFormulario(url, datos) {
+    const fd = new FormData();
+    Object.entries(datos).forEach(([k, v]) => fd.append(k, v ?? ''));
+    fd.append('csrfmiddlewaretoken', csrf());
+    let respuesta;
+    try {
+      respuesta = await fetch(url, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+    } catch (e) {
+      throw new Error('No se pudo conectar con el servidor.');
+    }
+    let json = null;
+    try { json = await respuesta.json(); } catch (e) { json = null; }
+    if (!respuesta.ok || !json || json.ok === false) {
+      const error = new Error(json?.error || 'No se pudo completar la acción.');
+      error.errores = json?.errors;
+      throw error;
+    }
+    return json;
+  }
 
-const overlayAporte = document.getElementById('modal-overlay-aporte');
+  function recargarCon(mensaje) {
+    P.toast(mensaje);
+    setTimeout(() => window.location.reload(), 650);
+  }
 
-function abrirModalAporte(url) {
-  overlayAporte.style.display = 'flex';
-  overlayAporte.removeAttribute('hidden');
-  overlayAporte.innerHTML = `
-    <div style="background:#fff;border-radius:1.25rem;padding:2rem;color:#64748b;font-size:.85rem;
-                display:flex;align-items:center;gap:.75rem;">
-      <i data-lucide="loader" style="width:20px;height:20px;animation:spin .7s linear infinite;"></i>
-      Cargando...
-    </div>`;
-  lucide.createIcons();
-
-  fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-    .then(r => r.text())
-    .then(html => {
-      overlayAporte.innerHTML = html;
-      lucide.createIcons();
-      calcularTiemposRestantes(overlayAporte);
-      
-      bindMontoFormatter(overlayAporte.querySelector('#aporte-extra-monto'));
-
-      overlayAporte.querySelectorAll('.btn-cerrar-modal-aporte').forEach(btn => {
-        btn.addEventListener('click', cerrarModalAporte);
-      });
-      overlayAporte.querySelectorAll('.form-aporte-modal').forEach(form => {
-        form.addEventListener('submit', e => enviarAporte(e, url));
-      });
-    })
-    .catch(() => {
-      overlayAporte.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:2rem;color:#dc2626;">
-        Error al cargar el modal de aporte.</div>`;
+  /* ── Barras y filtros ────────────────────────────────────── */
+  function animarBarras(raiz) {
+    raiz.querySelectorAll('.progress-bar__fill, .plan-progreso__relleno').forEach(barra => {
+      requestAnimationFrame(() => { barra.style.width = `${Math.min(Number(barra.dataset.pct) || 0, 100)}%`; });
     });
-}
+  }
 
-function cerrarModalAporte() {
-  overlayAporte.setAttribute('hidden', '');
-  overlayAporte.style.display = 'none';
-  overlayAporte.innerHTML = '';
-}
+  function aplicarFiltros() {
+    const cards = [...app.querySelectorAll('#grid-metas .categoria-card')];
+    let visibles = 0;
+    cards.forEach(card => {
+      const pasaEstado = estado.filtro === 'todas' || card.dataset.grupo === estado.filtro;
+      const pasaTexto = !estado.busqueda || (card.dataset.buscar || '').includes(estado.busqueda);
+      card.hidden = !(pasaEstado && pasaTexto);
+      if (!card.hidden) visibles += 1;
+    });
+    if (!cards.length) return;
+    const vacio = $('metas-vacio');
+    vacio.hidden = visibles > 0;
+    if (!visibles) {
+      $('metas-vacio-titulo').textContent = 'Sin resultados';
+      $('metas-vacio-texto').textContent = estado.busqueda
+        ? 'Ninguna meta coincide con tu búsqueda.'
+        : estado.filtro === 'en_curso' ? 'No tienes metas en curso.' : 'No hay metas en este filtro.';
+      $('btn-nueva-meta-empty').hidden = !(estado.filtro === 'en_curso' && !estado.busqueda);
+    }
+  }
 
-function calcularTiemposRestantes(container) {
-  const hoy = new Date();
-  hoy.setHours(0,0,0,0);
+  /* ── Detalle de meta ─────────────────────────────────────── */
+  const overlayDetalle = $('modal-overlay-aporte');
 
-  container.querySelectorAll('.cuotas-table__tiempo').forEach(celda => {
-    const estado = celda.dataset.estado;
-    if (estado === 'APORTADO') {
-      celda.textContent = '—';
+  async function abrirDetalle(url) {
+    overlayDetalle.innerHTML = '<div class="plan-modal ahorro-cargando"><span>Cargando meta...</span></div>';
+    P.abrirModal('modal-overlay-aporte');
+    let html;
+    try {
+      const r = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+      if (!r.ok) throw new Error();
+      html = await r.text();
+    } catch (e) {
+      P.cerrarModal('modal-overlay-aporte');
+      P.toast('No pudimos abrir el detalle de la meta.', 'error');
       return;
     }
-
-    const fechaStr = celda.dataset.fechaLimite;
-    if (!fechaStr) return;
-
-    const partes = fechaStr.split('-');
-    const limite = new Date(partes[0], partes[1] - 1, partes[2]);
-    limite.setHours(0,0,0,0);
-
-    const diffTime = limite - hoy;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-      celda.textContent = 'Vencida';
-      celda.style.color = '#ef4444';
-    } else if (diffDays === 0) {
-      celda.textContent = 'Hoy';
-      celda.style.color = '#eab308';
-    } else if (diffDays === 1) {
-      celda.textContent = '1 día';
-    } else if (diffDays < 30) {
-      celda.textContent = `${diffDays} días`;
-    } else if (diffDays < 60) {
-      celda.textContent = '1 mes';
-    } else {
-      const meses = Math.floor(diffDays / 30);
-      celda.textContent = `${meses} meses`;
-    }
-  });
-}
-
-async function enviarAporte(e, url) {
-  e.preventDefault();
-  const form = e.currentTarget;
-  const data = new FormData(form);
-
-  const inputExtra = form.querySelector('#aporte-extra-monto');
-  if (inputExtra && inputExtra.dataset.raw && form.contains(inputExtra)) {
-    data.set('aporte', inputExtra.dataset.raw);
-  }
-
-  try {
-    const res  = await fetch(form.action, { method: 'POST', body: data });
-    const json = await res.json();
-
-    if (json.ok) {
-      cerrarModalAporte();
-      mostrarToast(json.message || 'Aporte registrado', 'success');
-      setTimeout(() => location.reload(), 700);
-    } else {
-      const errContainer = overlayAporte.querySelector('#modal-error-container');
-      const errMsg       = overlayAporte.querySelector('#modal-error-message');
-      if (errContainer && errMsg) {
-        errMsg.textContent = json.error || 'Error al registrar el aporte.';
-        errContainer.removeAttribute('hidden');
-        errContainer.style.display = 'flex';
-        errContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } else {
-        mostrarToast(json.error || 'Error al registrar el aporte.', 'error');
-      }
-    }
-  } catch {
-    mostrarToast('Error de conexion al registrar el aporte.', 'error');
-  }
-}
-
-overlayAporte.addEventListener('click', e => {
-  if (e.target === overlayAporte) cerrarModalAporte();
-});
-
-document.querySelectorAll('.btn-abrir-modal-aporte').forEach(btn => {
-  btn.addEventListener('click', () => abrirModalAporte(btn.dataset.url));
-});
-
-
-/* ══════════════════════════════════════════════════════════
-   5. PICKER DE CATEGORÍAS (modal compartido entre crear/editar)
-   ══════════════════════════════════════════════════════════ */
-
-const modalPicker          = document.getElementById('modal-picker-cat');
-const pickerGrid           = document.getElementById('picker-grid');
-const pickerBuscador       = document.getElementById('picker-buscador');
-const pickerSelLabel       = document.getElementById('picker-seleccionado-label');
-let   _pickerCallback      = null;
-
-if (window.CategoryPicker && modalPicker) {
-  CategoryPicker.init({
-    containerId: 'picker-grid',
-    tipo: 'AHORRO',
-    context: 'ahorros',
-    onSelect: function(cat) {
-      if (_pickerCallback) _pickerCallback(cat.id, cat.nombre);
-      if (pickerSelLabel) pickerSelLabel.textContent = `Seleccionado: ${cat.nombre}`;
-      cerrarPicker();
-    }
-  });
-}
-
-function abrirPicker(callback) {
-  _pickerCallback = callback;
-  if (pickerBuscador) pickerBuscador.value = '';
-  if (window.CategoryPicker) CategoryPicker.filter('');
-  modalPicker.removeAttribute('hidden');
-  if (pickerSelLabel) pickerSelLabel.textContent = '';
-}
-
-function cerrarPicker() {
-  modalPicker.setAttribute('hidden', '');
-}
-
-if (pickerBuscador) {
-  pickerBuscador.addEventListener('input', () => {
-    if (window.CategoryPicker) CategoryPicker.filter(pickerBuscador.value);
-  });
-}
-
-document.getElementById('btn-cerrar-picker')?.addEventListener('click', cerrarPicker);
-document.getElementById('btn-cancelar-picker')?.addEventListener('click', cerrarPicker);
-modalPicker?.addEventListener('click', e => {
-  if (e.target === modalPicker) cerrarPicker();
-});
-
-
-/* ══════════════════════════════════════════════════════════
-   6. PLAZO TOGGLE — selector mutuamente exclusivo cuotas / fecha
-   ══════════════════════════════════════════════════════════ */
-
-/**
- * Cambia el panel activo del toggle de plazo.
- * Al cambiar, limpia el campo del otro panel para que el backend
- * nunca reciba cuotas y fecha al mismo tiempo.
- *
- * @param {string} prefix  - 'crear' | 'editar'
- * @param {string} modo    - 'cuotas' | 'fecha'
- */
-function switchPlazo(prefix, modo) {
-  const panelCuotas = document.getElementById(`panel-${prefix}-cuotas`);
-  const panelFecha  = document.getElementById(`panel-${prefix}-fecha`);
-  const tabCuotas   = document.getElementById(`tab-${prefix}-cuotas`);
-  const tabFecha    = document.getElementById(`tab-${prefix}-fecha`);
-  const inputCuotas = document.getElementById(`${prefix}-cuotas`);
-  const inputFecha  = document.getElementById(`${prefix}-fecha-meta`);
-
-  // Leer el datepicker en el momento de ejecucion (las variables dpCrear/dpEditar
-  // son null al inicio del script y se asignan en DOMContentLoaded; leerlas aqui
-  // garantiza que siempre tengamos la instancia real, no el null inicial)
-  const dpActual = prefix === 'crear' ? dpCrear : dpEditar;
-
-  if (modo === 'cuotas') {
-    panelCuotas.removeAttribute('hidden');
-    panelFecha.setAttribute('hidden', '');
-    tabCuotas.classList.add('active');
-    tabCuotas.setAttribute('aria-selected', 'true');
-    tabFecha.classList.remove('active');
-    tabFecha.setAttribute('aria-selected', 'false');
-    // limpiar() resetea this.valor, el input hidden Y el texto visual del display
-    // setValor('') no sirve porque tiene un guard "if (!isoStr) return" al inicio
-    if (dpActual && typeof dpActual.limpiar === 'function') dpActual.limpiar();
-
-
-  } else {
-    panelFecha.removeAttribute('hidden');
-    panelCuotas.setAttribute('hidden', '');
-    tabFecha.classList.add('active');
-    tabFecha.setAttribute('aria-selected', 'true');
-    tabCuotas.classList.remove('active');
-    tabCuotas.setAttribute('aria-selected', 'false');
-    // Limpiar cuotas para que el backend no reciba ambos
-    if (inputCuotas) inputCuotas.value = '';
-    // Limpiar tambien el datepicker por si vuelve al panel de fecha tras haber
-    // estado en cuotas (el display mostraria una fecha vieja de una sesion anterior)
-    if (dpActual && typeof dpActual.limpiar === 'function') dpActual.limpiar();
-  }
-
-  lucide.createIcons();
-}
-
-/**
- * Inicializa el toggle al abrir un modal.
- * Detecta el modo correcto según los valores existentes (útil para editar).
- *
- * @param {string}      prefix           - 'crear' | 'editar'
- * @param {string|null} fechaExistente   - 'YYYY-MM-DD' o null
- * @param {number|null} cuotasExistentes - número o null
- */
-function initPlazoToggle(prefix, fechaExistente = null, cuotasExistentes = null) {
-  // Si hay fecha y NO hay cuotas → modo fecha; en cualquier otro caso → cuotas (default)
-  const modoInicial = (fechaExistente && !cuotasExistentes) ? 'fecha' : 'cuotas';
-  switchPlazo(prefix, modoInicial);
-
-  if (cuotasExistentes) {
-    const inp = document.getElementById(`${prefix}-cuotas`);
-    if (inp) inp.value = cuotasExistentes;
-  }
-  if (fechaExistente) {
-    const inp = document.getElementById(`${prefix}-fecha-meta`);
-    if (inp) inp.value = fechaExistente;
-    const dpVar = prefix === 'crear' ? dpCrear : dpEditar;
-    if (dpVar && typeof dpVar.setValor === 'function') dpVar.setValor(fechaExistente);
-  }
-}
-
-
-/* ══════════════════════════════════════════════════════════
-   7. MODAL CREAR META
-   ══════════════════════════════════════════════════════════ */
-
-const modalCrear     = document.getElementById('modal-crear-meta');
-const formCrear      = document.getElementById('form-crear-meta');
-const crearErrors    = document.getElementById('crear-errors');
-const crearErrorsTxt = document.getElementById('crear-errors-text');
-
-function abrirModalCrear() {
-  formCrear.reset();
-  document.getElementById('crear-categoria').value = '';
-  document.getElementById('crear-cat-label').textContent = 'Seleccionar categoría';
-  document.getElementById('crear-cat-btn').classList.remove('selected');
-
-  const fLabel = document.getElementById('crear-frecuencia-label');
-  if (fLabel) {
-    document.getElementById('crear-frecuencia').value = '';
-    fLabel.textContent = 'Seleccionar Frecuencia';
-    fLabel.style.color = 'var(--slate-500)';
-  }
-
-  ocultarErroresCrear();
-  modalCrear.removeAttribute('hidden');
-  lucide.createIcons();
-  // Inicializar toggle en modo cuotas por defecto
-  initPlazoToggle('crear', null, null);
-  modalCrear.querySelector('.modal__body').scrollTop = 0;
-}
-
-function cerrarModalCrear() {
-  modalCrear.setAttribute('hidden', '');
-}
-
-function mostrarErroresCrear(errors) {
-  const msgs = Object.values(errors).flat().join(' · ');
-  crearErrorsTxt.textContent = msgs;
-  crearErrors.style.display = 'flex';
-  lucide.createIcons();
-  crearErrors.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function ocultarErroresCrear() {
-  crearErrors.style.display = 'none';
-  crearErrorsTxt.textContent = '';
-}
-
-document.getElementById('crear-cat-btn').addEventListener('click', () => {
-  abrirPicker((id, nombre) => {
-    document.getElementById('crear-categoria').value = id;
-    const lbl = document.getElementById('crear-cat-label');
-    lbl.textContent = nombre;
-    document.getElementById('crear-cat-btn').classList.add('selected');
-  });
-});
-
-document.getElementById('btn-nueva-meta').addEventListener('click', abrirModalCrear);
-const btnNuevaMetaEmpty = document.getElementById('btn-nueva-meta-empty');
-if (btnNuevaMetaEmpty) btnNuevaMetaEmpty.addEventListener('click', abrirModalCrear);
-
-document.getElementById('btn-cerrar-crear').addEventListener('click', cerrarModalCrear);
-document.getElementById('btn-cancelar-crear').addEventListener('click', cerrarModalCrear);
-modalCrear.addEventListener('click', e => { if (e.target === modalCrear) cerrarModalCrear(); });
-
-document.getElementById('btn-guardar-crear').addEventListener('click', async () => {
-  const data = new FormData(formCrear);
-  const m = document.getElementById('crear-monto-meta');
-  if (m && m.dataset.raw) data.set('monto_meta', m.dataset.raw);
-
-  try {
-    const res  = await fetch(URL_CREAR_META, {
-      method: 'POST', body: data,
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    overlayDetalle.innerHTML = html;
+    P.iconos();
+    animarBarras(overlayDetalle);
+    overlayDetalle.querySelectorAll('[data-monto]').forEach(input => {
+      P.initMonto(input);
+      if (input.dataset.inicial) P.setMonto(input, input.dataset.inicial);
     });
-    const json = await res.json();
-    if (json.ok) {
-      cerrarModalCrear();
-      mostrarToast(json.message || 'Meta creada exitosamente', 'success');
-      setTimeout(() => location.reload(), 700);
-    } else {
-      mostrarErroresCrear(json.errors || {});
-    }
-  } catch {
-    mostrarToast('Error de conexión al crear la meta.', 'error');
+    overlayDetalle.querySelectorAll('[data-cerrar-detalle]').forEach(b => b.addEventListener('click', () => P.cerrarModal('modal-overlay-aporte')));
+    overlayDetalle.querySelectorAll('.form-aporte-modal').forEach(form => form.addEventListener('submit', enviarAporte));
   }
-});
 
+  function errorDetalle(mensaje) {
+    const caja = overlayDetalle.querySelector('#detalle-error');
+    if (!caja) { P.toast(mensaje, 'error'); return; }
+    caja.querySelector('#detalle-error-texto').textContent = mensaje;
+    caja.hidden = false;
+    caja.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 
-/* ══════════════════════════════════════════════════════════
-   8. MODAL EDITAR META
-   ══════════════════════════════════════════════════════════ */
+  async function enviarAporte(e) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const input = form.querySelector('[data-monto]');
+    const monto = P.leerMonto(input);
+    if (!monto) { errorDetalle('Escribe el monto del aporte.'); return; }
 
-const modalEditar     = document.getElementById('modal-editar-meta');
-const formEditar      = document.getElementById('form-editar-meta');
-const editarErrors    = document.getElementById('editar-errors');
-const editarErrorsTxt = document.getElementById('editar-errors-text');
-let   _editarUrl      = '';
-
-function cerrarModalEditar() {
-  modalEditar.setAttribute('hidden', '');
-}
-
-function mostrarErroresEditar(errors) {
-  const msgs = Object.values(errors).flat().join(' · ');
-  editarErrorsTxt.textContent = msgs;
-  editarErrors.style.display = 'flex';
-  lucide.createIcons();
-  editarErrors.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function ocultarErroresEditar() {
-  editarErrors.style.display = 'none';
-  editarErrorsTxt.textContent = '';
-}
-
-document.getElementById('editar-cat-btn').addEventListener('click', () => {
-  abrirPicker((id, nombre) => {
-    document.getElementById('editar-categoria').value = id;
-    const lbl = document.getElementById('editar-cat-label');
-    lbl.textContent = nombre;
-    document.getElementById('editar-cat-btn').classList.add('selected');
-  });
-});
-
-document.querySelectorAll('.btn-editar-meta').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const url = btn.dataset.url;
-    _editarUrl = url;
-    ocultarErroresEditar();
-
+    const datos = { aporte: monto };
+    form.querySelectorAll('input[type=hidden]').forEach(h => { if (h.name !== 'csrfmiddlewaretoken') datos[h.name] = h.value; });
+    const boton = form.querySelector('button[type=submit]');
+    boton.disabled = true;
     try {
-      const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const json = await res.json();
-      if (!json.ok) { mostrarToast('Error al cargar los datos.', 'error'); return; }
-
-      const a = json.ahorro;
-      document.getElementById('editar-ahorro-id').value = a.id;
-      const inputEditMonto = document.getElementById('editar-monto-meta');
-      inputEditMonto.value = formatearNumeroStr(a.monto_meta);
-      inputEditMonto.dataset.raw = a.monto_meta;
-      // Guardamos el acumulado para validar que no bajen el monto por debajo de él
-      inputEditMonto.dataset.minMonto = a.total_acumulado;
-
-      document.getElementById('editar-frecuencia').value = a.frecuencia;
-      const fLabelEdit = document.getElementById('editar-frecuencia-label');
-      if (fLabelEdit) {
-        const freqMap = { 'DIARIA':'Diaria', 'SEMANAL':'Semanal', 'QUINCENAL':'Quincenal', 'MENSUAL':'Mensual', 'TRIMESTRAL':'Trimestral', 'SEMESTRAL':'Semestral', 'ANUAL':'Anual' };
-        fLabelEdit.textContent = freqMap[a.frecuencia] || 'Seleccionar Frecuencia';
-        fLabelEdit.style.color = a.frecuencia ? 'var(--slate-900)' : 'var(--slate-500)';
-      }
-
-      document.getElementById('editar-descripcion').value = a.descripcion;
-      document.getElementById('editar-categoria').value = a.categoria_id;
-
-      const inputCuotas = document.getElementById('editar-cuotas');
-      if (inputCuotas) {
-        if (a.cuotas_minimas > 0) {
-          inputCuotas.min = a.cuotas_minimas;
-          inputCuotas.title = `Mínimo ${a.cuotas_minimas} (ya aportadas)`;
-        } else {
-          inputCuotas.min = 1;
-          inputCuotas.title = '';
-        }
-      }
-
-      const catLbl = document.getElementById('editar-cat-label');
-      catLbl.textContent = a.categoria_nombre || 'Seleccionar categoría';
-      const catBtn = document.getElementById('editar-cat-btn');
-      catBtn.classList.toggle('selected', !!a.categoria_id);
-
-      const subtitulo = document.getElementById('editar-subtitulo');
-      if (subtitulo) subtitulo.textContent = a.categoria_nombre || '';
-
-      modalEditar.removeAttribute('hidden');
-      lucide.createIcons();
-
-      // Siempre iniciar en modo cuotas con el valor existente.
-      // No se precarga fecha_meta para evitar que el backend reciba ambos campos
-      // al mismo tiempo y lance el error de validación del form.
-      initPlazoToggle('editar', null, a.cantidad_cuotas || null);
-      modalEditar.querySelector('.modal__body').scrollTop = 0;
-
-    } catch {
-      mostrarToast('Error de conexión al cargar la meta.', 'error');
+      const json = await enviarFormulario(form.action, datos);
+      P.cerrarModal('modal-overlay-aporte');
+      recargarCon(json.message || 'Aporte registrado');
+    } catch (err) {
+      errorDetalle(err.message);
+      boton.disabled = false;
     }
-  });
-});
-
-document.getElementById('btn-cerrar-editar').addEventListener('click', cerrarModalEditar);
-document.getElementById('btn-cancelar-editar').addEventListener('click', cerrarModalEditar);
-modalEditar.addEventListener('click', e => { if (e.target === modalEditar) cerrarModalEditar(); });
-
-document.getElementById('btn-guardar-editar').addEventListener('click', async () => {
-  const data = new FormData(formEditar);
-  const m = document.getElementById('editar-monto-meta');
-  if (m && m.dataset.raw) data.set('monto_meta', m.dataset.raw);
-
-  // Validación client-side: el nuevo monto no puede ser menor al acumulado
-  const nuevoMonto    = parseFloat(m?.dataset.raw) || 0;
-  const minMonto      = parseFloat(m?.dataset.minMonto) || 0;
-  if (minMonto > 0 && nuevoMonto < minMonto) {
-    const minFmt = minMonto.toLocaleString('es-CO', { minimumFractionDigits: 0 });
-    mostrarErroresEditar({
-      monto_meta: [`El monto meta no puede ser menor al total ya acumulado ($${minFmt}). Si deseas reducirlo, primero retira los aportes correspondientes.`]
-    });
-    return;
   }
 
-  try {
-    const res  = await fetch(_editarUrl, {
-      method: 'POST', body: data,
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    const json = await res.json();
-    if (json.ok) {
-      cerrarModalEditar();
-      mostrarToast(json.message || 'Meta actualizada', 'success');
-      setTimeout(() => location.reload(), 700);
-    } else {
-      mostrarErroresEditar(json.errors || {});
-    }
-  } catch {
-    mostrarToast('Error de conexión al actualizar.', 'error');
+  /* ── Formulario crear / editar ───────────────────────────── */
+  function setCategoria(id, nombre) {
+    $('meta-categoria').value = id || '';
+    $('meta-categoria-texto').textContent = nombre || 'Selecciona una categoría de ahorro';
+    $('meta-categoria-btn').classList.toggle('has-value', !!id);
   }
-});
 
+  function setFrecuencia(valor) {
+    $('meta-frecuencia').value = valor || '';
+    app.querySelectorAll('#meta-frecuencias .plan-opcion').forEach(b => b.classList.toggle('is-activo', b.dataset.frecuencia === valor));
+    actualizarCalendario();
+  }
 
-/* ══════════════════════════════════════════════════════════
-   9. MODAL ELIMINAR META
-   ══════════════════════════════════════════════════════════ */
+  function setPlazo(modo) {
+    estado.plazo = modo;
+    app.querySelectorAll('#meta-plazo [data-plazo]').forEach(b => {
+      const activo = b.dataset.plazo === modo;
+      b.classList.toggle('is-activo', activo);
+      b.setAttribute('aria-selected', String(activo));
+    });
+    $('meta-plazo-cuotas').hidden = modo !== 'cuotas';
+    $('meta-plazo-fecha').hidden = modo !== 'fecha';
+    actualizarCalendario();
+  }
 
-const modalEliminar = document.getElementById('modal-eliminar-meta');
-let   _eliminarUrl  = '';
+  /** Vista previa del plan: valor de cada cuota y fecha de la ultima. */
+  function actualizarCalendario() {
+    const hint = $('meta-calendario');
+    const frecuencia = $('meta-frecuencia').value;
+    const monto = P.leerMonto($('meta-monto'));
+    const base = estado.fechaCreacion ? P.parseISO(estado.fechaCreacion) : P.parseISO(P.hoyISO());
+    const inicio = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1);
+    let cuotas = 0;
+    if (frecuencia && estado.plazo === 'cuotas') {
+      cuotas = parseInt($('meta-cuotas').value, 10) || 0;
+    } else if (frecuencia && estado.plazo === 'fecha' && $('meta-fecha').value) {
+      const limite = P.parseISO($('meta-fecha').value);
+      cuotas = 1;
+      while (fechaCuota(inicio, frecuencia, cuotas) <= limite && cuotas < 3650) cuotas += 1;
+    }
+    if (!frecuencia || cuotas < 1) { hint.textContent = ''; return; }
+    const ultima = fechaCuota(inicio, frecuencia, cuotas - 1);
+    const valor = monto ? `de ${P.formatMonto(monto / cuotas)} ` : '';
+    hint.textContent = `${P.plural(cuotas, 'cuota', 'cuotas')} ${valor}· la primera el ${P.formatFecha(P.aISO(inicio))}, la última el ${P.formatFecha(P.aISO(ultima))}`;
+  }
 
-function cerrarModalEliminar() {
-  modalEliminar.setAttribute('hidden', '');
-}
+  function mostrarErroresMeta(mensaje) {
+    $('meta-errores-texto').textContent = mensaje;
+    $('meta-errores').hidden = !mensaje;
+  }
 
-document.querySelectorAll('.btn-eliminar-meta').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const url = btn.dataset.url;
-    _eliminarUrl = url;
+  function abrirFormulario(datos) {
+    const editando = !!datos;
+    mostrarErroresMeta('');
+    $('meta-url').value = editando ? datos.url : app.dataset.urlCrear;
+    $('modal-meta-titulo').textContent = editando ? 'Editar meta de ahorro' : 'Nueva meta de ahorro';
+    $('modal-meta-subtitulo').textContent = editando ? (datos.categoria_nombre || '') : 'Cuánto quieres ahorrar y en cuánto tiempo';
+    $('meta-guardar-texto').textContent = editando ? 'Guardar cambios' : 'Crear meta';
+    estado.fechaCreacion = editando ? datos.fecha_creacion : null;
 
+    setCategoria(editando ? datos.categoria_id : '', editando ? datos.categoria_nombre : '');
+    P.setMonto($('meta-monto'), editando ? datos.monto_meta : '');
+    const minimo = editando ? Number(datos.total_acumulado) : 0;
+    $('meta-monto').dataset.minimo = minimo || '';
+    $('meta-monto-hint').textContent = minimo ? `Ya ahorraste ${P.formatMonto(minimo)}; la meta no puede ser menor.` : '';
+    $('meta-descripcion').value = editando ? datos.descripcion : '';
+    $('meta-descripcion-contador').textContent = `${$('meta-descripcion').value.length}/150`;
+    $('meta-cuotas').value = editando ? datos.cantidad_cuotas : '';
+    $('meta-cuotas').min = editando && datos.cuotas_minimas ? datos.cuotas_minimas : 1;
+    estado.dpFecha?.limpiar();
+    setFrecuencia(editando ? datos.frecuencia : 'MENSUAL');
+    setPlazo('cuotas');
+    P.abrirModal('modal-meta');
+  }
+
+  async function abrirEdicion(url) {
     try {
-      const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const json = await res.json();
-      const nombreEl = document.getElementById('eliminar-nombre-meta');
-      if (nombreEl) nombreEl.textContent = json.nombre || 'esta meta';
-      modalEliminar.removeAttribute('hidden');
-      lucide.createIcons();
-    } catch {
-      mostrarToast('Error al cargar los datos de la meta.', 'error');
-    }
-  });
-});
-
-document.getElementById('btn-cerrar-eliminar').addEventListener('click', cerrarModalEliminar);
-document.getElementById('btn-cancelar-eliminar').addEventListener('click', cerrarModalEliminar);
-modalEliminar.addEventListener('click', e => { if (e.target === modalEliminar) cerrarModalEliminar(); });
-
-document.getElementById('btn-confirmar-eliminar').addEventListener('click', async () => {
-  const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
-  const csrf      = csrfInput ? csrfInput.value : CSRF_TOKEN;
-  const data      = new FormData();
-  data.append('csrfmiddlewaretoken', csrf);
-
-  try {
-    const res  = await fetch(_eliminarUrl, {
-      method: 'POST', body: data,
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    const json = await res.json();
-    if (json.ok) {
-      cerrarModalEliminar();
-      mostrarToast(json.message || 'Meta eliminada', 'success');
-      setTimeout(() => location.reload(), 700);
-    } else {
-      mostrarToast('Error al eliminar la meta.', 'error');
-    }
-  } catch {
-    mostrarToast('Error de conexión.', 'error');
-  }
-});
-
-
-/* ══════════════════════════════════════════════════════════
-   10. MODAL DE REPORTE / EXPORTACIÓN
-   ══════════════════════════════════════════════════════════ */
-
-const modalReporte  = document.getElementById('modal-reporte');
-let   formatoActivo = 'csv';
-
-const LABEL_FORMATO = { csv: 'CSV', excel: 'Excel (.xlsx)', pdf: 'PDF' };
-const URL_EXPORTAR  = {
-  csv:   URL_EXPORTAR_CSV,
-  excel: URL_EXPORTAR_EXCEL,
-  pdf:   URL_EXPORTAR_PDF,
-};
-
-function abrirReporte(formato) {
-  formatoActivo = formato;
-  document.getElementById('modal-reporte-formato-label').textContent =
-    'Formato: ' + LABEL_FORMATO[formato];
-  document.getElementById('reporte-label-formato').textContent =
-    LABEL_FORMATO[formato];
-  modalReporte.removeAttribute('hidden');
-  lucide.createIcons();
-}
-
-function cerrarReporte() {
-  modalReporte.setAttribute('hidden', '');
-}
-
-document.getElementById('btn-export-pdf').addEventListener('click',   () => abrirReporte('pdf'));
-document.getElementById('btn-export-excel').addEventListener('click', () => abrirReporte('excel'));
-document.getElementById('btn-export-csv').addEventListener('click',   () => abrirReporte('csv'));
-
-document.getElementById('btn-cerrar-reporte').addEventListener('click',   cerrarReporte);
-document.getElementById('btn-cancelar-reporte').addEventListener('click', cerrarReporte);
-modalReporte.addEventListener('click', e => { if (e.target === modalReporte) cerrarReporte(); });
-
-document.getElementById('btn-descargar-reporte').addEventListener('click', () => {
-  const estado = document.getElementById('reporte-estado-filtro').value;
-  const params = new URLSearchParams();
-  if (estado) params.set('estado', estado);
-  window.location.href =
-    URL_EXPORTAR[formatoActivo] + (params.toString() ? '?' + params.toString() : '');
-  cerrarReporte();
-});
-
-
-/* ══════════════════════════════════════════════════════════
-   11. ESCAPE cierra modales
-   ══════════════════════════════════════════════════════════ */
-
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
-  if (!modalReporte.hasAttribute('hidden'))    { cerrarReporte();        return; }
-  if (!modalEliminar.hasAttribute('hidden'))   { cerrarModalEliminar();  return; }
-  if (!modalPicker.hasAttribute('hidden'))     { cerrarPicker();         return; }
-  if (!modalEditar.hasAttribute('hidden'))     { cerrarModalEditar();    return; }
-  if (!modalCrear.hasAttribute('hidden'))      { cerrarModalCrear();     return; }
-  if (!overlayAporte.hasAttribute('hidden'))   { cerrarModalAporte();    return; }
-});
-
-
-/* ══════════════════════════════════════════════════════════
-   12. DATEPICKER, FRECUENCIA Y FILTRO DE ESTADO
-   ══════════════════════════════════════════════════════════ */
-
-/* ══════════════════════════════════════════════════════════
-   13. FORMATEO DE MONTOS
-   ══════════════════════════════════════════════════════════ */
-function bindMontoFormatter(el) {
-  if (!el) return;
-  el.addEventListener('input', function () {
-    const oldLen = this.value.length;
-    const start = this.selectionStart;
-    let digitCount = 0;
-    for (let i = 0; i < start; i++) {
-      if (/\d/.test(this.value[i])) digitCount++;
-    }
-    const digitos = this.value.replace(/\D/g, '');
-    if (!digitos) { this.dataset.raw = ''; this.value = ''; return; }
-    const formatted = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    this.dataset.raw = digitos;
-    this.value = formatted;
-    let newPos = formatted.length;
-    if (start < oldLen) {
-      let dc = 0;
-      for (let i = 0; i < formatted.length; i++) {
-        if (dc >= digitCount) { newPos = i; break; }
-        if (/\d/.test(formatted[i])) dc++;
-        newPos = i + 1;
-      }
-    }
-    this.setSelectionRange(newPos, newPos);
-  });
-}
-
-function formatearNumeroStr(raw) {
-  if (!raw) return '';
-  const entero = String(raw).split('.')[0].replace(/\D/g, '');
-  if (!entero) return '';
-  return entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-let dpCrear  = null;
-let dpEditar = null;
-
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof MiniDatepicker !== 'undefined') {
-    const inputCrear = document.getElementById('crear-fecha-meta');
-    if (inputCrear) {
-      dpCrear = new MiniDatepicker(inputCrear, { acento: 'ahorro' });
-      inputCrear.parentNode.appendChild(dpCrear.wrapper);
-    }
-    const inputEditar = document.getElementById('editar-fecha-meta');
-    if (inputEditar) {
-      dpEditar = new MiniDatepicker(inputEditar, { acento: 'ahorro' });
-      inputEditar.parentNode.appendChild(dpEditar.wrapper);
+      const r = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+      const json = await r.json();
+      if (!json.ok) throw new Error();
+      abrirFormulario({ ...json.ahorro, url });
+    } catch (e) {
+      P.toast('No pudimos cargar la meta.', 'error');
     }
   }
 
-  // Inicializar el toggle de crear en modo cuotas por defecto
-  initPlazoToggle('crear', null, null);
+  async function guardarMeta(e) {
+    e.preventDefault();
+    const datos = {
+      categoria: $('meta-categoria').value,
+      monto_meta: P.leerMonto($('meta-monto')),
+      frecuencia: $('meta-frecuencia').value,
+      cantidad_cuotas: estado.plazo === 'cuotas' ? $('meta-cuotas').value : '',
+      fecha_meta: estado.plazo === 'fecha' ? $('meta-fecha').value : '',
+      descripcion: $('meta-descripcion').value.trim(),
+    };
+    const minimo = Number($('meta-monto').dataset.minimo) || 0;
+    if (!datos.categoria) return mostrarErroresMeta('Selecciona una categoría.');
+    if (!datos.monto_meta) return mostrarErroresMeta('El monto meta debe ser mayor a 0.');
+    if (minimo && datos.monto_meta < minimo) return mostrarErroresMeta(`La meta no puede ser menor a lo que ya ahorraste (${P.formatMonto(minimo)}).`);
+    if (!datos.frecuencia) return mostrarErroresMeta('Selecciona la frecuencia de ahorro.');
+    if (estado.plazo === 'cuotas' && !(parseInt(datos.cantidad_cuotas, 10) >= 1)) return mostrarErroresMeta('Indica en cuántas cuotas quieres ahorrar.');
+    if (estado.plazo === 'fecha' && !datos.fecha_meta) return mostrarErroresMeta('Elige la fecha meta.');
 
-  bindMontoFormatter(document.getElementById('crear-monto-meta'));
-  bindMontoFormatter(document.getElementById('editar-monto-meta'));
-
-  // Filtro de estado
-  const btnFiltroEstado  = document.getElementById('btn-filtro-estado');
-  const menuFiltroEstado = document.getElementById('menu-filtro-estado');
-  if (btnFiltroEstado && menuFiltroEstado) {
-    btnFiltroEstado.addEventListener('click', (e) => {
-      e.stopPropagation();
-      menuFiltroEstado.toggleAttribute('hidden');
-    });
-    document.addEventListener('click', (e) => {
-      if (!menuFiltroEstado.contains(e.target) && e.target !== btnFiltroEstado) {
-        menuFiltroEstado.setAttribute('hidden', '');
-      }
-    });
-
-    const params       = new URLSearchParams(window.location.search);
-    const estadoActual = params.get('estado');
-    if (estadoActual) {
-      const estadoLabels = { 'SIN_INICIAR': 'Sin Iniciar', 'ACTIVO': 'Activo', 'COMPLETADO': 'Completado', 'ABANDONADO': 'Abandonado' };
-      if (estadoLabels[estadoActual]) {
-        btnFiltroEstado.innerHTML = `<i data-lucide="filter"></i> Estado: ${estadoLabels[estadoActual]} <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>`;
-        lucide.createIcons();
-      }
+    const boton = $('meta-guardar');
+    boton.disabled = true;
+    try {
+      const json = await enviarFormulario($('meta-url').value, datos);
+      P.cerrarModal('modal-meta');
+      recargarCon(json.message || 'Meta guardada');
+    } catch (err) {
+      const mensajes = err.errores ? Object.values(err.errores).flat().join(' ') : err.message;
+      mostrarErroresMeta(mensajes);
+      boton.disabled = false;
     }
   }
 
-  // Picker de frecuencia
-  document.querySelectorAll('.picker-frecuencia-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const target = btn.id === 'crear-frecuencia-btn' ? 'crear' : 'editar';
-      const menu = document.getElementById(`${target}-frecuencia-menu`);
-      if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  function abrirCategorias() {
+    $('buscador-categorias').value = '';
+    window.CategoryPicker?.init({
+      containerId: 'picker-grid',
+      context: 'ahorros',
+      tipo: 'AHORRO',
+      onSelect: cat => {
+        setCategoria(cat.id, cat.nombre);
+        P.cerrarModal('modal-categorias');
+      },
     });
-  });
+    P.abrirModal('modal-categorias');
+    setTimeout(() => $('buscador-categorias').focus(), 50);
+  }
 
-  document.querySelectorAll('.frecuencia-option').forEach(opt => {
-    opt.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const target = opt.dataset.target;
-      const val    = opt.dataset.value;
-      const text   = opt.textContent;
+  /* ── Eliminar ────────────────────────────────────────────── */
+  async function eliminar(btn) {
+    const acumulado = Number(btn.dataset.acumulado) || 0;
+    const extra = acumulado ? ` Lo que ya ahorraste (${P.formatMonto(acumulado)}) vuelve a tu disponible.` : '';
+    const ok = await P.confirmarEliminar('Eliminar meta', `Se eliminará "${btn.dataset.nombre}" con todo su historial de cuotas.${extra}`);
+    if (!ok) return;
+    try {
+      const json = await enviarFormulario(btn.dataset.url, {});
+      recargarCon(json.message || 'Meta eliminada');
+    } catch (e) {
+      P.toast(e.message, 'error');
+    }
+  }
 
-      document.getElementById(`${target}-frecuencia`).value = val;
-      const label = document.getElementById(`${target}-frecuencia-label`);
-      if (label) {
-        label.textContent = text;
-        label.style.color = 'var(--slate-900)';
+  /* ── Exportar ────────────────────────────────────────────── */
+  const FORMATOS = { csv: 'CSV', excel: 'Excel (.xlsx)', pdf: 'PDF' };
+
+  function abrirReporte(formato) {
+    estado.formato = formato;
+    $('modal-reporte-formato').textContent = `Formato ${FORMATOS[formato]}`;
+    P.abrirModal('modal-reporte');
+  }
+
+  function descargarReporte() {
+    const urls = { csv: app.dataset.urlExportarCsv, excel: app.dataset.urlExportarExcel, pdf: app.dataset.urlExportarPdf };
+    const params = estado.estadoReporte ? `?estado=${encodeURIComponent(estado.estadoReporte)}` : '';
+    window.location.href = urls[estado.formato] + params;
+    P.cerrarModal('modal-reporte');
+  }
+
+  /* ── Eventos ─────────────────────────────────────────────── */
+  function bindear() {
+    P.initModales();
+    P.initMonto($('meta-monto'), actualizarCalendario);
+    estado.dpFecha = P.crearDatepicker($('meta-fecha'), actualizarCalendario, { acento: 'ahorro' });
+
+    $('buscador-metas').addEventListener('input', e => {
+      estado.busqueda = e.target.value.trim().toLowerCase();
+      aplicarFiltros();
+    });
+    $('filtro-estado').addEventListener('click', e => {
+      const btn = e.target.closest('[data-filtro]');
+      if (!btn) return;
+      estado.filtro = btn.dataset.filtro;
+      app.querySelectorAll('#filtro-estado .plan-filtro__opcion').forEach(b => b.classList.toggle('is-activo', b === btn));
+      aplicarFiltros();
+    });
+
+    $('btn-nueva-meta').addEventListener('click', () => abrirFormulario(null));
+    $('form-meta').addEventListener('submit', guardarMeta);
+    $('meta-categoria-btn').addEventListener('click', abrirCategorias);
+    $('buscador-categorias').addEventListener('input', e => window.CategoryPicker?.filter(e.target.value));
+    $('meta-cuotas').addEventListener('input', actualizarCalendario);
+    $('meta-descripcion').addEventListener('input', e => { $('meta-descripcion-contador').textContent = `${e.target.value.length}/150`; });
+    $('meta-frecuencias').addEventListener('click', e => {
+      const btn = e.target.closest('[data-frecuencia]');
+      if (btn) setFrecuencia(btn.dataset.frecuencia);
+    });
+    $('meta-plazo').addEventListener('click', e => {
+      const btn = e.target.closest('[data-plazo]');
+      if (btn) setPlazo(btn.dataset.plazo);
+    });
+
+    app.querySelectorAll('[data-exportar]').forEach(b => b.addEventListener('click', () => abrirReporte(b.dataset.exportar)));
+    $('reporte-estados').addEventListener('click', e => {
+      const btn = e.target.closest('[data-estado]');
+      if (!btn) return;
+      estado.estadoReporte = btn.dataset.estado;
+      app.querySelectorAll('#reporte-estados .plan-opcion').forEach(b => b.classList.toggle('is-activo', b === btn));
+    });
+    $('btn-descargar-reporte').addEventListener('click', descargarReporte);
+
+    app.addEventListener('click', e => {
+      const btn = e.target.closest('[data-accion]');
+      if (!btn || !app.contains(btn)) return;
+      switch (btn.dataset.accion) {
+        case 'detalle': abrirDetalle(btn.dataset.url); break;
+        case 'editar': abrirEdicion(btn.dataset.url); break;
+        case 'eliminar': eliminar(btn); break;
+        case 'nueva': abrirFormulario(null); break;
       }
-      const menu = document.getElementById(`${target}-frecuencia-menu`);
-      if (menu) menu.style.display = 'none';
     });
-  });
+    P.activarCardsTeclado(app);
+  }
 
-  document.addEventListener('click', (e) => {
-    document.querySelectorAll('.frecuencia-menu').forEach(menu => {
-      const target = menu.id.replace('-frecuencia-menu', '');
-      const btn    = document.getElementById(`${target}-frecuencia-btn`);
-      if (btn && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
-        menu.style.display = 'none';
-      }
-    });
+  document.addEventListener('DOMContentLoaded', () => {
+    window.CURRENT_MODULE = 'ahorros';
+    if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
+    bindear();
+    aplicarFiltros();
+    animarBarras(app);
   });
-});
+})();

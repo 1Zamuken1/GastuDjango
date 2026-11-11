@@ -16,6 +16,9 @@ class MensajeChat(models.Model):
     )
     rol = models.CharField(max_length=10, choices=ROL_CHOICES)
     contenido = models.TextField()
+    bloques = models.JSONField(null=True, blank=True)
+    animo = models.CharField(max_length=20, null=True, blank=True)
+    procedencia = models.CharField(max_length=100, null=True, blank=True)
     creado_en = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
@@ -76,3 +79,49 @@ class AlertaDiaria(models.Model):
 
         # ── Ventana deslizante de 6h ──
         return (ahora - ultima.generado_en).total_seconds() >= 6 * 3600
+
+class AccionPendiente(models.Model):
+    """
+    Cambio que el agente preparo y que solo se aplica si el usuario lo confirma.
+
+    El modelo de lenguaje nunca escribe datos: sus herramientas de escritura crean
+    una AccionPendiente y el chat muestra una tarjeta con Confirmar / Cancelar.
+    El token es de un solo uso, pertenece a un usuario y vence a los 10 minutos.
+    """
+
+    class Tipo(models.TextChoices):
+        CREAR_MOVIMIENTO = "CREAR_MOVIMIENTO", "Crear movimiento"
+        EDITAR_MOVIMIENTO = "EDITAR_MOVIMIENTO", "Editar movimiento"
+        ELIMINAR_MOVIMIENTO = "ELIMINAR_MOVIMIENTO", "Eliminar movimiento"
+        ELIMINAR_PRESUPUESTO = "ELIMINAR_PRESUPUESTO", "Eliminar presupuesto"
+
+    class Estado(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        CONFIRMADA = "CONFIRMADA", "Confirmada"
+        CANCELADA = "CANCELADA", "Cancelada"
+        FALLIDA = "FALLIDA", "Fallida"
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="acciones_agente",
+    )
+    token = models.CharField(max_length=64, unique=True)
+    tipo = models.CharField(max_length=30, choices=Tipo.choices)
+    datos = models.JSONField(default=dict)
+    resumen = models.CharField(max_length=255)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    expira_en = models.DateTimeField()
+    resuelto_en = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Acción pendiente del agente"
+        verbose_name_plural = "Acciones pendientes del agente"
+        indexes = [models.Index(fields=["usuario", "estado"])]
+
+    def __str__(self):
+        return f"{self.usuario_id} - {self.tipo} - {self.estado}"
+
+    @property
+    def vencida(self) -> bool:
+        return timezone.now() >= self.expira_en

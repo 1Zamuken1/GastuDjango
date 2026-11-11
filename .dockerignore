@@ -1,0 +1,32 @@
+# Lo que no debe entrar en la imagen de Docker.
+# Los secretos llegan por env_file (docker-compose.yml), no copiados en la imagen.
+.env
+.env.*
+!.env.example
+*.local.md
+
+# Entorno y datos locales
+venv/
+.venv/
+db.sqlite3
+media/
+staticfiles/
+backup_*.sql
+
+# Control de versiones y herramientas
+.git/
+.github/
+.claude/
+.agents/
+.vscode/
+.idea/
+
+# Caches
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+theme/static_src/node_modules/
+
+# Correos reales de prueba (datos personales)
+captura_bancaria/tests/correos_reales/

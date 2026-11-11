@@ -867,3 +867,37 @@
   font-size: 0.875rem !important;
   font-family: 'DM Sans', sans-serif !important;
 }
+/* ── Desglose de movimientos como libreta (lenguaje del agente) ──
+   Filas separadas por una linea fina, fecha corta, monto con signo en un color
+   que pasa AA y el banco como etiqueta pequena en lugar de "(Bancolombia)". */
+.mov-row {
+  border-radius: 0;
+  border-bottom: 1px solid var(--gastu-linea, #d5dee9);
+}
+.mov-row:last-of-type { border-bottom: none; }
+.mov-row:hover { background: var(--slate-50, #f8fafc); }
+.mov-row__concepto { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.mov-row__texto { min-width: 0; }
+.mov-desc { color: var(--gastu-ink, #0f172a); }
+.mov-type, .mov-cat, .mov-date { color: var(--gastu-ink-muted, #475569); }
+.mov-type { font-size: 11px; }
+.mov-type__fecha { display: none; }
+.mov-banco {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--slate-100, #f1f5f9);
+  color: var(--gastu-ink-muted, #475569);
+  font-size: 10.5px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+.mov-amount { font-variant-numeric: tabular-nums; }
+.mov-amount--income  { color: var(--gastu-accion, #047857); }
+.mov-amount--expense { color: var(--gastu-peligro, #be123c); }
+.mov-amount--saving  { color: #b45309; }
+@media (max-width: 767px) {
+  /* En movil la columna de fecha se oculta: la fecha corta va junto al tipo */
+  .mov-type__fecha { display: inline; }
+}

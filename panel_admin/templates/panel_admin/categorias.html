@@ -89,7 +89,7 @@
       <tbody class="divide-y divide-slate-100">
         {% for cat in categorias %}
         <tr class="hover:bg-slate-50/60 transition-colors" data-nombre="{{ cat.nombre|lower }}" data-tipo="{{ cat.tipo }}" data-activo="{% if cat.activo %}activo{% else %}inactivo{% endif %}">
-          <td class="px-4 py-3 font-600 text-slate-700 cell-truncate">{{ cat.nombre }}</td>
+          <td class="px-4 py-3 font-600 text-slate-700 cell-truncate"><span class="categoria-icono-tabla"><i data-lucide="{{ cat.icono }}"></i></span>{{ cat.nombre }}</td>
           <td class="px-4 py-3">
             {% if cat.tipo == 'INGRESO' %}
             <span class="badge badge--green">Ingreso</span>
@@ -166,7 +166,7 @@
 
 <!-- ── Modal crear categoría ─────────────────────────────────── -->
 <div class="modal-overlay" id="modal-crear-categoria">
-  <div class="modal-box" style="max-width:440px;">
+  <div class="modal-box" style="max-width:520px;">
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
       <div class="flex items-center gap-2">
         <span class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
@@ -197,6 +197,7 @@
             <option value="AHORRO">Ahorro</option>
           </select>
         </div>
+        {% include "panel_admin/_selector_icono.html" with prefijo="crear" %}
         <div>
           <label class="block text-xs font-600 text-slate-600 mb-1">Descripción <span class="text-slate-400 font-400">(opcional)</span></label>
           <input class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
@@ -219,7 +220,7 @@
 
 <!-- ── Modal editar categoría ─────────────────────────────────── -->
 <div class="modal-overlay" id="modal-editar-categoria">
-  <div class="modal-box" style="max-width:440px;">
+  <div class="modal-box" style="max-width:520px;">
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
       <div class="flex items-center gap-2">
         <span class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -250,6 +251,7 @@
             <option value="AHORRO">Ahorro</option>
           </select>
         </div>
+        {% include "panel_admin/_selector_icono.html" with prefijo="editar" %}
         <div>
           <label class="block text-xs font-600 text-slate-600 mb-1">Descripción <span class="text-slate-400 font-400">(opcional)</span></label>
           <input class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"

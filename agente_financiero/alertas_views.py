@@ -15,8 +15,11 @@ from .models import AlertaDiaria
 logger = logging.getLogger(__name__)
 
 
-@method_decorator(login_required, name="dispatch")
 class AlertasView(View):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({"ok": False, "error": "No autenticado."}, status=401)
+        return super().dispatch(request, *args, **kwargs)
     """API de alertas financieras diarias (GET para obtener, POST para marcar como vistas)."""
 
     def get(self, request, *args, **kwargs):

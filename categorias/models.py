@@ -1,5 +1,7 @@
 from django.db import models
 
+from .iconos import ICONOS_CATEGORIA, ICONO_POR_DEFECTO
+
 
 class Categoria(models.Model):
     """
@@ -17,6 +19,8 @@ class Categoria(models.Model):
     descripcion    = models.CharField(max_length=255, blank=True, null=True)
     activo         = models.BooleanField(default=True)
     es_sistema     = models.BooleanField(default=False, help_text='Ocultar al usuario en listados de creación')
+    icono          = models.CharField(max_length=40, choices=ICONOS_CATEGORIA, default=ICONO_POR_DEFECTO,
+                                      help_text='Icono de Lucide que identifica la categoría en cards y selectores')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

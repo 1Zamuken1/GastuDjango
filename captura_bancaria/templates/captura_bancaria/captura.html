@@ -1,0 +1,525 @@
+{% extends 'base_app.html' %}
+{% load static %}
+
+{% block title %}Captura automática — GastuApp{% endblock %}
+{% block page_title %}Captura automática{% endblock %}
+{% block page_subtitle %}Tus movimientos bancarios, sin escribirlos a mano{% endblock %}
+{% block nav_captura %}active{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'captura_bancaria/css/captura.css' %}">
+{% endblock %}
+
+{% block content %}
+<div id="captura-app" class="captura"
+     data-url-resumen="{% url 'captura_bancaria:api_resumen' %}"
+     data-url-prueba="{% url 'captura_bancaria:api_prueba' %}"
+     data-url-buzon="{% url 'captura_bancaria:api_buzon' %}"
+     data-url-regenerar="{% url 'captura_bancaria:api_buzon_regenerar' %}"
+     data-url-detectados="{% url 'captura_bancaria:api_detectados' %}"
+     data-url-lote="{% url 'captura_bancaria:api_confirmar_lote' %}"
+     data-url-reglas="{% url 'captura_bancaria:api_reglas' %}"
+     data-url-base-detectado="/captura/api/detectados/"
+     data-url-base-regla="/captura/api/reglas/"
+     data-url-regla-crear="{% url 'captura_bancaria:api_regla_crear' %}">
+
+  <!-- Hero -->
+  <div class="cap-hero cap-oculto" id="cap-hero">
+    <div class="cap-hero__total gastu-hero-card gastu-hero-card--captura">
+      <div class="gastu-hero-card__icono"><i data-lucide="inbox"></i></div>
+      <p class="cap-hero__label">Por revisar</p>
+      <p class="cap-hero__valor font-display" id="hero-pendientes">0</p>
+      <span class="cap-hero__badge" id="hero-estado">Cargando...</span>
+    </div>
+    <div class="app-card cap-hero__stats">
+      <div class="cap-stat">
+        <span class="cap-stat__label"><i data-lucide="trending-down"></i> Egresos</span>
+        <span class="cap-stat__valor cap-stat__valor--egreso font-display" id="hero-egresos">$0</span>
+        <span class="cap-stat__sub">por confirmar</span>
+      </div>
+      <div class="cap-stat">
+        <span class="cap-stat__label"><i data-lucide="trending-up"></i> Ingresos</span>
+        <span class="cap-stat__valor cap-stat__valor--ingreso font-display" id="hero-ingresos">$0</span>
+        <span class="cap-stat__sub">por confirmar</span>
+      </div>
+      <div class="cap-stat">
+        <span class="cap-stat__label"><i data-lucide="check-circle-2"></i> Registrados</span>
+        <span class="cap-stat__valor font-display" id="hero-confirmados">0</span>
+        <span class="cap-stat__sub">este mes</span>
+      </div>
+      <div class="cap-stat">
+        <span class="cap-stat__label"><i data-lucide="sparkles"></i> Reglas</span>
+        <span class="cap-stat__valor font-display" id="hero-reglas">0</span>
+        <span class="cap-stat__sub">comercios aprendidos</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding (sin buzon) -->
+  <section id="vista-onboarding" class="app-card cap-onboarding cap-oculto">
+    <div class="cap-onboarding__intro">
+      <span class="cap-pill"><i data-lucide="zap"></i> Opcional</span>
+      <h2 class="font-display cap-onboarding__titulo">Registra tus gastos sin escribirlos</h2>
+      <p class="cap-onboarding__texto">Tu banco ya te avisa por correo cada vez que compras, pagas o recibes dinero. Reenvíale esas alertas a Gastu y nosotros las convertimos en movimientos listos para confirmar con un toque.</p>
+    </div>
+
+    <ol class="cap-pasos">
+      <li class="cap-paso">
+        <span class="cap-paso__num">1</span>
+        <div class="cap-paso__icono"><i data-lucide="at-sign"></i></div>
+        <h3>Activa tu dirección</h3>
+        <p>Gastu te da un correo personal y privado.</p>
+      </li>
+      <li class="cap-paso">
+        <span class="cap-paso__num">2</span>
+        <div class="cap-paso__icono"><i data-lucide="forward"></i></div>
+        <h3>Reenvía desde Gmail</h3>
+        <p>Un filtro manda solo las alertas de tu banco. Se configura una vez.</p>
+      </li>
+      <li class="cap-paso">
+        <span class="cap-paso__num">3</span>
+        <div class="cap-paso__icono"><i data-lucide="check-check"></i></div>
+        <h3>Confirma y listo</h3>
+        <p>Cada movimiento llega con su categoría sugerida.</p>
+      </li>
+    </ol>
+
+    <ul class="cap-garantias">
+      <li><i data-lucide="hand"></i> Es opcional: puedes seguir registrando tus movimientos a mano como siempre.</li>
+      <li><i data-lucide="shield-check"></i> Nunca te pediremos claves del banco ni acceso a tu correo.</li>
+      <li><i data-lucide="eye-off"></i> Solo vemos las alertas que tú decidas reenviar.</li>
+      <li><i data-lucide="power"></i> Lo desactivas cuando quieras borrando el filtro.</li>
+    </ul>
+
+    <button type="button" class="btn-primary cap-btn-grande" id="btn-activar">
+      <i data-lucide="power"></i> Activar captura automática
+    </button>
+  </section>
+
+  <!-- Vista principal (con buzon) -->
+  <div id="vista-principal" class="cap-layout cap-oculto">
+
+    <section class="app-card cap-bandeja">
+      <div class="cap-tabs" role="tablist">
+        <button type="button" class="cap-tab activo" data-tab="pendientes" role="tab">
+          <i data-lucide="inbox"></i> Por revisar <span class="cap-tab__contador" id="tab-contador">0</span>
+        </button>
+        <button type="button" class="cap-tab" data-tab="historial" role="tab">
+          <i data-lucide="history"></i> Historial
+        </button>
+        <button type="button" class="cap-tab" data-tab="reglas" role="tab">
+          <i data-lucide="sparkles"></i> Reglas
+        </button>
+      </div>
+
+      <!-- Por revisar -->
+      <div class="cap-panel" data-panel="pendientes">
+        <div class="cap-panel__barra" id="barra-pendientes">
+          <p class="cap-texto-sutil">Revisa la categoría y confirma. Lo que confirmes se registra en tus ingresos o egresos.</p>
+          <button type="button" class="btn-primary cap-oculto" id="btn-confirmar-todos">
+            <i data-lucide="check-check"></i> Confirmar todos
+          </button>
+        </div>
+        <div id="lista-pendientes"></div>
+        <div id="vacio-pendientes" class="cap-vacio cap-oculto">
+          <div class="cap-vacio__icono"><i data-lucide="party-popper"></i></div>
+          <h3 class="font-display">Todo al día</h3>
+          <p>Cuando tu banco te envíe una alerta, el movimiento aparecerá aquí.</p>
+        </div>
+      </div>
+
+      <!-- Historial -->
+      <div class="cap-panel cap-oculto" data-panel="historial">
+        <p class="cap-texto-sutil cap-panel__intro">Movimientos detectados que ya revisaste.</p>
+        <div id="lista-historial"></div>
+        <div id="vacio-historial" class="cap-vacio cap-oculto">
+          <div class="cap-vacio__icono"><i data-lucide="history"></i></div>
+          <h3 class="font-display">Aún no hay historial</h3>
+          <p>Aquí verás los movimientos que confirmes o descartes.</p>
+        </div>
+      </div>
+
+      <!-- Reglas -->
+      <div class="cap-panel cap-oculto" data-panel="reglas">
+        <div class="cap-panel__barra">
+          <p class="cap-texto-sutil">Gastu recuerda la categoría de cada comercio o cuenta que confirmas. Ponle un nombre para reconocerlo y activa "Automático" para que los próximos se registren solos.</p>
+          <button type="button" class="btn-primary" id="btn-nueva-regla"><i data-lucide="plus"></i> Nueva regla</button>
+        </div>
+        <div id="lista-reglas" class="cap-reglas"></div>
+        <div id="vacio-reglas" class="cap-vacio cap-oculto">
+          <div class="cap-vacio__icono"><i data-lucide="sparkles"></i></div>
+          <h3 class="font-display">Gastu aún está aprendiendo</h3>
+          <p>Confirma algunos movimientos y aquí verás lo que aprendió.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="cap-lateral">
+      <section class="app-card cap-direccion">
+        <h3 class="cap-lateral__titulo"><i data-lucide="at-sign"></i> Tu dirección de captura</h3>
+        <div class="cap-direccion__caja">
+          <code id="buzon-direccion" class="cap-direccion__texto" aria-live="polite"></code>
+          <div class="cap-direccion__acciones">
+            <button type="button" class="cap-direccion__btn" id="btn-revelar" aria-pressed="false" title="Mostrar dirección">
+              <i data-lucide="eye"></i>
+            </button>
+            <button type="button" class="cap-direccion__btn" id="btn-copiar" title="Copiar dirección">
+              <i data-lucide="copy"></i>
+            </button>
+          </div>
+        </div>
+        <p class="cap-texto-sutil">Es privada: quien la conozca podría enviarte movimientos falsos. Úsala solo en el filtro de reenvío de tu correo.</p>
+
+        <div id="buzon-codigo" class="cap-codigo cap-oculto">
+          <i data-lucide="key-round"></i>
+          <div>
+            <p class="cap-codigo__titulo">Código de confirmación de Gmail</p>
+            <p class="cap-codigo__valor font-display" id="buzon-codigo-valor"></p>
+            <p class="cap-texto-sutil">Pégalo en Gmail para activar el reenvío.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="app-card cap-config">
+        <h3 class="cap-lateral__titulo"><i data-lucide="list-checks"></i> Configuración</h3>
+        <ol class="cap-checklist">
+          <li id="paso-direccion"><span class="cap-check"></span><div><strong>Dirección creada</strong><span>Tu correo de captura está listo.</span></div></li>
+          <li id="paso-reenvio"><span class="cap-check"></span><div><strong>Reenvío en Gmail</strong><span>Agrega tu dirección y confirma el código.</span></div></li>
+          <li id="paso-prueba"><span class="cap-check"></span><div><strong>Dirección probada</strong><span id="paso-prueba-detalle">Envíate un correo de prueba.</span></div></li>
+          <li id="paso-alerta"><span class="cap-check"></span><div><strong>Primera alerta recibida</strong><span id="paso-alerta-detalle">Esperando un correo de tu banco.</span></div></li>
+          <li id="paso-filtro"><span class="cap-check"></span><div><strong>Filtro automático</strong><span id="paso-filtro-detalle">Se confirma cuando Gmail reenvíe una alerta por su cuenta.</span></div></li>
+        </ol>
+        <div class="cap-config__botones">
+          <button type="button" class="btn-primary cap-btn-bloque" id="btn-probar"><i data-lucide="plug-zap"></i> Probar conexión</button>
+          <button type="button" class="btn-ghost cap-btn-bloque" id="btn-guia"><i data-lucide="book-open"></i> Ver guía paso a paso</button>
+        </div>
+      </section>
+
+      <section class="app-card cap-bancos">
+        <h3 class="cap-lateral__titulo"><i data-lucide="landmark"></i> Bancos compatibles</h3>
+
+        <p class="cap-bancos__grupo"><i data-lucide="badge-check"></i> Lectura exacta</p>
+        <div id="bancos-exactos" class="cap-bancos__destacados"></div>
+
+        <p class="cap-bancos__grupo"><i data-lucide="sparkles"></i> Lectura con IA <span class="cap-bancos__nota">revisa los datos al confirmar</span></p>
+        <div id="bancos-ia" class="cap-bancos__grilla"></div>
+
+        <p class="cap-bancos__pie">Si tu banco no aparece, sus correos se ignoran por seguridad. Iremos sumando más.</p>
+      </section>
+
+      <section class="app-card cap-seguridad">
+        <div class="cap-seguridad__icono"><i data-lucide="shield-alert"></i></div>
+        <div class="cap-seguridad__cuerpo">
+          <h3 class="cap-lateral__titulo">Seguridad de tu dirección</h3>
+          <p class="cap-texto-sutil">Si crees que alguien más la conoce, genera una nueva. La anterior deja de recibir correos al instante y tendrás que actualizar el filtro en Gmail.</p>
+          <button type="button" class="cap-btn-peligro" id="btn-regenerar"><i data-lucide="refresh-cw"></i> Generar una dirección nueva</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<!-- Plantilla: movimiento detectado -->
+<template id="tpl-detectado">
+  <article class="cap-item">
+    <div class="cap-item__icono"><i data-lucide="shopping-bag"></i></div>
+    <div class="cap-item__cuerpo">
+      <div class="cap-item__fila">
+        <p class="cap-item__comercio"></p>
+        <p class="cap-item__monto font-display"></p>
+      </div>
+      <p class="cap-item__meta"></p>
+      <div class="cap-item__badges"></div>
+      <div class="cap-item__acciones">
+        <button type="button" class="cap-chip-categoria" title="Cambiar categoría">
+          <i data-lucide="tag"></i><span></span><i data-lucide="chevron-down"></i>
+        </button>
+        <label class="cap-item__auto cap-oculto">
+          <input type="checkbox"> <span>Registrar automáticamente los próximos de aquí</span>
+        </label>
+        <div class="cap-item__botones">
+          <button type="button" class="cap-btn-icono cap-btn-descartar" title="Descartar"><i data-lucide="x"></i></button>
+          <button type="button" class="btn-primary cap-btn-confirmar"><i data-lucide="check"></i> Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </article>
+</template>
+
+<!-- Modal: selector de categoria -->
+<div id="modal-categorias" class="cap-modal cap-oculto" role="dialog" aria-modal="true" aria-labelledby="modal-categorias-titulo">
+  <div class="cap-modal__caja">
+    <div class="cap-modal__cabecera">
+      <h3 class="font-display" id="modal-categorias-titulo">Elige la categoría</h3>
+      <button type="button" class="cap-btn-icono" data-cerrar-modal title="Cerrar"><i data-lucide="x"></i></button>
+    </div>
+    <input type="text" id="buscador-categorias" class="cap-input" placeholder="Buscar categoría...">
+    <div id="picker-grid" class="picker-cat-grid cap-picker-grid"></div>
+  </div>
+</div>
+
+<!-- Modal: guia de Gmail (asistente) -->
+<div id="modal-guia" class="cap-modal cap-oculto" role="dialog" aria-modal="true" aria-labelledby="modal-guia-titulo">
+  <div class="cap-modal__caja cap-asistente">
+    <div class="cap-asistente__cabecera">
+      <div>
+        <p class="cap-asistente__eyebrow">Configuración en Gmail · <span id="guia-paso-texto">Paso 1 de 5</span></p>
+        <h3 class="font-display" id="modal-guia-titulo">Conecta tu banco en 5 pasos</h3>
+      </div>
+      <button type="button" class="cap-btn-icono" data-cerrar-modal title="Cerrar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="cap-asistente__progreso"><span id="guia-progreso"></span></div>
+    <nav class="cap-asistente__puntos" aria-label="Pasos">
+      <button type="button" data-ir-paso="0"><span>1</span> Abrir</button>
+      <button type="button" data-ir-paso="1"><span>2</span> Dirección</button>
+      <button type="button" data-ir-paso="2"><span>3</span> Código</button>
+      <button type="button" data-ir-paso="3"><span>4</span> Filtro</button>
+      <button type="button" data-ir-paso="4"><span>5</span> Listo</button>
+    </nav>
+
+    <!-- Paso 1 -->
+    <section class="cap-asistente__paso" data-paso="0">
+      <div class="cap-ventana" aria-hidden="true">
+        <div class="cap-ventana__barra"><span></span><span></span><span></span><em>Gmail</em></div>
+        <div class="cap-ventana__cuerpo cap-mock-config">
+          <div class="cap-mock-engranaje"><i data-lucide="settings"></i></div>
+          <div class="cap-mock-menu">
+            <div class="cap-mock-linea"></div>
+            <div class="cap-mock-boton cap-mock-resaltado">Ver toda la configuración</div>
+            <div class="cap-mock-linea corta"></div>
+            <div class="cap-mock-pestanas"><span>General</span><span>Etiquetas</span><span class="activa">Reenvío y POP/IMAP</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap-asistente__texto">
+        <h4>Abre la configuración de Gmail</h4>
+        <p>Desde un computador entra a Gmail, toca el engranaje de <strong>Configuración</strong> y luego <strong>Ver toda la configuración</strong>. Ve a la pestaña <strong>Reenvío y correo POP/IMAP</strong>.</p>
+        <p class="cap-aviso"><i data-lucide="monitor"></i><span>La app de Gmail del celular no permite configurar reenvíos.</span></p>
+        <a class="btn-ghost" href="https://mail.google.com/mail/u/0/#settings/fwdandpop" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Abrir Gmail en esa pestaña</a>
+      </div>
+    </section>
+
+    <!-- Paso 2 -->
+    <section class="cap-asistente__paso cap-oculto" data-paso="1">
+      <div class="cap-ventana" aria-hidden="true">
+        <div class="cap-ventana__barra"><span></span><span></span><span></span><em>Reenvío y correo POP/IMAP</em></div>
+        <div class="cap-ventana__cuerpo">
+          <div class="cap-mock-boton">Agregar una dirección de reenvío</div>
+          <div class="cap-mock-dialogo">
+            <span>Introduce una dirección de reenvío</span>
+            <div class="cap-mock-input"><i data-lucide="at-sign"></i> <span id="guia-direccion-mock"></span></div>
+            <div class="cap-mock-boton cap-mock-resaltado chico">Siguiente</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap-asistente__texto">
+        <h4>Agrega tu dirección de captura</h4>
+        <p>Pulsa <strong>Agregar una dirección de reenvío</strong>, pega tu dirección y confirma con <strong>Siguiente</strong> y <strong>Continuar</strong>.</p>
+        <button type="button" class="btn-primary" data-copiar-direccion><i data-lucide="copy"></i> Copiar mi dirección</button>
+      </div>
+    </section>
+
+    <!-- Paso 3 -->
+    <section class="cap-asistente__paso cap-oculto" data-paso="2">
+      <div class="cap-ventana" aria-hidden="true">
+        <div class="cap-ventana__barra"><span></span><span></span><span></span><em>Confirmación</em></div>
+        <div class="cap-ventana__cuerpo cap-mock-estado">
+          <div id="guia-codigo-espera" class="cap-mock-espera">
+            <span class="cap-spinner"></span>
+            <p>Esperando el código de Gmail...</p>
+          </div>
+          <div id="guia-codigo-listo" class="cap-mock-listo cap-oculto">
+            <i data-lucide="key-round"></i>
+            <p class="font-display" id="guia-codigo-valor"></p>
+            <small>Código recibido</small>
+          </div>
+        </div>
+      </div>
+      <div class="cap-asistente__texto">
+        <h4>Confirma el código</h4>
+        <p>Gmail le envía un código a Gastu. Lo verás aquí en unos segundos: pégalo en Gmail y pulsa <strong>Verificar</strong>.</p>
+        <p class="cap-aviso cap-aviso--importante"><i data-lucide="alert-triangle"></i><span>Deja marcado <strong>Inhabilitar el reenvío</strong>. No queremos todo tu correo, solo las alertas del banco.</span></p>
+        <button type="button" class="btn-primary cap-oculto" id="guia-copiar-codigo"><i data-lucide="copy"></i> Copiar código</button>
+      </div>
+    </section>
+
+    <!-- Paso 4 -->
+    <section class="cap-asistente__paso cap-oculto" data-paso="3">
+      <div class="cap-ventana" aria-hidden="true">
+        <div class="cap-ventana__barra"><span></span><span></span><span></span><em>Crear un filtro</em></div>
+        <div class="cap-ventana__cuerpo cap-mock-filtro">
+          <div class="cap-mock-campo"><span>De</span><div class="cap-mock-input">notificacionesbancolombia.com</div></div>
+          <div class="cap-mock-check"><span class="cap-mock-casilla"></span> Reenviarlo a: <strong>tu dirección de captura</strong></div>
+          <div class="cap-mock-boton cap-mock-resaltado chico">Crear filtro</div>
+        </div>
+      </div>
+      <div class="cap-asistente__texto">
+        <h4>Crea el filtro del banco</h4>
+        <p>Ve a <strong>Filtros y direcciones bloqueadas</strong> y pulsa <strong>Crear un filtro</strong>. En <strong>De</strong> pega el remitente de tu banco, pulsa <strong>Crear filtro</strong>, marca <strong>Reenviarlo a</strong> y elige tu dirección.</p>
+        <div class="cap-remitentes">
+          <span>Remitente de Bancolombia</span>
+          <button type="button" class="cap-chip-copiar" data-copiar="notificacionesbancolombia.com"><code>notificacionesbancolombia.com</code><i data-lucide="copy"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 5 -->
+    <section class="cap-asistente__paso cap-oculto" data-paso="4">
+      <div class="cap-ventana" aria-hidden="true">
+        <div class="cap-ventana__barra"><span></span><span></span><span></span><em>Gastu</em></div>
+        <div class="cap-ventana__cuerpo cap-mock-estado">
+          <div id="guia-final-espera" class="cap-mock-espera">
+            <span class="cap-spinner"></span>
+            <p>Esperando tu primera alerta...</p>
+          </div>
+          <div id="guia-final-listo" class="cap-mock-listo cap-oculto">
+            <i data-lucide="party-popper"></i>
+            <p class="font-display">Conexión funcionando</p>
+            <small>Ya recibimos alertas de tu banco</small>
+          </div>
+        </div>
+      </div>
+      <div class="cap-asistente__texto">
+        <h4>Listo, ya estás conectado</h4>
+        <p>Con tu próxima compra o transferencia, el movimiento aparecerá en <strong>Por revisar</strong> con su categoría sugerida. También te avisaremos en la campana.</p>
+        <button type="button" class="btn-ghost" data-abrir-prueba><i data-lucide="plug-zap"></i> Probar la conexión ahora</button>
+      </div>
+    </section>
+
+    <div class="cap-asistente__pie">
+      <button type="button" class="btn-ghost" id="guia-atras"><i data-lucide="arrow-left"></i> Atrás</button>
+      <button type="button" class="btn-primary" id="guia-siguiente"><span>Siguiente</span> <i data-lucide="arrow-right"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: nueva regla / editar regla -->
+<div id="modal-regla" class="cap-modal cap-oculto" role="dialog" aria-modal="true" aria-labelledby="modal-regla-titulo">
+  <form class="cap-modal__caja cap-form-regla" id="form-regla" novalidate>
+    <div class="cap-modal__cabecera">
+      <h3 class="font-display" id="modal-regla-titulo">Nueva regla</h3>
+      <button type="button" class="cap-btn-icono" data-cerrar-modal title="Cerrar"><i data-lucide="x"></i></button>
+    </div>
+    <p class="cap-texto-sutil" id="regla-intro">Prepara cómo debe registrarse un comercio o una cuenta antes de que llegue su alerta.</p>
+
+    <div class="cap-segmento" role="radiogroup" aria-label="Tipo de movimiento" id="regla-tipo">
+      <button type="button" data-tipo="EGRESO" class="activo" role="radio" aria-checked="true"><i data-lucide="trending-down"></i> Sale dinero</button>
+      <button type="button" data-tipo="INGRESO" role="radio" aria-checked="false"><i data-lucide="trending-up"></i> Entra dinero</button>
+    </div>
+
+    <label class="cap-campo" id="regla-campo-comercio">
+      <span>Comercio o cuenta</span>
+      <input type="text" id="regla-comercio" class="cap-input" maxlength="120" placeholder="EXITO COLOMBIA o *5314" autocomplete="off">
+      <small>Para transferencias basta con los últimos 4 dígitos de la cuenta, por ejemplo *5314.</small>
+    </label>
+
+    <label class="cap-campo">
+      <span>Nombre para reconocerlo <em>(opcional)</em></span>
+      <input type="text" id="regla-apodo" class="cap-input" maxlength="60" placeholder="Arriendo, Mamá, Gimnasio..." autocomplete="off">
+    </label>
+
+    <div class="cap-campo">
+      <span>Categoría</span>
+      <button type="button" class="cap-chip-categoria cap-chip-categoria--grande" id="regla-categoria"><i data-lucide="tag"></i><span>Elegir categoría</span><i data-lucide="chevron-down"></i></button>
+    </div>
+
+    <label class="cap-switch cap-switch--fila">
+      <input type="checkbox" id="regla-auto">
+      <span class="cap-switch__pista"></span>
+      <span class="cap-switch__texto"><strong>Registrar automáticamente</strong><small>Solo cuando el banco firma el correo; si no, quedará en Por revisar.</small></span>
+    </label>
+
+    <div class="cap-vista-previa" id="regla-vista-previa" aria-live="polite"></div>
+
+    <div class="cap-modal__acciones">
+      <button type="button" class="btn-ghost" data-cerrar-modal>Cancelar</button>
+      <button type="submit" class="btn-primary" id="regla-guardar"><i data-lucide="check"></i> Guardar regla</button>
+    </div>
+  </form>
+</div>
+<!-- Modal: prueba de conexion -->
+<div id="modal-prueba" class="cap-modal cap-oculto" role="dialog" aria-modal="true" aria-labelledby="modal-prueba-titulo">
+  <div class="cap-modal__caja cap-prueba">
+    <div class="cap-modal__cabecera">
+      <h3 class="font-display" id="modal-prueba-titulo">Prueba de conexión</h3>
+      <button type="button" class="cap-btn-icono" data-cerrar-modal title="Cerrar"><i data-lucide="x"></i></button>
+    </div>
+
+    <!-- Esperando el correo -->
+    <div id="prueba-esperando">
+      <p class="cap-texto-sutil">Envíate un correo desde tu Gmail para comprobar que tu dirección de captura recibe mensajes.</p>
+
+      <ol class="cap-prueba__pasos">
+        <li>
+          <span class="cap-prueba__num">1</span>
+          <div>
+            <strong>Escribe un correo a tu dirección de captura</strong>
+            <div class="cap-prueba__fila">
+              <code id="prueba-direccion"></code>
+              <button type="button" class="cap-direccion__btn" data-copiar-direccion title="Copiar dirección"><i data-lucide="copy"></i></button>
+            </div>
+          </div>
+        </li>
+        <li>
+          <span class="cap-prueba__num">2</span>
+          <div>
+            <strong>Pon este código en el asunto</strong>
+            <div class="cap-prueba__fila">
+              <code class="cap-prueba__codigo font-display" id="prueba-codigo"></code>
+              <button type="button" class="cap-direccion__btn" id="prueba-copiar-codigo" title="Copiar código"><i data-lucide="copy"></i></button>
+            </div>
+          </div>
+        </li>
+        <li>
+          <span class="cap-prueba__num">3</span>
+          <div>
+            <strong>Envíalo y espera aquí</strong>
+            <span class="cap-texto-sutil">Suele tardar menos de un minuto.</span>
+          </div>
+        </li>
+      </ol>
+
+      <a class="btn-primary cap-btn-bloque" id="prueba-mailto" href="#"><i data-lucide="send"></i> Abrir mi correo con el mensaje listo</a>
+
+      <div class="cap-prueba__estado">
+        <span class="cap-spinner"></span>
+        <div>
+          <strong>Esperando tu correo...</strong>
+          <span class="cap-texto-sutil" id="prueba-tiempo">0:00</span>
+        </div>
+      </div>
+
+      <div id="prueba-ayuda" class="cap-prueba__ayuda cap-oculto">
+        <p><i data-lucide="life-buoy"></i> <strong>¿No llega?</strong></p>
+        <ul>
+          <li>Revisa que la dirección esté bien escrita (cópiala con el botón).</li>
+          <li>Comprueba que el código esté en el asunto, tal cual.</li>
+          <li>Busca el correo en tu carpeta Enviados: si no salió, vuelve a intentarlo.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Recibido -->
+    <div id="prueba-recibida" class="cap-prueba__resultado cap-oculto">
+      <div class="cap-prueba__ok"><i data-lucide="check"></i></div>
+      <h4 class="font-display">Conexión verificada</h4>
+      <p id="prueba-detalle" class="cap-texto-sutil"></p>
+      <div class="cap-prueba__filtro" id="prueba-filtro"></div>
+      <button type="button" class="btn-primary" data-cerrar-modal>Listo</button>
+    </div>
+
+    <!-- Vencida -->
+    <div id="prueba-vencida" class="cap-prueba__resultado cap-oculto">
+      <div class="cap-prueba__ok cap-prueba__ok--vencida"><i data-lucide="clock"></i></div>
+      <h4 class="font-display">El código venció</h4>
+      <p class="cap-texto-sutil">No recibimos el correo en 30 minutos. Genera un código nuevo e inténtalo otra vez.</p>
+      <button type="button" class="btn-primary" id="prueba-reintentar"><i data-lucide="refresh-cw"></i> Generar otro código</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/category-picker.js' %}"></script>
+<script src="{% static 'captura_bancaria/js/captura.js' %}"></script>
+{% endblock %}

@@ -1,8 +1,10 @@
-{% load static %}
+{% load static usuarios_extras %}
 <!doctype html>
 <html lang="es" class="h-full">
   <head>
     <meta charset="UTF-8" />
+    {# Token CSRF para el JS: la cookie csrftoken es HttpOnly (CSRF_COOKIE_HTTPONLY) #}
+    <meta name="csrf-token" content="{{ csrf_token }}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}GastuApp{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'img/gastu_logo_rostro.png' %}" />
@@ -16,13 +18,13 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js" integrity="sha384-ieG+IKD0d/ZPXyCBTMVAbqsQdns8QGJR/e26WMw7M4fkaI/rHcS/YIoi+ah9WGge" crossorigin="anonymous"></script>
 
     <!-- Layout global (topbar, sidebar, cards, responsive) -->
     <link rel="stylesheet" href="{% static 'css/gastuapp_layout.css' %}" />
 
     <!-- Driver.js para los Tours Guiados -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" integrity="sha384-bovbcpDBo0pTIhd7ws6ebPh1PG31ubAHcX2pv8Tcu5EtFHNl5FBciYFtS/e2SN66" crossorigin="anonymous"/>
     <style>
       @keyframes popoverFadeIn {
         0% { opacity: 0; transform: scale(0.96) translateY(8px); }
@@ -37,6 +39,7 @@
         border-top: 5px solid var(--tour-accent-color, #10b981) !important;
         animation: popoverFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
       }
+      .gastu-popover-desplazado .driver-popover-arrow { display: none; }
       .gastu-driver-popover .driver-popover-title {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
         font-weight: 800 !important;
@@ -164,6 +167,8 @@
 
     {% block extra_head %}{% endblock %}
     <link rel="stylesheet" href="{% static 'historial/css/historial.css' %}" />
+    {% if captura_habilitada %}<link rel="stylesheet" href="{% static 'captura_bancaria/css/panel_pendientes.css' %}" />{% endif %}
+    <link rel="stylesheet" href="{% static 'css/gastu_hero.css' %}" />
 
     {# Restaurar estado del sidebar ANTES de que el browser pinte — evita el flash de animación #}
     <script>
@@ -213,7 +218,7 @@
     </style>
   </head>
 
-  <body class="h-full">
+  <body class="h-full" data-captura="{% if captura_habilitada %}1{% else %}0{% endif %}">
     <!-- Overlay mobile -->
     <div id="sidebar-overlay"></div>
 
@@ -297,6 +302,21 @@
             </div>
           </div>
 
+          {% if captura_habilitada %}
+          <!-- Tabs: notificaciones / movimientos por revisar (captura bancaria) -->
+          <div class="notif-tabs" role="tablist">
+            <button type="button" class="notif-tab activo" data-notif-tab="todas" role="tab">Notificaciones</button>
+            <button type="button" class="notif-tab" data-notif-tab="pendientes" role="tab">
+              Por revisar <span class="notif-tab__contador" id="notif-tab-pendientes" hidden></span>
+            </button>
+          </div>
+
+          <!-- Movimientos bancarios por revisar -->
+          <div id="notif-pendientes" class="notif-dropdown-lista" hidden
+               data-url-detectados="{% url 'captura_bancaria:api_detectados' %}"
+               data-url-captura="{% url 'captura_bancaria:captura' %}"></div>
+          {% endif %}
+
           <!-- Lista de notificaciones recientes -->
           <div id="notif-lista" class="notif-dropdown-lista">
             <div class="notif-dropdown-loading">
@@ -307,7 +327,7 @@
 
           <!-- Footer: ver todas -->
           <div class="notif-dropdown-footer">
-            <a href="/perfil/?tab=notificaciones" class="notif-dropdown-ver-todas">
+            <a href="/perfil/?tab=notificaciones" class="notif-dropdown-ver-todas" id="notif-footer-link">
               <span>Ver todas las notificaciones</span>
               <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
             </a>
@@ -545,9 +565,7 @@
 
         <div style="position: relative">
           <button id="user-btn" aria-label="Menú de usuario">
-            <div class="user-avatar">
-              <span>{{ request.user.username|first|upper }}</span>
-            </div>
+            {% avatar_usuario request.user "user-avatar" %}
             <span class="user-name">{{ request.user.username }}</span>
             <i
               data-lucide="chevron-down"
@@ -572,10 +590,13 @@
               Mi perfil
             </a>
             <div class="dropdown-divider"></div>
-            <a href="{% url 'logout' %}" class="dropdown-item danger">
-              <i data-lucide="log-out" style="width: 14px; height: 14px"></i>
-              Cerrar sesion
-            </a>
+            <form method="post" action="{% url 'logout' %}" class="form-logout">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item danger">
+                <i data-lucide="log-out" style="width: 14px; height: 14px"></i>
+                Cerrar sesion
+              </button>
+            </form>
           </div>
         </div>
       </div>
@@ -708,6 +729,17 @@
           <span class="nav-label">Agente Financiero</span>
         </a>
 
+        {% if captura_habilitada %}
+        <a
+          href="{% url 'captura_bancaria:captura' %}"
+          class="nav-item nav-item--captura {% block nav_captura %}{% endblock %}"
+          data-tooltip="Captura automática"
+        >
+          <i data-lucide="mail-check" class="nav-icon"></i>
+          <span class="nav-label">Captura automática</span>
+        </a>
+        {% endif %}
+
         <p class="nav-section-label" style="margin-top: 12px">Cuenta</p>
 
         <a
@@ -760,12 +792,13 @@
 ══════════════════════════════════════════ -->
     <script>
       // Definir URL estática global para los scripts JS
-      window.GASTU_STATIC_URL = "{% static '' %}";
+      window.GASTU_STATIC_URL = "{% get_static_prefix %}";
     </script>
     <script src="{% static 'js/gastuapp_layout.js' %}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js" integrity="sha384-YB/DdIkloKoRpclWB8bNcYXWakt57USgtQPDzvnIDHYU0lasD5eWlXVo1S4ODukY" crossorigin="anonymous"></script>
     <script src="{% static 'js/gastu_alerts.js' %}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    {% if captura_habilitada %}<script src="{% static 'captura_bancaria/js/panel_pendientes.js' %}" defer></script>{% endif %}
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js" integrity="sha384-yPK823YWGKpXfBT8wLqUXmrB5ejcI7sgGBIary/01UavNc1bD92AOUBCBzjXQS/s" crossorigin="anonymous"></script>
     <script src="{% static 'js/tours.js' %}"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
@@ -791,6 +824,7 @@
     <script>
     (function() {
       var ICON_MAP_DROPDOWN = {
+        MOVIMIENTO_DETECTADO:     { icon: 'mail-check',     color: '#a21caf', bg: '#fdf4ff' },
         DEFICIT:                  { icon: 'trending-down',  color: '#2563eb', bg: '#eff6ff' },
         EGRESO_GRANDE:            { icon: 'arrow-up-right', color: '#e11d48', bg: '#fef2f2' },
         UMBRAL_MENSUAL:           { icon: 'alert-triangle', color: '#d97706', bg: '#fffbeb' },
@@ -818,7 +852,9 @@
       var CSRF_TOKEN_DROPDOWN = '';
 
       function getCsrf() {
-        // Intentar obtener CSRF del cookie
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.content) return meta.content;
+        // Respaldo: cookie (solo si no es HttpOnly)
         var name = 'csrftoken';
         var cookieValue = '';
         if (document.cookie && document.cookie !== '') {
@@ -844,7 +880,7 @@
         var ic = ICON_MAP_DROPDOWN[n.tipo] || { icon: 'bell', color: '#10b981', bg: '#ecfdf5' };
         var cls = n.leida ? '' : ' unread';
         var dot = n.leida ? '' : '<div class="notif-drop-unread-dot"></div>';
-        return '<div class="notif-drop-item' + cls + '" data-notif-id="' + n.id + '" data-leida="' + (n.leida ? '1' : '0') + '">' +
+        return '<div class="notif-drop-item' + cls + '" data-notif-id="' + n.id + '" data-tipo="' + escHtml(n.tipo || '') + '" data-leida="' + (n.leida ? '1' : '0') + '">' +
           '<div class="notif-drop-icon" style="background:' + ic.bg + ';color:' + ic.color + ';">' +
             '<i data-lucide="' + ic.icon + '"></i>' +
           '</div>' +
@@ -937,9 +973,14 @@
                   }).catch(function() {});
                 }
 
-                // Redirigir al perfil con esa notificación destacada
+                // Los movimientos detectados se revisan en Captura automatica;
+                // el resto, en el perfil con la notificacion destacada.
                 cerrarNotifDropdown();
-                window.location.href = '/perfil/?tab=notificaciones&notif=' + id;
+                if (item.getAttribute('data-tipo') === 'MOVIMIENTO_DETECTADO' && document.body.dataset.captura === '1') {
+                  window.location.href = '/captura/';
+                } else {
+                  window.location.href = '/perfil/?tab=notificaciones&notif=' + id;
+                }
               });
             });
           })
@@ -1036,6 +1077,10 @@
           try {
             var data = JSON.parse(e.data);
             if (data.type === 'notificacion') {
+              // Otras vistas (ej. Captura automatica) pueden reaccionar al aviso en vivo.
+              window.dispatchEvent(new CustomEvent('gastu:notificacion', { detail: data.data || {} }));
+              // La prueba de conexion no es una notificacion guardada: no cuenta en la campana.
+              if (data.data && data.data.tipo === 'PRUEBA_CONEXION') return;
               // Incrementar badge
               var btn = document.getElementById('notif-btn');
               if (btn) {

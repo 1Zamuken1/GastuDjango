@@ -19,6 +19,7 @@ class CategoriaViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def categorias_egreso(request):
     categorias = Categoria.objects.filter(tipo='EGRESO', activo=True)
 
@@ -85,6 +86,7 @@ def categorias_enriched(request):
             'id': c.id,
             'nombre': c.nombre,
             'tipo': c.tipo,
+            'icono': c.icono,
             'es_favorita': c.es_favorita,
             'uso_global': c.uso_global
         }

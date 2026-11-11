@@ -43,9 +43,9 @@ GastuDjango/
 ├── usuarios/              # Modelo Usuario personalizado, login, register, perfil — 95%
 ├── movimientos/           # Modelo Movimiento — CRUD completo — 100%
 ├── categorias/            # Modelo Categoria — CRUD completo — 100%
-├── ahorros/               # Metas de ahorro y aportes — 95%
-├── programaciones/        # Movimientos recurrentes y programados — 95%
-├── presupuesto/           # Planificación de presupuestos mensuales — 95%
+├── ahorros/               # Metas de ahorro y aportes — 100%
+├── programaciones/        # Movimientos recurrentes y programados — 100%
+├── presupuesto/           # Planificación de presupuestos mensuales — 100%
 ├── notificaciones/        # Alertas automáticas y centro de notificaciones — 80%
 ├── dashboard/             # Vista principal, estadísticas y navegación — 100%
 ├── agente_financiero/     # Integración con IA (Gemini/Groq) para análisis y chat — 97%
@@ -394,6 +394,12 @@ Extraída de `movimientos` para ser compartida por todo el sistema. Solo visible
 categorias:lista_categorias
 ```
 
+**Ícono de categoría:** cada `Categoria` guarda un ícono de Lucide en `icono` (lista cerrada en `categorias/iconos.py`). Las categorías base tienen uno asignado (`ICONOS_BASE`, también en el fixture `categorias_iniciales.json`, que se recarga en cada `migrate`); las nuevas se crean desde el panel de administración con un selector de íconos. El ícono se usa en las cards de Ingresos/Egresos, en el selector de categorías (`category-picker.js`) y en el modal de movimiento.
+
+**Plantilla visual de las vistas:** Ingresos/Egresos son la referencia y todas las vistas la siguen. La card de categoría es un componente compartido en `static/css/gastu_card.css` (horizontal, acento lateral, ícono propio de la categoría, chip de porcentaje o de estado, barra opcional y fila inferior opcional con dato y acciones); la usan Ingresos, Egresos, Presupuestos, Programaciones y Ahorros. Cada vista define su acento con `--card-acento*` (en las de planificación se toma de `--acento`). Los formularios son modales horizontales en dos columnas: `modal_movimiento.css` en Ingresos/Egresos y `.plan-modal--form` + `.plan-columnas` (en `gastu_planificacion.css`) en Presupuestos, Programaciones y Ahorros. Al hacer clic en una card se abre su acción principal (registros, edición o detalle), también con Enter.
+
+**Fechas de movimientos:** `fecha_registro` es un `DateTimeField` en UTC; para mostrarla o compararla por día usar siempre `timezone.localtime(...)` (America/Bogota).
+
 ---
 
 ## 10. App notificaciones — estado actual (100%)
@@ -416,21 +422,30 @@ Aplicación completamente funcional y fuertemente refactorizada. Utiliza una arq
 
 ## 11. App ahorros — estado actual (100%)
 
-Aplicación completamente funcional e integrada. Permite crear metas de ahorro, generar cuotas automáticas basadas en la frecuencia elegida, y registrar aportes que actualizan el dashboard y el historial en tiempo real.
+Permite crear metas de ahorro, generar cuotas segun la frecuencia elegida y registrar aportes (de cuota o extraordinarios) que actualizan el dashboard y el historial.
 
 **Modelos (`ahorros/models.py`):**
-- `AhorroMeta`: Define la meta de ahorro (monto, fecha, frecuencia, cantidad de cuotas). **Nota de deuda técnica:** Aún no hereda de `ModeloBase` (hereda directamente de `models.Model`).
-- `AporteAhorro`: Representa las cuotas (aportes) generadas automáticamente. Estados: `PENDIENTE`, `APORTADO`, `PERDIDO`.
-*Nota: Los campos ya fueron migrados a `snake_case` correctamente.*
+- `AhorroMeta`: monto, fecha meta, frecuencia, cantidad de cuotas, estado (`SIN_INICIAR`, `ACTIVO`, `COMPLETADO`, `ABANDONADO`). Aun no hereda de `ModeloBase`.
+- `AporteAhorro`: cuotas generadas al crear la meta (`PENDIENTE`, `APORTADO`, `PERDIDO`) y aportes extraordinarios.
+  - `fecha_registro`: dia en que se creo la cuota (todas se crean con la meta).
+  - `fecha_aporte`: dia en que el usuario aporto. **Todo lo mensual (dashboard, reportes, `ResumenMensual`) usa `fecha_aporte`.** La migracion `0003` lo relleno para aportes viejos con la fecha limite de la cuota (sin pasar de hoy) o la fecha de registro si era extraordinario.
 
-**Integración (Signals y Dashboard):**
-- **Dashboard:** Los signals en `ahorros/signals.py` actualizan correctamente `ResumenMensual` (`total_ahorros`, `ingreso_neto`, `disponible`) cada vez que se registra o elimina un aporte (`estado_ap == 'APORTADO'`).
-- **Historial:** Todas las creaciones/ediciones/eliminaciones de metas y aportes se auditan automáticamente creando registros en `historial.models.AccionHistorial` bajo `ModuloChoices.AHORROS`.
+**Reglas (`ahorros/services.py`):**
+- Las fechas de cuota se calculan desde la primera (dia siguiente a la creacion) con `relativedelta`: `fecha_cuota(inicio, frecuencia, n)`. Sin corrimiento de fin de mes. La fecha meta es la de la ultima cuota.
+- `actualizar_estados_usuario(usuario)` marca como `PERDIDO` las cuotas vencidas y aplica el abandono (3 cuotas vencidas seguidas) cada vez que se abre la lista o el detalle, no solo al aportar.
+- Una cuota se puede pagar si es la primera pendiente, no ha vencido y esta dentro de la ventana de su frecuencia (`cuota_disponible_pago`, `fecha_habilitacion`).
+- `resumen_meta(meta)` arma lo que muestran la card y el detalle: estado visual (completada, abandonada, atrasada, por aportar, al dia, sin iniciar), porcentaje, restante, proxima cuota y proyeccion de fin al ritmo actual (`proyectar_fin`).
+- Al eliminar una meta se recalcula el `ResumenMensual` de los meses con aportes (el borrado en bloque no dispara senales).
 
-**Vistas y Servicios:**
-- Incluye vistas para listar, crear, editar, eliminar metas y registrar aportes.
-- Módulo integrado para exportar a CSV, Excel y PDF (`views_exportar.py`).
-- Capa de servicios (`services.py`) maneja el recálculo dinámico de fechas, montos y estados de cuotas tras ediciones o abonos extraordinarios.
+**Frontend:**
+- `lista.html` sigue el layout de Ingresos/Egresos y usa los componentes compartidos de planificacion (`static/css/gastu_planificacion.css`, `static/js/gastu_planificacion.js`) con acento ambar en `ahorros/static/ahorros/css/metas.css`.
+- Hero, avisos de cuotas vencidas y cuotas listas para aportar, toolbar con busqueda, filtro por estado y exportacion, cards renderizadas en el servidor y un unico modal de crear/editar con vista previa del calendario de cuotas.
+- `aporte.html` es el detalle de la meta (se inyecta en un modal): avance, proyeccion, proxima cuota, aporte extraordinario y linea de tiempo de cuotas.
+- JS en `ahorros/static/ahorros/js/ahorros.js`. `ahorros.css` solo lo usan las paginas sin JS `crear.html`/`editar.html`/`eliminar.html`.
+
+**Integracion:** las senales de `AporteAhorro` actualizan `ResumenMensual` del mes de `fecha_aporte` y auditan en `AccionHistorial` (modulo AHORROS). Exportacion CSV, Excel y PDF en `views_exportar.py`.
+
+**Tests:** `tests.py` + `test_mejoras.py` (pytest).
 
 ---
 
@@ -457,7 +472,7 @@ Campos: `username`, `email`, `telefono`, `password1`, `password2`.
 
 ---
 
-## 13. App presupuesto — estado actual (95%)
+## 13. App presupuesto — estado actual (100%)
 
 ### Modelo: `Presupuesto`
 
@@ -466,82 +481,92 @@ Campos: `username`, `email`, `telefono`, `password1`, `password2`.
 | `limite` | `DecimalField` | Máximo permitido para el período |
 | `fecha_inicio` | `DateField` | Inicio del período presupuestal |
 | `fecha_fin` | `DateField` | Fin del período presupuestal |
-| `isActivo` | `BooleanField` | **camelCase** — pendiente de migrar a `is_activo` |
-| `categoria` | FK → `categorias.Categoria` | Categoría asociada |
+| `is_activo` | `BooleanField` | Solo un presupuesto activo por categoría |
+| `categoria` | FK → `categorias.Categoria` | Solo categorías de egreso |
 | `usuario` | FK → `usuarios.Usuario` | Propietario |
 
 ### API REST vía ViewSet (`/api/presupuestos/`)
 
-CRUD completo con `PresupuestoViewSet` + 3 endpoints custom:
+CRUD completo con `PresupuestoViewSet` + 4 endpoints custom:
 - `GET /api/presupuestos/alertas/` — estado de alerta de presupuestos activos
-- `GET /api/presupuestos/con_estado/` — todos con `gastado`, `porcentaje`, `alerta`
-- `POST /api/presupuestos/verificar_vencidos/` — desactiva expirados
+- `GET /api/presupuestos/con_estado/` — todos (activos e inactivos) con `gastado`, `porcentaje`, `alerta`, `disponible`, `dias_restantes`, `gasto_diario`
+- `POST /api/presupuestos/verificar_vencidos/` — desactiva expirados y retorna cuáles
+- `POST /api/presupuestos/{id}/renovar/` — crea el período siguiente con la misma categoría y límite
+
+### Reglas de validación (`serializer.py`)
+
+- `fecha_fin` no puede ser anterior a hoy; al editar solo se valida si cambia (se puede ajustar un presupuesto que termina hoy).
+- No se puede reactivar un presupuesto vencido: se usa Renovar.
+- La categoría debe ser de egreso.
 
 ### Servicios (`services.py`)
 
-- `_qs_con_total_gastado(qs)` — anota gasto real vía subquery de `Movimiento`
+- `_qs_con_total_gastado(qs)` — anota gasto real (egresos activos) vía subquery de `Movimiento`
 - `desactivar_presupuestos_vencidos(usuario)` — desactiva los que tienen `fecha_fin < hoy`
 - `calcular_alerta_presupuesto(p)` — calcula `(total_gastado, porcentaje)`
 - `nivel_alerta(porcentaje)` — mapea % a nivel: baja, nivel_50..95, critica
-- `obtener_estados_presupuestos(usuario)` — estados completos de presupuestos activos
+- `ritmo_presupuesto(p, disponible)` — días restantes y gasto diario sugerido
+- `obtener_estado_presupuesto(p)` / `obtener_estados_presupuestos(usuario, solo_activos)` — dict de estado completo
+- `periodo_siguiente(inicio, fin, hoy)` — meses completos avanzan por meses; otros períodos, por la misma cantidad de días; si se renueva tarde, salta los períodos ya terminados
+- `renovar_presupuesto(p)` — lanza `RenovacionError` si sigue vigente o si la categoría ya tiene otro activo
+
+### Frontend
+
+- `listar_presupuestos.html` sigue el layout de Ingresos/Egresos: hero (`gastu-hero-card--presupuestos`) + `hero-stats`, avisos en banner (alertas >= 80 % y presupuestos que terminaron, con Renovar), toolbar con búsqueda y filtro Activos/Inactivos/Todos, grilla de cards y un único modal de crear/editar con atajos de período.
+- JS en `presupuesto/static/presupuesto/js/presupuestos.js`; CSS de acento en `presupuesto/static/css/presupuesto.css`.
+- Componentes compartidos con Programaciones: `static/css/gastu_planificacion.css` y `static/js/gastu_planificacion.js` (`window.GastuPlan`: API, escape de HTML, formatos, modales, monto, datepicker). Los avisos usan `GastuAlerts`.
 
 ### Señales
 
 - `post_save` → `auditar_presupuesto_guardar` (CREACION / EDICION en `AccionHistorial`)
 - `post_delete` → `auditar_presupuesto_eliminar` (ELIMINACION)
 
-### Tests: 217 líneas, pytest
-
-### Bugs conocidos
-- **Sin `@login_required`** en `views.py` (la vista web es accesible sin autenticación)
-- **`isActivo`** en camelCase — migrar a `is_activo`
-- **`con_estado`** no calcula gastado para presupuestos inactivos (siempre 0)
-- **Admin vacío** — modelo no registrado en `admin.py`
+### Tests: `tests.py` + `test_mejoras.py` (pytest)
 
 ---
 
-## 14. App programaciones — estado actual (95%)
+## 14. App programaciones — estado actual (100%)
 
 ### Modelo: `Programacion`
 
 | Campo | Tipo | Descripción |
 |---|---|---|
 | `monto_programado` | `DecimalField` | Monto a ejecutar |
-| `tipo` | `CharField` | `INGRESO` / `EGRESO` (copiado desde `categoria.tipo`) |
+| `tipo` | `CharField` | `INGRESO` / `EGRESO`, se sincroniza con `categoria.tipo` al crear y al editar |
 | `descripcion` | `CharField` | Opcional, 100 caracteres |
-| `fecha_inicio` | `DateField` | Inicio de la recurrencia |
+| `fecha_inicio` | `DateField` | Primera ocurrencia de la serie |
 | `fecha_fin` | `DateField` | Fin de la recurrencia (opcional) |
 | `frecuencia` | `CharField` | DIARIO, SEMANAL, QUINCENAL, MENSUAL, BIMESTRAL, TRIMESTRAL, SEMESTRAL, ANUAL |
-| `proxima_ejecucion` | `DateField` | Próxima fecha de ejecución calculada |
+| `proxima_ejecucion` | `DateField` | Próxima ocurrencia por confirmar (solo lectura en la API) |
 | `activo` | `BooleanField` | Se desactiva automáticamente al vencer |
 | `categoria` | FK → `categorias.Categoria` | Categoría asociada |
 | `usuario` | FK → `usuarios.Usuario` | Propietario |
 
-### API REST vía ViewSet (`/api/programaciones/`)
+### API REST (`/api/programaciones/`)
 
-CRUD completo con `ProgramacionViewSet` + 2 endpoints custom:
-- `GET /api/programaciones/pendientes/` — lista programaciones listas para ejecutar hoy
+CRUD con `ProgramacionViewSet` (expone además `frecuencia_label` y `monto_mensual`) + 2 endpoints:
+- `GET /api/programaciones/pendientes/` — ocurrencias de hoy o antes, ordenadas por fecha
 - `POST /api/programaciones/{id}/ejecutar/` — acepta o rechaza (`{"accion": "aceptar"|"rechazar"}`)
 
-### Servicios (`services.py`)
+### Reglas de calendario (`services.py`)
 
-- `calcular_proxima_fecha(prog, hoy)` — próxima ejecución usando `relativedelta` según frecuencia
-- `desactivar_si_vencida(prog, hoy)` — desactiva si `fecha_fin` ya pasó
-- `obtener_pendientes(usuario)` — recolecta programaciones listas para ejecutar
-- `ejecutar_programacion(prog, accion, request)` — crea `Movimiento` y avanza `proxima_ejecucion`
-- `DELTA_MAP` — mapeo frecuencia → `relativedelta`
+- Las ocurrencias se calculan siempre desde `fecha_inicio` (`ocurrencia(inicio, frecuencia, n)`), sin corrimiento de fin de mes.
+- Al crear con fecha en el pasado solo queda pendiente el período en curso (`proxima_inicial`).
+- Al editar `fecha_inicio` o `frecuencia` se recalcula la próxima desde hoy; al reactivar se omiten los períodos pausados (`recalcular_tras_edicion`).
+- Al aceptar, el `Movimiento` se registra con la fecha programada y el saldo se valida con `dashboard.services.obtener_disponible`. El historial del movimiento lo crea la señal de `movimientos`.
+- `monto_mensual_estimado` / `FACTOR_MENSUAL` normalizan cada frecuencia a su equivalente mensual.
 
 ### Señales
 
 - `post_save` → `auditar_programacion_guardar`
 - `post_delete` → `auditar_programacion_eliminar`
 
-### Templates: SPA completa
+### Frontend
 
-- `base_programacion.html` → extiende `base_app.html`
-- `listar_programaciones.html` — stats hero, grid de cards, modales CRUD, verificación de pendientes al cargar
+- `listar_programaciones.html` sigue el layout de Ingresos/Egresos: hero con balance mensual programado, banner de pendientes, toolbar con búsqueda y filtros por tipo y estado, grilla de cards, modal de crear/editar con frecuencia en pastillas y modal único de pendientes (registrar, omitir o registrar todas).
+- JS en `programaciones/static/programaciones/js/programaciones.js`; CSS de acento en `programaciones/static/css/programaciones.css`.
 
-### Tests: 20 tests pytest (servicios, serializers, API)
+### Tests: `tests.py` + `test_mejoras.py` (pytest)
 
 ---
 
@@ -633,10 +658,6 @@ Todos los modelos nuevos deben heredar de `ModeloBase`. `ahorros/models.py`, `pr
 | Archivo | Bug | Estado |
 |---|---|---|
 | `notificaciones/services.py` | Código duplicado y comentado al final del archivo | Limpieza pendiente |
-| `presupuesto/views.py` | Falta `@login_required` | Pendiente |
-| `presupuesto/models.py` | Campo `isActivo` en camelCase | Pendiente |
-| `presupuesto/api_views.py` | `con_estado` no calcula gastado para inactivos | Pendiente |
-| `presupuesto/admin.py` | Modelo no registrado en admin | Pendiente |
 | `usuarios/views.py` | Rate limiting en login no implementado | Pendiente |
 | `movimientos/views_api.py` | Decidir approach de seguridad para el Agente (CSRF vs Token) | En discusión |
 

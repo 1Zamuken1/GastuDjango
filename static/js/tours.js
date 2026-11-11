@@ -13,20 +13,58 @@ const getGastuHtml = (imgSrc, text) => `
   </div>
 `;
 
+// La captura automatica puede estar apagada (CAPTURA_HABILITADA): base_app.html
+// lo indica en <body data-captura> y los textos del tour se adaptan.
+const CAPTURA_ACTIVA = document.body.dataset.captura !== '0';
+
 // Imágenes del proyecto
 const gastuImgs = {
   gastu_normal: window.GASTU_STATIC_URL + 'img/gastu_guia.png',
   gastu_rostro: window.GASTU_STATIC_URL + 'img/gastu_guia.png'
 };
 
+// Driver.js no corrige el popover cuando el elemento esta pegado al borde de
+// la pantalla (pasa en movil): lo desplazamos lo justo para que quepa entero.
+const MARGEN_POPOVER = 8;
+const encajarPopover = (wrapper) => {
+    if (!wrapper) return;
+    wrapper.style.translate = '';
+    wrapper.classList.remove('gastu-popover-desplazado');
+    const rect = wrapper.getBoundingClientRect();
+    let dx = 0;
+    if (rect.right > window.innerWidth - MARGEN_POPOVER) dx = window.innerWidth - MARGEN_POPOVER - rect.right;
+    if (rect.left + dx < MARGEN_POPOVER) dx = MARGEN_POPOVER - rect.left;
+    if (dx) {
+        wrapper.style.translate = dx + 'px 0';
+        wrapper.classList.add('gastu-popover-desplazado'); // la flecha ya no apunta bien
+    }
+};
+// Driver.js recoloca el popover despues de pintarlo (y al hacer scroll): cada vez
+// que cambia su left/top lo volvemos a encajar.
+const vigilarPopover = (wrapper) => {
+    if (!wrapper || wrapper._gastuVigilado) return;
+    wrapper._gastuVigilado = true;
+    let ultima = '';
+    new MutationObserver(() => {
+        const pos = [wrapper.style.left, wrapper.style.top, wrapper.style.right, wrapper.className].join('|');
+        if (pos === ultima) return;
+        ultima = pos;
+        encajarPopover(wrapper);
+    }).observe(wrapper, { attributes: true, attributeFilter: ['style', 'class'] });
+    encajarPopover(wrapper);
+};
+
 // Opciones comunes de Driver.js
 const commonDriverOptions = {
+    // Driver.js 1.0 no tiene onPopoverRender: el popover se busca al resaltar cada paso
+    onHighlighted: () => vigilarPopover(document.querySelector('.driver-popover')),
     showProgress: true,
+    progressText: '{{current}} de {{total}}',
     allowClose: false,      // NO cerrar al hacer clic en el overlay — solo con botón X
     showButtons: ['next', 'previous', 'close'], // Mostrar explícitamente el botón de cerrar/skip
     nextBtnText: 'Siguiente &rarr;',
     prevBtnText: '&larr; Anterior',
-    doneBtnText: 'Entendido ✓',
+    doneBtnText: 'Entendido',
     popoverClass: 'gastu-driver-popover',
     overlayColor: '#0f172a',
     overlayOpacity: 0.72,
@@ -40,79 +78,88 @@ const toursConfig = {
         {
             popover: {
                 title: '¡Bienvenido a GastuApp!',
-                description: getGastuHtml(gastuImgs.gastu_normal, '¡Hola! Soy Gastu. Voy a darte un recorrido rápido por tu panel de control para que aproveches al máximo la app.'),
+                description: getGastuHtml(gastuImgs.gastu_normal, '¡Hola! Soy Gastu. Te doy un recorrido rápido por tu panel para que saques el máximo provecho a la app.'),
                 align: 'center'
             }
         },
         {
             element: '#sidebar',
             popover: {
-                title: 'Menú de Navegación',
-                description: getGastuHtml(gastuImgs.gastu_rostro, 'Desde aquí puedes saltar a cualquier módulo: ingresos, egresos, ahorros y más.'),
+                title: 'Menú de navegación',
+                description: getGastuHtml(gastuImgs.gastu_rostro, 'Desde aquí saltas a cualquier módulo: ingresos, egresos, ahorros, presupuestos' + (CAPTURA_ACTIVA ? ', el agente y la captura automática.' : ' y el agente.')),
                 side: 'right', align: 'start'
+            }
+        },
+        {
+            element: '#status-badge-wrap',
+            popover: {
+                title: 'Estado de tu mes',
+                description: 'De un vistazo: verde si vas bien, ámbar si tienes déficit o presupuestos en alerta, y rojo si tu dinero total quedó en negativo.',
+                side: 'bottom', align: 'end'
             }
         },
         {
             element: '.nav-mes-group',
             popover: {
-                title: 'Navegación por Meses',
-                description: 'Aquí puedes revisar la información de meses pasados o volver rápidamente al mes actual.',
-                side: 'bottom', align: 'start'
-            }
-        },
-        {
-            element: '#btn-toggle-filtros',
-            popover: {
-                title: 'Filtros Avanzados',
-                description: 'Usa este botón para desplegar u ocultar los filtros avanzados, donde podrás buscar por fechas, montos y categorías de forma precisa.',
+                title: 'Navegación por meses',
+                description: 'Revisa meses anteriores o vuelve al mes actual con un clic.',
                 side: 'bottom', align: 'start'
             }
         },
         {
             element: '.carousel-section',
             popover: {
-                title: 'Tarjetas de Resumen',
-                description: 'Desliza estas tarjetas para ver tu saldo disponible, utilidad, ahorros y la diferencia entre tus ingresos y gastos.',
+                title: 'Tarjetas de resumen',
+                description: 'Total es todo tu dinero, incluido lo que tienes ahorrado. Disponible es lo que puedes gastar: no cuenta tus ahorros, porque ese dinero no deberías tocarlo. También verás tus ingresos, gastos y la diferencia del mes.',
+                side: 'bottom', align: 'start'
+            }
+        },
+        {
+            element: '.dash-filtros',
+            popover: {
+                title: 'Filtros y exportación',
+                description: 'Filtra el panel por tipo de movimiento, fechas, montos o categorías, y descarga tu información en Excel o PDF.',
                 side: 'bottom', align: 'start'
             }
         },
         {
             element: '#chart-tendencia',
             popover: {
-                title: 'Tendencia Financiera',
-                description: 'Observa la evolución de tus ingresos y egresos a lo largo del mes. Puedes arrastrar y hacer zoom.',
+                title: 'Tendencia del mes',
+                description: 'La evolución de tus ingresos y egresos día a día. Usa los botones de zoom para acercarte a un periodo.',
                 side: 'top', align: 'start'
             }
         },
         {
             element: '#chart-pie',
             popover: {
-                title: 'Distribución de Gastos',
-                description: 'Descubre en qué categorías estás gastando más dinero mediante este gráfico circular.',
+                title: 'Distribución de gastos',
+                description: 'En qué categorías se va tu dinero este mes.',
                 side: 'top', align: 'start'
             }
         },
         {
             element: '.bottom-grid',
             popover: {
-                title: 'Movimientos y Metas',
-                description: 'Revisa tus transacciones recientes y el estado de tus metas de ahorro activas.',
+                title: 'Movimientos y metas',
+                description: 'Tus últimas transacciones y el avance de tus metas de ahorro activas.',
                 side: 'top', align: 'start'
             }
         },
         {
             element: '#notif-btn',
             popover: {
-                title: 'Tus Alertas',
-                description: 'Aquí te enviaré notificaciones inteligentes si detecto gastos inusuales o si te acercas a tu límite presupuestal.',
+                title: 'Tus alertas',
+                description: 'Aquí te aviso si detecto gastos inusuales o si te acercas al límite de un presupuesto.' +
+                    (CAPTURA_ACTIVA ? ' En la pestaña Por revisar aparecen los movimientos que capturé de tus correos del banco, listos para confirmar.' : ''),
                 side: 'bottom', align: 'end'
             }
         },
         {
             element: '#user-btn',
             popover: {
-                title: 'Perfil y Sesión',
-                description: 'Tu espacio personal. Actualiza tus datos o cierra sesión desde este menú.',
+                title: 'Tu cuenta',
+                description: 'Entra a Mi perfil para cambiar tus datos, tu avatar o tus alertas, o cierra sesión.',
                 side: 'bottom', align: 'end'
             }
         }
@@ -120,113 +167,137 @@ const toursConfig = {
     ingresos: [
         {
             popover: {
-                title: 'Módulo de Ingresos',
-                description: getGastuHtml(gastuImgs.gastu_rostro, 'Aquí puedes registrar todo el dinero que entra. ¡A sumar!'),
+                title: 'Módulo de ingresos',
+                description: getGastuHtml(gastuImgs.gastu_rostro, 'Aquí registras todo el dinero que entra. ¡A sumar!'),
                 align: 'center'
             }
         },
         {
-            element: '.hero-stats',
+            element: '.mov-resumen',
             popover: {
-                title: 'Métricas Rápidas',
-                description: 'Un resumen de tus ingresos del mes: cantidad de registros, categorías con actividad y el promedio por registro.',
+                title: 'Resumen del periodo',
+                description: 'El total ingresado, cuántos registros llevas, en cuántas categorías y el promedio por registro. A la derecha ves tu disponible para gastar, sin contar lo que tienes ahorrado.',
+                side: 'bottom', align: 'center'
+            }
+        },
+        {
+            element: '#selector-periodo',
+            popover: {
+                title: 'Elige el periodo',
+                description: 'Cambia el mes o el año para revisar ingresos anteriores.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: '.toolbar__search',
             popover: {
-                title: 'Buscador de Categorías',
-                description: 'Escribe aquí para filtrar rápidamente tus ingresos y encontrar una categoría específica en segundos.',
+                title: 'Buscador de categorías',
+                description: 'Escribe para encontrar una categoría en segundos.',
                 side: 'bottom', align: 'start'
             }
         },
         {
             element: '#btn-historial',
             popover: {
-                title: 'Historial de Ingresos',
-                description: 'Aquí se almacena el registro cronológico completo de todos tus ingresos. Útil para auditorías o revisiones detalladas.',
+                title: 'Historial de ingresos',
+                description: 'El registro completo de tus ingresos en orden cronológico, para revisar un movimiento puntual.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: '.export-group',
             popover: {
-                title: 'Exportación de Datos',
-                description: 'Puedes descargar tu información en formato PDF, Excel o CSV para compartirla o respaldarla.',
+                title: 'Descargar',
+                description: 'Exporta tus ingresos en PDF, Excel o CSV para compartirlos o respaldarlos.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: '#btn-nuevo',
             popover: {
-                title: 'Nuevo Ingreso',
-                description: getGastuHtml(gastuImgs.gastu_rostro, 'Usa este botón para registrar dinero entrante. ¡Cada centavo cuenta!'),
-                side: 'bottom', align: 'start'
+                title: 'Nuevo ingreso',
+                description: getGastuHtml(gastuImgs.gastu_rostro, 'Registra aquí el dinero que entra. ¡Cada peso cuenta!'),
+                side: 'bottom', align: 'end'
             }
         },
         {
             element: '.categorias-grid',
             popover: {
-                title: 'Ingresos por Categoría',
-                description: 'Aquí verás cuánto has ingresado en cada categoría este mes y su porcentaje respecto al total.',
+                title: 'Ingresos por categoría',
+                description: 'Cuánto has ingresado en cada categoría y qué parte del total representa. Toca una tarjeta para ver su detalle.',
                 side: 'top', align: 'start'
             }
         }
     ],
     egresos: [
-         {
+        {
             popover: {
-                title: 'Módulo de Egresos',
-                description: getGastuHtml(gastuImgs.gastu_normal, 'Lleva el control de todos tus gastos. Recuerda: cada peso cuenta y yo te ayudaré a cuidarlos.'),
+                title: 'Módulo de egresos',
+                description: getGastuHtml(gastuImgs.gastu_normal, 'Lleva el control de tus gastos. Cada peso cuenta y yo te ayudo a cuidarlos.'),
                 align: 'center'
             }
         },
         {
-            element: '.hero-stats',
+            element: '.mov-resumen',
             popover: {
-                title: 'Resumen de Gastos',
-                description: 'Revisa cuántos gastos has registrado, en cuántas categorías y cuál es tu promedio de gasto por registro este mes.',
+                title: 'Resumen del periodo',
+                description: 'El total gastado, cuántos registros llevas, en cuántas categorías y el promedio por gasto. A la derecha ves tu disponible para gastar, sin contar lo que tienes ahorrado.',
+                side: 'bottom', align: 'center'
+            }
+        },
+        {
+            element: '#selector-periodo',
+            popover: {
+                title: 'Elige el periodo',
+                description: 'Cambia el mes o el año para comparar tus gastos con meses anteriores.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: '.toolbar__search',
             popover: {
-                title: 'Buscador de Categorías',
-                description: 'Escribe aquí para encontrar rápidamente una categoría y ver cuánto has gastado en ella.',
+                title: 'Buscador de categorías',
+                description: 'Escribe para encontrar una categoría y ver cuánto llevas gastado en ella.',
                 side: 'bottom', align: 'start'
             }
         },
         {
             element: '#btn-historial',
             popover: {
-                title: 'Historial de Egresos',
-                description: 'Aquí se almacenan todos tus gastos de forma cronológica. Ideal para rastrear movimientos puntuales.',
+                title: 'Historial de egresos',
+                description: 'Todos tus gastos en orden cronológico, ideal para rastrear un movimiento puntual.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: '.export-group',
             popover: {
-                title: 'Exportación de Datos',
-                description: 'Descarga un reporte detallado de tus gastos en formato PDF, Excel o CSV para tu control personal.',
+                title: 'Descargar',
+                description: 'Exporta un reporte de tus gastos en PDF, Excel o CSV.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: '#btn-nuevo',
             popover: {
-                title: 'Nuevo Egreso',
-                description: getGastuHtml(gastuImgs.gastu_rostro, 'Añade tus gastos aquí. Te avisaré si estás gastando demasiado rápido en una categoría.'),
-                side: 'bottom', align: 'start'
+                title: 'Nuevo egreso',
+                description: getGastuHtml(gastuImgs.gastu_rostro, 'Añade tus gastos aquí. Te aviso si estás gastando demasiado rápido en una categoría.'),
+                side: 'bottom', align: 'end'
+            }
+        },
+        {
+            element: '.cat-presupuesto',
+            popover: {
+                title: 'Medidor de presupuesto',
+                description: 'Si la categoría tiene un presupuesto activo, este medidor muestra cuánto llevas: verde si vas bien, ámbar cuando te acercas al límite y rojo si te pasaste.',
+                side: 'top', align: 'start'
             }
         },
         {
             element: '.categorias-grid',
             popover: {
-                title: 'Gastos por Categoría',
-                description: 'Un desglose visual de en qué estás gastando más tu dinero durante el mes.',
+                title: 'Gastos por categoría',
+                description: 'En qué se va tu dinero este mes, categoría por categoría. Toca una tarjeta para ver su detalle.',
                 side: 'top', align: 'start'
             }
         }
@@ -248,7 +319,7 @@ const toursConfig = {
             }
         },
         {
-            element: '.btn-historial',
+            element: '#btn-historial',
             popover: {
                 title: 'Historial de Ejecuciones',
                 description: 'Verifica qué programaciones se han ejecutado automáticamente y cuándo.',
@@ -256,7 +327,7 @@ const toursConfig = {
             }
         },
         {
-            element: '.btn-crear',
+            element: '#btn-nuevo',
             popover: {
                 title: 'Nueva Programación',
                 description: getGastuHtml(gastuImgs.gastu_rostro, 'Haz clic aquí para agregar un nuevo pago frecuente.'),
@@ -346,7 +417,7 @@ const toursConfig = {
             }
         },
         {
-            element: '.btn-crear',
+            element: '#btn-nuevo',
             popover: {
                 title: 'Nuevo Presupuesto',
                 description: getGastuHtml(gastuImgs.gastu_rostro, 'Crea un límite de gasto mensual para la categoría que quieras controlar.'),
@@ -382,89 +453,146 @@ const toursConfig = {
     agente: [
         {
             popover: {
-                title: 'Agente Financiero',
-                description: getGastuHtml(gastuImgs.gastu_rostro, '¡Hola! Soy tu asistente inteligente. Puedes preguntarme cualquier duda sobre tus finanzas y te daré consejos.'),
+                title: 'Agente financiero',
+                description: getGastuHtml(gastuImgs.gastu_rostro, '¡Hola! Soy Gastu, tu asistente. Consulto tus datos reales para responderte y puedo registrar movimientos por ti.'),
                 align: 'center'
             }
         },
         {
-            element: '.agente-sugerencias',
+            element: '.agente-ask',
             popover: {
-                title: 'Preguntas Rápidas',
-                description: 'Si no sabes qué preguntar, puedes empezar haciendo clic en cualquiera de estas sugerencias.',
+                title: 'Preguntas rápidas',
+                description: 'Si no sabes por dónde empezar, toca una de estas preguntas.',
                 side: 'top', align: 'center'
             }
         },
         {
-            element: '.agente-input-wrapper',
+            element: '#agenteForm',
             popover: {
-                title: 'Escribe tu consulta',
-                description: 'Escríbeme por aquí. Intenta preguntar "¿En qué gasté más este mes?" o "¿Cómo puedo ahorrar más?"',
+                title: 'Escríbeme como quieras',
+                description: 'Prueba con "¿En qué gasté más este mes?" o "Ayer gasté 20 mil en almuerzo". Si me pides un cambio, te muestro una tarjeta y nada se guarda hasta que tú lo confirmas.',
                 side: 'top', align: 'center'
             }
         },
         {
             element: '#btnLimpiarChat',
             popover: {
-                title: 'Reiniciar Conversación',
-                description: 'Usa este botón si quieres borrar el historial de chat actual y empezar una nueva conversación.',
+                title: 'Nueva conversación',
+                description: 'Borra el chat actual y empieza de cero.',
                 side: 'bottom', align: 'end'
+            }
+        }
+    ],
+    captura: [
+        {
+            popover: {
+                title: 'Captura automática',
+                description: getGastuHtml(gastuImgs.gastu_normal, 'Es una ayuda opcional: si me reenvías los correos de notificación de tu banco, convierto cada compra o transferencia en un movimiento y tú solo revisas y confirmas. Si prefieres, sigue registrando todo a mano.'),
+                align: 'center'
+            }
+        },
+        {
+            element: '#btn-activar',
+            popover: {
+                title: 'Actívala solo si quieres',
+                description: 'Al activarla te doy un correo personal y privado. Nunca te pediré claves del banco ni acceso a tu correo: solo veo las alertas que tú decidas reenviar.',
+                side: 'top', align: 'center'
+            }
+        },
+        {
+            element: '#cap-hero',
+            popover: {
+                title: 'Lo que capturé',
+                description: 'Cuántos movimientos esperan tu revisión, cuánto suman en gastos e ingresos y cuántos ya confirmaste.',
+                side: 'bottom', align: 'center'
+            }
+        },
+        {
+            element: '.cap-tabs',
+            popover: {
+                title: 'Pendientes, historial y reglas',
+                description: 'En Pendientes confirmas o descartas cada movimiento. En Historial ves lo que ya procesé. En Reglas ves lo que aprendí: recuerdo la categoría de cada comercio que confirmas y, si activas Automático, los próximos se registran solos.',
+                side: 'bottom', align: 'start'
+            }
+        },
+        {
+            element: '.cap-direccion',
+            popover: {
+                title: 'Tu dirección de captura',
+                description: 'Crea en Gmail un filtro que reenvíe solo las alertas de tu banco a esta dirección. Si un correo no viene del banco, te lo marco para que lo revises con cuidado.',
+                side: 'left', align: 'start'
+            }
+        },
+        {
+            element: '.cap-config',
+            popover: {
+                title: 'Lista de configuración',
+                description: 'Los pasos para dejarla lista. Se van marcando solos a medida que avanzas, hasta que llegue tu primera alerta.',
+                side: 'left', align: 'start'
             }
         }
     ],
     perfil: [
         {
             popover: {
-                title: 'Tu Perfil',
-                description: getGastuHtml(gastuImgs.gastu_normal, 'Administra tu cuenta, cambia tu contraseña y revisa tu información personal.'),
+                title: 'Tu perfil',
+                description: getGastuHtml(gastuImgs.gastu_normal, 'Administra tu cuenta, tu avatar, tus alertas y tus notificaciones.'),
                 align: 'center'
+            }
+        },
+        {
+            element: '#btn-cambiar-avatar',
+            popover: {
+                title: 'Elige tu avatar',
+                description: 'Toca tu avatar para elegir una de mis versiones: estudiante, chef, deportista y más. Se verá en tu perfil y en la barra superior.',
+                side: 'bottom', align: 'start'
             }
         },
         {
             element: 'button[data-tab="datos"]',
             popover: {
-                title: 'Sección de Datos',
-                description: 'Aquí puedes gestionar tu información personal y seguridad básica.',
+                title: 'Tus datos',
+                description: 'Tu información personal y la seguridad de tu cuenta.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: '#perfil-form',
             popover: {
-                title: 'Editar Información',
-                description: 'Actualiza tu nombre de usuario o tu teléfono de contacto desde este formulario.',
-                side: 'right', align: 'start'
+                title: 'Editar información',
+                description: 'Actualiza tu nombre de usuario o tu teléfono.',
+                side: 'top', align: 'start'
             }
         },
         {
             element: '#password-form',
             popover: {
                 title: 'Seguridad',
-                description: 'Cambia tu contraseña periódicamente para mantener tu cuenta segura.',
-                side: 'right', align: 'start'
+                description: 'Cambia tu contraseña de vez en cuando para mantener tu cuenta segura.',
+                side: 'top', align: 'start'
             }
         },
         {
             element: 'button[data-tab="preferencias"]',
             popover: {
-                title: 'Preferencias de Alerta',
-                description: 'Ajusta cuándo y cómo te avisaré sobre tus gastos y presupuestos (ej. umbral al 80%).',
+                title: 'Preferencias de alertas',
+                description: 'Elige qué te aviso y desde qué valores, agrupado por tema: presupuestos, tendencias, gastos pequeños y ahorro.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: 'button[data-tab="notificaciones"]',
             popover: {
-                title: 'Centro de Notificaciones',
-                description: 'Aquí almacenaré todos los avisos que te he enviado por si necesitas revisarlos después.',
+                title: 'Centro de notificaciones',
+                description: 'Todos los avisos que te he enviado, con filtros por tipo y la opción de marcarlos como leídos.',
                 side: 'bottom', align: 'center'
             }
         },
         {
             element: '.danger-zone',
             popover: {
-                title: 'Zona de Peligro',
-                description: 'Cuidado aquí. Desde esta sección puedes eliminar permanentemente tu cuenta y todos tus datos.',
+                title: 'Zona de peligro',
+                description: 'Desde aquí puedes eliminar tu cuenta y todos tus datos de forma permanente.',
                 side: 'top', align: 'start'
             }
         }
@@ -519,14 +647,15 @@ window.GastuTours = {
 
         // ── Tematización Dinámica por Módulo ──
         const moduleColors = {
-            dashboard: { hex: '#6366f1', rgb: '99, 102, 241' },
+            dashboard: { hex: '#047857', rgb: '4, 120, 87' },
             ingresos: { hex: '#10b981', rgb: '16, 185, 129' },
             egresos: { hex: '#e11d48', rgb: '225, 29, 72' },
             ahorros: { hex: '#d97706', rgb: '217, 119, 6' },
             programaciones: { hex: '#1d4ed8', rgb: '29, 78, 216' },
             presupuestos: { hex: '#7c3aed', rgb: '124, 58, 237' },
             agente: { hex: '#0ea5e9', rgb: '14, 165, 243' },
-            perfil: { hex: '#0d9488', rgb: '13, 148, 136' },
+            perfil: { hex: '#2563eb', rgb: '37, 99, 235' },
+            captura: { hex: '#a21caf', rgb: '162, 28, 175' },
             categorias: { hex: '#a855f7', rgb: '168, 85, 247' },
             historial: { hex: '#64748b', rgb: '100, 116, 139' }
         };
@@ -543,6 +672,12 @@ window.GastuTours = {
                 step.element = '.sidebar-toggle-mobile-btn';
                 step.popover.side = 'bottom';
                 step.popover.align = 'start';
+            }
+            // En movil el popover ocupa casi todo el ancho: centrado no se sale
+            // de la pantalla; los botones pegados al borde derecho van a su derecha.
+            if (isMobile && step.element && step.element !== '.sidebar-toggle-mobile-btn') {
+                const alDerecha = ['#btn-historial', '.export-group', '#btn-nuevo', '#notif-btn', '#user-btn', '#btnLimpiarChat'];
+                step.popover.align = alDerecha.includes(step.element) ? 'end' : 'center';
             }
             return step;
         });

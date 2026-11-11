@@ -1,0 +1,13 @@
+{# Selector de icono de categoria. Parametros: prefijo (crear | editar) #}
+<div>
+  <span class="block text-xs font-600 text-slate-600 mb-1">Ícono</span>
+  <div class="selector-icono" role="radiogroup" aria-label="Ícono de la categoría" id="{{ prefijo }}-cat-iconos">
+    {% for valor, etiqueta in iconos_categoria %}
+    <label class="selector-icono__opcion" title="{{ etiqueta }}">
+      <input type="radio" name="icono" value="{{ valor }}" {% if forloop.first %}checked{% endif %}>
+      <span class="selector-icono__caja"><i data-lucide="{{ valor }}"></i></span>
+      <span class="sr-only">{{ etiqueta }}</span>
+    </label>
+    {% endfor %}
+  </div>
+</div>
