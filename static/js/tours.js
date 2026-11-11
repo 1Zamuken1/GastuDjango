@@ -173,10 +173,10 @@ const toursConfig = {
             }
         },
         {
-            element: '.mov-resumen',
+            element: '.stats-hero',
             popover: {
                 title: 'Resumen del periodo',
-                description: 'El total ingresado, cuántos registros llevas, en cuántas categorías y el promedio por registro. A la derecha ves tu disponible para gastar, sin contar lo que tienes ahorrado.',
+                description: 'El total ingresado, cuántos registros llevas, en cuántas categorías y el promedio por registro. También ves tu disponible para gastar, sin contar lo que tienes ahorrado.',
                 side: 'bottom', align: 'center'
             }
         },
@@ -238,10 +238,10 @@ const toursConfig = {
             }
         },
         {
-            element: '.mov-resumen',
+            element: '.stats-hero',
             popover: {
                 title: 'Resumen del periodo',
-                description: 'El total gastado, cuántos registros llevas, en cuántas categorías y el promedio por gasto. A la derecha ves tu disponible para gastar, sin contar lo que tienes ahorrado.',
+                description: 'El total gastado, cuántos registros llevas, en cuántas categorías y el promedio por gasto. También ves tu disponible para gastar, sin contar lo que tienes ahorrado.',
                 side: 'bottom', align: 'center'
             }
         },
