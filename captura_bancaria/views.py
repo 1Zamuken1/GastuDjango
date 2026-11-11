@@ -20,7 +20,7 @@ from categorias.models import Categoria
 
 from . import services
 from .models import BuzonCaptura, MovimientoDetectado, ReglaComercio
-from .parsers import PARSERS
+from .parsers import PARSERS, remitente_es_del_banco
 from .parsers.base import normalizar_comercio
 
 MAX_CORREO_BYTES = 5 * 1024 * 1024
@@ -90,6 +90,10 @@ def _detectado_json(d, apodos=None):
         'categoria_sugerida': {'id': cat.id, 'nombre': cat.nombre} if cat else None,
         'estado': d.estado,
         'dkim_valido': bool(d.correo and d.correo.dkim_valido),
+        # Sin firma DKIM, el dominio del remitente es la unica pista de que el correo
+        # no es del banco (cualquiera que conozca la direccion de captura puede escribir).
+        'remitente_del_banco': bool(d.correo and remitente_es_del_banco(d.correo.remitente, d.banco)),
+        'remitente': d.correo.remitente if d.correo else '',
         'leido_con_ia': d.metodo == 'IA',
         'resuelto_en': timezone.localtime(d.resuelto_en).isoformat() if d.resuelto_en else None,
     }

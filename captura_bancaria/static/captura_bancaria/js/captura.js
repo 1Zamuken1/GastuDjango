@@ -270,6 +270,17 @@
         v.title = 'La firma digital del correo confirma que lo envió ' + d.banco;
         badges.appendChild(v);
       }
+      if (!d.dkim_valido && !d.remitente_del_banco) {
+        // Sin firma y desde un dominio que no es del banco: puede ser un correo falso.
+        var aviso = el('p', 'cap-aviso-remitente');
+        aviso.setAttribute('role', 'note');
+        aviso.appendChild(icono('triangle-alert'));
+        aviso.appendChild(document.createTextNode(
+          'No viene de un correo de ' + d.banco + (d.remitente ? ' (' + d.remitente + ')' : '') +
+          '. Si no lo reenviaste tú, descártalo.'
+        ));
+        badges.appendChild(aviso);
+      }
       if (d.leido_con_ia) {
         var ia = el('span', 'cap-badge cap-badge--ia');
         ia.appendChild(icono('sparkles'));

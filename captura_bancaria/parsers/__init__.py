@@ -21,6 +21,28 @@ def bancos_soportados():
     return [p.NOMBRE for p in PARSERS]
 
 
+def dominio_de(remitente: str) -> str:
+    """Dominio de una direccion de correo ("Banco <a@b.com>" -> "b.com")."""
+    direccion = (remitente or '').strip().strip('<>').lower()
+    return direccion.rsplit('@', 1)[-1] if '@' in direccion else ''
+
+
+def remitente_es_del_banco(remitente: str, banco: str) -> bool:
+    """
+    True si el remitente pertenece a un dominio oficial del banco.
+
+    Compara el dominio completo (o un subdominio), no una subcadena: asi
+    "bancolombia.com.co.otro-sitio.com" o "bancol0mbia-seguro.com" no pasan.
+    """
+    dominio = dominio_de(remitente)
+    if not dominio:
+        return False
+    for parser in PARSERS:
+        if parser.NOMBRE == banco:
+            return any(dominio == d or dominio.endswith('.' + d) for d in parser.DOMINIOS)
+    return False
+
+
 def detectar_parser(remitente: str, texto: str):
     """Devuelve el parser del banco que envio el correo, o None."""
     for parser in PARSERS:

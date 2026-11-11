@@ -68,6 +68,11 @@
     cuerpo.appendChild(fila);
     var cat = d.categoria_sugerida ? d.categoria_sugerida.nombre : 'Sin categoría';
     cuerpo.appendChild(el('p', 'notif-pend-meta', d.banco + ' · ' + cat));
+    var sospechoso = !d.dkim_valido && !d.remitente_del_banco;
+    if (sospechoso) {
+      // Puede ser un correo falso: se avisa y se manda a revisarlo en la bandeja completa.
+      cuerpo.appendChild(el('p', 'notif-pend-aviso', 'No viene de un correo de ' + d.banco + '. Revísalo antes de confirmar.'));
+    }
     item.appendChild(cuerpo);
 
     var boton = el('button', 'notif-pend-confirmar');
@@ -75,6 +80,10 @@
     boton.title = 'Confirmar con la categoría ' + cat;
     boton.appendChild(icono('check'));
     if (!d.categoria_sugerida) boton.disabled = true;
+    if (sospechoso) {
+      boton.disabled = true;
+      boton.title = 'Revísalo en Captura automática antes de confirmarlo';
+    }
     boton.addEventListener('click', function (e) {
       e.stopPropagation();
       boton.disabled = true;

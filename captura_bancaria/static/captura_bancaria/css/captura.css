@@ -172,6 +172,16 @@
 .cap-badge--ia { background: #f5f3ff; color: #6d28d9; }
 .cap-badge--confirmado { background: #ecfdf5; color: #047857; }
 .cap-badge--descartado { background: #f1f5f9; color: var(--slate-500); }
+/* Aviso de remitente ajeno al banco: ocupa toda la fila para que no pase desapercibido. */
+.cap-aviso-remitente {
+  flex-basis: 100%;
+  display: flex; align-items: flex-start; gap: .45rem;
+  margin: 0; padding: .5rem .7rem; border-radius: .6rem;
+  background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+  font-size: .78rem; font-weight: 600; line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.cap-aviso-remitente svg { flex: none; width: .95rem; height: .95rem; margin-top: .1rem; }
 
 .cap-item__acciones {
   display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: .25rem;

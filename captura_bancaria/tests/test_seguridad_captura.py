@@ -66,3 +66,28 @@ def test_ia_sin_dkim_respeta_cupo_diario(buzon, settings, monkeypatch):
         services.procesar_correo(raw, buzon.direccion)
     assert len(llamadas) == 2
     assert ia.autorizador_ia.get() is None
+
+
+@pytest.mark.parametrize('remitente,esperado', [
+    ('alertasynotificaciones@bancolombia.com.co', True),
+    ('Bancolombia <alertas@notificacionesbancolombia.com>', True),
+    ('alertas@bancol0mbia-seguro.com', False),
+    ('alertas@bancolombia.com.co.otro-sitio.com', False),
+    ('yo@gmail.com', False),
+    ('', False),
+])
+def test_remitente_es_del_banco_compara_dominio_completo(remitente, esperado):
+    from captura_bancaria.parsers import remitente_es_del_banco
+    assert remitente_es_del_banco(remitente, 'Bancolombia') is esperado
+
+
+def test_api_marca_pendiente_de_remitente_ajeno(buzon):
+    from django.test import Client
+    raw = _correo('alertas@bancol0mbia-seguro.com',
+                  'Bancolombia le informa Compra por $1.000,00 en TIENDA X 14:32. 09/11/2026 T.Cred *1234.')
+    services.procesar_correo(raw, buzon.direccion)
+    c = Client()
+    c.force_login(buzon.usuario)
+    detectado = c.get('/captura/api/detectados/').json()['detectados'][0]
+    assert detectado['remitente_del_banco'] is False
+    assert detectado['remitente'] == 'alertas@bancol0mbia-seguro.com'

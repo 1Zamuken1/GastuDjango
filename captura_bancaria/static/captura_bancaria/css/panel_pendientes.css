@@ -73,6 +73,7 @@
 .notif-pend-monto { margin: 0; font-size: .8rem; font-weight: 800; color: #e11d48; white-space: nowrap; }
 .notif-pend-item--ingreso .notif-pend-monto { color: #10b981; }
 .notif-pend-meta { margin: .1rem 0 0; font-size: .72rem; color: #64748b; }
+.notif-pend-aviso { margin: .2rem 0 0; font-size: .72rem; font-weight: 600; color: #92400e; }
 .notif-pend-confirmar {
   flex: 0 0 auto;
   width: 2rem;
