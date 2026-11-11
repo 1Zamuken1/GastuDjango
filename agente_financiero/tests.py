@@ -670,8 +670,9 @@ class TestHardeningRedTeamingIA:
         assert medidor["consumo_pct"] == 25
 
         cifras = next(b for b in bloques if b["tipo"] == "cifras")
-        assert len(cifras["columnas"]) == 2
-        assert cifras["columnas"][0]["valor"] == 150000
+        assert len(cifras["items"]) == 2
+        assert cifras["items"][0]["valor"] == 150000
+        assert cifras["items"][0]["tono"] == "ok"
 
         libreta = next(b for b in bloques if b["tipo"] == "libreta")
         assert libreta["total"]["valor"] == 50000
@@ -972,3 +973,52 @@ class TestHardeningRedTeamingIA:
         e.ejecutar("crear_movimiento", args)
         assert len(e.tarjetas) == 1
         assert AccionPendiente.objects.filter(usuario=usuario).count() == 1
+
+    # ── Fase 3: consejo validado antes de mostrarse ───────────────────────────
+
+    METRICAS = {"limite": 220000, "gastado": 200000, "disponible": 20000, "exceso": 0, "consumo_pct": 91,
+                "umbral_pct": 80, "dias_transcurridos": 10, "dias_restantes": 21, "gasto_diario": 20000,
+                "maximo_diario": 952, "dias_hasta_limite": 1, "anio": 2026}
+
+    @pytest.mark.parametrize("texto,esperado", [
+        ("Llevas $19.900 diarios", [19900]),
+        ("19,9 mil al día", [19900]),
+        ("vas al 88%", [88]),
+        ("1.234.567 pesos", [1234567]),
+    ])
+    def test_extraer_numeros_formato_colombiano(self, texto, esperado):
+        from agente_financiero.servicios_bloques import extraer_numeros
+        assert extraer_numeros(texto) == esperado
+
+    def test_consejo_valido_del_modelo_se_conserva(self):
+        from agente_financiero.servicios_bloques import validar_consejo
+        texto = "**Mi consejo.** Vas al 91% con $20.000 disponibles; intenta no pasar de $952 al día."
+        assert validar_consejo(texto, self.METRICAS) == "Vas al 91% con $20.000 disponibles; intenta no pasar de $952 al día."
+
+    @pytest.mark.parametrize("texto", [
+        "### Estado de tus presupuestos\n| Categoría | Límite |\n|---|---|\n| Transporte | $220.000 |",
+        "Gastas $55.000 al día y te quedan $3.000.000.",
+        "- Reduce gastos\n- Ahorra más",
+        "X" * 300,
+        "",
+    ])
+    def test_consejo_invalido_usa_plantilla(self, texto):
+        from agente_financiero.servicios_bloques import validar_consejo
+        assert validar_consejo(texto, self.METRICAS) is None
+
+    def test_respuesta_larga_del_modelo_no_entra_como_consejo(self, usuario, cat_egreso):
+        from agente_financiero.servicios_bloques import ensamblar_bloques_presupuesto
+        hoy = date.today()
+        Presupuesto.objects.create(usuario=usuario, categoria=cat_egreso, limite=Decimal("100000"),
+                                   fecha_inicio=date(hoy.year, hoy.month, 1), fecha_fin=date(hoy.year, hoy.month, 28), is_activo=True)
+        tabla = "| Categoría | Límite |\n|---|---|\n| Comida | $100.000 |"
+        bloques, _, _ = ensamblar_bloques_presupuesto(usuario, consejo_texto=tabla)
+        consejo = next(b for b in bloques if b["tipo"] == "consejo")
+        assert consejo["origen"] == "plantilla" and "|" not in consejo["texto"]
+        cifras = next(b for b in bloques if b["tipo"] == "cifras")
+        assert {i["tono"] for i in cifras["items"]} <= {"ok", "danger", "neutro"}
+
+    def test_prompt_pide_consejo_corto_y_listas_sin_tablas(self, usuario):
+        sistema = construir_prompt(RecolectorDatos(usuario).recolectar_todo(), "hola")[0]["content"]
+        assert "SOLO un consejo" in sistema
+        assert "no uses tablas" in sistema

@@ -8,6 +8,7 @@ from decimal import Decimal
 from datetime import date
 import calendar
 import logging
+import re
 from django.db.models import Sum, Q
 
 from movimientos.models import Movimiento
@@ -121,6 +122,69 @@ def calcular_metricas_presupuesto(usuario, categoria_nombre=None, mes=None, anio
     }
 
 
+MAX_CONSEJO = 220
+PREFIJOS_CONSEJO = ("**Mi consejo.**", "**Mi consejo:**", "Mi consejo:", "Mi consejo.")
+# Marcado que no cabe en un consejo de una o dos frases (tablas, titulos, listas, citas).
+RE_MARCADO_CONSEJO = re.compile(r"\||^\s*#|^\s*[-*>]\s|\[(badge|color):|```|\n\s*\n", re.MULTILINE)
+RE_NUMERO = re.compile(r"\d[\d.,]*(?:\s*mil\b)?", re.IGNORECASE)
+
+
+def extraer_numeros(texto):
+    """
+    Numeros de un texto en formato colombiano: "$19.900" -> 19900, "19900" -> 19900,
+    "19,9 mil" -> 19900, "88%" -> 88, "3,5" -> 3.5.
+    """
+    numeros = []
+    for crudo in RE_NUMERO.findall(texto or ""):
+        es_mil = crudo.lower().rstrip().endswith("mil")
+        valor = re.sub(r"\s*mil$", "", crudo, flags=re.IGNORECASE).rstrip(".,")
+        if re.fullmatch(r"\d{1,3}(\.\d{3})+", valor):
+            valor = valor.replace(".", "")
+        valor = valor.replace(".", "").replace(",", ".") if "," in valor else valor
+        try:
+            numero = float(valor)
+        except ValueError:
+            continue
+        numeros.append(numero * 1000 if es_mil else numero)
+    return numeros
+
+
+def _cifras_permitidas(metricas):
+    claves = ("limite", "gastado", "disponible", "exceso", "consumo_pct", "umbral_pct",
+              "dias_transcurridos", "dias_restantes", "gasto_diario", "maximo_diario",
+              "dias_hasta_limite", "anio")
+    return [float(metricas[k]) for k in claves if isinstance(metricas.get(k), (int, float))]
+
+
+def validar_consejo(texto, metricas):
+    """
+    Devuelve el consejo del modelo limpio si es apto, o None para usar la plantilla.
+
+    Apto: una o dos frases (maximo 220 caracteres), sin tablas, titulos ni listas, y
+    cada cifra que cite debe salir de las metricas calculadas (tolerancia del 1 %
+    por redondeo). Un modelo pequeno inventa numeros con facilidad; aqui no pasan.
+    """
+    if not texto or not texto.strip():
+        return None
+    limpio = texto.strip()
+    for prefijo in PREFIJOS_CONSEJO:
+        if limpio.startswith(prefijo):
+            limpio = limpio[len(prefijo):].strip()
+    limpio = limpio.replace("**", "")
+    if len(limpio) > MAX_CONSEJO:
+        logger.info("[GASTU] Consejo descartado: %s caracteres", len(limpio))
+        return None
+    if RE_MARCADO_CONSEJO.search(limpio):
+        logger.info("[GASTU] Consejo descartado: trae marcado")
+        return None
+    permitidas = _cifras_permitidas(metricas)
+    for numero in extraer_numeros(limpio):
+        if not any(abs(numero - p) <= max(1.0, abs(p) * 0.01) for p in permitidas):
+            logger.info("[GASTU] Consejo descartado: cifra %s no calculada", numero)
+            return None
+    return " ".join(limpio.split())
+
+
 def generar_consejo_plantilla(metricas):
     """Genera el consejo de respaldo determinista con números exactos."""
     estado = metricas["estado"]
@@ -181,34 +245,31 @@ def ensamblar_bloques_presupuesto(usuario, categoria_nombre=None, consejo_texto=
     }
 
     # 3. Cifras
-    estado_cifra = "ok" if estado == "ok" else ("danger" if estado == "excedido" else "warn")
+    # Contrato con el frontend (renderCifras): "items" con "tono" ok | warn | danger | neutro.
+    dias_txt = f"{metricas['dias_restantes']} día" + ("" if metricas["dias_restantes"] == 1 else "s")
     bloque_cifras = {
         "tipo": "cifras",
-        "columnas": [
+        "items": [
             {
-                "etiqueta": "Te quedan" if estado != "excedido" else "Sobrepasado",
+                "etiqueta": "Te quedan" if estado != "excedido" else "Te pasaste por",
                 "valor": metricas["disponible"] if estado != "excedido" else metricas["exceso"],
-                "estado": estado_cifra,
+                "tono": "ok" if estado != "excedido" else "danger",
             },
             {
-                "etiqueta": "Máximo por día",
-                "valor": metricas["maximo_diario"],
-                "estado": "ok" if estado == "ok" else "warn",
-            }
-        ]
+                "etiqueta": f"Máximo por día, {dias_txt} restantes" if estado != "excedido" else "Gasto promedio por día",
+                "valor": metricas["maximo_diario"] if estado != "excedido" else metricas["gasto_diario"],
+                "tono": "neutro",
+            },
+        ],
     }
 
-    # 4. Consejo
-    if not consejo_texto or len(consejo_texto.strip()) == 0:
+    # 4. Consejo: el del modelo solo si pasa la validacion; si no, el de plantilla.
+    consejo_final = validar_consejo(consejo_texto, metricas)
+    if consejo_final is None:
         consejo_final = generar_consejo_plantilla(metricas)
         origen_consejo = "plantilla"
     else:
-        # Limpiar texto del modelo si incluye "Mi consejo:" repetido
-        consejo_limpio = consejo_texto.strip()
-        for prefix in ["**Mi consejo.**", "**Mi consejo:**", "Mi consejo:", "Mi consejo."]:
-            if consejo_limpio.startswith(prefix):
-                consejo_limpio = consejo_limpio[len(prefix):].strip()
-        consejo_final = consejo_limpio
+        origen_consejo = "modelo"
 
     bloque_consejo = {
         "tipo": "consejo",
@@ -254,15 +315,15 @@ def ensamblar_bloques_presupuesto(usuario, categoria_nombre=None, consejo_texto=
     }
 
     # 7. Siguientes (Atajos rápidos de continuación)
-    otros_presupuestos = Presupuesto.objects.filter(
+    otro_presupuesto = Presupuesto.objects.filter(
         usuario=usuario, is_activo=True
-    ).exclude(categoria_id=metricas["categoria_id"])[:1]
+    ).exclude(categoria_id=metricas["categoria_id"]).select_related("categoria").order_by("pk").first()
 
     items_siguientes = [
         {"etiqueta": "¿Qué pasa si supero mi límite?", "pregunta": f"¿Qué pasa si supero el presupuesto de {cat}?"}
     ]
-    if otros_presupuestos.exists():
-        otra_cat = otros_presupuestos.first().categoria.nombre
+    if otro_presupuesto:
+        otra_cat = otro_presupuesto.categoria.nombre
         items_siguientes.append({
             "etiqueta": f"Ver presupuesto de {otra_cat}",
             "pregunta": f"Cómo va mi presupuesto de {otra_cat}"

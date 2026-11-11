@@ -3,15 +3,6 @@
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/agente_financiero.css' %}">
-  <style>
-    /* Full bleed para el agente en base_app: anular padding y controlar scroll interno */
-    #app-content {
-      padding: 0 !important;
-      overflow: hidden !important;
-      height: calc(100vh - var(--topbar-h)) !important;
-      min-height: calc(100vh - var(--topbar-h)) !important;
-    }
-  </style>
 {% endblock %}
 
 {% block title %}Agente Financiero — GastuApp{% endblock %}
@@ -21,7 +12,7 @@
 {% block nav_agente %}active{% endblock %}
 
 {% block content %}
-<div class="agente-wrapper" id="agenteWrapper">
+<div class="agente-wrapper" id="agenteWrapper" data-usuario-nombre="{{ user.first_name|default:user.username }}">
 
   <!-- Header plano -->
   <header class="agente-header">
@@ -33,12 +24,12 @@
     </div>
     <div class="agente-header__text">
       <h2 class="agente-header__nombre">Gastu</h2>
-      <p class="agente-header__desc" title="Consulta tus datos reales; nunca los modifica">
-        Consulta tus datos reales; nunca los modifica
+      <p class="agente-header__desc" title="Consulta tus datos reales; los cambios siempre los confirmas tú">
+        Consulta tus datos reales; los cambios siempre los confirmas tú
       </p>
     </div>
     <div class="agente-header__actions">
-      <button class="agente-btn-limpiar" id="btnLimpiarChat" title="Limpiar conversación">
+      <button type="button" class="agente-btn-limpiar" id="btnLimpiarChat" title="Limpiar conversación" aria-label="Limpiar conversación">
         <i data-lucide="trash-2"></i>
         <span>Limpiar conversación</span>
       </button>
@@ -110,10 +101,10 @@
   </main>
 
   <!-- Estado Revisando / Typing -->
-  <div class="agente-typing-bar" id="agenteTyping" aria-hidden="true" style="display: none;">
+  <div class="agente-typing-bar" id="agenteTyping" role="status" hidden>
     <div class="agente-typing-inner">
       <div class="agente-avatar agente-avatar--msg agente-avatar--pensando">
-        <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="Gastu IA" class="agente-avatar__img">
+        <img src="{% static 'img/gastu_logo_rostro.png' %}" alt="" class="agente-avatar__img">
       </div>
       <div class="agente-typing-text">
         <span id="agenteTypingFrase">Revisando tus datos financieros</span>
@@ -152,10 +143,6 @@
   <script>
     window.CURRENT_MODULE = 'agente';
     if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
-
-    // Exponer nombre e inicial del usuario
-    window.GASTU_USER_NAME = "{{ user.first_name|default:user.username }}";
-    window.GASTU_USER_INICIAL = "{{ user.first_name|default:user.username|first|upper }}";
   </script>
   <script src="{% static 'js/agente_financiero.js' %}"></script>
 {% endblock %}

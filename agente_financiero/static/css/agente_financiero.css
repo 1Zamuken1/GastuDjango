@@ -396,9 +396,16 @@
 }
 
 .agente-medidor__bandera {
+  /* --pos (0 a 100 %) lo pone el JS: la bandera se desplaza en la misma proporcion
+     que su posicion, asi nunca se sale del track (al 100 % queda alineada a la derecha). */
+  --pos: 50%;
   position: absolute;
   top: 0;
-  transform: translateX(-50%);
+  left: var(--pos);
+  transform: translateX(calc(var(--pos) * -1));
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   background: var(--agente-flag-bg);
   color: #ffffff;
   font-family: "DM Sans", sans-serif;
@@ -414,7 +421,7 @@
 .agente-medidor__bandera::after {
   content: "";
   position: absolute;
-  left: 50%;
+  left: clamp(10px, var(--pos), calc(100% - 10px));
   bottom: -4px;
   width: 8px;
   height: 8px;
@@ -1208,4 +1215,84 @@
   .agente-confirmacion__btn {
     flex: 1 1 0;
   }
+}
+
+/* ── Pagina completa sin doble scroll ────────────────────────── */
+/* #app-content tiene margin-top: var(--topbar-h) y el body height: 100%: sin un
+   contexto de formato propio ese margen colapsa a traves del body y la pagina
+   crece 70 px, lo que daba un segundo scroll ademas del del chat. */
+body:has(.agente-wrapper) {
+  display: flow-root;
+  overflow: hidden;
+}
+#app-content:has(> .agente-wrapper) {
+  padding: 0;
+  overflow: hidden;
+  height: calc(100vh - var(--topbar-h));
+  height: calc(100dvh - var(--topbar-h));
+  min-height: 0;
+}
+.agente-typing-bar[hidden] {
+  display: none;
+}
+
+/* La campana flotante de alertas sube por encima del campo de escritura. */
+body:has(.agente-wrapper) .gastu-campana {
+  bottom: 116px;
+}
+@media (max-width: 768px) {
+  body:has(.agente-wrapper) .gastu-campana {
+    bottom: 100px;
+    right: 14px;
+  }
+}
+
+/* ── Saludo del estado vacio ─────────────────────────────────── */
+.agente-hero__pregunta {
+  display: block;
+}
+
+/* ── Cifras en tono de peligro (presupuesto excedido) ─────────── */
+.agente-cifras__col.is-danger .agente-cifras__valor {
+  color: var(--agente-danger);
+}
+
+/* ── Error dentro del flujo ──────────────────────────────────── */
+.agente-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.agente-error__texto {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--agente-danger);
+}
+.agente-error__reintentar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--agente-line-strong);
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--agente-ink);
+  cursor: pointer;
+}
+.agente-error__reintentar:hover {
+  border-color: var(--agente-ink-muted);
+}
+.agente-error__reintentar:focus-visible {
+  outline: 2px solid var(--agente-action);
+  outline-offset: 2px;
+}
+.agente-error__reintentar svg {
+  width: 15px;
+  height: 15px;
 }

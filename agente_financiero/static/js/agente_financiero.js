@@ -16,6 +16,9 @@
   const btnLimpiar        = document.getElementById("btnLimpiarChat");
   const mensajeBienvenida = document.getElementById("mensajeBienvenida");
   const heroSaludo        = document.getElementById("heroSaludo");
+  const wrapper           = document.getElementById("agenteWrapper");
+  const NOMBRE_USUARIO    = (wrapper && wrapper.dataset.usuarioNombre) || "";
+  const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
   let esperandoRespuesta = false;
 
@@ -35,6 +38,13 @@
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
   }
 
+  function fechaCorta(texto) {
+    return String(texto || "").replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, function (m, a, mes, dia) {
+      var i = parseInt(mes, 10) - 1;
+      return (i >= 0 && i < 12) ? dia + " " + MESES_CORTOS[i] : m;
+    });
+  }
+
   function formatearCOP(monto) {
     var n = Math.round(Number(monto) || 0);
     return "$" + n.toLocaleString("es-CO");
@@ -50,8 +60,8 @@
     } else if (hora >= 19 || hora < 5) {
       saludo = "Buenas noches";
     }
-    const nombre = window.GASTU_USER_NAME || "Demo";
-    heroSaludo.innerHTML = `${saludo}, ${escaparHTML(nombre)}.<br><span style="font-size:0.85em;font-weight:700;color:var(--agente-ink-muted);">¿Qué revisamos hoy?</span>`;
+    heroSaludo.innerHTML = escaparHTML(NOMBRE_USUARIO ? saludo + ", " + NOMBRE_USUARIO + "." : saludo + ".") +
+      '<span class="agente-hero__pregunta">¿Qué revisamos hoy?</span>';
   }
 
   // ── Formateo Enriquecido de Contenidos Inline ─────────────────────
@@ -158,11 +168,11 @@
 
     while (i < lineas.length) {
       var linea = lineas[i];
-      var match = linea.match(/^\s*&gt;\s*\[!(TIP|WARNING|NOTE|DANGER)\]\s*(.*)$/i) ||
-                  linea.match(/^\s*>\s*\[!(TIP|WARNING|NOTE|DANGER)\]\s*(.*)$/i);
+      // "> [!TIP] texto" o una cita simple "> texto" (se muestra como nota).
+      var match = linea.match(/^\s*&gt;\s*(?:\[!(TIP|WARNING|NOTE|DANGER)\])?\s*(.*)$/i);
 
       if (match) {
-        var tipo = match[1].toUpperCase();
+        var tipo = (match[1] || "NOTE").toUpperCase();
         var primerContenido = match[2];
         var info = tipoCalloutMap[tipo] || tipoCalloutMap['NOTE'];
         var bloqueLineas = [];
@@ -173,7 +183,7 @@
 
         while (i < lineas.length) {
           var sig = lineas[i];
-          var contMatch = sig.match(/^\s*&gt;\s?(.*)$/) || sig.match(/^\s*>\s?(.*)$/);
+          var contMatch = sig.match(/^\s*&gt;\s?(.*)$/);
           if (contMatch) {
             if (/^\s*\[!(TIP|WARNING|NOTE|DANGER)\]/i.test(contMatch[1])) {
               break;
@@ -214,12 +224,14 @@
     var numUmbral = Math.min(Math.round((umbralPct / 100) * 24), 24);
 
     var banderaTexto = formatearCOP(gastado) + " de " + formatearCOP(limite);
-    var banderaPos = Math.min(Math.max((numLlenos / 24) * 100, 8), 92);
+    var banderaPos = Math.round(Math.min(Math.max(((numLlenos - 0.5) / 24) * 100, 0), 100) * 10) / 10;
 
     var ariaLabel = consumoPct + "% consumido, " + formatearCOP(gastado) + " de " + formatearCOP(limite);
 
     var html = '<div class="agente-medidor" role="region" aria-label="Indicador de consumo presupuestal">';
-    html += '  <div class="agente-medidor__bandera" style="left: ' + banderaPos + '%;">' + escaparHTML(banderaTexto) + '</div>';
+    // --pos mueve la bandera y la desplaza en la misma proporcion: al 0% queda alineada a la
+    // izquierda, al 100% a la derecha, y la flecha siempre apunta al ultimo segmento lleno.
+    html += '  <div class="agente-medidor__bandera" style="--pos: ' + banderaPos + '%;">' + escaparHTML(banderaTexto) + '</div>';
     html += '  <div class="agente-medidor__track" role="img" aria-label="' + escaparHTML(ariaLabel) + '">';
 
     for (var s = 1; s <= 24; s++) {
@@ -295,7 +307,7 @@
       var montoStr = signo + formatearCOP(fila.monto);
 
       html += '  <div class="agente-libreta__row" role="row">';
-      html += '    <em class="agente-libreta__fecha" role="cell">' + escaparHTML(fila.fecha || "") + '</em>';
+      html += '    <em class="agente-libreta__fecha" role="cell">' + escaparHTML(fechaCorta(fila.fecha)) + '</em>';
       html += '    <span class="agente-libreta__concepto" role="cell" title="' + escaparHTML(fila.concepto || "") + '">' + escaparHTML(fila.concepto || "Sin detalle") + '</span>';
       html += '    <u class="agente-libreta__puntos" aria-hidden="true"></u>';
       html += '    <b class="' + montoClase + '" role="cell">' + montoStr + '</b>';
@@ -453,7 +465,7 @@
     // injection no puede pintar botones o tarjetas falsas en el chat.
 
     // Formateo Markdown enriquecido
-    var t = escaparHTML(texto);
+    var t = escaparHTML(fechaCorta(texto));
 
     // Titular destacado si empieza con ## o similar
     t = t.replace(/^##\s+(.*?)$/gm, '<h3 class="agente-lead">$1</h3>');
@@ -483,11 +495,25 @@
     return htmlPartes.join("");
   }
 
+  // Error dentro del flujo: el mensaje y un boton para reintentar la misma pregunta.
+  function renderError(mensaje, pregunta) {
+    var html = '<div class="agente-error" role="alert">';
+    html += '  <p class="agente-error__texto">' + escaparHTML(mensaje) + '</p>';
+    if (pregunta) {
+      html += '  <button type="button" class="agente-error__reintentar" data-pregunta="' + escaparHTML(pregunta) + '">';
+      html += '    <i data-lucide="rotate-ccw" aria-hidden="true"></i><span>Reintentar</span>';
+      html += '  </button>';
+    }
+    html += '</div>';
+    return html;
+  }
+
   // ── Renderizado de Mensajes en el Chat ────────────────────────────
   function agregarMensaje(rol, htmlContenido, hora, opciones) {
     opciones = opciones || {};
     var animo = opciones.animo || "normal";
     var procedencia = opciones.procedencia || "";
+    var pregunta = opciones.pregunta || "";
 
     var h = hora || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -522,6 +548,9 @@
               <button type="button" class="agente-btn-action agente-btn-copiar-msg" title="Copiar respuesta" aria-label="Copiar respuesta completa">
                 <i data-lucide="copy"></i>
               </button>
+              ${pregunta ? `<button type="button" class="agente-btn-action agente-btn-regenerar" title="Regenerar respuesta" aria-label="Regenerar respuesta" data-pregunta="${escaparHTML(pregunta)}">
+                <i data-lucide="refresh-cw"></i>
+              </button>` : ""}
             </div>
             ${procedenciaHtml}
           </div>
@@ -541,8 +570,7 @@
 
   function setTyping(activo, frase) {
     if (!typingIndicator) return;
-    typingIndicator.style.display = activo ? "block" : "none";
-    typingIndicator.setAttribute("aria-hidden", activo ? "false" : "true");
+    typingIndicator.hidden = !activo;
     if (typingFrase && frase) {
       typingFrase.textContent = frase;
     } else if (typingFrase) {
@@ -569,7 +597,9 @@
       }
 
       if (mensajeBienvenida) mensajeBienvenida.style.display = "none";
+      var ultimaPregunta = "";
       data.mensajes.forEach(m => {
+        if (m.rol === "user") ultimaPregunta = m.contenido;
         var contenidoHtml = "";
         if (m.bloques && Array.isArray(m.bloques)) {
           contenidoHtml = renderBloques(m.bloques);
@@ -580,7 +610,7 @@
           m.rol === "user" ? "user" : "bot",
           contenidoHtml,
           m.hora,
-          { animo: m.animo, procedencia: m.procedencia }
+          { animo: m.animo, procedencia: m.procedencia, pregunta: m.rol === "user" ? "" : ultimaPregunta }
         );
       });
     } catch (e) {
@@ -627,12 +657,12 @@
         respuestaHtml = formatearBot(data.respuesta || "Sin respuesta del agente.");
       }
 
-      agregarMensaje("bot", respuestaHtml, null, { animo: data.animo, procedencia: data.procedencia });
+      agregarMensaje("bot", respuestaHtml, null, { animo: data.animo, procedencia: data.procedencia, pregunta: texto });
 
     } catch (err) {
       setTyping(false);
       var textoError = (err && err.message) ? err.message : "Error al procesar tu consulta. Intenta de nuevo.";
-      agregarMensaje("bot", `<span class="agente-error" style="color:var(--agente-danger);font-weight:500;">${escaparHTML(textoError)}</span>`);
+      agregarMensaje("bot", renderError(textoError, texto), null, { animo: "critico" });
     } finally {
       esperandoRespuesta = false;
       btnEnviar.disabled = input.value.trim() === "";
@@ -672,7 +702,24 @@
       return;
     }
 
-    // 2. Atajos de seguimiento (.agente-next-btn)
+    // 2. Reintentar tras un error o regenerar una respuesta
+    const reenviar = e.target.closest(".agente-error__reintentar, .agente-btn-regenerar");
+    if (reenviar) {
+      const pregunta = reenviar.dataset.pregunta;
+      if (pregunta && !esperandoRespuesta) {
+        const error = reenviar.closest(".agente-ai");
+        if (reenviar.classList.contains("agente-error__reintentar") && error) {
+          // La pregunta fallida se vuelve a enviar: se quita su burbuja para no duplicarla.
+          const previa = error.previousElementSibling;
+          if (previa && previa.classList.contains("agente-me")) previa.remove();
+          error.remove();
+        }
+        enviarMensaje(pregunta);
+      }
+      return;
+    }
+
+    // 3. Atajos de seguimiento (.agente-next-btn)
     const nextBtn = e.target.closest(".agente-next-btn");
     if (nextBtn) {
       const pregunta = nextBtn.dataset.pregunta;
@@ -685,12 +732,11 @@
   btnLimpiar.addEventListener("click", async () => {
     let confirmado = true;
 
-    if (window.GastuAlerts && window.GastuAlerts.confirm) {
-      confirmado = await window.GastuAlerts.confirm(
-        "¿Vaciar conversación?",
-        "Se borrará todo el historial del chat de forma permanente.",
-        "Sí, vaciar",
-        "Cancelar"
+    if (window.GastuAlerts && window.GastuAlerts.confirmar) {
+      confirmado = await window.GastuAlerts.confirmar(
+        "¿Vaciar la conversación?",
+        "Se borrará todo el historial del chat de forma permanente. Tus movimientos no cambian.",
+        "Sí, vaciar"
       );
     } else {
       confirmado = confirm("¿Estás seguro de que deseas vaciar toda la conversación?");
