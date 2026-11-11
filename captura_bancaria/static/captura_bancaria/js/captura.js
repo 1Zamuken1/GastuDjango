@@ -1007,4 +1007,8 @@
     cargarPendientes().catch(function () {});
     cargarResumen().catch(function () {});
   }, 30000);
+
+  // Tutorial guiado del modulo (boton de ayuda de la barra superior)
+  window.CURRENT_MODULE = 'captura';
+  if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
 })();
