@@ -1,0 +1,5 @@
+<span class="{{ clase }} avatar-ui avatar-ui--{{ avatar.tipo }}" data-avatar-slot{% if avatar.tipo == 'pool' %} style="--avatar-color: {{ avatar.color }}"{% endif %}>
+  {% if avatar.tipo == 'pool' %}<i data-lucide="{{ avatar.icono }}" aria-hidden="true"></i>
+  {% elif avatar.tipo == 'foto' %}<img src="{{ avatar.url }}" alt="" referrerpolicy="no-referrer">
+  {% else %}<span aria-hidden="true">{{ avatar.inicial }}</span>{% endif %}
+</span>

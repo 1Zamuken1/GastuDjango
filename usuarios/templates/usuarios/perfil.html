@@ -1,5 +1,5 @@
 {% extends 'base_app.html' %}
-{% load static %}
+{% load static usuarios_extras %}
 
 {% block title %}Mi perfil — GastuApp{% endblock %}
 {% block page_title %}Mi perfil{% endblock %}
@@ -46,13 +46,10 @@
   {# ── Hero de perfil ──────────────────────────────────── #}
   <div class="perfil-hero">
     <div class="perfil-hero-banda" aria-hidden="true"></div>
-    <div class="perfil-hero-avatar{% if foto_perfil %} perfil-hero-avatar--foto{% endif %}">
-      {% if foto_perfil %}
-      <img src="{{ foto_perfil }}" alt="Foto de perfil de {{ request.user.username }}" referrerpolicy="no-referrer" width="56" height="56">
-      {% else %}
-      <span aria-hidden="true">{{ request.user.username|first|upper }}</span>
-      {% endif %}
-    </div>
+    <button type="button" class="perfil-hero-avatar-btn" id="btn-cambiar-avatar" aria-haspopup="dialog" aria-controls="modal-avatar" aria-label="Cambiar avatar" title="Cambiar avatar">
+      {% avatar_usuario request.user "perfil-hero-avatar" %}
+      <span class="perfil-hero-avatar-editar" aria-hidden="true"><i data-lucide="pencil"></i></span>
+    </button>
     <div class="perfil-hero-info">
       <h2 class="perfil-hero-name font-display">{{ request.user.username }}</h2>
       <div class="perfil-hero-meta">
@@ -346,6 +343,61 @@
   </div>
 </div>
 
+{# ── Modal cambiar avatar ─────────────────────────────── #}
+<div class="modal-avatar-overlay" id="modal-avatar" aria-hidden="true"
+     data-url="{% url 'cambiar_avatar' %}"
+     data-actual="{{ avatar_actual.clave }}"
+     data-foto="{{ foto_perfil }}"
+     data-inicial="{{ avatar_actual.inicial }}">
+  <div class="modal-avatar" role="dialog" aria-modal="true" aria-labelledby="modal-avatar-titulo">
+    <div class="modal-avatar__lado">
+      <span class="modal-avatar__preview avatar-ui" id="avatar-preview" aria-hidden="true"></span>
+      <div>
+        <p class="modal-avatar__eyebrow">Vista previa</p>
+        <p class="modal-avatar__nombre" id="avatar-preview-nombre">Automático</p>
+      </div>
+    </div>
+
+    <div class="modal-avatar__cuerpo">
+      <div class="modal-avatar__cabecera">
+        <div>
+          <h3 class="modal-avatar__titulo font-display" id="modal-avatar-titulo">Elige tu avatar</h3>
+          <p class="modal-avatar__sub">Se verá en tu perfil y en la barra superior.</p>
+        </div>
+        <button type="button" class="modal-avatar__cerrar" id="btn-cerrar-avatar" aria-label="Cerrar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="modal-avatar__rejilla" role="radiogroup" aria-labelledby="modal-avatar-titulo">
+        <button type="button" class="avatar-opcion avatar-opcion--auto" role="radio" aria-checked="false"
+                data-avatar="" data-nombre="Automático">
+          <span class="avatar-opcion__circulo" aria-hidden="true"><i data-lucide="sparkles"></i></span>
+          Automático
+        </button>
+        {% for clave, a in avatares.items %}
+        <button type="button" class="avatar-opcion" role="radio" aria-checked="false"
+                data-avatar="{{ clave }}" data-icono="{{ a.icono }}" data-color="{{ a.color }}" data-nombre="{{ a.nombre }}">
+          <span class="avatar-opcion__circulo" style="--avatar-color: {{ a.color }}" aria-hidden="true"><i data-lucide="{{ a.icono }}"></i></span>
+          {{ a.nombre }}
+        </button>
+        {% endfor %}
+      </div>
+
+      <div class="modal-avatar__pie">
+        <p class="modal-avatar__nota">Automático usa tu foto de Google si la tienes, o tu inicial.</p>
+        <div class="modal-avatar__acciones">
+          <button type="button" class="btn-avatar-cancelar" id="btn-cancelar-avatar">Cancelar</button>
+          <button type="button" class="btn-perfil btn-sm" id="btn-guardar-avatar">
+            <i data-lucide="check" class="btn-icon"></i>
+            Guardar avatar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {# ── Modal eliminar cuenta ────────────────────────────── #}
 <div class="modal-delete-overlay" id="modal-eliminar">
   <div class="modal-delete">
@@ -412,4 +464,5 @@
   if (window.GastuTours) window.GastuTours.init(window.CURRENT_MODULE);
 </script>
 <script src="{% static 'usuarios/js/perfil.js' %}"></script>
+<script src="{% static 'usuarios/js/avatar.js' %}"></script>
 {% endblock %}

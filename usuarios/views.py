@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.conf import settings
 
 from .forms import UsuarioCreationForm, LoginForm, PerfilForm
-from .services import foto_de_perfil
+from .services import AVATARES, avatar_de, cambiar_avatar, foto_de_perfil
 from notificaciones.preferencias.models import PreferenciasAlertas
 from notificaciones.preferencias.forms import PreferenciasAlertasForm
 from notificaciones.preferencias.service import PreferenciasService
@@ -227,4 +227,18 @@ def perfil_view(request):
         'recuentos_modulos': recuentos_modulos,
         'notificaciones_modulo_choices': Notificacion.Modulo.choices,
         'foto_perfil': foto_de_perfil(request.user),
+        'avatar_actual': avatar_de(request.user),
+        'avatares': AVATARES,
     })
+
+
+@login_required
+@require_POST
+@ratelimit(key='user', rate='30/m', block=True)
+def cambiar_avatar_view(request):
+    """Cambia el avatar del usuario por uno del pool ("" = automatico)."""
+    try:
+        avatar = cambiar_avatar(request.user, request.POST.get('avatar', ''))
+    except ValueError as error:
+        return JsonResponse({'ok': False, 'error': str(error)}, status=400)
+    return JsonResponse({'ok': True, 'avatar': avatar})

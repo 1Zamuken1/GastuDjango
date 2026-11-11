@@ -1034,3 +1034,16 @@ body.sidebar-mini #app-content {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* ── Avatar del usuario (pool de avatares, foto de Google o inicial) ──
+   El color del avatar del pool llega en --avatar-color. */
+.avatar-ui { overflow: hidden; }
+.avatar-ui img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-ui--pool {
+  background: var(--avatar-color, #2563eb) !important;
+  border-color: var(--avatar-color, #2563eb) !important;
+  color: #fff;
+}
+.avatar-ui--pool svg { width: 58%; height: 58%; stroke-width: 2; color: #fff; }
+.avatar-ui--foto { padding: 0; }
+.user-avatar.avatar-ui--pool svg { width: 16px; height: 16px; }

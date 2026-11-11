@@ -1,4 +1,4 @@
-{% load static %}
+{% load static usuarios_extras %}
 <!doctype html>
 <html lang="es" class="h-full">
   <head>
@@ -562,9 +562,7 @@
 
         <div style="position: relative">
           <button id="user-btn" aria-label="Menú de usuario">
-            <div class="user-avatar">
-              <span>{{ request.user.username|first|upper }}</span>
-            </div>
+            {% avatar_usuario request.user "user-avatar" %}
             <span class="user-name">{{ request.user.username }}</span>
             <i
               data-lucide="chevron-down"
