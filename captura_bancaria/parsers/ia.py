@@ -54,15 +54,22 @@ def ia_disponible() -> bool:
 
 def _llamar_groq(asunto: str, texto: str) -> dict:
     """Pide a Groq la extraccion en JSON. Lanza excepcion si falla la llamada."""
-    modelo = getattr(settings, 'GROQ_MODEL', None) or 'openai/gpt-oss-120b'
+    modelo = (
+        getattr(settings, 'GROQ_MODEL_CAPTURA', None)
+        or getattr(settings, 'GROQ_MODEL', None)
+        or 'openai/gpt-oss-120b'
+    )
+    # gpt-oss razona antes de responder; con esfuerzo bajo no se come el max_tokens.
+    extra = {'reasoning_effort': 'low'} if modelo.startswith('openai/gpt-oss') else {}
     respuesta = requests.post(
         GROQ_API_URL,
         headers={'Authorization': f'Bearer {settings.GROQ_API_KEY}', 'Content-Type': 'application/json'},
         json={
             'model': modelo,
             'temperature': 0,
-            'max_tokens': 400,
+            'max_tokens': 800,
             'response_format': {'type': 'json_object'},
+            **extra,
             'messages': [
                 {'role': 'system', 'content': INSTRUCCIONES},
                 {'role': 'user', 'content': f'Asunto: {asunto}\n\n{texto[:MAX_CARACTERES]}'},

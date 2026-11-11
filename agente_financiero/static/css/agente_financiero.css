@@ -1098,3 +1098,114 @@
     transition: none !important;
   }
 }
+
+/* ── Tarjeta de confirmacion de acciones (human-in-the-loop) ─── */
+.agente-confirmacion {
+  margin: 14px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--agente-line-strong);
+  border-left: 3px solid var(--agente-action);
+  border-radius: 12px;
+  background: var(--agente-field-bg);
+}
+.agente-confirmacion__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--agente-action);
+}
+.agente-confirmacion__cabecera svg {
+  width: 16px;
+  height: 16px;
+}
+.agente-confirmacion__resumen {
+  margin: 8px 0 12px;
+  font-size: 15px;
+  color: var(--agente-ink);
+  overflow-wrap: anywhere;
+}
+.agente-confirmacion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.agente-confirmacion__btn {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--agente-line-strong);
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--agente-ink);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.agente-confirmacion__btn:hover:not(:disabled) {
+  border-color: var(--agente-ink-muted);
+}
+.agente-confirmacion__btn--ok {
+  background: var(--agente-action);
+  border-color: var(--agente-action);
+  color: #fff;
+}
+.agente-confirmacion__btn--ok:hover:not(:disabled) {
+  background: var(--agente-action-bright);
+  border-color: var(--agente-action-bright);
+}
+.agente-confirmacion__btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.agente-confirmacion__btn:focus-visible {
+  outline: 2px solid var(--agente-action);
+  outline-offset: 2px;
+}
+.agente-confirmacion__estado {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  color: var(--agente-ink-muted);
+}
+.agente-confirmacion__estado:empty {
+  display: none;
+}
+.agente-confirmacion__estado.is-confirmada {
+  color: var(--agente-action);
+  font-weight: 600;
+}
+.agente-confirmacion__estado.is-fallida {
+  color: var(--agente-danger);
+}
+
+/* ── Boton de descarga de reportes ───────────────────────────── */
+.agente-descarga {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--agente-line-strong);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--agente-action);
+  text-decoration: none;
+}
+.agente-descarga:hover {
+  border-color: var(--agente-action);
+}
+.agente-descarga svg {
+  width: 16px;
+  height: 16px;
+}
+@media (max-width: 480px) {
+  .agente-confirmacion__btn {
+    flex: 1 1 0;
+  }
+}

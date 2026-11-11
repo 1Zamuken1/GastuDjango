@@ -17,7 +17,15 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("SECRET_KEY no configurada en las variables de entorno.")
 
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')
+# llama-3.3-70b-versatile fue retirado de Groq (responde 404). gpt-oss-120b es el
+# mejor de la cuenta con tools; qwen3.8 queda de respaldo si el principal falla.
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-120b')
+GROQ_MODEL_RESPALDO = os.getenv('GROQ_MODEL_RESPALDO', 'qwen/qwen3.8-27b')
+GROQ_REASONING_EFFORT = os.getenv('GROQ_REASONING_EFFORT', 'low')
+# Modelo de la lectura de alertas bancarias (captura); por defecto el mismo.
+GROQ_MODEL_CAPTURA = os.getenv('GROQ_MODEL_CAPTURA', GROQ_MODEL)
+# Mensajes al agente por usuario y por dia (protege la cuota de Groq).
+AGENTE_MAX_MENSAJES_DIA = int(os.getenv('AGENTE_MAX_MENSAJES_DIA', '100'))
 
 # ── Hosts y Seguridad ─────────────────────────────────────────
 _allowed_hosts_env = os.getenv('ALLOWED_HOSTS')

@@ -210,6 +210,7 @@ def generar_alertas(usuario) -> list[dict]:
                 "max_tokens": 1024,
                 "temperature": 0.5,
                 "stream": False,
+                **({"reasoning_effort": "low"} if GROQ_MODEL.startswith("openai/gpt-oss") else {}),
             },
             timeout=20,
         )

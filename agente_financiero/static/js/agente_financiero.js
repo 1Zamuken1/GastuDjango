@@ -332,6 +332,69 @@
     return html;
   }
 
+  // 5. Tarjeta de confirmacion: el agente prepara el cambio y el usuario decide.
+  var ESTADOS_CONFIRMACION = {
+    CONFIRMADA: "Confirmado",
+    CANCELADA: "Cancelado, no se hizo ningún cambio",
+    FALLIDA: "No se pudo aplicar",
+    VENCIDA: "Venció sin confirmarse",
+  };
+
+  function renderConfirmacion(b) {
+    var token = String(b.token || "");
+    var estado = b.estado || "PENDIENTE";
+    var html = '<div class="agente-confirmacion" data-token="' + escaparHTML(token) + '" role="group" aria-label="Acción por confirmar">';
+    html += '  <div class="agente-confirmacion__cabecera"><i data-lucide="shield-check" aria-hidden="true"></i><span>Revisa antes de guardar</span></div>';
+    html += '  <p class="agente-confirmacion__resumen">' + escaparHTML(b.resumen || "") + '</p>';
+    if (estado === "PENDIENTE" && token) {
+      html += '  <div class="agente-confirmacion__acciones">';
+      html += '    <button type="button" class="agente-confirmacion__btn agente-confirmacion__btn--ok" data-decision="confirmar">Confirmar</button>';
+      html += '    <button type="button" class="agente-confirmacion__btn" data-decision="cancelar">Cancelar</button>';
+      html += '  </div>';
+      html += '  <p class="agente-confirmacion__estado" aria-live="polite"></p>';
+    } else {
+      html += '  <p class="agente-confirmacion__estado is-' + escaparHTML(estado.toLowerCase()) + '">' + escaparHTML(ESTADOS_CONFIRMACION[estado] || "") + '</p>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // 6. Boton de descarga: solo rutas internas de exportacion.
+  function renderDescarga(b) {
+    var url = String(b.url || "");
+    if (!/^\/exportar\/(excel|pdf|csv)\/\?[\w=&%.\-]*$/.test(url)) return "";
+    return '<a class="agente-descarga" href="' + escaparHTML(url) + '" download>' +
+      '<i data-lucide="download" aria-hidden="true"></i><span>' + escaparHTML(b.etiqueta || "Descargar reporte") + '</span></a>';
+  }
+
+  async function resolverConfirmacion(tarjeta, decision, boton) {
+    var token = tarjeta.dataset.token;
+    var estadoEl = tarjeta.querySelector(".agente-confirmacion__estado");
+    var botones = tarjeta.querySelectorAll(".agente-confirmacion__btn");
+    botones.forEach(function(btn) { btn.disabled = true; });
+    try {
+      var res = await fetch("/api/agente/acciones/" + encodeURIComponent(token) + "/" + decision + "/", {
+        method: "POST",
+        headers: { "X-CSRFToken": getCsrfToken() },
+      });
+      var data = {};
+      try { data = await res.json(); } catch (_) {}
+      if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo completar la acción.");
+      var acciones = tarjeta.querySelector(".agente-confirmacion__acciones");
+      if (acciones) acciones.remove();
+      if (estadoEl) {
+        estadoEl.textContent = data.mensaje || ESTADOS_CONFIRMACION[data.estado] || "";
+        estadoEl.className = "agente-confirmacion__estado is-" + String(data.estado || "").toLowerCase();
+      }
+    } catch (err) {
+      botones.forEach(function(btn) { btn.disabled = false; });
+      if (estadoEl) {
+        estadoEl.textContent = err.message;
+        estadoEl.className = "agente-confirmacion__estado is-fallida";
+      }
+    }
+  }
+
   // ── Ensamblador de Bloques Estructurados (Contrato Fase 4) ────────
   function renderBloques(bloques) {
     if (!bloques || !bloques.length) return "";
@@ -366,6 +429,12 @@
         case "texto":
           htmlPartes.push(formatearBot(b.texto));
           break;
+        case "confirmacion":
+          htmlPartes.push(renderConfirmacion(b));
+          break;
+        case "descarga":
+          htmlPartes.push(renderDescarga(b));
+          break;
         default:
           if (b.texto) htmlPartes.push('<p>' + escaparHTML(b.texto) + '</p>');
           break;
@@ -379,18 +448,11 @@
   function formatearBot(texto) {
     if (!texto) return "";
 
-    // 1. Si el texto es un JSON con bloques estructurados
-    var textoTrim = texto.trim();
-    if (textoTrim.startsWith("{") && textoTrim.endsWith("}")) {
-      try {
-        var parsed = JSON.parse(textoTrim);
-        if (parsed.bloques && Array.isArray(parsed.bloques)) {
-          return renderBloques(parsed.bloques);
-        }
-      } catch (_) {}
-    }
+    // El texto del modelo siempre se trata como texto: los bloques estructurados
+    // (tarjetas, medidores, botones) solo los genera el servidor. Asi una prompt
+    // injection no puede pintar botones o tarjetas falsas en el chat.
 
-    // 2. Formateo Markdown enriquecido
+    // Formateo Markdown enriquecido
     var t = escaparHTML(texto);
 
     // Titular destacado si empieza con ## o similar
@@ -665,6 +727,14 @@
 
   // ── Delegación de Eventos para Copiar Mensajes y Tablas ───────────
   chatContainer.addEventListener("click", function(e) {
+    // 0. Confirmar o cancelar una accion preparada por el agente
+    var btnDecision = e.target.closest(".agente-confirmacion__btn");
+    if (btnDecision) {
+      var tarjeta = btnDecision.closest(".agente-confirmacion");
+      if (tarjeta) resolverConfirmacion(tarjeta, btnDecision.dataset.decision === "confirmar" ? "confirmar" : "cancelar", btnDecision);
+      return;
+    }
+
     // 1. Copiar mensaje completo del bot
     var btnCopiarMsg = e.target.closest(".agente-btn-copiar-msg");
     if (btnCopiarMsg) {
