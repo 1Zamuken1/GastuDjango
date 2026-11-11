@@ -9,13 +9,13 @@ Sistema de gestión financiera personal desarrollado como proyecto formativo en 
 | Capa | Tecnología |
 |---|---|
 | Backend | Django 5.2 |
-| Base de datos | SQLite (desarrollo) / PostgreSQL vía Supabase (producción) |
+| Base de datos | SQLite (desarrollo) / PostgreSQL 16 en Docker (producción) |
 | ORM | Django ORM nativo |
 | Frontend | Django Templates + Tailwind CDN + Lucide Icons |
 | Fuentes | Plus Jakarta Sans (display) + DM Sans (cuerpo) |
 | Auth | Email + Contraseña (vistas propias) / Google OAuth via `django-allauth` |
 | Exportación | openpyxl (Excel) + reportlab (PDF) + csv stdlib |
-| IA / Agente | Gemini Flash (Google AI Studio) — Groq como fallback |
+| IA / Agente | Groq (`openai/gpt-oss-120b` con modelos de respaldo) |
 | Python | 3.14 |
 | Entorno | Windows, venv en GastuDjango/venv/ |
 
@@ -126,9 +126,9 @@ El proyecto soporta dos modos sin modificar código:
 | `USE_SQLITE` en `.env` | Base de datos activa |
 |---|---|
 | `True` | SQLite local — carga instantánea, ideal para desarrollo |
-| `False` o no definido | Supabase / PostgreSQL — para producción |
+| `False` o no definido | PostgreSQL (`DATABASE_URL`) — para producción |
 
-Para volver a Supabase: cambiar `USE_SQLITE=False` en `.env` y asegurarse de que `DATABASE_URL` esté definido.
+Para usar PostgreSQL: cambiar `USE_SQLITE=False` en `.env` y asegurarse de que `DATABASE_URL` esté definido.
 
 ---
 
@@ -184,7 +184,8 @@ Formatos disponibles: **CSV**, **Excel (.xlsx)**, **PDF**
 - `venv/`, `.env` y `db.sqlite3` no se suben al repositorio.
 - Tailwind se carga vía CDN — no requiere Node.js.
 - `openpyxl` y `reportlab` son necesarios para la exportación de reportes.
-- En producción con Railway/Render: cambiar `USE_SQLITE=False` y configurar `DATABASE_URL`.
+- Producción: máquina virtual de Oracle Cloud con Docker Compose (PostgreSQL, Redis, Daphne y Nginx). Pasos de instalación y de despliegue en [deploy/GUIA_MIGRACION_ORACLE_CLOUD.md](deploy/GUIA_MIGRACION_ORACLE_CLOUD.md).
+- La captura automática de movimientos bancarios se enciende con `CAPTURA_HABILITADA=True`; en producción está apagada hasta montar el servidor de correo.
 
 ## Ejecutar tests
 

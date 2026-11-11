@@ -13,6 +13,10 @@ const getGastuHtml = (imgSrc, text) => `
   </div>
 `;
 
+// La captura automatica puede estar apagada (CAPTURA_HABILITADA): base_app.html
+// lo indica en <body data-captura> y los textos del tour se adaptan.
+const CAPTURA_ACTIVA = document.body.dataset.captura !== '0';
+
 // Imágenes del proyecto
 const gastuImgs = {
   gastu_normal: window.GASTU_STATIC_URL + 'img/gastu_guia.png',
@@ -82,7 +86,7 @@ const toursConfig = {
             element: '#sidebar',
             popover: {
                 title: 'Menú de navegación',
-                description: getGastuHtml(gastuImgs.gastu_rostro, 'Desde aquí saltas a cualquier módulo: ingresos, egresos, ahorros, presupuestos, el agente y la captura automática.'),
+                description: getGastuHtml(gastuImgs.gastu_rostro, 'Desde aquí saltas a cualquier módulo: ingresos, egresos, ahorros, presupuestos' + (CAPTURA_ACTIVA ? ', el agente y la captura automática.' : ' y el agente.')),
                 side: 'right', align: 'start'
             }
         },
@@ -146,7 +150,8 @@ const toursConfig = {
             element: '#notif-btn',
             popover: {
                 title: 'Tus alertas',
-                description: 'Aquí te aviso si detecto gastos inusuales o si te acercas al límite de un presupuesto. En la pestaña Pendientes aparecen los movimientos que capturé de tus correos del banco, listos para confirmar.',
+                description: 'Aquí te aviso si detecto gastos inusuales o si te acercas al límite de un presupuesto.' +
+                    (CAPTURA_ACTIVA ? ' En la pestaña Por revisar aparecen los movimientos que capturé de tus correos del banco, listos para confirmar.' : ''),
                 side: 'bottom', align: 'end'
             }
         },
