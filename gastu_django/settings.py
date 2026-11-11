@@ -116,6 +116,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.request',
                 'notificaciones.context_processors.notificaciones_count',
+                'captura_bancaria.interruptor.contexto_captura',
             ],
         },
     },
@@ -279,6 +280,10 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # ──────────────────────────────────────────────────────────────
 # CAPTURA BANCARIA (correo reenviado)
 # ──────────────────────────────────────────────────────────────
+# Interruptor de la captura automatica. Apagada por defecto en produccion
+# (DEBUG=False) hasta montar el servidor de correo; CAPTURA_HABILITADA=True la enciende.
+CAPTURA_HABILITADA = os.getenv('CAPTURA_HABILITADA', 'True' if DEBUG else 'False').strip().lower() in ('true', '1', 't')
+
 # Dominio de las direcciones de captura (alias@CAPTURA_DOMINIO).
 CAPTURA_DOMINIO = os.getenv('CAPTURA_DOMINIO', 'gastu.duckdns.org')
 # URL interna a la que el servidor SMTP entrega cada correo recibido.

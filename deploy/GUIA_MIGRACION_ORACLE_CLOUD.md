@@ -82,6 +82,10 @@ EMAIL_HOST_USER=soporte.gastuapp@gmail.com
 EMAIL_HOST_PASSWORD=...
 GOOGLE_OAUTH_CLIENT_ID=...
 GOOGLE_OAUTH_CLIENT_SECRET=...
+
+# Captura automatica de movimientos bancarios: apagada hasta montar el
+# servidor de correo (sin esta variable tambien queda apagada con DEBUG=False)
+CAPTURA_HABILITADA=False
 ```
 
 ### C. Iniciar los Contenedores
@@ -123,12 +127,45 @@ Si asocias un dominio (ej. `app.midominio.com` o uno gratuito de DuckDNS):
 
 - **Ver logs en vivo:** `docker compose logs -f web`
 - **Reiniciar servicios:** `docker compose restart`
-- **Actualizar cambios de código:**
-  ```bash
-  git pull origin main
-  docker compose up -d --build web
-  ```
+- **Actualizar cambios de código:** ver la sección 6.
 - **Hacer backup de la base de datos:**
   ```bash
   docker compose exec db pg_dump -U gastu_user gastu_db > backup_$(date +%Y%m%d).sql
   ```
+
+---
+
+## 6. Desplegar una nueva versión
+
+No hay ambiente de staging ni CI/CD: los cambios se prueban en local con la rama
+`develop` (SQLite o `docker compose up`), se fusionan en `main` por PR y se
+despliegan a mano por SSH. Producción solo recibe lo que está en `main`.
+
+1. **Respaldo de la base de datos** (antes de cada despliegue con migraciones):
+   ```bash
+   cd ~/GastuDjango
+   docker compose exec db pg_dump -U gastu_user gastu_db > backup_$(date +%Y%m%d_%H%M).sql
+   ```
+2. **Revisar el `.env`** si la versión trae variables nuevas (compararlo con `.env.example`).
+3. **Traer el código y reconstruir:**
+   ```bash
+   git pull origin main
+   docker compose up -d --build
+   ```
+   Al arrancar, el contenedor `web` ejecuta `collectstatic` y `migrate` solo.
+   Si solo cambió código de Django (sin dependencias nuevas en `requirements.txt`
+   ni migraciones), basta con `docker restart gastu_web`.
+4. **Verificar:**
+   ```bash
+   docker compose ps
+   docker compose logs --tail=100 web
+   ```
+   Entrar a la app, iniciar sesión y revisar dashboard, ingresos, egresos y el agente.
+5. **Si algo sale mal:** volver al commit anterior (`git checkout <commit>` y
+   `docker compose up -d --build`; al corregirlo, `git checkout main` antes del
+   siguiente `git pull`). Si una migración dañó datos, restaurar el respaldo:
+   ```bash
+   docker compose exec -T db psql -U gastu_user gastu_db < backup_AAAAMMDD_HHMM.sql
+   ```
+
+> `deploy/systemd/gastu.service` es de una prueba anterior sin Docker y no está en uso.
