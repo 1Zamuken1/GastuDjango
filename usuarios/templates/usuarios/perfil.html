@@ -45,6 +45,7 @@
 
   {# ── Hero de perfil ──────────────────────────────────── #}
   <div class="perfil-hero">
+    <div class="perfil-hero-banda" aria-hidden="true"></div>
     <div class="perfil-hero-avatar{% if foto_perfil %} perfil-hero-avatar--foto{% endif %}">
       {% if foto_perfil %}
       <img src="{{ foto_perfil }}" alt="Foto de perfil de {{ request.user.username }}" referrerpolicy="no-referrer" width="56" height="56">
@@ -112,8 +113,11 @@
           </button>
         </form>
       </div>
+    </div>
 
-      <div class="perfil-card" style="margin-top: 20px;">
+    {# ── Columna lateral: seguridad ─────────────────────── #}
+    <div class="perfil-col-side">
+      <div class="perfil-card perfil-card--seguridad">
         <div class="tab-header-row">
           <div class="tab-header-icon">
             <i data-lucide="lock" class="tab-header-icon-svg"></i>

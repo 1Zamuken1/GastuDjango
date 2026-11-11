@@ -1,0 +1,266 @@
+/* ═══════════════════════════════════════════════════════════════
+   dashboard_rediseno.css — Capa visual del dashboard (se carga despues
+   de dashboard.css). Solo presentacion: no cambia datos, IDs ni el
+   comportamiento de las cards; dashboard.js sigue usando las mismas clases.
+
+   Lenguaje del agente: superficies planas con lineas finas, color de
+   identidad de cada cifra en una franja lateral y su icono, etiquetas
+   pequenas en mayusculas, cifras grandes en Plus Jakarta y medidores de
+   segmentos.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Encabezado ─────────────────────────────────── */
+.dashboard-header { align-items: flex-end; margin-bottom: 1.25rem; }
+.dash-saludo__eyebrow {
+  margin: 0 0 .2rem;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gastu-accion, #047857);
+}
+.dash-saludo__titulo {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.15rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.025em;
+  color: var(--gastu-ink, #0f172a);
+}
+.dash-saludo__sub { margin: .35rem 0 0; font-size: .9rem; color: var(--gastu-ink-muted, #475569); }
+.dash-saludo__sub strong { color: var(--gastu-ink, #0f172a); }
+
+.status-badge { padding: .4rem .85rem; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+.status-badge--ok      { color: #047857; }
+.status-badge--warning { color: #92400e; }
+.status-badge--deficit { color: #b91c1c; }
+
+/* ── Navegacion de meses como control segmentado ── */
+.nav-mes-wrap { margin-bottom: 1.5rem; }
+.nav-mes-group {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+}
+.nav-mes-label { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; color: var(--gastu-ink, #0f172a); }
+.nav-mes-arrow { border-radius: 10px; }
+.nav-mes-arrow:hover:not(:disabled) { background: var(--gastu-canvas, #eef2f7); }
+.nav-mes-actual-btn { border-radius: 12px; }
+
+/* ── Carrusel: titulo de seccion y controles ── */
+.carousel-header { margin-bottom: .9rem; }
+.carousel-title {
+  font-size: .72rem;
+  letter-spacing: .1em;
+  color: var(--gastu-ink-muted, #475569);
+}
+.carousel-dot.active,
+.carousel-progress__bar { background: var(--gastu-accion, #047857); }
+.carousel-btn { border-radius: 10px; }
+.carousel-progress { height: 3px; margin-top: .9rem; background: var(--gastu-linea, #d5dee9); }
+
+/* ── Cards de resumen: franja de identidad lateral ──
+   El acento sale del modificador que ya tiene cada card (y que dashboard.js
+   cambia para la diferencia); no se toca su contenido. */
+.stat-card {
+  --stat-acento: #64748b;
+  padding: 1.15rem 1.3rem 1.1rem 1.45rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+.stat-card::before {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: auto;
+  width: 4px;
+  height: auto;
+  border-radius: 16px 0 0 16px;
+  background: var(--stat-acento) !important;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, .08); }
+.stat-card--total-dinero    { --stat-acento: #2563eb; }
+.stat-card--disponible      { --stat-acento: #7c3aed; }
+.stat-card--ahorro-total,
+.stat-card--ahorros-mes     { --stat-acento: #d97706; }
+.stat-card--ingresos,
+.stat-card--diferencia-pos  { --stat-acento: #047857; }
+.stat-card--gastos,
+.stat-card--diferencia-neg  { --stat-acento: #be123c; }
+.stat-card--utilidad        { --stat-acento: #7c3aed; }
+
+.stat-card__header { align-items: center; margin-bottom: .9rem; }
+.stat-card__label {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--gastu-ink-muted, #475569);
+}
+.stat-card__value {
+  font-size: clamp(1.55rem, 2.2vw, 1.95rem);
+  font-weight: 800;
+  letter-spacing: -.025em;
+  color: var(--gastu-ink, #0f172a);
+}
+.stat-card__value--negative { color: var(--gastu-peligro, #be123c); }
+.stat-card__note {
+  margin-top: .55rem;
+  padding-top: .55rem;
+  border-top: 1px solid var(--gastu-linea, #d5dee9);
+  font-size: .75rem;
+  color: var(--gastu-ink-muted, #475569);
+}
+.icon-box { width: 38px; height: 38px; border-radius: 50%; }
+.icon-box svg { width: 17px; height: 17px; }
+/* Iconos con contraste suficiente (los tonos 400 no pasaban AA) */
+.icon-box--blue    { background: #eff6ff; color: #1d4ed8; }
+.icon-box--violet  { background: #f5f3ff; color: #6d28d9; }
+.icon-box--amber   { background: #fffbeb; color: #b45309; }
+.icon-box--emerald { background: #ecfdf5; color: #047857; }
+.icon-box--orange,
+.icon-box--red     { background: #fff1f2; color: #be123c; }
+
+/* ── Barra de filtros globales ───────────────────── */
+.dash-filtros { margin-bottom: 1.5rem; }
+.dash-filtros__barra {
+  margin-bottom: 0;
+  padding: .85rem 1.1rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+.dash-filtros__titulo { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+.dash-filtros__icono {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gastu-canvas, #eef2f7);
+  color: var(--gastu-ink, #0f172a);
+}
+.dash-filtros__icono svg { width: 17px; height: 17px; }
+.dash-filtros__nombre { margin: 0; font-family: "Plus Jakarta Sans", sans-serif; font-size: .95rem; font-weight: 700; color: var(--gastu-ink, #0f172a); }
+.dash-filtros__periodo { margin: 0; font-size: .78rem; color: var(--gastu-ink-muted, #475569); }
+.dash-filtros__panel { margin-top: .75rem; }
+
+/* Grupos de filtro como control segmentado (tipo de movimiento) */
+.mov-filter-group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--slate-100, #f1f5f9);
+  border-radius: 10px;
+}
+.mov-filter-btn,
+.global-filter-btn {
+  padding: .35rem .8rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gastu-ink-muted, #475569);
+}
+.mov-filter-btn:hover,
+.global-filter-btn:hover { background: rgba(255, 255, 255, .7); color: var(--gastu-ink, #0f172a); }
+.mov-filter-btn.active,
+.global-filter-btn.active {
+  background: var(--white);
+  color: var(--gastu-accion, #047857);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .12);
+}
+.mov-filter-btn.active[data-filtro="EGRESO"],
+.global-filter-btn.active[data-filtro="EGRESO"] { color: var(--gastu-peligro, #be123c); }
+.mov-filter-btn.active[data-filtro="AHORRO"],
+.global-filter-btn.active[data-filtro="AHORRO"] { color: #b45309; }
+.mov-action-btn { border-radius: 10px; }
+.mov-action-btn--excel { color: #047857; }
+.mov-action-btn--pdf { color: #be123c; }
+.mov-action-btn--filtros.active { border-color: var(--gastu-accion, #047857); color: var(--gastu-accion, #047857); }
+
+/* ── Tarjetas de graficos y listas ───────────────── */
+.chart-card,
+.dash-card {
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+.dash-card__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 1rem;
+  padding-bottom: .85rem;
+  border-bottom: 1px solid var(--gastu-linea, #d5dee9);
+}
+.dash-card__cabecera--icono { align-items: center; }
+.chart-card__title { font-size: .98rem; font-weight: 800; color: var(--gastu-ink, #0f172a); letter-spacing: -.01em; }
+.chart-card__subtitle { font-size: .76rem; color: var(--gastu-ink-muted, #475569); margin-top: .2rem; }
+
+.dash-zoom { display: flex; align-items: center; gap: .3rem; }
+.dash-zoom-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--gastu-ink-muted, #475569);
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .13s, color .13s, border-color .13s;
+}
+.dash-zoom-btn:hover { background: var(--gastu-canvas, #eef2f7); color: var(--gastu-ink, #0f172a); }
+.dash-zoom-btn:focus-visible,
+.mov-filter-btn:focus-visible,
+.global-filter-btn:focus-visible {
+  outline: 2px solid var(--gastu-accion, #047857);
+  outline-offset: 2px;
+}
+
+/* ── Metas de ahorro con medidor de segmentos ── */
+.meta-row {
+  margin-bottom: 0;
+  padding: .8rem 0;
+  border-bottom: 1px solid var(--gastu-linea, #d5dee9);
+}
+.meta-row:first-child { padding-top: 0; }
+.meta-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+.meta-dot { display: none; }
+.meta-nombre { font-size: .85rem; font-weight: 700; color: var(--gastu-ink, #0f172a); max-width: 180px; }
+.meta-frecuencia { font-size: .7rem; color: var(--gastu-ink-muted, #475569); }
+.meta-pct { font-size: .75rem; color: #b45309; }
+.meta-monto { font-size: .92rem; }
+.meta-detail { font-size: .72rem; color: var(--gastu-ink-muted, #475569); }
+/* La mascara corta la barra en 12 segmentos, como el medidor del agente;
+   el ancho del relleno lo sigue animando dashboard.js. */
+.meta-bar-track {
+  height: 9px;
+  margin: .45rem 0 .1rem;
+  border-radius: 0;
+  background: var(--gastu-segmento-vacio, #d5dee9);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 calc(100% / 12 - 3px), transparent calc(100% / 12 - 3px) calc(100% / 12));
+          mask: repeating-linear-gradient(90deg, #000 0 calc(100% / 12 - 3px), transparent calc(100% / 12 - 3px) calc(100% / 12));
+}
+.meta-bar-fill { border-radius: 0; background: #d97706; }
+
+/* ── Movil ───────────────────────────────────────── */
+@media (max-width: 767px) {
+  .dashboard-header { align-items: flex-start; }
+  .dash-filtros__barra { padding: .8rem; }
+  .chart-card,
+  .dash-card { padding: 1rem; }
+  .mov-filter-group { display: flex; width: 100%; }
+  .mov-filter-btn,
+  .global-filter-btn { flex: 1; text-align: center; }
+}

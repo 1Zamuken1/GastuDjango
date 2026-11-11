@@ -12,6 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.5.0/dist/apexcharts.min.js" integrity="sha384-9OyI2UN+1hFTz/m3KXl5gdpr7eeNRANHiggXdNFH6vEU8RHWUjvRJra4REyiVNEJ" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="{% static 'movimientos/css/datepicker.css' %}">
   <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'dashboard/css/dashboard_rediseno.css' %}">
 {% endblock %}
 
 
@@ -152,12 +153,10 @@ function initOnboarding() {
 {# ── Saludo + badge ──────────────────────────────────────── #}
 <div class="flex items-start justify-between mb-4 flex-wrap gap-3 dashboard-header">
   <div>
-    <h2 class="font-display font-black"
-        style="font-size:1.5rem;color:var(--slate-900);letter-spacing:-0.025em;">
-      Hola, {{ request.user.username }}
-    </h2>
-    <p style="color:var(--slate-400);font-size:13px;margin-top:4px;">
-      Resumen financiero de <strong style="color:var(--slate-600);">{{ mes_nombre }} {{ anio }}</strong>
+    <p class="dash-saludo__eyebrow">Panel general</p>
+    <h2 class="dash-saludo__titulo font-display">Hola, {{ request.user.username }}</h2>
+    <p class="dash-saludo__sub">
+      Resumen financiero de <strong>{{ mes_nombre }} {{ anio }}</strong>
     </p>
   </div>
   <span id="status-badge-wrap"
@@ -365,15 +364,15 @@ function initOnboarding() {
 </section>
 
 {# ── Panel Global de Filtros y Acciones ── #}
-<section class="dashboard-filters-wrap" style="margin-bottom: 24px;">
-  <div class="mov-section-header" style="background: #fff; padding: 16px 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; margin-bottom: 0;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <div style="background: #f1f5f9; padding: 8px; border-radius: 10px; color: #475569;">
-        <i data-lucide="filter" style="width:20px; height:20px;"></i>
+<section class="dashboard-filters-wrap dash-filtros">
+  <div class="mov-section-header dash-filtros__barra">
+    <div class="dash-filtros__titulo">
+      <div class="dash-filtros__icono" aria-hidden="true">
+        <i data-lucide="sliders-horizontal"></i>
       </div>
       <div>
-        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">Filtros globales</h3>
-        <p style="font-size: 12px; color: #64748b; margin: 0;" id="mov-subtitulo">{{ mes_nombre }} {{ anio }}</p>
+        <h3 class="dash-filtros__nombre">Filtros globales</h3>
+        <p class="dash-filtros__periodo" id="mov-subtitulo">{{ mes_nombre }} {{ anio }}</p>
       </div>
     </div>
     <div class="mov-section-actions">
@@ -403,19 +402,19 @@ function initOnboarding() {
 
       <button id="btn-toggle-filtros" class="mov-action-btn mov-action-btn--filtros" title="Filtros avanzados">
         <i data-lucide="sliders-horizontal" style="width:14px;height:14px;"></i>
-        <span>Filtros Avanzados</span>
+        <span>Filtros avanzados</span>
       </button>
     </div>
   </div>
 
   {# Panel de Filtros Avanzados (animado) #}
-  <div id="panel-filtros-avanzados" class="filtros-panel {% if tiene_filtros %}filtros-panel--open{% endif %}" style="margin-top: 12px;">
+  <div id="panel-filtros-avanzados" class="filtros-panel dash-filtros__panel {% if tiene_filtros %}filtros-panel--open{% endif %}">
     <div class="filtros-panel__inner">
       <form id="form-filtros-avanzados">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- Monto Mínimo -->
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Mínimo</label>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto mínimo</label>
             <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
               <span class="pl-3 text-slate-400 font-bold">$</span>
               <input type="text" inputmode="numeric" name="min_monto" id="filtro-min-monto" placeholder="0" value="{{ filtros_activos.min_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none !important; outline: none !important; border: none !important;">
@@ -423,7 +422,7 @@ function initOnboarding() {
           </div>
           <!-- Monto Máximo -->
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto Máximo</label>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monto máximo</label>
             <div class="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
               <span class="pl-3 text-slate-400 font-bold">$</span>
               <input type="text" inputmode="numeric" name="max_monto" id="filtro-max-monto" placeholder="Sin límite" value="{{ filtros_activos.max_monto|default:'' }}" class="w-full bg-transparent border-0 py-2 pl-2 pr-3 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-transparent" autocomplete="off" style="box-shadow: none !important; outline: none !important; border: none !important;">
@@ -441,12 +440,12 @@ function initOnboarding() {
           </div>
           <!-- Fecha Inicio -->
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fecha Inicio</label>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fecha inicio</label>
             <input type="text" name="fecha_inicio" id="filtro-fecha-inicio" value="{{ filtros_activos.fecha_inicio|default:'' }}" readonly>
           </div>
           <!-- Fecha Fin -->
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fecha Fin</label>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fecha fin</label>
             <input type="text" name="fecha_fin" id="filtro-fecha-fin" value="{{ filtros_activos.fecha_fin|default:'' }}" readonly>
           </div>
         </div>
@@ -492,31 +491,17 @@ function initOnboarding() {
 
   {# Tendencia #}
   <div class="chart-card chart-card--tendencia">
-    <div class="chart-card__header-tendencia"
-         style="display:flex;align-items:flex-start;justify-content:space-between;
-                flex-wrap:wrap;gap:.5rem;margin-bottom:14px;">
+    <div class="chart-card__header-tendencia dash-card__cabecera">
       <div>
         <p class="chart-card__title">Tendencia financiera</p>
         <p class="chart-card__subtitle" id="tendencia-subtitulo">
           {{ mes_nombre }} {{ anio }} · arrastra para navegar
         </p>
       </div>
-      <div id="tendencia-zoom-controls" class="tendencia-zoom-controls"
-           style="display:flex;align-items:center;gap:.35rem;">
-        <button id="btn-zoom-in" title="Acercar"
-                style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
-                       background:#fff;color:#64748b;cursor:pointer;display:grid;place-items:center;
-                       transition:background .13s,color .13s;font-size:1rem;font-weight:700;
-                       font-family:monospace;line-height:1;">+</button>
-        <button id="btn-zoom-out" title="Alejar"
-                style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
-                       background:#fff;color:#64748b;cursor:pointer;display:grid;place-items:center;
-                       transition:background .13s,color .13s;font-size:1rem;font-weight:700;
-                       font-family:monospace;line-height:1;">−</button>
-        <button id="btn-zoom-reset" title="Ver mes completo"
-                style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:.5rem;
-                       background:#fff;color:#64748b;cursor:pointer;display:grid;place-items:center;
-                       transition:background .13s,color .13s;">
+      <div id="tendencia-zoom-controls" class="tendencia-zoom-controls dash-zoom">
+        <button id="btn-zoom-in" type="button" class="dash-zoom-btn" title="Acercar" aria-label="Acercar">+</button>
+        <button id="btn-zoom-out" type="button" class="dash-zoom-btn" title="Alejar" aria-label="Alejar">−</button>
+        <button id="btn-zoom-reset" type="button" class="dash-zoom-btn" title="Ver mes completo" aria-label="Ver mes completo">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -530,7 +515,7 @@ function initOnboarding() {
 
   {# Pie de gastos #}
   <div class="chart-card">
-    <div style="margin-bottom:16px;">
+    <div class="dash-card__cabecera">
       <p class="chart-card__title">Distribución de gastos</p>
       <p class="chart-card__subtitle" id="pie-subtitulo">Por categoría — {{ mes_nombre }}</p>
     </div>
@@ -544,9 +529,9 @@ function initOnboarding() {
 <div class="bottom-grid">
 
   {# Movimientos unificados (Ingresos + Egresos + Ahorros) #}
-  <div class="app-card" style="padding:22px 24px;">
+  <div class="app-card dash-card">
 
-    <div class="mov-section-header">
+    <div class="mov-section-header dash-card__cabecera">
       <div>
         <p class="chart-card__title">Desglose de movimientos</p>
         <p class="chart-card__subtitle">Historial detallado del período actual</p>
@@ -599,8 +584,8 @@ function initOnboarding() {
 
 
   {# Metas de ahorro activas — ocultas solo si el filtro de tipo es INGRESO o EGRESO #}
-  <div class="app-card {% if filtros_activos.tipo == 'INGRESO' or filtros_activos.tipo == 'EGRESO' %}hidden{% endif %}" style="padding:22px 24px;" id="metas-ahorro-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+  <div class="app-card dash-card {% if filtros_activos.tipo == 'INGRESO' or filtros_activos.tipo == 'EGRESO' %}hidden{% endif %}" id="metas-ahorro-card">
+    <div class="dash-card__cabecera dash-card__cabecera--icono">
       <div>
         <p class="chart-card__title">Metas de ahorro</p>
         <p class="chart-card__subtitle" id="metas-subtitulo">Progreso de metas activas</p>
