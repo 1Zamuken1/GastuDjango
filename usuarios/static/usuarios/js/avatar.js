@@ -17,7 +17,8 @@
   var btnGuardar = document.getElementById('btn-guardar-avatar');
   var actual = modal.getAttribute('data-actual') || '';
   var foto = modal.getAttribute('data-foto') || '';
-  var inicial = modal.getAttribute('data-inicial') || '';
+  var silueta = modal.getAttribute('data-silueta') || '';
+  var siluetaColor = modal.getAttribute('data-silueta-color') || '';
   var elegido = actual;
 
   function iconos() {
@@ -31,7 +32,7 @@
       return { tipo: 'pool', url: op.getAttribute('data-imagen'), color: op.getAttribute('data-color') };
     }
     if (foto) return { tipo: 'foto', url: foto };
-    return { tipo: 'inicial', inicial: inicial };
+    return { tipo: 'pool', url: silueta, color: siluetaColor };
   }
 
   // Pinta un avatar dentro de un elemento .avatar-ui sin usar innerHTML con datos

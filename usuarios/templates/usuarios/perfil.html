@@ -348,7 +348,9 @@
      data-url="{% url 'cambiar_avatar' %}"
      data-actual="{{ avatar_actual.clave }}"
      data-foto="{{ foto_perfil }}"
-     data-inicial="{{ avatar_actual.inicial }}">
+     data-inicial="{{ avatar_actual.inicial }}"
+     data-silueta="{% static avatares.usuario.imagen %}"
+     data-silueta-color="{{ avatares.usuario.color }}">
   <div class="modal-avatar" role="dialog" aria-modal="true" aria-labelledby="modal-avatar-titulo">
     <div class="modal-avatar__lado">
       <span class="modal-avatar__preview avatar-ui" id="avatar-preview" aria-hidden="true"></span>
@@ -385,7 +387,7 @@
       </div>
 
       <div class="modal-avatar__pie">
-        <p class="modal-avatar__nota">Automático usa tu foto de Google si la tienes, o tu inicial.</p>
+        <p class="modal-avatar__nota">Automático usa tu foto de Google si la tienes; si no, la silueta de usuario.</p>
         <div class="modal-avatar__acciones">
           <button type="button" class="btn-avatar-cancelar" id="btn-cancelar-avatar">Cancelar</button>
           <button type="button" class="btn-perfil btn-sm" id="btn-guardar-avatar">
