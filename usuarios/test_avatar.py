@@ -23,6 +23,13 @@ class PoolAvataresTestCase(TestCase):
             self.assertIsNotNone(ruta, clave)
             xml.dom.minidom.parse(ruta)  # falla si el SVG esta mal formado
 
+    def test_pool_empieza_con_la_silueta_clasica(self):
+        primera = next(iter(AVATARES))
+        self.assertEqual(primera, 'usuario')
+        self.assertTrue(AVATARES['usuario']['imagen'].endswith('avatar_usuario.svg'))
+        avatar = cambiar_avatar(self.usuario, 'usuario')
+        self.assertEqual(avatar['tipo'], 'pool')
+
     def test_sin_avatar_usa_la_inicial(self):
         avatar = avatar_de(self.usuario)
         self.assertEqual(avatar['tipo'], 'inicial')

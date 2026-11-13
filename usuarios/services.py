@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from django.templatetags.static import static
 
-from .avatares_gastu import VARIANTES
+from .avatares_gastu import CATALOGO, archivo_de
 
 
 def foto_de_perfil(usuario) -> str:
@@ -23,12 +23,12 @@ def foto_de_perfil(usuario) -> str:
     return url
 
 
-# Pool de avatares: variantes de Gastu, la mascota (SVG propios en
-# usuarios/static/usuarios/img/avatares/, generados por usuarios/avatares_gastu.py).
-# La clave es lo que se guarda en Usuario.avatar.
+# Pool de avatares: la silueta clasica de usuario y las variantes de Gastu, la
+# mascota (SVG propios en usuarios/static/usuarios/img/avatares/, generados por
+# usuarios/avatares_gastu.py). La clave es lo que se guarda en Usuario.avatar.
 AVATARES = {
-    clave: {"nombre": nombre, "imagen": f"usuarios/img/avatares/gastu_{clave}.svg", "color": fondo}
-    for clave, (nombre, fondo, *_resto) in VARIANTES.items()
+    clave: {"nombre": nombre, "imagen": f"usuarios/img/avatares/{archivo_de(clave)}", "color": fondo}
+    for clave, nombre, fondo in CATALOGO
 }
 
 
