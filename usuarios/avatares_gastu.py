@@ -300,11 +300,43 @@ def svg_de(clave):
     )
 
 
+# Avatares sin Gastu, para quien prefiere la foto de perfil de siempre.
+# clave: (nombre, fondo)
+BASICOS = {
+    'usuario': ('Usuario', '#94a3b8'),
+}
+
+
+def svg_basico(clave):
+    """Silueta clasica de usuario en blanco (la foto de perfil vacia de siempre)."""
+    nombre, fondo = BASICOS[clave]
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" '
+        f'aria-label="{nombre}"><rect width="120" height="120" fill="{fondo}"/>'
+        '<circle cx="60" cy="47" r="21" fill="#fff"/>'
+        '<path d="M16 122 C18 92 37 77 60 77 C83 77 102 92 104 122 Z" fill="#fff"/></svg>\n'
+    )
+
+
+def archivo_de(clave):
+    """Nombre del archivo SVG de un avatar del pool."""
+    return f'avatar_{clave}.svg' if clave in BASICOS else f'gastu_{clave}.svg'
+
+
+# Orden del pool: primero la silueta clasica, luego las variantes de Gastu.
+# (clave, nombre, fondo)
+CATALOGO = [(c, n, f) for c, (n, f) in BASICOS.items()] + [
+    (c, datos[0], datos[1]) for c, datos in VARIANTES.items()
+]
+
+
 def generar():
     SALIDA.mkdir(parents=True, exist_ok=True)
+    for clave in BASICOS:
+        (SALIDA / archivo_de(clave)).write_text(svg_basico(clave), encoding='utf-8')
     for clave in VARIANTES:
-        (SALIDA / f'gastu_{clave}.svg').write_text(svg_de(clave), encoding='utf-8')
-    return len(VARIANTES)
+        (SALIDA / archivo_de(clave)).write_text(svg_de(clave), encoding='utf-8')
+    return len(BASICOS) + len(VARIANTES)
 
 
 if __name__ == '__main__':

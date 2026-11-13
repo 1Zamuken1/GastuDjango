@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from django.templatetags.static import static
 
-from .avatares_gastu import VARIANTES
+from .avatares_gastu import CATALOGO, archivo_de
 
 
 def foto_de_perfil(usuario) -> str:
@@ -23,13 +23,17 @@ def foto_de_perfil(usuario) -> str:
     return url
 
 
-# Pool de avatares: variantes de Gastu, la mascota (SVG propios en
-# usuarios/static/usuarios/img/avatares/, generados por usuarios/avatares_gastu.py).
-# La clave es lo que se guarda en Usuario.avatar.
+# Pool de avatares: la silueta clasica de usuario y las variantes de Gastu, la
+# mascota (SVG propios en usuarios/static/usuarios/img/avatares/, generados por
+# usuarios/avatares_gastu.py). La clave es lo que se guarda en Usuario.avatar.
 AVATARES = {
-    clave: {"nombre": nombre, "imagen": f"usuarios/img/avatares/gastu_{clave}.svg", "color": fondo}
-    for clave, (nombre, fondo, *_resto) in VARIANTES.items()
+    clave: {"nombre": nombre, "imagen": f"usuarios/img/avatares/{archivo_de(clave)}", "color": fondo}
+    for clave, nombre, fondo in CATALOGO
 }
+
+
+# Avatar por defecto cuando no hay uno elegido ni foto de Google.
+SILUETA = "usuario"
 
 
 def avatar_de(usuario) -> dict:
@@ -37,7 +41,9 @@ def avatar_de(usuario) -> dict:
     Como se muestra el avatar del usuario.
 
     Prioridad: el avatar elegido del pool; si no eligio (automatico), la foto de
-    Google; si tampoco hay, la inicial del nombre.
+    Google; si tampoco hay, la silueta clasica de usuario. La silueta se devuelve
+    como un avatar del pool (misma forma de pintarse) pero con clave vacia, porque
+    el usuario no la eligio: sigue en automatico.
     """
     inicial = (usuario.username or usuario.email or "?")[:1].upper()
     elegido = AVATARES.get(usuario.avatar or "")
@@ -47,7 +53,9 @@ def avatar_de(usuario) -> dict:
     foto = foto_de_perfil(usuario)
     if foto:
         return {"tipo": "foto", "clave": "", "inicial": inicial, "url": foto}
-    return {"tipo": "inicial", "clave": "", "inicial": inicial}
+    silueta = AVATARES[SILUETA]
+    return {"tipo": "pool", "clave": "", "inicial": inicial,
+            "url": static(silueta["imagen"]), **silueta}
 
 
 def cambiar_avatar(usuario, clave: str) -> dict:
