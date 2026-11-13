@@ -30,10 +30,11 @@ class PoolAvataresTestCase(TestCase):
         avatar = cambiar_avatar(self.usuario, 'usuario')
         self.assertEqual(avatar['tipo'], 'pool')
 
-    def test_sin_avatar_usa_la_inicial(self):
+    def test_sin_avatar_ni_foto_usa_la_silueta(self):
         avatar = avatar_de(self.usuario)
-        self.assertEqual(avatar['tipo'], 'inicial')
-        self.assertEqual(avatar['inicial'], 'A')
+        self.assertEqual(avatar['tipo'], 'pool')
+        self.assertEqual(avatar['clave'], '')  # sigue en automatico
+        self.assertTrue(avatar['url'].endswith('avatar_usuario.svg'))
 
     def test_cambiar_avatar_valido(self):
         avatar = cambiar_avatar(self.usuario, 'chef')
@@ -51,12 +52,13 @@ class PoolAvataresTestCase(TestCase):
     def test_volver_a_automatico(self):
         cambiar_avatar(self.usuario, 'artista')
         avatar = cambiar_avatar(self.usuario, '')
-        self.assertEqual(avatar['tipo'], 'inicial')
+        self.assertEqual(avatar['clave'], '')
+        self.assertTrue(avatar['url'].endswith('avatar_usuario.svg'))
 
     def test_clave_guardada_que_ya_no_existe_cae_a_automatico(self):
         Usuario.objects.filter(pk=self.usuario.pk).update(avatar='dragon')
         self.usuario.refresh_from_db()
-        self.assertEqual(avatar_de(self.usuario)['tipo'], 'inicial')
+        self.assertTrue(avatar_de(self.usuario)['url'].endswith('avatar_usuario.svg'))
 
     def test_etiqueta_pinta_icono_del_pool(self):
         cambiar_avatar(self.usuario, 'estudiante')

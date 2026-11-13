@@ -32,12 +32,18 @@ AVATARES = {
 }
 
 
+# Avatar por defecto cuando no hay uno elegido ni foto de Google.
+SILUETA = "usuario"
+
+
 def avatar_de(usuario) -> dict:
     """
     Como se muestra el avatar del usuario.
 
     Prioridad: el avatar elegido del pool; si no eligio (automatico), la foto de
-    Google; si tampoco hay, la inicial del nombre.
+    Google; si tampoco hay, la silueta clasica de usuario. La silueta se devuelve
+    como un avatar del pool (misma forma de pintarse) pero con clave vacia, porque
+    el usuario no la eligio: sigue en automatico.
     """
     inicial = (usuario.username or usuario.email or "?")[:1].upper()
     elegido = AVATARES.get(usuario.avatar or "")
@@ -47,7 +53,9 @@ def avatar_de(usuario) -> dict:
     foto = foto_de_perfil(usuario)
     if foto:
         return {"tipo": "foto", "clave": "", "inicial": inicial, "url": foto}
-    return {"tipo": "inicial", "clave": "", "inicial": inicial}
+    silueta = AVATARES[SILUETA]
+    return {"tipo": "pool", "clave": "", "inicial": inicial,
+            "url": static(silueta["imagen"]), **silueta}
 
 
 def cambiar_avatar(usuario, clave: str) -> dict:
